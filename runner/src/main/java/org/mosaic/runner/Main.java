@@ -38,7 +38,7 @@ public class Main {
 
     private static Logger logger;
 
-    private static Map<String, String> felixConfiguration = new HashMap<String, String>();
+    private static Map<String, String> felixConfiguration = new HashMap<>();
 
     private static Felix felix;
 
@@ -59,7 +59,7 @@ public class Main {
         // setup Mosaic home directories
         //
         Path userDir = Paths.get( System.getProperty( "user.dir" ) );
-        mosaicHome = userDir.resolve( Paths.get( System.getProperty( "mosaicHome", "mosaic" ) ) );
+        mosaicHome = userDir.resolve( Paths.get( System.getProperty( "mosaicHome", "." ) ) ).normalize();
         if( Files.notExists( mosaicHome ) ) {
             System.err.println( "Could not find Mosaic home at: " + mosaicHome );
             System.exit( EXIT_STATUS_CONFIG_ERROR );
@@ -70,7 +70,7 @@ public class Main {
         //
         // configure logging
         //
-        Path logbackFile = etcDir.resolve( Paths.get( "logback.xml" ) );
+        Path logbackFile = etcDir.resolve( Paths.get( "logback.xml" ) ).normalize();
         if( Files.notExists( logbackFile ) ) {
             System.err.println( "Could not find 'logback.xml' file at: " + logbackFile );
             System.exit( EXIT_STATUS_CONFIG_ERROR );
