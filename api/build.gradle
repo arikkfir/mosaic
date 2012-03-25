@@ -4,8 +4,4 @@ description = 'Mosaic API packages'
 // dependencies
 dependencies {
 
-    compile ext.logging,
-            ext.joda,
-            ext.osgi
-
 }

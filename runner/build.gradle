@@ -1,0 +1,11 @@
+// general properties
+description = 'Mosaic Runner'
+
+// dependencies
+dependencies {
+
+    compile ext.logging,
+            ext.logback,
+            ext.osgi
+
+}
