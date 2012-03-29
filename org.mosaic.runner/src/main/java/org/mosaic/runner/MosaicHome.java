@@ -32,75 +32,77 @@ public class MosaicHome {
     private final Path felixWork = work.resolve( "felix" );
 
     public MosaicHome() throws ConfigurationException, IOException {
-        if( Files.notExists( home ) ) {
-            throw new ConfigurationException( "Mosaic home at '" + home + "' does not exist" );
+        if( Files.notExists( this.home ) ) {
+            Files.createDirectory( this.home );
         }
-        if( !Files.exists( bundles ) ) {
-            Files.createDirectory( bundles );
+        if( !Files.exists( this.bundles ) ) {
+            Files.createDirectory( this.bundles );
         }
-        if( !Files.exists( etc ) ) {
-            throw new ConfigurationException( "Mosaic 'etc' directory at '" + etc + "' does not exist" );
+        if( !Files.exists( this.etc ) ) {
+            Files.createDirectory( this.etc );
         }
-        if( !Files.exists( server ) ) {
-            throw new ConfigurationException( "Mosaic 'server' directory at '" + server + "' does not exist" );
+        if( !Files.exists( this.server ) ) {
+            Files.createDirectory( this.server );
         }
-        if( !Files.exists( work ) ) {
-            Files.createDirectory( work );
+        if( !Files.exists( this.work ) ) {
+            Files.createDirectory( this.work );
         }
 
         Path logbackFile = etc.resolve( Paths.get( "logback.xml" ) );
-        if( Files.notExists( logbackFile ) ) {
-            throw new ConfigurationException( "Could not find 'logback.xml' file at: " + logbackFile );
+        if( Files.exists( logbackFile ) ) {
+            LoggerContext lc = ( LoggerContext ) LoggerFactory.getILoggerFactory();
+            try {
+                JoranConfigurator configurator = new JoranConfigurator();
+                configurator.setContext( lc );
+                lc.reset();
+                configurator.doConfigure( logbackFile.toFile() );
+                StatusPrinter.printInCaseOfErrorsOrWarnings( lc );
+            } catch( JoranException e ) {
+                throw new ConfigurationException( "logging configuration error: " + e.getMessage(), e );
+            }
         }
 
-        LoggerContext lc = ( LoggerContext ) LoggerFactory.getILoggerFactory();
-        try {
-            JoranConfigurator configurator = new JoranConfigurator();
-            configurator.setContext( lc );
-            lc.reset();
-            configurator.doConfigure( logbackFile.toFile() );
-            StatusPrinter.printInCaseOfErrorsOrWarnings( lc );
-
-            Logger logger = LoggerFactory.getLogger( MosaicHome.class );
-            logger.info( "******************************************************************************************" );
-            logger.info( "Starting Mosaic server" );
-            logger.info( "    Home:           {}", home );
-            logger.info( "    Deployments:    {}", bundles );
-            logger.info( "    Configurations: {}", etc );
-            logger.info( "    Server bundles: {}", server );
-            logger.info( "    Work directory: {}", work );
-            logger.info( "******************************************************************************************" );
-
-        } catch( JoranException e ) {
-            throw new ConfigurationException( "logging configuration error: " + e.getMessage(), e );
-        }
+        Logger logger = LoggerFactory.getLogger( MosaicHome.class );
+        logger.info( "******************************************************************************************" );
+        logger.info( "Starting Mosaic server" );
+        logger.info( "    Home:           {}", this.home );
+        logger.info( "    Deployments:    {}", this.bundles );
+        logger.info( "    Configurations: {}", this.etc );
+        logger.info( "    Server bundles: {}", this.server );
+        logger.info( "    Work directory: {}", this.work );
+        logger.info( "******************************************************************************************" );
     }
 
+    @SuppressWarnings( "UnusedDeclaration" )
     public Path getWorkDirectory() {
-        return userDir;
+        return this.userDir;
     }
 
+    @SuppressWarnings( "UnusedDeclaration" )
     public Path getHome() {
-        return home;
+        return this.home;
     }
 
+    @SuppressWarnings( "UnusedDeclaration" )
     public Path getBundles() {
-        return bundles;
+        return this.bundles;
     }
 
+    @SuppressWarnings( "UnusedDeclaration" )
     public Path getEtc() {
-        return etc;
+        return this.etc;
     }
 
     public Path getServer() {
-        return server;
+        return this.server;
     }
 
+    @SuppressWarnings( "UnusedDeclaration" )
     public Path getWork() {
-        return work;
+        return this.work;
     }
 
     public Path getFelixWork() {
-        return felixWork;
+        return this.felixWork;
     }
 }
