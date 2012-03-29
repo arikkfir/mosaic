@@ -1,0 +1,2 @@
+[ Tasks ]
+* If logback.xml is missing, create a default copy which indicates it is auto-generated (so newer versions can override it)

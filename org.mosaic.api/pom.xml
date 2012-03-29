@@ -5,17 +5,18 @@
         <groupId>org.mosaic</groupId>
         <artifactId>org.mosaic.parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
-        <relativePath>org.mosaic.parent/pom.xml</relativePath>
+        <relativePath>../org.mosaic.parent/pom.xml</relativePath>
     </parent>
-    <artifactId>org.mosaic</artifactId>
+    <artifactId>org.mosaic.api</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <name>Mosaic</name>
-    <packaging>pom</packaging>
+    <name>Mosaic API</name>
+    <packaging>bundle</packaging>
 
-    <modules>
-        <module>org.mosaic.parent</module>
-        <module>org.mosaic.runner</module>
-        <module>org.mosaic.api</module>
-    </modules>
+    <dependencies>
+        <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>jsr305</artifactId>
+        </dependency>
+    </dependencies>
 
 </project>

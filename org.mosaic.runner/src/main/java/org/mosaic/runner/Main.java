@@ -1,17 +1,13 @@
 package org.mosaic.runner;
 
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.joran.JoranConfigurator;
-import ch.qos.logback.core.joran.spi.JoranException;
-import ch.qos.logback.core.util.StatusPrinter;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.felix.framework.Felix;
 import org.apache.felix.framework.cache.BundleCache;
-import org.osgi.framework.BundleException;
+import org.mosaic.runner.exit.ExitCode;
+import org.mosaic.runner.exit.StartException;
+import org.mosaic.runner.exit.SystemExitException;
+import org.mosaic.runner.watcher.BundlesWatcher;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.slf4j.Logger;
@@ -22,136 +18,101 @@ import org.slf4j.LoggerFactory;
  */
 public class Main {
 
-    private static final int EXIT_STATUS_SUCCESS = 0;
-
-    private static final int EXIT_STATUS_CONFIG_ERROR = 1;
-
-    private static final int EXIT_STATUS_START_ERROR = 2;
-
-    private static final int EXIT_STATUS_RESTART = 3;
-
-    private static final int EXIT_STATUS_RUN_ERROR = 4;
-
-    private static final int EXIT_STATUS_INTERRUPTED = 5;
-
-    private static final int EXIT_STATUS_UNKNOWN = 6;
+    private static MosaicHome home;
 
     private static Logger logger;
 
-    private static Map<String, String> felixConfiguration = new HashMap<>();
-
     private static Felix felix;
 
-    public static Path mosaicHome;
-
-    public static Path etcDir;
-
-    public static Path workDir;
-
     public static void main( String[] args ) {
-        configure();
-        start();
-        run();
-    }
-
-    private static void configure() {
-        //
-        // setup Mosaic home directories
-        //
-        Path userDir = Paths.get( System.getProperty( "user.dir" ) );
-        mosaicHome = userDir.resolve( Paths.get( System.getProperty( "mosaicHome", "." ) ) ).normalize();
-        if( Files.notExists( mosaicHome ) ) {
-            System.err.println( "Could not find Mosaic home at: " + mosaicHome );
-            System.exit( EXIT_STATUS_CONFIG_ERROR );
-        }
-        etcDir = mosaicHome.resolve( "etc" );
-        workDir = mosaicHome.resolve( "work" );
-
-        //
-        // configure logging
-        //
-        Path logbackFile = etcDir.resolve( Paths.get( "logback.xml" ) ).normalize();
-        if( Files.notExists( logbackFile ) ) {
-            System.err.println( "Could not find 'logback.xml' file at: " + logbackFile );
-            System.exit( EXIT_STATUS_CONFIG_ERROR );
-        }
-        LoggerContext lc = ( LoggerContext ) LoggerFactory.getILoggerFactory();
         try {
-            JoranConfigurator configurator = new JoranConfigurator();
-            configurator.setContext( lc );
-            lc.reset();
-            configurator.doConfigure( logbackFile.toFile() );
-            StatusPrinter.printInCaseOfErrorsOrWarnings( lc );
+            home = new MosaicHome();
             logger = LoggerFactory.getLogger( Main.class );
-        } catch( JoranException e ) {
-            System.err.println( "logging configuration error: " + e.getMessage() );
+
+            startFelix();
+
+            ExitCode exitCode = run();
+            System.exit( exitCode.getCode() );
+
+        } catch( SystemExitException e ) {
             e.printStackTrace( System.err );
-            System.exit( EXIT_STATUS_CONFIG_ERROR );
+            System.exit( e.getExitCode().getCode() );
+
+        } catch( Exception e ) {
+            e.printStackTrace( System.err );
+            System.exit( ExitCode.UNKNOWN_ERROR.getCode() );
         }
-
-        //
-        // setup bundle cache
-        //
-        Path frameworkStorage = workDir.resolve( "bundles" );
-        felixConfiguration.put( Constants.FRAMEWORK_STORAGE, frameworkStorage.toString() );
-        felixConfiguration.put( Constants.FRAMEWORK_STORAGE_CLEAN, Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT );
-        felixConfiguration.put( BundleCache.CACHE_BUFSIZE_PROP, ( 1024 * 16 ) + "" );
-
-        //
-        // setup package delegation from the system
-        //
-        //org.osgi.framework.system.packages.extra
-        //org.osgi.framework.bundle.parent
-        //felix.bootdelegation.implicit
     }
 
-    private static void start() {
-        logger.info( "Starting Mosaic server from: {}", mosaicHome );
+    private static void startFelix() throws StartException {
+        logger.debug( "Starting Apache Felix" );
         try {
-            felix = new Felix( felixConfiguration );
+            Map<String, String> felixConfig = new HashMap<>();
+            felixConfig.put( Constants.FRAMEWORK_STORAGE, home.getFelixWork().toString() );
+            felixConfig.put( Constants.FRAMEWORK_STORAGE_CLEAN, Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT );
+            felixConfig.put( BundleCache.CACHE_BUFSIZE_PROP, ( 1024 * 16 ) + "" );
+
+            felix = new Felix( felixConfig );
             felix.start();
-        } catch( BundleException e ) {
-            logger.error( "Could not start Mosaic: " + e.getMessage(), e );
-            System.exit( EXIT_STATUS_START_ERROR );
+
+            new BundlesWatcher( logger, felix, 2, 500, home.getServer() ).start( "ServerBundlesWatcher" );
+
+        } catch( Exception e ) {
+            throw new StartException( "Could not start OSGi container (Apache Felix): " + e.getMessage(), e );
         }
     }
 
-    private static void run() {
+    private static ExitCode run() {
         while( true ) {
             try {
                 FrameworkEvent event = felix.waitForStop( 1000 * 60 );
                 switch( event.getType() ) {
                     case FrameworkEvent.STOPPED:
+                        //
+                        // framework stopped normally
+                        //
                         logger.info( "Mosaic has been stopped" );
-                        System.exit( EXIT_STATUS_SUCCESS );
-
-                    case FrameworkEvent.STOPPED_UPDATE:
-                        logger.info( "Mosaic system has been updated and will now restart (same JVM)" );
-                        break;
+                        return ExitCode.SUCCESS;
 
                     case FrameworkEvent.STOPPED_BOOTCLASSPATH_MODIFIED:
+                        //
+                        // boot class-path has changed which requires a JVM restart (exit-code accordingly,
+                        // shell script should pick this up and restart us)
+                        //
                         logger.info( "Mosaic boot class-path has been modified, restarting JVM" );
-                        System.exit( EXIT_STATUS_RESTART );
+                        return ExitCode.RESTART;
 
                     case FrameworkEvent.ERROR:
-                        logger.error( "Mosaic has been stopped due to an error" );
-                        System.exit( EXIT_STATUS_RUN_ERROR );
-
-                    case FrameworkEvent.WAIT_TIMEDOUT:
-                        break;
+                        //
+                        // framework stopped abnormally, return error exit code
+                        //
+                        logger.info( "Mosaic has been stopped due to an error" );
+                        return ExitCode.RUNTIME_ERROR;
 
                     default:
-                        logger.error( "Mosaic has been stopped due to an unknown cause (" + event.getType() + ")" );
-                        System.exit( EXIT_STATUS_UNKNOWN );
+                        //
+                        // framework stopped abnormally, with an unspecified reason, return an error exit code
+                        //
+                        logger.info( "Mosaic has been stopped due to an unknown cause (" + event.getType() + ")" );
+                        return ExitCode.RUNTIME_ERROR;
+
+                    case FrameworkEvent.STOPPED_UPDATE:
+                        //
+                        // framework is restart in the same JVM - just log and continue
+                        //
+                        logger.info( "Mosaic system has been updated and will now restart (same JVM)" );
+                        continue;
+
+                    case FrameworkEvent.WAIT_TIMEDOUT:
+                        //
+                        // no-op: framework is still running - do nothing and keep looping+waiting
+                        // (do not remove this or the 'switch' case will go to 'default' which will stop the JVM)
+                        //
                 }
 
             } catch( InterruptedException e ) {
                 logger.warn( "Mosaic has been interrupted - exiting", e );
-                System.exit( EXIT_STATUS_INTERRUPTED );
-
-            } catch( Exception e ) {
-                logger.warn( "Mosaic has encountered an unexpected error: " + e.getMessage(), e );
-                System.exit( EXIT_STATUS_RUN_ERROR );
+                return ExitCode.INTERRUPTED;
             }
         }
     }
