@@ -47,7 +47,7 @@ public class BundlesWatcher implements Runnable {
         this.jarLinkBundlesMatcher = this.directory.getFileSystem().getPathMatcher( "glob:*.jarlink" );
     }
 
-    public Thread start( String threadName ) throws IOException, BundleException {
+    public void start( String threadName ) throws IOException, BundleException {
         //
         // perform an initial scan so initialize the server
         //
@@ -56,10 +56,7 @@ public class BundlesWatcher implements Runnable {
         //
         // start the background thread to keep scanning
         //
-        Thread thread = new Thread( this, threadName );
-        thread.setDaemon( true );
-        thread.start();
-        return thread;
+        new Thread( this, threadName ).start();
     }
 
     @Override

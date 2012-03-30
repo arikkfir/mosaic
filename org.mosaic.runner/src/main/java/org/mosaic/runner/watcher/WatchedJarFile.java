@@ -72,9 +72,9 @@ public class WatchedJarFile implements WatchedResource {
         //
         Bundle bundle = this.felix.getBundleContext().getBundle( this.location );
         if( bundle == null ) {
-            this.logger.debug( "Installing bundle from: {}", this.path );
+            this.logger.trace( "Installing bundle from: {}", this.path );
             bundle = this.felix.getBundleContext().installBundle( this.location, Files.newInputStream( this.path, StandardOpenOption.READ ) );
-            this.logger.info( "Installed bundle from: {}", this.path );
+            this.logger.debug( "Installed bundle from: {}", this.path );
 
             BundleStartLevel bundleStartLevel = bundle.adapt( BundleStartLevel.class );
             if( bundleStartLevel != null ) {
@@ -104,9 +104,9 @@ public class WatchedJarFile implements WatchedResource {
         //
         // update bundle
         //
-        this.logger.debug( "Updating bundle {} from: {}", bundle.getBundleId(), this.path );
+        this.logger.trace( "Updating bundle {} from: {}", bundle.getBundleId(), this.path );
         bundle.update( Files.newInputStream( this.path, StandardOpenOption.READ ) );
-        this.logger.info( "Updated bundle from: {}", this.path );
+        this.logger.debug( "Updated bundle from: {}", this.path );
         return ScanResult.UPDATED;
     }
 
@@ -115,9 +115,9 @@ public class WatchedJarFile implements WatchedResource {
         Bundle bundle = this.felix.getBundleContext().getBundle( this.location );
         if( bundle != null ) {
 
-            this.logger.debug( "Uninstalling bundle from: {}", this.path );
+            this.logger.trace( "Uninstalling bundle from: {}", this.path );
             bundle.uninstall();
-            this.logger.info( "Uninstalled bundle from: {}", this.path );
+            this.logger.debug( "Uninstalled bundle from: {}", this.path );
             return ScanResult.UNINSTALLED;
 
         } else {

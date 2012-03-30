@@ -16,6 +16,7 @@
     <!--  Loggers configuration                                                                                      -->
     <!-- =========================================================================================================== -->
     <!--<logger name="org.mosaic.runner" level="DEBUG"/>-->
+    <!--<logger name="org.apache.felix" level="TRACE"/>-->
     <root level="INFO">
         <appender-ref ref="console"/>
     </root>

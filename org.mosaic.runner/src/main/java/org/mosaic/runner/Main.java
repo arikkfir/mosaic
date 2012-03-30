@@ -4,9 +4,14 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.felix.framework.Felix;
 import org.apache.felix.framework.cache.BundleCache;
+import org.apache.felix.framework.util.FelixConstants;
 import org.mosaic.runner.exit.ExitCode;
 import org.mosaic.runner.exit.StartException;
 import org.mosaic.runner.exit.SystemExitException;
+import org.mosaic.runner.logging.BundleEventListener;
+import org.mosaic.runner.logging.FelixLogger;
+import org.mosaic.runner.logging.FrameworkEventListener;
+import org.mosaic.runner.logging.ServiceEventListener;
 import org.mosaic.runner.watcher.BundlesWatcher;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
@@ -47,13 +52,18 @@ public class Main {
     private static void startFelix() throws StartException {
         logger.debug( "Starting Apache Felix" );
         try {
-            Map<String, String> felixConfig = new HashMap<>();
+            Map<String, Object> felixConfig = new HashMap<>();
             felixConfig.put( Constants.FRAMEWORK_STORAGE, home.getFelixWork().toString() );
             felixConfig.put( Constants.FRAMEWORK_STORAGE_CLEAN, Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT );
             felixConfig.put( BundleCache.CACHE_BUFSIZE_PROP, ( 1024 * 16 ) + "" );
+            felixConfig.put( FelixConstants.LOG_LOGGER_PROP, new FelixLogger() );
+            felixConfig.put( FelixConstants.LOG_LEVEL_PROP, FelixLogger.LOG_DEBUG + "" );
 
             felix = new Felix( felixConfig );
             felix.start();
+            felix.getBundleContext().addBundleListener( new BundleEventListener() );
+            felix.getBundleContext().addServiceListener( new ServiceEventListener() );
+            felix.getBundleContext().addFrameworkListener( new FrameworkEventListener() );
 
             new BundlesWatcher( logger, felix, 2, 500, home.getServer() ).start( "ServerBundlesWatcher" );
 
