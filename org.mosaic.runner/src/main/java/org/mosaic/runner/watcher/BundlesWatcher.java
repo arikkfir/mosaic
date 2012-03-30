@@ -30,7 +30,7 @@ public class BundlesWatcher implements Runnable {
 
     private final PathMatcher jarLinkBundlesMatcher;
 
-    private final Map<Path, WatchedResource> watchedResources = new HashMap<>();
+    private final Map<Path, ErrorSuppressingWatchedResource> watchedResources = new HashMap<>();
 
     public BundlesWatcher( Logger logger,
                            Felix felix,
@@ -99,23 +99,26 @@ public class BundlesWatcher implements Runnable {
                 Path absoluteFile = file.normalize().toAbsolutePath();
                 if( !watchedResources.containsKey( absoluteFile ) ) {
                     if( jarBundlesMatcher.matches( absoluteFile.getFileName() ) ) {
-                        logger.trace( "Adding watched JAR resource: {}", absoluteFile );
-                        watchedResources.put( absoluteFile, new WatchedJarFile( felix, startLevel, absoluteFile ) );
+                        addWatchedResource( absoluteFile, new WatchedJarFile( felix, startLevel, absoluteFile ) );
                     } else if( jarLinkBundlesMatcher.matches( absoluteFile.getFileName() ) ) {
-                        logger.trace( "Adding watched JAR-link resource: {}", absoluteFile );
-                        watchedResources.put( absoluteFile, new WatchedJarLinkFile( felix, startLevel, absoluteFile ) );
+                        addWatchedResource( absoluteFile, new WatchedJarLinkFile( felix, startLevel, absoluteFile ) );
                     }
                 }
                 return FileVisitResult.CONTINUE;
             }
         } );
         for( Path path : new HashSet<>( this.watchedResources.keySet() ) ) {
-            WatchedResource resource = this.watchedResources.get( path );
+            ErrorSuppressingWatchedResource resource = this.watchedResources.get( path );
             ScanResult result = resource.check();
             if( result == ScanResult.UNINSTALLED || result == ScanResult.INVALID ) {
-                this.logger.trace( "Removing watched resource: {}", path );
+                this.logger.debug( "Removing watched resource: {}", path );
                 this.watchedResources.remove( path );
             }
         }
+    }
+
+    private void addWatchedResource( Path file, WatchedResource resource ) {
+        logger.debug( "Adding watched resource: {}", file );
+        this.watchedResources.put( file, new ErrorSuppressingWatchedResource( resource ) );
     }
 }

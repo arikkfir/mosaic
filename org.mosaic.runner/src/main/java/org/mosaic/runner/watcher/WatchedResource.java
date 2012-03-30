@@ -1,5 +1,6 @@
 package org.mosaic.runner.watcher;
 
+import java.io.IOException;
 import org.osgi.framework.BundleException;
 
 /**
@@ -7,6 +8,8 @@ import org.osgi.framework.BundleException;
  */
 public interface WatchedResource {
 
-    ScanResult check();
+    ScanResult check() throws IOException, BundleException;
+
+    ScanResult uninstall() throws IOException, BundleException;
 
 }
