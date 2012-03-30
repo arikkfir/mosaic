@@ -1,7 +1,14 @@
+**/*.iml
 *.iml
+**/*.ipr
 *.ipr
+**/*.iws
 *.iws
+**/.idea
 .idea
+**/.gradle
 .gradle
+**/build
 build
+**/target
 target
