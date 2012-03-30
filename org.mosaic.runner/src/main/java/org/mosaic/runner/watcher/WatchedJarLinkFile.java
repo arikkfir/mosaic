@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.nio.file.Files.*;
+import static org.mosaic.runner.util.SystemPropertyUtils.resolvePlaceholders;
 
 /**
  * @author arik
@@ -114,9 +115,13 @@ public class WatchedJarLinkFile implements WatchedResource {
             throw new IllegalArgumentException( "Illegal JAR link pattern '" + contents + "' - must be in the form of \"<root-dir>:<pattern>\" (without the pointy brackets)" );
         }
 
+
         int colonIndex = contents.indexOf( ':' );
-        this.watchedResourcesRoot = this.path.getParent().resolve( contents.substring( 0, colonIndex ) ).normalize().toAbsolutePath();
-        this.watchedResourcesPattern = contents.substring( colonIndex + 1 );
+        String path = resolvePlaceholders( contents.substring( 0, colonIndex ), false );
+        String pattern = resolvePlaceholders( contents.substring( colonIndex + 1 ), false );
+
+        this.watchedResourcesRoot = this.path.getParent().resolve( path ).normalize().toAbsolutePath();
+        this.watchedResourcesPattern = pattern;
     }
 
     private void update() throws IOException, BundleException {
