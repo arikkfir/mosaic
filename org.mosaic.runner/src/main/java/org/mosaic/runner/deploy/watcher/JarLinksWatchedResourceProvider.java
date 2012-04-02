@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
+import org.mosaic.runner.util.BundleUtils;
 import org.mosaic.runner.util.SystemPropertyUtils;
 import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
@@ -110,7 +111,7 @@ public class JarLinksWatchedResourceProvider implements WatchedResourceProvider 
                     //
                     updatedMatches.add( match );
 
-                } else if( match.getFileName().toString().toLowerCase().endsWith( ".jar" ) ) {
+                } else if( BundleUtils.isBundle( match ) ) {
 
                     //
                     // new matching bundle - add it to our list of watched resources

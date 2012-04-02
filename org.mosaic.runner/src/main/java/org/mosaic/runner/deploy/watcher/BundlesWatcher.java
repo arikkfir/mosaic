@@ -41,6 +41,8 @@ public class BundlesWatcher implements Runnable {
             stop();
         }
 
+        this.logger.info( "Watching bundles directory at: {}", this.directory );
+
         //
         // perform an initial scan to initialize the server
         //
@@ -57,7 +59,6 @@ public class BundlesWatcher implements Runnable {
 
     @Override
     public void run() {
-        this.logger.info( "Watching bundles directory at: {}", this.directory );
         while( !this.stop ) {
 
             //
