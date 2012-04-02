@@ -1,1 +1,1 @@
-../../../org.mosaic.api/target:org.mosaic.api-*.jar
+${project.home}/org.mosaic.api/target:org.mosaic.api-*.jar
