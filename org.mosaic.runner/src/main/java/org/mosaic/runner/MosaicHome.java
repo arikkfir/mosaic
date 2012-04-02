@@ -5,12 +5,12 @@ import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
 import ch.qos.logback.core.util.StatusPrinter;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import org.mosaic.runner.exit.ConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.nio.file.Files.*;
 
 /**
  * @author arik
@@ -21,7 +21,7 @@ public class MosaicHome {
 
     private final Path home = userDir.resolve( Paths.get( System.getProperty( "mosaicHome", "." ) ) ).normalize().toAbsolutePath();
 
-    private final Path bundles = home.resolve( "bundles" );
+    private final Path deploy = home.resolve( "deploy" );
 
     private final Path etc = home.resolve( "etc" );
 
@@ -32,25 +32,25 @@ public class MosaicHome {
     private final Path felixWork = work.resolve( "felix" );
 
     public MosaicHome() throws ConfigurationException, IOException {
-        if( Files.notExists( this.home ) ) {
-            Files.createDirectory( this.home );
+        if( notExists( this.home ) ) {
+            createDirectory( this.home );
         }
-        if( !Files.exists( this.bundles ) ) {
-            Files.createDirectory( this.bundles );
+        if( !exists( this.deploy ) ) {
+            createDirectory( this.deploy );
         }
-        if( !Files.exists( this.etc ) ) {
-            Files.createDirectory( this.etc );
+        if( !exists( this.etc ) ) {
+            createDirectory( this.etc );
         }
-        if( !Files.exists( this.server ) ) {
-            Files.createDirectory( this.server );
+        if( !exists( this.server ) ) {
+            createDirectory( this.server );
         }
-        if( !Files.exists( this.work ) ) {
-            Files.createDirectory( this.work );
+        if( !exists( this.work ) ) {
+            createDirectory( this.work );
         }
 
         Path logbackFile = etc.resolve( Paths.get( "logback.xml" ) );
-        if( Files.exists( logbackFile ) ) {
-            LoggerContext lc = ( LoggerContext ) LoggerFactory.getILoggerFactory();
+        if( exists( logbackFile ) ) {
+            LoggerContext lc = ( LoggerContext ) org.slf4j.LoggerFactory.getILoggerFactory();
             try {
                 JoranConfigurator configurator = new JoranConfigurator();
                 configurator.setContext( lc );
@@ -66,7 +66,7 @@ public class MosaicHome {
         logger.info( "******************************************************************************************" );
         logger.info( "Starting Mosaic server" );
         logger.info( "    Home:           {}", this.home );
-        logger.info( "    Deployments:    {}", this.bundles );
+        logger.info( "    Deployments:    {}", this.deploy );
         logger.info( "    Configurations: {}", this.etc );
         logger.info( "    Server bundles: {}", this.server );
         logger.info( "    Work directory: {}", this.work );
@@ -84,8 +84,8 @@ public class MosaicHome {
     }
 
     @SuppressWarnings( "UnusedDeclaration" )
-    public Path getBundles() {
-        return this.bundles;
+    public Path getDeploy() {
+        return this.deploy;
     }
 
     @SuppressWarnings( "UnusedDeclaration" )

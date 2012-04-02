@@ -1,4 +1,4 @@
-package org.mosaic.runner.exit;
+package org.mosaic.runner;
 
 /**
  * The set of possible OS exit codes for the Mosaic JVM process. These exit codes have meaning to the Mosaic shell

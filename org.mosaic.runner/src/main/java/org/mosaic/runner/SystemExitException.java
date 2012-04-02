@@ -1,4 +1,4 @@
-package org.mosaic.runner.exit;
+package org.mosaic.runner;
 
 /**
  * @author arik

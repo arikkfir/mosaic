@@ -9,13 +9,9 @@ import org.slf4j.LoggerFactory;
 /**
  * @author arik
  */
-public class FrameworkEventListener implements FrameworkListener {
+public class FrameworkEventsLoggerListener implements FrameworkListener {
 
-    private final Logger logger;
-
-    public FrameworkEventListener() {
-        this.logger = LoggerFactory.getLogger( "org.osgi.framework" );
-    }
+    private final Logger logger = LoggerFactory.getLogger( "org.osgi.framework" );
 
     @Override
     public void frameworkEvent( FrameworkEvent event ) {
