@@ -1,7 +1,5 @@
 package org.mosaic.logging;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
@@ -19,7 +17,6 @@ public class Slf4jLoggerWrapper implements Logger {
         this.logger = logger;
     }
 
-    @Nonnull
     @Override
     public String getName() {
         return this.logger.getName();
@@ -30,9 +27,8 @@ public class Slf4jLoggerWrapper implements Logger {
         return logger.isTraceEnabled();
     }
 
-    @Nonnull
     @Override
-    public Logger trace( @Nullable String msg, @Nullable Object... args ) {
+    public Logger trace( String msg, Object... args ) {
         if( isTraceEnabled() ) {
             if( msg == null ) {
                 msg = "";
@@ -61,9 +57,8 @@ public class Slf4jLoggerWrapper implements Logger {
         return logger.isDebugEnabled();
     }
 
-    @Nonnull
     @Override
-    public Logger debug( @Nullable String msg, @Nullable Object... args ) {
+    public Logger debug( String msg, Object... args ) {
         if( isDebugEnabled() ) {
             if( msg == null ) {
                 msg = "";
@@ -92,9 +87,8 @@ public class Slf4jLoggerWrapper implements Logger {
         return logger.isInfoEnabled();
     }
 
-    @Nonnull
     @Override
-    public Logger info( @Nullable String msg, @Nullable Object... args ) {
+    public Logger info( String msg, Object... args ) {
         if( isInfoEnabled() ) {
             if( msg == null ) {
                 msg = "";
@@ -123,9 +117,8 @@ public class Slf4jLoggerWrapper implements Logger {
         return logger.isWarnEnabled();
     }
 
-    @Nonnull
     @Override
-    public Logger warn( @Nullable String msg, @Nullable Object... args ) {
+    public Logger warn( String msg, Object... args ) {
         if( isWarnEnabled() ) {
             if( msg == null ) {
                 msg = "";
@@ -154,9 +147,8 @@ public class Slf4jLoggerWrapper implements Logger {
         return logger.isErrorEnabled();
     }
 
-    @Nonnull
     @Override
-    public Logger error( @Nullable String msg, @Nullable Object... args ) {
+    public Logger error( String msg, Object... args ) {
         if( isErrorEnabled() ) {
             if( msg == null ) {
                 msg = "";

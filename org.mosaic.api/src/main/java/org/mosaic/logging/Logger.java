@@ -1,39 +1,30 @@
 package org.mosaic.logging;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
 /**
  * @author arik
  */
 public interface Logger {
 
-    @Nonnull
     String getName();
 
     boolean isTraceEnabled();
 
-    @Nonnull
-    Logger trace( @Nullable String msg, @Nullable Object... args );
+    Logger trace( String msg, Object... args );
 
     boolean isDebugEnabled();
 
-    @Nonnull
-    Logger debug( @Nullable String msg, @Nullable Object... args );
+    Logger debug( String msg, Object... args );
 
     boolean isInfoEnabled();
 
-    @Nonnull
-    Logger info( @Nullable String msg, @Nullable Object... args );
+    Logger info( String msg, Object... args );
 
     boolean isWarnEnabled();
 
-    @Nonnull
-    Logger warn( @Nullable String msg, @Nullable Object... args );
+    Logger warn( String msg, Object... args );
 
     boolean isErrorEnabled();
 
-    @Nonnull
-    Logger error( @Nullable String msg, @Nullable Object... args );
+    Logger error( String msg, Object... args );
 
 }
