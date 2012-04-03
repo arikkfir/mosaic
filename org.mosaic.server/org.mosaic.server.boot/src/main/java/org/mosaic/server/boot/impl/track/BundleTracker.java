@@ -2,7 +2,6 @@ package org.mosaic.server.boot.impl.track;
 
 import java.net.URL;
 import java.util.Enumeration;
-import org.mosaic.server.boot.impl.conversion.OsgiConversionService;
 import org.osgi.framework.Bundle;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
