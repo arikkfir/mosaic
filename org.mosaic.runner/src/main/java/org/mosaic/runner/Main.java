@@ -19,6 +19,7 @@ public class Main {
 
             // setup Mosaic home directory and structure
             MosaicHome home = new MosaicHome();
+            System.setProperty( "mosaic.home", home.getHome().toAbsolutePath().toString() );
 
             // first thing we want to do is setup the logging framework
             setupLogging( home );
