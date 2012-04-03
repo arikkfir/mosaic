@@ -28,11 +28,12 @@ public class JarsWatchedResourceProvider implements WatchedResourceProvider {
 
     private final Map<Path, WatchedResource> watchedJars = new HashMap<>();
 
-    private final WatchedResourceHandler jarFileResourceHandler = new ManagedJarResourceHandler();
+    private final WatchedResourceHandler jarFileResourceHandler;
 
     public JarsWatchedResourceProvider( BundleContext bundleContext, Path directory ) {
         this.bundleContext = bundleContext;
         this.directory = directory;
+        this.jarFileResourceHandler = new ManagedJarResourceHandler();
     }
 
     @Override
