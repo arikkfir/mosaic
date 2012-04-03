@@ -1,12 +1,21 @@
 package org.mosaic.server.boot.impl.track;
 
 import java.net.URL;
+import java.util.Dictionary;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+import org.mosaic.logging.Logger;
+import org.mosaic.logging.LoggerFactory;
+import org.mosaic.osgi.util.BundleUtils;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.MapPropertySource;
+import org.springframework.core.env.StandardEnvironment;
 import org.springframework.core.io.UrlResource;
 
 /**
@@ -14,25 +23,35 @@ import org.springframework.core.io.UrlResource;
  */
 public class BundleTracker {
 
+    private static final Logger LOG = LoggerFactory.getLogger( BundleTracker.class );
+
+    private final BundleContext bundleContext;
+
     private final Bundle bundle;
 
     private final OsgiSpringNamespacePlugin osgiSpringNamespacePlugin;
 
-    private ConfigurableEnvironment environment;
+    private final OsgiConversionService conversionService;
 
-    private OsgiConversionService conversionService;
+    private ConfigurableEnvironment environment;
 
     private GenericApplicationContext applicationContext;
 
-    public BundleTracker( Bundle bundle, OsgiSpringNamespacePlugin osgiSpringNamespacePlugin ) {
+    public BundleTracker( BundleContext bundleContext,
+                          Bundle bundle,
+                          OsgiSpringNamespacePlugin springNamespacePlugin,
+                          OsgiConversionService conversionService ) {
+        this.bundleContext = bundleContext;
         this.bundle = bundle;
-        this.osgiSpringNamespacePlugin = osgiSpringNamespacePlugin;
+        this.osgiSpringNamespacePlugin = springNamespacePlugin;
+        this.conversionService = conversionService;
     }
 
     public void start() {
-        this.environment = new BundleEnvironment( this.bundle );
-        this.conversionService = new OsgiConversionService( this.bundle );
-        this.conversionService.open();
+        LOG.info( "Tracking bundle '{}'", BundleUtils.toString( this.bundle ) );
+
+        this.environment = new StandardEnvironment();
+        this.environment.getPropertySources().addFirst( new MapPropertySource( "bundle", getBundleHeaders() ) );
 
         DefaultListableBeanFactory beanFactory = createPrototypeBeanFactory();
         registerBundleBeans( beanFactory );
@@ -43,9 +62,10 @@ public class BundleTracker {
     public void stop() {
         //TODO 4/3/12: close all dependencies and trackers
 
-        this.conversionService.close();
-        this.conversionService = null;
+        this.environment.getPropertySources().remove( "bundle" );
         this.environment = null;
+
+        LOG.info( "Stopped tracking bundle '{}'", BundleUtils.toString( this.bundle ) );
     }
 
     private void registerBundleBeans( DefaultListableBeanFactory beanFactory ) {
@@ -54,6 +74,7 @@ public class BundleTracker {
         xmlReader.setEntityResolver( this.osgiSpringNamespacePlugin );
         xmlReader.setEnvironment( this.environment );
         xmlReader.setNamespaceHandlerResolver( this.osgiSpringNamespacePlugin );
+        xmlReader.setResourceLoader( new OsgiResourcePatternResolver( this.bundleContext, beanFactory.getBeanClassLoader() ) );
 
         Enumeration<URL> xmlFiles = this.bundle.findEntries( "/META-INF/spring/", "*.xml", true );
         while( xmlFiles.hasMoreElements() ) {
@@ -71,5 +92,16 @@ public class BundleTracker {
         beanFactory.setCacheBeanMetadata( false );
         beanFactory.setConversionService( this.conversionService );
         return beanFactory;
+    }
+
+    private Map<String, Object> getBundleHeaders() {
+        Map<String, Object> headersMap = new HashMap<>();
+        Dictionary<String, String> headers = this.bundle.getHeaders();
+        Enumeration<String> headerNames = headers.keys();
+        while( headerNames.hasMoreElements() ) {
+            String headerName = headerNames.nextElement();
+            headersMap.put( headerName, headers.get( headerName ) );
+        }
+        return headersMap;
     }
 }

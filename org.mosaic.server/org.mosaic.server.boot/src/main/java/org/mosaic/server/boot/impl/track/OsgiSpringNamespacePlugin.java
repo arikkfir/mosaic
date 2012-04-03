@@ -38,6 +38,15 @@ public class OsgiSpringNamespacePlugin implements EntityResolver, NamespaceHandl
 
     public OsgiSpringNamespacePlugin( BundleContext bundleContext ) {
         this.bundleContext = bundleContext;
+
+        Bundle[] bundles = this.bundleContext.getBundles();
+        if( bundles != null ) {
+            for( Bundle bundle : bundles ) {
+                if( bundle.getState() == Bundle.RESOLVED || bundle.getState() == Bundle.ACTIVE ) {
+                    processResolvedBundle( bundle );
+                }
+            }
+        }
     }
 
     @Override
@@ -45,36 +54,11 @@ public class OsgiSpringNamespacePlugin implements EntityResolver, NamespaceHandl
         Bundle bundle = event.getBundle();
         if( event.getType() == BundleEvent.RESOLVED ) {
 
-            URL springSchemasFile = bundle.getEntry( "META-INF/spring.schemas" );
-            if( springSchemasFile != null ) {
-                try {
-
-                    this.springSchemasCache.put( bundle.getBundleId(), loadProperties( new UrlResource( springSchemasFile ) ) );
-
-                } catch( IOException e ) {
-
-                    LOG.warn( "Could not load 'spring.schemas' file from bundle '{}': {}", BundleUtils.toString( bundle ), e.getMessage(), e );
-
-                }
-            }
-
-            URL springHandlersFile = bundle.getEntry( "META-INF/spring.handlers" );
-            if( springHandlersFile != null ) {
-                try {
-
-                    this.springSchemasCache.put( bundle.getBundleId(), loadProperties( new UrlResource( springHandlersFile ) ) );
-
-                } catch( IOException e ) {
-
-                    LOG.warn( "Could not load 'spring.handlers' file from bundle '{}': {}", BundleUtils.toString( bundle ), e.getMessage(), e );
-
-                }
-            }
+            processResolvedBundle( bundle );
 
         } else if( event.getType() == BundleEvent.UNRESOLVED ) {
 
-            this.springSchemasCache.remove( bundle.getBundleId() );
-            this.springHandlersCache.remove( bundle.getBundleId() );
+            processUnresolvedBundles( bundle );
 
         }
     }
@@ -139,6 +123,39 @@ public class OsgiSpringNamespacePlugin implements EntityResolver, NamespaceHandl
 
         }
         return null;
+    }
+
+    private void processResolvedBundle( Bundle bundle ) {
+        URL springSchemasFile = bundle.getEntry( "META-INF/spring.schemas" );
+        if( springSchemasFile != null ) {
+            try {
+
+                this.springSchemasCache.put( bundle.getBundleId(), loadProperties( new UrlResource( springSchemasFile ) ) );
+
+            } catch( IOException e ) {
+
+                LOG.warn( "Could not load 'spring.schemas' file from bundle '{}': {}", BundleUtils.toString( bundle ), e.getMessage(), e );
+
+            }
+        }
+
+        URL springHandlersFile = bundle.getEntry( "META-INF/spring.handlers" );
+        if( springHandlersFile != null ) {
+            try {
+
+                this.springHandlersCache.put( bundle.getBundleId(), loadProperties( new UrlResource( springHandlersFile ) ) );
+
+            } catch( IOException e ) {
+
+                LOG.warn( "Could not load 'spring.handlers' file from bundle '{}': {}", BundleUtils.toString( bundle ), e.getMessage(), e );
+
+            }
+        }
+    }
+
+    private void processUnresolvedBundles( Bundle bundle ) {
+        this.springSchemasCache.remove( bundle.getBundleId() );
+        this.springHandlersCache.remove( bundle.getBundleId() );
     }
 
 }
