@@ -1,6 +1,5 @@
 package org.mosaic.runner.logging;
 
-import org.mosaic.runner.util.BundleUtils;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleListener;
 import org.slf4j.Logger;
@@ -15,47 +14,47 @@ public class BundleEventsLoggerListener implements BundleListener {
 
     @Override
     public void bundleChanged( BundleEvent event ) {
-        String bundle = BundleUtils.toString( event.getBundle() );
+        String bundle = LogUtils.toString( event.getBundle() );
         switch( event.getType() ) {
             case BundleEvent.INSTALLED:
-                String origin = BundleUtils.toString( event.getOrigin() );
-                this.logger.info( "Bundle '{}' has been installed (by bundle '{}')", bundle, origin );
+                String origin = LogUtils.toString( event.getOrigin() );
+                this.logger.info( "Installed bundle '{}' (installer was bundle '{}')", bundle, origin );
                 break;
 
             case BundleEvent.RESOLVED:
-                this.logger.info( "Bundle '{}' has been resolved", bundle );
+                this.logger.info( "Resolved bundle '{}'", bundle );
                 break;
 
             case BundleEvent.STARTING:
-                this.logger.info( "Bundle '{}' is starting", bundle );
+                this.logger.debug( "Bundle '{}' is starting", bundle );
                 break;
 
             case BundleEvent.LAZY_ACTIVATION:
-                this.logger.info( "Bundle '{}' will be activated lazily", bundle );
+                this.logger.debug( "Bundle '{}' will be activated lazily", bundle );
                 break;
 
             case BundleEvent.STARTED:
-                this.logger.info( "Bundle '{}' has been started", bundle );
+                this.logger.info( "Started bundle '{}'", bundle );
                 break;
 
             case BundleEvent.UPDATED:
-                this.logger.info( "Bundle '{}' has been updated", bundle );
+                this.logger.info( "Updated bundle '{}'", bundle );
                 break;
 
             case BundleEvent.STOPPING:
-                this.logger.info( "Bundle '{}' is stopping", bundle );
+                this.logger.debug( "Bundle '{}' is stopping", bundle );
                 break;
 
             case BundleEvent.STOPPED:
-                this.logger.info( "Bundle '{}' has been stopped", bundle );
+                this.logger.info( "Stopped bundle '{}'", bundle );
                 break;
 
             case BundleEvent.UNRESOLVED:
-                this.logger.info( "Bundle '{}' has been unresolved", bundle );
+                this.logger.info( "Unresolved bundle '{}'", bundle );
                 break;
 
             case BundleEvent.UNINSTALLED:
-                this.logger.info( "Bundle '{}' has been uninstalled", bundle );
+                this.logger.info( "Uninstalled bundle '{}'", bundle );
                 break;
         }
     }

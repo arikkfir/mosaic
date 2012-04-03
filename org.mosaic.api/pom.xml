@@ -2,21 +2,43 @@
 
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.mosaic</groupId>
-        <artifactId>org.mosaic.parent</artifactId>
+        <groupId>org.mosaic.poms</groupId>
+        <artifactId>org.mosaic.poms.parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
-        <relativePath>../org.mosaic.parent/pom.xml</relativePath>
+        <relativePath>../org.mosaic.poms/org.mosaic.poms.parent/pom.xml</relativePath>
     </parent>
+
+    <groupId>org.mosaic</groupId>
     <artifactId>org.mosaic.api</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <name>Mosaic API</name>
+    <name>Mosaic :: API</name>
     <packaging>bundle</packaging>
 
     <dependencies>
         <dependency>
+            <groupId>biz.aQute</groupId>
+            <artifactId>bndlib</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.apache.felix.framework</artifactId>
+        </dependency>
     </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.mosaic.poms</groupId>
+                <artifactId>org.mosaic.poms.bom</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
 </project>

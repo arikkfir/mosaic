@@ -1,6 +1,5 @@
 package org.mosaic.runner.logging;
 
-import org.mosaic.runner.util.BundleUtils;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceListener;
@@ -18,7 +17,7 @@ public class ServiceEventsLoggerListener implements ServiceListener {
     @Override
     public void serviceChanged( ServiceEvent event ) {
         ServiceReference<?> sr = event.getServiceReference();
-        String bundle = BundleUtils.toString( sr.getBundle() );
+        String bundle = LogUtils.toString( sr.getBundle() );
         Object objectClass = sr.getProperty( Constants.OBJECTCLASS );
         switch( event.getType() ) {
             case ServiceEvent.REGISTERED:

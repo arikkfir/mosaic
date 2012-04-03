@@ -2,21 +2,22 @@
 
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.mosaic</groupId>
-        <artifactId>org.mosaic.parent</artifactId>
+        <groupId>org.mosaic.poms</groupId>
+        <artifactId>org.mosaic.poms.parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
-        <relativePath>org.mosaic.parent/pom.xml</relativePath>
+        <relativePath>org.mosaic.poms/org.mosaic.poms.parent/pom.xml</relativePath>
     </parent>
+
+    <groupId>org.mosaic</groupId>
     <artifactId>org.mosaic</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <name>Mosaic</name>
     <packaging>pom</packaging>
 
     <modules>
-        <module>org.mosaic.parent</module>
+        <module>org.mosaic.poms</module>
         <module>org.mosaic.runner</module>
         <module>org.mosaic.api</module>
-        <module>org.mosaic.lifecycle</module>
         <module>org.mosaic.server</module>
     </modules>
 

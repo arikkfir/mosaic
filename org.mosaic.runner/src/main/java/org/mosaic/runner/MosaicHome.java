@@ -1,14 +1,8 @@
 package org.mosaic.runner;
 
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.joran.JoranConfigurator;
-import ch.qos.logback.core.joran.spi.JoranException;
-import ch.qos.logback.core.util.StatusPrinter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static java.nio.file.Files.*;
 
@@ -20,6 +14,8 @@ public class MosaicHome {
     private final Path userDir = Paths.get( System.getProperty( "user.dir" ) ).normalize().toAbsolutePath();
 
     private final Path home = userDir.resolve( Paths.get( System.getProperty( "mosaicHome", "." ) ) ).normalize().toAbsolutePath();
+
+    private final Path boot = home.resolve( "boot" );
 
     private final Path deploy = home.resolve( "deploy" );
 
@@ -38,6 +34,9 @@ public class MosaicHome {
         if( !exists( this.deploy ) ) {
             createDirectory( this.deploy );
         }
+        if( !exists( this.boot ) ) {
+            createDirectory( this.boot );
+        }
         if( !exists( this.etc ) ) {
             createDirectory( this.etc );
         }
@@ -47,30 +46,6 @@ public class MosaicHome {
         if( !exists( this.work ) ) {
             createDirectory( this.work );
         }
-
-        Path logbackFile = etc.resolve( Paths.get( "logback.xml" ) );
-        if( exists( logbackFile ) ) {
-            LoggerContext lc = ( LoggerContext ) org.slf4j.LoggerFactory.getILoggerFactory();
-            try {
-                JoranConfigurator configurator = new JoranConfigurator();
-                configurator.setContext( lc );
-                lc.reset();
-                configurator.doConfigure( logbackFile.toFile() );
-                StatusPrinter.printInCaseOfErrorsOrWarnings( lc );
-            } catch( JoranException e ) {
-                throw new ConfigurationException( "logging configuration error: " + e.getMessage(), e );
-            }
-        }
-
-        Logger logger = LoggerFactory.getLogger( MosaicHome.class );
-        logger.info( "******************************************************************************************" );
-        logger.info( "Starting Mosaic server" );
-        logger.info( "    Home:           {}", this.home );
-        logger.info( "    Deployments:    {}", this.deploy );
-        logger.info( "    Configurations: {}", this.etc );
-        logger.info( "    Server bundles: {}", this.server );
-        logger.info( "    Work directory: {}", this.work );
-        logger.info( "******************************************************************************************" );
     }
 
     @SuppressWarnings( "UnusedDeclaration" )
@@ -78,17 +53,18 @@ public class MosaicHome {
         return this.userDir;
     }
 
-    @SuppressWarnings( "UnusedDeclaration" )
     public Path getHome() {
         return this.home;
     }
 
-    @SuppressWarnings( "UnusedDeclaration" )
+    public Path getBoot() {
+        return boot;
+    }
+
     public Path getDeploy() {
         return this.deploy;
     }
 
-    @SuppressWarnings( "UnusedDeclaration" )
     public Path getEtc() {
         return this.etc;
     }
@@ -97,7 +73,6 @@ public class MosaicHome {
         return this.server;
     }
 
-    @SuppressWarnings( "UnusedDeclaration" )
     public Path getWork() {
         return this.work;
     }

@@ -1,0 +1,8 @@
+${project.home}/org.mosaic.api/target:*.jar
+${project.home}/org.mosaic.server/org.mosaic.server.boot/target:*.jar
+${user.home}/.m2/repository/org/springframework/org.springframework.beans/3.1.1.RELEASE:*.jar
+${user.home}/.m2/repository/org/springframework/org.springframework.context/3.1.1.RELEASE:*.jar
+${user.home}/.m2/repository/org/springframework/org.springframework.context.support/3.1.1.RELEASE:*.jar
+${user.home}/.m2/repository/org/springframework/org.springframework.core/3.1.1.RELEASE:*.jar
+${user.home}/.m2/repository/org/springframework/org.springframework.expression/3.1.1.RELEASE:*.jar
+${user.home}/.m2/repository/org/slf4j/jcl-over-slf4j/1.6.4:*.jar

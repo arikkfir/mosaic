@@ -1,0 +1,84 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.mosaic.poms</groupId>
+        <artifactId>org.mosaic.poms.parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../../org.mosaic.poms/org.mosaic.poms.parent/pom.xml</relativePath>
+    </parent>
+
+    <groupId>org.mosaic.server</groupId>
+    <artifactId>org.mosaic.server.boot</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <name>Mosaic :: Server :: Bootstrapper</name>
+    <packaging>bundle</packaging>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.mosaic</groupId>
+            <artifactId>org.mosaic.api</artifactId>
+            <version>[1.0.0-SNAPSHOT,2)</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.apache.felix.framework</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>org.springframework.beans</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>org.springframework.context</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>org.springframework.context.support</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>org.springframework.core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>org.springframework.expression</artifactId>
+        </dependency>
+    </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.mosaic.poms</groupId>
+                <artifactId>org.mosaic.poms.bom</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <version>2.3.7</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <instructions>
+
+                        <!-- Since no other bundle will track this bundle's lifecycle, we must take care of our own -->
+                        <Bundle-Activator>org.mosaic.server.boot.impl.ServerBootActivator</Bundle-Activator>
+
+                        <!-- This bundle must have this header since no one else is going to start it; other bundles
+                             will automatically be tracked by this bundle so they don't need it. -->
+                        <Mosaic-AutoStart>true</Mosaic-AutoStart>
+
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

@@ -21,7 +21,7 @@ public class FrameworkEventsLoggerListener implements FrameworkListener {
 
         switch( event.getType() ) {
             case FrameworkEvent.STARTED:
-                this.logger.info( "OSGi Framework has started" );
+                this.logger.info( "Started the OSGi Framework" );
                 break;
 
             case FrameworkEvent.ERROR:
@@ -29,7 +29,7 @@ public class FrameworkEventsLoggerListener implements FrameworkListener {
                 break;
 
             case FrameworkEvent.PACKAGES_REFRESHED:
-                this.logger.info( "OSGi packages have been refreshed" );
+                this.logger.info( "Refreshed OSGi packages have been refreshed" );
                 break;
 
             case FrameworkEvent.STARTLEVEL_CHANGED:
@@ -46,15 +46,15 @@ public class FrameworkEventsLoggerListener implements FrameworkListener {
                 break;
 
             case FrameworkEvent.STOPPED:
-                this.logger.info( "OSGi Framework has stopped" );
+                this.logger.info( "Stopped the OSGi Framework" );
                 break;
 
             case FrameworkEvent.STOPPED_UPDATE:
-                this.logger.info( "OSGi Framework is restarting" );
+                this.logger.info( "Restarting the OSGi Framework" );
                 break;
 
             case FrameworkEvent.STOPPED_BOOTCLASSPATH_MODIFIED:
-                this.logger.info( "OSGi Framework is restarting due to boot class-path modification" );
+                this.logger.info( "Restarting the OSGi Framework due to boot class-path modification" );
                 break;
         }
     }
