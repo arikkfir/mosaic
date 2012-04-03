@@ -1,14 +1,14 @@
 package org.mosaic.runner.logging;
 
 import org.osgi.framework.BundleEvent;
-import org.osgi.framework.BundleListener;
+import org.osgi.framework.SynchronousBundleListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * @author arik
  */
-public class BundleEventsLoggerListener implements BundleListener {
+public class BundleEventsLoggerListener implements SynchronousBundleListener {
 
     private final Logger logger = LoggerFactory.getLogger( "org.osgi.bundles" );
 
@@ -18,7 +18,7 @@ public class BundleEventsLoggerListener implements BundleListener {
         switch( event.getType() ) {
             case BundleEvent.INSTALLED:
                 String origin = LogUtils.toString( event.getOrigin() );
-                this.logger.info( "Installed bundle '{}' (installer was bundle '{}')", bundle, origin );
+                this.logger.info( "Installed bundle '{}'", bundle, origin );
                 break;
 
             case BundleEvent.RESOLVED:
