@@ -17,6 +17,7 @@
     <modules>
         <module>org.mosaic.server.api</module>
         <module>org.mosaic.server.boot</module>
+        <module>org.mosaic.server.config</module>
     </modules>
 
 </project>
