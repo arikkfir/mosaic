@@ -125,7 +125,10 @@ public class JarLinksWatchedResourceProvider implements WatchedResourceProvider 
             //
             // we've updated our list of files matching our pattern with potentially new files; now remove from our
             // watch list any matches that no longer match our updated pattern, and update those still match
+            // NOTE: we first install all new JARs and only THEN we remove those we don't reference anymore
+            //       this makes sure that if package refreshes can find alternate implementations in the new JARs if any
             //
+            Collection<WatchedResource> removed = new LinkedList<>();
             for( Path path : new HashSet<>( this.watchedJars.keySet() ) ) {
                 if( updatedMatches.contains( path ) ) {
 
@@ -139,9 +142,12 @@ public class JarLinksWatchedResourceProvider implements WatchedResourceProvider 
                     //
                     // this jar no longer matches our pattern - uninstall it and remove it from our watch list
                     //
-                    this.watchedJars.remove( path ).handleNoLongerExists( path );
+                    removed.add( this.watchedJars.remove( path ) );
 
                 }
+            }
+            for( WatchedResource watchedResource : removed ) {
+                watchedResource.handleNoLongerExists( watchedResource.getResource() );
             }
         }
 
