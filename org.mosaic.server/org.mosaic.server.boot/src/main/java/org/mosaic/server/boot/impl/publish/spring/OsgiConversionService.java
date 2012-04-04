@@ -1,6 +1,6 @@
-package org.mosaic.server.boot.impl.track;
+package org.mosaic.server.boot.impl.publish.spring;
 
-import org.osgi.framework.BundleContext;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
 import org.osgi.util.tracker.ServiceTrackerCustomizer;
@@ -22,19 +22,19 @@ public class OsgiConversionService implements ConversionService {
         }
     }
 
-    private final BundleContext bundleContext;
+    private final Bundle bundle;
 
     private ServiceTracker<Converter, Converter> convertersTracker;
 
     private DefaultFormattingConversionService conversionService;
 
-    public OsgiConversionService( BundleContext bundleContext ) {
-        this.bundleContext = bundleContext;
+    public OsgiConversionService( Bundle bundle ) {
+        this.bundle = bundle;
     }
 
     public void open() {
         this.conversionService = new DefaultFormattingConversionService();
-        this.convertersTracker = new ServiceTracker<>( this.bundleContext, Converter.class, new ServiceTrackerCustomizer<Converter, Converter>() {
+        this.convertersTracker = new ServiceTracker<>( this.bundle.getBundleContext(), Converter.class, new ServiceTrackerCustomizer<Converter, Converter>() {
             @Override
             public Converter addingService( ServiceReference<Converter> sr ) {
                 return possiblyAddConverter( sr );
@@ -104,7 +104,7 @@ public class OsgiConversionService implements ConversionService {
         }
         Class<?> toClass = ( Class<?> ) convertsToValue;
 
-        Converter converter = this.bundleContext.getService( sr );
+        Converter converter = this.bundle.getBundleContext().getService( sr );
         this.conversionService.addConverter( fromClass, toClass, converter );
         return converter;
     }

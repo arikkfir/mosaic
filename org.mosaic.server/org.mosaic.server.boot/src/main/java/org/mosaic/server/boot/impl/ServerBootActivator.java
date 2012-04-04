@@ -1,16 +1,14 @@
 package org.mosaic.server.boot.impl;
 
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
 import org.mosaic.osgi.util.BundleUtils;
-import org.mosaic.server.boot.impl.track.BundleTracker;
-import org.mosaic.server.boot.impl.track.OsgiConversionService;
-import org.mosaic.server.boot.impl.track.OsgiSpringNamespacePlugin;
+import org.mosaic.server.boot.impl.publish.BundlePublishException;
+import org.mosaic.server.boot.impl.publish.BundlePublisher;
+import org.mosaic.server.boot.impl.publish.spring.OsgiSpringNamespacePlugin;
 import org.osgi.framework.*;
-import org.osgi.framework.wiring.FrameworkWiring;
 
 /**
  * @author arik
@@ -19,49 +17,37 @@ public class ServerBootActivator implements BundleActivator, BundleListener {
 
     private static final Logger LOG = LoggerFactory.getLogger( ServerBootActivator.class );
 
-    private BundleContext bundleContext;
-
-    private Map<Long, BundleTracker> bundleTrackers;
-
-    private OsgiConversionService conversionService;
+    private Map<Long, BundlePublisher> bundleTrackers;
 
     private OsgiSpringNamespacePlugin springNamespacePlugin;
 
     @Override
     public void start( BundleContext bundleContext ) throws Exception {
-        this.bundleContext = bundleContext;
         this.bundleTrackers = new ConcurrentHashMap<>( 100 );
 
-        this.springNamespacePlugin = new OsgiSpringNamespacePlugin( this.bundleContext );
-        this.bundleContext.addBundleListener( this.springNamespacePlugin );
+        this.springNamespacePlugin = new OsgiSpringNamespacePlugin( bundleContext );
+        bundleContext.addBundleListener( this.springNamespacePlugin );
 
-        this.conversionService = new OsgiConversionService( this.bundleContext );
-        this.conversionService.open();
-
-        this.bundleContext.addBundleListener( this );
+        bundleContext.addBundleListener( this );
     }
 
     @Override
     public void stop( BundleContext bundleContext ) throws Exception {
-        for( BundleTracker tracker : this.bundleTrackers.values() ) {
-            tracker.stop();
+        for( BundlePublisher publisher : this.bundleTrackers.values() ) {
+            publisher.stop();
         }
 
-        this.bundleContext.removeBundleListener( this );
+        bundleContext.removeBundleListener( this );
 
-        this.conversionService.close();
-        this.conversionService = null;
-
-        this.bundleContext.removeBundleListener( this.springNamespacePlugin );
+        bundleContext.removeBundleListener( this.springNamespacePlugin );
         this.springNamespacePlugin = null;
 
         this.bundleTrackers = null;
-        this.bundleContext = null;
     }
 
     @Override
     public void bundleChanged( BundleEvent event ) {
-        Map<Long, BundleTracker> trackers = this.bundleTrackers;
+        Map<Long, BundlePublisher> trackers = this.bundleTrackers;
         if( trackers == null ) {
 
             // event received after this bootstrapper was closed - ignore the event
@@ -70,45 +56,45 @@ public class ServerBootActivator implements BundleActivator, BundleListener {
         }
 
         Bundle bundle = event.getBundle();
-        if( bundle.getBundleId() == this.bundleContext.getBundle().getBundleId() ) {
+        if( event.getType() == BundleEvent.INSTALLED ) {
 
-            //
-            // event about us :) ignoring it
-            //
-
-        } else if( isMosaicBundle( bundle ) ) {
-
-            if( event.getType() == BundleEvent.INSTALLED ) {
-
-                // first attempt to resolve it - if successful, a RESOLVE event will be fired which will invoke us again
-                // and that's where we'll start to actually track the bundle - here we'll just resolve it and return
-                FrameworkWiring frameworkWiring = this.bundleContext.getBundle( 0 ).adapt( FrameworkWiring.class );
-                if( frameworkWiring != null ) {
-                    frameworkWiring.resolveBundles( Arrays.asList( bundle ) );
-                } else {
-                    LOG.warn( "Could not resolve bundle '{}' - the OSGi framework wiring service is not available", BundleUtils.toString( bundle ) );
+            // if new bundle - just start it and return; also ensure it's still in INSTALLED state as events might arrive late
+            // (it's the STARTED event that we really want and where we'll possibly track the bundle)
+            if( bundle.getState() == Bundle.INSTALLED ) {
+                try {
+                    bundle.start();
+                } catch( BundleException e ) {
+                    LOG.warn( "Could not start bundle '{}': {}", BundleUtils.toString( bundle ), e.getMessage(), e );
                 }
+            }
 
-            } else if( event.getType() == BundleEvent.RESOLVED ) {
+        } else if( event.getType() == BundleEvent.STARTED ) {
 
-                // track this new mosaic bundle
-                BundleTracker tracker = new BundleTracker( this.bundleContext, bundle, this.springNamespacePlugin, this.conversionService );
-                tracker.start();
-                trackers.put( bundle.getBundleId(), tracker );
+            // only track mosaic bundles
+            if( shouldTrackBundle( bundle ) ) {
 
-            } else if( event.getType() == BundleEvent.UNRESOLVED || event.getType() == BundleEvent.UNINSTALLED ) {
-
-                // stop tracking this mosaic bundle
-                BundleTracker tracker = trackers.remove( bundle.getBundleId() );
-                if( tracker != null ) {
-                    tracker.stop();
+                BundlePublisher publisher = new BundlePublisher( bundle, this.springNamespacePlugin );
+                try {
+                    publisher.start();
+                    trackers.put( bundle.getBundleId(), publisher );
+                } catch( BundlePublishException e ) {
+                    LOG.error( "Could not start tracking bundle '{}': {}", BundleUtils.toString( bundle ), e.getMessage(), e );
                 }
 
             }
+
+        } else if( event.getType() == BundleEvent.STOPPED ) {
+
+            // stop tracking this mosaic bundle
+            BundlePublisher publisher = trackers.remove( bundle.getBundleId() );
+            if( publisher != null ) {
+                publisher.stop();
+            }
+
         }
     }
 
-    private static boolean isMosaicBundle( Bundle bundle ) {
+    private static boolean shouldTrackBundle( Bundle bundle ) {
         if( bundle.getEntryPaths( "/META-INF/spring/" ) == null ) {
 
             // all mosaic bundles must have the 'Mosaic-Bundle' header

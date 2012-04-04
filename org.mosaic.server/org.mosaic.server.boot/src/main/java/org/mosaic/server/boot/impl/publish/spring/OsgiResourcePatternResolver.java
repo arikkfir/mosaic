@@ -1,9 +1,8 @@
-package org.mosaic.server.boot.impl.track;
+package org.mosaic.server.boot.impl.publish.spring;
 
 import java.io.IOException;
 import java.net.URL;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -13,11 +12,11 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
  */
 public class OsgiResourcePatternResolver extends PathMatchingResourcePatternResolver {
 
-    private final BundleContext bundleContext;
+    private final Bundle bundle;
 
-    public OsgiResourcePatternResolver( BundleContext bundleContext, ClassLoader classLoader ) {
+    public OsgiResourcePatternResolver( Bundle bundle, ClassLoader classLoader ) {
         super( classLoader );
-        this.bundleContext = bundleContext;
+        this.bundle = bundle;
     }
 
     @Override
@@ -32,7 +31,7 @@ public class OsgiResourcePatternResolver extends PathMatchingResourcePatternReso
         if( "bundle".equals( protocol ) ) {
             String bundleIdAndRevision = originalUrl.getHost();
             long bundleId = Long.parseLong( bundleIdAndRevision.substring( 0, bundleIdAndRevision.indexOf( '.' ) ) );
-            Bundle bundle = this.bundleContext.getBundle( bundleId );
+            Bundle bundle = this.bundle.getBundleContext().getBundle( bundleId );
             if( bundle == null ) {
                 return original;
             } else {

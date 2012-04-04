@@ -1,4 +1,4 @@
-package org.mosaic.server.boot.impl.track;
+package org.mosaic.server.boot.impl.publish.spring;
 
 import java.io.IOException;
 import java.net.URL;

@@ -12,8 +12,6 @@ import java.lang.annotation.Target;
 @Target( ElementType.METHOD )
 public @interface ServiceRef {
 
-    Class<?> value() default void.class;
-
     String filter() default "";
 
     boolean required() default true;

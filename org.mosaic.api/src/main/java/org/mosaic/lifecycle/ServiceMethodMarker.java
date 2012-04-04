@@ -9,9 +9,7 @@ import java.lang.annotation.Target;
  * @author arik
  */
 @Retention( RetentionPolicy.RUNTIME )
-@Target( ElementType.METHOD )
-public @interface ServiceBind {
-
-    String filter() default "";
+@Target( ElementType.ANNOTATION_TYPE )
+public @interface ServiceMethodMarker {
 
 }
