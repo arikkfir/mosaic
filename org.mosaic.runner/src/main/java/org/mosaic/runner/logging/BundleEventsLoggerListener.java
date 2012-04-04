@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
  */
 public class BundleEventsLoggerListener implements SynchronousBundleListener {
 
-    private final Logger logger = LoggerFactory.getLogger( "org.osgi.bundles" );
+    private final Logger logger = LoggerFactory.getLogger( "org.mosaic.osgi.bundles" );
 
     @Override
     public void bundleChanged( BundleEvent event ) {

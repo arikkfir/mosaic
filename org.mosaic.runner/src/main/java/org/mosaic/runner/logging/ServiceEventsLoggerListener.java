@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ServiceEventsLoggerListener implements ServiceListener {
 
-    private final Logger logger = LoggerFactory.getLogger( "org.osgi.services" );
+    private final Logger logger = LoggerFactory.getLogger( "org.mosaic.osgi.services" );
 
     @Override
     public void serviceChanged( ServiceEvent event ) {

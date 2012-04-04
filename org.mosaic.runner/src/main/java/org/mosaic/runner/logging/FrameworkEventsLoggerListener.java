@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
  */
 public class FrameworkEventsLoggerListener implements FrameworkListener {
 
-    private final Logger logger = LoggerFactory.getLogger( "org.osgi.framework" );
+    private final Logger logger = LoggerFactory.getLogger( "org.mosaic.osgi.framework" );
 
     @Override
     public void frameworkEvent( FrameworkEvent event ) {
