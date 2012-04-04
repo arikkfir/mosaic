@@ -1,7 +1,9 @@
 package org.mosaic.server.config.impl;
 
+import org.mosaic.lifecycle.ServiceRef;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
+import org.osgi.service.packageadmin.PackageAdmin;
 import org.springframework.stereotype.Component;
 
 /**
@@ -14,5 +16,10 @@ public class ConfigurationManager {
 
     public ConfigurationManager() {
         LOG.info( "Configuration manager started" );
+    }
+
+    @ServiceRef
+    public void setPackageAdmin( PackageAdmin packageAdmin ) {
+        System.out.println( "Injected PackageAdmin to " + this );
     }
 }
