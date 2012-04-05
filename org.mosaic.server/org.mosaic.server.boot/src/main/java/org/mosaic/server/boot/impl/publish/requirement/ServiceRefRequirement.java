@@ -3,11 +3,9 @@ package org.mosaic.server.boot.impl.publish.requirement;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
-import org.mosaic.server.boot.impl.publish.BundlePublishException;
 import org.mosaic.server.boot.impl.publish.BundlePublisher;
-import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
-import org.springframework.beans.factory.BeanFactory;
+import org.springframework.context.ApplicationContext;
 
 /**
  * @author arik
@@ -18,39 +16,27 @@ public class ServiceRefRequirement extends ServiceRequirement {
 
     private ServiceCache cache;
 
-    public ServiceRefRequirement( BundleContext bundleContext,
-                                  BundlePublisher publisher,
+    public ServiceRefRequirement( BundlePublisher publisher,
                                   Class<?> serviceType,
                                   String additionalFilter,
                                   boolean required,
                                   String beanName,
                                   Method targetMethod ) {
-        super( bundleContext, publisher, serviceType, additionalFilter, beanName, targetMethod );
+        super( publisher, serviceType, additionalFilter, beanName, targetMethod );
         this.required = required;
-    }
-
-    public void inject( BeanFactory beanFactory ) throws BundlePublishException {
-        Object bean = beanFactory.getBean( this.beanName );
-        try {
-            this.targetMethod.invoke( bean, this.cache.getService() );
-        } catch( Exception e ) {
-            throw new BundlePublishException( "Could not inject service '" + this.cache.getService() + "' to method '" + this.targetMethod.getName() + "' of bean '" + this.beanName + "': " + e.getMessage(), e );
-        }
     }
 
     @Override
     public Object addingService( ServiceReference<Object> serviceReference ) {
-        Object newService = bundleContext.getService( serviceReference );
+        Object newService = super.addingService( serviceReference );
 
         if( this.cache == null ) {
 
             // this is the first service we've found to match our requirement - cache it
             this.cache = new ServiceCache( newService, serviceReference );
 
-            // if published:
-            //      TODO: inject cache reference to our bean
-            // else
-            //      TODO: trigger publish attempt
+            // notify published that we're satisfied - publish if needed
+            markAsSatisfied( newService );
 
         }
 
@@ -64,38 +50,50 @@ public class ServiceRefRequirement extends ServiceRequirement {
 
             // obtain a suitable replacement
             ServiceReference<Object> newServiceReference = this.tracker.getServiceReference();
-            Object newService = this.bundleContext.getService( newServiceReference );
+            Object newService = this.publisher.getBundleContext().getService( newServiceReference );
             if( newService != null ) {
 
                 // a replacement was found, cache it
                 this.cache = new ServiceCache( newService, newServiceReference );
-
-                // if published:
-                //      TODO: inject cache reference to our bean
-                // else
-                //      TODO: trigger publish attempt
+                markAsSatisfied( newService );
 
             } else if( this.required ) {
 
                 // no replacement was found - clear reference cache and inform publisher to un-publish bundle
                 this.cache = null;
-
-                // if published:
-                //      TODO: trigger un-publish
+                markAsUnsatisfied();
 
             } else {
 
                 // no replacement was found - clear our reference cache
                 this.cache = null;
-
-                // if published:
-                //      TODO: inject null to our bean
+                markAsSatisfied( null );
 
             }
         }
     }
 
-    public static class ServiceCache {
+    @Override
+    public void apply( ApplicationContext applicationContext, Object state ) throws Exception {
+        targetMethod.invoke( applicationContext.getBean( this.beanName ), state );
+    }
+
+    @Override
+    public void applyInitial( ApplicationContext applicationContext ) throws Exception {
+        Object service = this.tracker.getService();
+        if( service == null ) {
+            throw new IllegalStateException( "Service is null even though requirement was satisfied" );
+        } else {
+            targetMethod.invoke( applicationContext.getBean( this.beanName ), service );
+        }
+    }
+
+    @Override
+    public void revert() throws Exception {
+        // no-op
+    }
+
+    private static class ServiceCache {
 
         private final Object service;
 

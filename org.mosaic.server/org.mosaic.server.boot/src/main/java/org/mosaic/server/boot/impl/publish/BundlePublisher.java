@@ -1,32 +1,22 @@
 package org.mosaic.server.boot.impl.publish;
 
-import java.lang.reflect.Method;
-import java.net.URL;
-import java.util.*;
-import org.mosaic.lifecycle.ServiceBind;
-import org.mosaic.lifecycle.ServiceRef;
-import org.mosaic.lifecycle.ServiceUnbind;
+import java.util.Collection;
+import java.util.HashSet;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
 import org.mosaic.osgi.util.BundleUtils;
-import org.mosaic.server.boot.impl.publish.requirement.*;
-import org.mosaic.server.boot.impl.publish.spring.BundleClassLoader;
-import org.mosaic.server.boot.impl.publish.spring.OsgiResourcePatternResolver;
+import org.mosaic.server.boot.impl.publish.requirement.Requirement;
+import org.mosaic.server.boot.impl.publish.requirement.RequirementFactory;
+import org.mosaic.server.boot.impl.publish.spring.BundleApplicationContext;
 import org.mosaic.server.boot.impl.publish.spring.OsgiSpringNamespacePlugin;
 import org.osgi.framework.Bundle;
-import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.beans.factory.support.AbstractBeanDefinition;
-import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
-import org.springframework.core.MethodParameter;
-import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.core.env.ConfigurableEnvironment;
-import org.springframework.core.env.MapPropertySource;
-import org.springframework.core.env.StandardEnvironment;
-import org.springframework.core.io.UrlResource;
-import org.springframework.util.ReflectionUtils;
+import org.osgi.framework.BundleContext;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.BeanCreationException;
+import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.springframework.context.ApplicationContext;
 
-import static org.springframework.core.GenericCollectionTypeResolver.getCollectionParameterType;
+import static org.mosaic.server.boot.impl.publish.spring.BeanFactoryUtils.registerBundleBeans;
 
 /**
  * @author arik
@@ -35,189 +25,194 @@ public class BundlePublisher {
 
     private static final Logger LOG = LoggerFactory.getLogger( BundlePublisher.class );
 
+    private final Object lock = new Object();
+
     private final Bundle bundle;
 
     private final OsgiSpringNamespacePlugin osgiSpringNamespacePlugin;
 
-    private Collection<ServiceRequirement> requirements;
+    private final RequirementFactory requirementFactory;
+
+    private Collection<Requirement> requirements;
+
+    private Collection<Requirement> satisfied;
+
+    private Collection<Requirement> unsatisfied;
+
+    private BundleApplicationContext applicationContext;
+
+    private boolean started;
 
     public BundlePublisher( Bundle bundle, OsgiSpringNamespacePlugin osgiSpringNamespacePlugin ) {
         this.bundle = bundle;
         this.osgiSpringNamespacePlugin = osgiSpringNamespacePlugin;
+        this.requirementFactory = new RequirementFactory( this, this.bundle, this.osgiSpringNamespacePlugin );
     }
 
-    public void start() throws BundlePublishException {
-        this.requirements = detectRequirements();
-        for( ServiceRequirement requirement : this.requirements ) {
-            requirement.open();
+    public BundleContext getBundleContext() {
+        BundleContext bundleContext = this.bundle.getBundleContext();
+        if( bundleContext == null ) {
+            throw new IllegalStateException( "Cannot obtain bundle context - is bundle active? (" + BundleUtils.toString( this.bundle ) + ")" );
         }
+        return bundleContext;
+    }
+
+    @SuppressWarnings( "ConstantConditions" )
+    public void start() throws Exception {
+        this.requirements = new HashSet<>();
+        this.satisfied = new HashSet<>();
+        this.unsatisfied = new HashSet<>();
+
+        // open our requirements; every requirement starts in the 'unsatisfied' state until it notifies us differently
+        for( Requirement requirement : this.requirementFactory.detectRequirements() ) {
+            try {
+                requirement.open();
+                this.requirements.add( requirement );
+                this.unsatisfied.add( requirement );
+
+            } catch( Exception e ) {
+
+                for( Requirement req : this.requirements ) {
+                    req.close();
+                }
+                throw e;
+
+            }
+        }
+
+        this.started = true;
         LOG.info( "Tracking bundle '{}'", BundleUtils.toString( this.bundle ) );
     }
 
     public void stop() {
         LOG.info( "No longer tracking bundle '{}'", BundleUtils.toString( this.bundle ) );
-        for( ServiceRequirement requirement : this.requirements ) {
+        this.started = false;
+
+        // revert any externals changes made by the requirements
+        revertRequirements();
+
+        // close application context
+        try {
+            this.applicationContext.close();
+        } catch( Exception e ) {
+            LOG.error( "Could not properly close application context for bundle '{}': {}", BundleUtils.toString( this.bundle ), e.getMessage(), e );
+        }
+
+
+        // close our requirements
+        for( Requirement requirement : this.requirements ) {
             requirement.close();
+        }
+
+        // remove references
+        this.applicationContext = null;
+        this.requirements = null;
+        this.satisfied = null;
+        this.unsatisfied = null;
+    }
+
+    public void markAsSatisfied( Requirement requirement, Object state ) {
+        synchronized( this.lock ) {
+
+            this.unsatisfied.remove( requirement );
+            this.satisfied.add( requirement );
+
+            if( !this.started ) {
+
+                // if we're not started yet, do nothing and return
+
+            } else if( this.applicationContext != null ) {
+
+                // already published - just re-apply this requirement on our published context
+                try {
+                    requirement.apply( this.applicationContext, state );
+                } catch( Exception e ) {
+                    LOG.error( "Requirement '{}' could not be satisfied: {}", requirement, e.getMessage(), e );
+                }
+
+            } else if( unsatisfied.isEmpty() ) {
+
+                // we're not published - but all requirements are now satisfied - publish
+                try {
+
+                    BundleApplicationContext applicationContext = new BundleApplicationContext( this.bundle );
+                    applicationContext.getBeanFactory().addBeanPostProcessor( new RequirementTargetsBeanPostProcessor( applicationContext ) );
+                    registerBundleBeans( this.bundle, applicationContext, applicationContext.getClassLoader(), this.osgiSpringNamespacePlugin );
+                    applicationContext.refresh();
+                    this.applicationContext = applicationContext;
+
+                } catch( Exception e ) {
+
+                    // publish failed - revert any effects requirements applied to the system (outside the app context)
+                    revertRequirements();
+                }
+
+            }
         }
     }
 
-    private Collection<ServiceRequirement> detectRequirements() throws BundlePublishException {
-        DefaultListableBeanFactory beanFactory = createPrototypeBeanFactory();
-        Collection<ServiceRequirement> requirements = new LinkedList<>();
-        for( String beanDefinitionName : beanFactory.getBeanDefinitionNames() ) {
-            Class<?> beanClass = getBeanClass( beanFactory, beanDefinitionName );
-            if( beanClass != null ) {
-                for( Method method : ReflectionUtils.getUniqueDeclaredMethods( beanClass ) ) {
-                    detectRequirementsInMethod( beanDefinitionName, method, requirements );
+    public void markAsUnsatisfied( Requirement requirement ) {
+        synchronized( this.lock ) {
+
+            this.unsatisfied.add( requirement );
+            this.satisfied.remove( requirement );
+
+            if( !this.started ) {
+
+                // if we're not started yet, do nothing and return
+
+            } else if( this.applicationContext != null ) {
+
+                revertRequirements();
+                try {
+                    this.applicationContext.close();
+                } catch( Exception e ) {
+                    LOG.error( "Could not properly close application context for bundle '{}': {}", BundleUtils.toString( this.bundle ), e.getMessage(), e );
+                }
+                this.applicationContext = null;
+
+            }
+        }
+    }
+
+    @SuppressWarnings( "ConstantConditions" )
+    private void revertRequirements() {
+        synchronized( this.lock ) {
+            for( Requirement req : this.satisfied ) {
+                try {
+                    req.revert();
+                } catch( Exception e ) {
+                    LOG.error( "Requirement '{}' could not be reverted (after failed publish attempt): {}", req, e.getMessage(), e );
                 }
             }
         }
-        return requirements;
     }
 
-    private DefaultListableBeanFactory createPrototypeBeanFactory() {
-        DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
-        beanFactory.setAllowBeanDefinitionOverriding( false );
-        beanFactory.setAllowCircularReferences( false );
-        beanFactory.setAllowEagerClassLoading( true );
-        beanFactory.setAllowRawInjectionDespiteWrapping( false );
-        beanFactory.setBeanClassLoader( new BundleClassLoader( this.bundle ) );
-        beanFactory.setCacheBeanMetadata( false );
-        registerBundleBeans( beanFactory );
-        return beanFactory;
-    }
+    private class RequirementTargetsBeanPostProcessor implements BeanPostProcessor {
 
-    private void registerBundleBeans( DefaultListableBeanFactory beanFactory ) {
-        ConfigurableEnvironment environment = new StandardEnvironment();
-        environment.getPropertySources().addFirst( new MapPropertySource( "bundle", getBundleHeaders() ) );
+        private final ApplicationContext applicationContext;
 
-        XmlBeanDefinitionReader xmlReader = new XmlBeanDefinitionReader( beanFactory );
-        xmlReader.setBeanClassLoader( beanFactory.getBeanClassLoader() );
-        xmlReader.setEntityResolver( this.osgiSpringNamespacePlugin );
-        xmlReader.setEnvironment( environment );
-        xmlReader.setNamespaceHandlerResolver( this.osgiSpringNamespacePlugin );
-        xmlReader.setResourceLoader( new OsgiResourcePatternResolver( this.bundle, beanFactory.getBeanClassLoader() ) );
-
-        Enumeration<URL> xmlFiles = this.bundle.findEntries( "/META-INF/spring/", "*.xml", true );
-        while( xmlFiles.hasMoreElements() ) {
-            xmlReader.loadBeanDefinitions( new UrlResource( xmlFiles.nextElement() ) );
+        private RequirementTargetsBeanPostProcessor( ApplicationContext applicationContext ) {
+            this.applicationContext = applicationContext;
         }
-    }
 
-    private void detectRequirementsInMethod( String beanDefinitionName,
-                                             Method method,
-                                             Collection<ServiceRequirement> requirements )
-            throws BundlePublishException {
-
-        ServiceRef serviceRefAnn = AnnotationUtils.findAnnotation( method, ServiceRef.class );
-        if( serviceRefAnn != null ) {
-            //TODO 4/4/12: support more than one parameter (service properties)
-            Class<?>[] parameterTypes = method.getParameterTypes();
-            if( parameterTypes.length != 1 ) {
-
-                // @ServiceRef methods must have exactly one parameter: the service itself
-                throw new BundlePublishException( "Method '" + method.getName() + "' in bean '" + beanDefinitionName + "' has the @" + ServiceRef.class.getSimpleName() + " annotation, but has an illegal number of parameters: " + parameterTypes.length );
-
-            } else if( parameterTypes[ 0 ].isAssignableFrom( List.class ) ) {
-
-                // add the new requirement
-                requirements.add(
-                        new ServiceListRequirement( this.bundle.getBundleContext(),
-                                                    this,
-                                                    getCollectionParameterType( new MethodParameter( method, 0 ) ),
-                                                    serviceRefAnn.filter(),
-                                                    beanDefinitionName,
-                                                    method ) );
-
-            } else {
-
-                // add the new requirement
-                requirements.add(
-                        new ServiceRefRequirement( this.bundle.getBundleContext(),
-                                                   this,
-                                                   parameterTypes[ 0 ],
-                                                   serviceRefAnn.filter(),
-                                                   serviceRefAnn.required(),
-                                                   beanDefinitionName,
-                                                   method ) );
-
+        @Override
+        public Object postProcessBeforeInitialization( Object bean, String beanName ) throws BeansException {
+            synchronized( lock ) {
+                for( Requirement requirement : satisfied ) {
+                    try {
+                        requirement.applyInitial( this.applicationContext );
+                    } catch( Exception e ) {
+                        throw new BeanCreationException( beanName, e.getMessage(), e );
+                    }
+                }
             }
+            return bean;
         }
 
-        ServiceBind bindAnn = AnnotationUtils.findAnnotation( method, ServiceBind.class );
-        if( bindAnn != null ) {
-            Class<?>[] parameterTypes = method.getParameterTypes();
-            if( parameterTypes.length != 1 ) {
-
-                // @ServiceRef methods must have exactly one parameter: the service itself
-                throw new BundlePublishException( "Method '" + method.getName() + "' in bean '" + beanDefinitionName + "' has the @" + ServiceBind.class.getSimpleName() + " annotation, but has an illegal number of parameters: " + parameterTypes.length );
-
-            } else {
-
-                // add the new requirement
-                requirements.add(
-                        new ServiceBindRequirement( this.bundle.getBundleContext(),
-                                                    this,
-                                                    parameterTypes[ 0 ],
-                                                    bindAnn.filter(),
-                                                    beanDefinitionName,
-                                                    method ) );
-
-            }
+        @Override
+        public Object postProcessAfterInitialization( Object bean, String beanName ) throws BeansException {
+            return bean;
         }
-
-        ServiceUnbind unbindAnn = AnnotationUtils.findAnnotation( method, ServiceUnbind.class );
-        if( bindAnn != null ) {
-            Class<?>[] parameterTypes = method.getParameterTypes();
-            if( parameterTypes.length != 1 ) {
-
-                // @ServiceRef methods must have exactly one parameter: the service itself
-                throw new BundlePublishException( "Method '" + method.getName() + "' in bean '" + beanDefinitionName + "' has the @" + ServiceUnbind.class.getSimpleName() + " annotation, but has an illegal number of parameters: " + parameterTypes.length );
-
-            } else {
-
-                // add the new requirement
-                requirements.add(
-                        new ServiceUnbindRequirement( this.bundle.getBundleContext(),
-                                                      this,
-                                                      parameterTypes[ 0 ],
-                                                      unbindAnn.filter(),
-                                                      beanDefinitionName,
-                                                      method ) );
-
-            }
-        }
-    }
-
-    private Class<?> getBeanClass( DefaultListableBeanFactory beanFactory, String beanDefinitionName ) {
-        BeanDefinition beanDefinition = beanFactory.getBeanDefinition( beanDefinitionName );
-        String beanClassName = beanDefinition.getBeanClassName();
-        Class<?> beanClass = null;
-
-        // attempt to resolve class using the bean class name property of the bean definition
-        if( beanClassName != null ) {
-            try {
-                beanClass = this.bundle.loadClass( beanClassName );
-            } catch( ClassNotFoundException ignore ) {
-            }
-        }
-
-        // if failed, see if we can cast the bean definition to AbstractBeanDefinition and extract it from there
-        if( beanClass == null && beanDefinition instanceof AbstractBeanDefinition ) {
-            AbstractBeanDefinition def = ( AbstractBeanDefinition ) beanDefinition;
-            beanClass = def.getBeanClass();
-        }
-        return beanClass;
-    }
-
-    private Map<String, Object> getBundleHeaders() {
-        Map<String, Object> headersMap = new HashMap<>();
-        Dictionary<String, String> headers = this.bundle.getHeaders();
-        Enumeration<String> headerNames = headers.keys();
-        while( headerNames.hasMoreElements() ) {
-            String headerName = headerNames.nextElement();
-            headersMap.put( headerName, headers.get( headerName ) );
-        }
-        return headersMap;
     }
 }

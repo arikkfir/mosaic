@@ -5,7 +5,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
 import org.mosaic.osgi.util.BundleUtils;
-import org.mosaic.server.boot.impl.publish.BundlePublishException;
 import org.mosaic.server.boot.impl.publish.BundlePublisher;
 import org.mosaic.server.boot.impl.publish.spring.OsgiSpringNamespacePlugin;
 import org.osgi.framework.*;
@@ -77,8 +76,8 @@ public class ServerBootActivator implements BundleActivator, BundleListener {
                 try {
                     publisher.start();
                     trackers.put( bundle.getBundleId(), publisher );
-                } catch( BundlePublishException e ) {
-                    LOG.error( "Could not start tracking bundle '{}': {}", BundleUtils.toString( bundle ), e.getMessage(), e );
+                } catch( Exception e ) {
+                    LOG.error( "Cannot track bundle '{}': {}", BundleUtils.toString( bundle ), e.getMessage(), e );
                 }
 
             }
@@ -88,7 +87,11 @@ public class ServerBootActivator implements BundleActivator, BundleListener {
             // stop tracking this mosaic bundle
             BundlePublisher publisher = trackers.remove( bundle.getBundleId() );
             if( publisher != null ) {
-                publisher.stop();
+                try {
+                    publisher.stop();
+                } catch( Exception e ) {
+                    LOG.error( "An error occurred while removing bundle '{}' from the list of tracked bundles: {}", BundleUtils.toString( bundle ), e.getMessage(), e );
+                }
             }
 
         }
