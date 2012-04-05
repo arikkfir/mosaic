@@ -2,6 +2,7 @@ package org.mosaic.server.boot.impl;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.mosaic.MosaicHome;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
 import org.mosaic.osgi.util.BundleUtils;
@@ -22,6 +23,8 @@ public class ServerBootActivator implements BundleActivator, BundleListener {
 
     @Override
     public void start( BundleContext bundleContext ) throws Exception {
+        bundleContext.registerService( MosaicHome.class, new MosaicHomeImpl(), null );
+
         this.bundleTrackers = new ConcurrentHashMap<>( 100 );
 
         this.springNamespacePlugin = new OsgiSpringNamespacePlugin( bundleContext );

@@ -9,7 +9,7 @@ import static java.nio.file.Files.*;
 /**
  * @author arik
  */
-public class MosaicHome {
+public class MosaicHomeInternal {
 
     private final Path userDir = Paths.get( System.getProperty( "user.dir" ) ).normalize().toAbsolutePath();
 
@@ -27,25 +27,36 @@ public class MosaicHome {
 
     private final Path felixWork = work.resolve( "felix" );
 
-    public MosaicHome() throws ConfigurationException, IOException {
+    public MosaicHomeInternal() throws ConfigurationException, IOException {
         if( notExists( this.home ) ) {
             createDirectory( this.home );
         }
+        System.setProperty( "mosaic.home", this.home.toString() );
+
         if( !exists( this.deploy ) ) {
             createDirectory( this.deploy );
         }
+        System.setProperty( "mosaic.home.deploy", this.deploy.toString() );
+
         if( !exists( this.boot ) ) {
             createDirectory( this.boot );
         }
+        System.setProperty( "mosaic.home.boot", this.boot.toString() );
+
         if( !exists( this.etc ) ) {
             createDirectory( this.etc );
         }
+        System.setProperty( "mosaic.home.etc", this.etc.toString() );
+
         if( !exists( this.server ) ) {
             createDirectory( this.server );
         }
+        System.setProperty( "mosaic.home.server", this.server.toString() );
+
         if( !exists( this.work ) ) {
             createDirectory( this.work );
         }
+        System.setProperty( "mosaic.home.work", this.work.toString() );
     }
 
     @SuppressWarnings( "UnusedDeclaration" )

@@ -18,7 +18,7 @@ public class Main {
         try {
 
             // setup Mosaic home directory and structure
-            MosaicHome home = new MosaicHome();
+            MosaicHomeInternal home = new MosaicHomeInternal();
             System.setProperty( "mosaic.home", home.getHome().toAbsolutePath().toString() );
 
             // first thing we want to do is setup the logging framework
@@ -42,7 +42,7 @@ public class Main {
         }
     }
 
-    private static void setupLogging( MosaicHome home ) throws ConfigurationException {
+    private static void setupLogging( MosaicHomeInternal home ) throws ConfigurationException {
         Path logbackFile = home.getEtc().resolve( Paths.get( "logback.xml" ) );
         if( exists( logbackFile ) ) {
             LoggerContext lc = ( LoggerContext ) org.slf4j.LoggerFactory.getILoggerFactory();

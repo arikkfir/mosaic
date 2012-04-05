@@ -24,11 +24,11 @@ import static java.lang.System.currentTimeMillis;
  */
 public class Runner {
 
-    private final MosaicHome home;
+    private final MosaicHomeInternal home;
 
     private final Logger logger = LoggerFactory.getLogger( Main.class );
 
-    public Runner( MosaicHome home ) throws StartException {
+    public Runner( MosaicHomeInternal home ) throws StartException {
         this.home = home;
     }
 
