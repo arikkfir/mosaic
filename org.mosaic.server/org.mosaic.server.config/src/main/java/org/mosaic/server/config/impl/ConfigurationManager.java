@@ -1,9 +1,10 @@
 package org.mosaic.server.config.impl;
 
+import javax.annotation.PostConstruct;
+import org.mosaic.MosaicHome;
 import org.mosaic.lifecycle.ServiceRef;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
-import org.osgi.service.packageadmin.PackageAdmin;
 import org.springframework.stereotype.Component;
 
 /**
@@ -14,12 +15,15 @@ public class ConfigurationManager {
 
     private static final Logger LOG = LoggerFactory.getLogger( ConfigurationManager.class );
 
-    public ConfigurationManager() {
-        LOG.info( "Configuration manager started" );
-    }
+    private MosaicHome mosaicHome;
 
     @ServiceRef
-    public void setPackageAdmin( PackageAdmin packageAdmin ) {
-        System.out.println( "Injected PackageAdmin to " + this );
+    public void setMosaicHome( MosaicHome mosaicHome ) {
+        this.mosaicHome = mosaicHome;
+    }
+
+    @PostConstruct
+    public void init() {
+
     }
 }

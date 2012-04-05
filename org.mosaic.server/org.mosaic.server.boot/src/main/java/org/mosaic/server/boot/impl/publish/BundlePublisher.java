@@ -66,9 +66,13 @@ public class BundlePublisher {
         // open our requirements; every requirement starts in the 'unsatisfied' state until it notifies us differently
         for( Requirement requirement : this.requirementFactory.detectRequirements() ) {
             try {
-                requirement.open();
+                boolean satisfied = requirement.open();
                 this.requirements.add( requirement );
-                this.unsatisfied.add( requirement );
+                if( satisfied ) {
+                    this.satisfied.add( requirement );
+                } else {
+                    this.unsatisfied.add( requirement );
+                }
 
             } catch( Exception e ) {
 
@@ -134,7 +138,7 @@ public class BundlePublisher {
 
                 // we're not published - but all requirements are now satisfied - publish
                 try {
-
+                    LOG.info( "Publishing bundle '{}'", BundleUtils.toString( this.bundle ) );
                     BundleApplicationContext applicationContext = new BundleApplicationContext( this.bundle );
                     applicationContext.getBeanFactory().addBeanPostProcessor( new RequirementTargetsBeanPostProcessor( applicationContext ) );
                     registerBundleBeans( this.bundle, applicationContext, applicationContext.getClassLoader(), this.osgiSpringNamespacePlugin );
@@ -163,6 +167,7 @@ public class BundlePublisher {
 
             } else if( this.applicationContext != null ) {
 
+                LOG.info( "Closing bundle '{}'", BundleUtils.toString( this.bundle ) );
                 revertRequirements();
                 try {
                     this.applicationContext.close();

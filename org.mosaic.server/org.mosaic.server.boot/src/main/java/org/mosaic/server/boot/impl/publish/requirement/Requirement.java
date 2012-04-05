@@ -16,7 +16,7 @@ public interface Requirement {
      *
      * @throws Exception in case the requirement cannot be opened. The bundle will not be tracked for requirements.
      */
-    void open() throws Exception;
+    boolean open() throws Exception;
 
     /**
      * Applies requirement usage on the given application context. Usually this means injecting a service to some bean,

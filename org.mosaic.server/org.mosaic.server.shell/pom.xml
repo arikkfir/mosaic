@@ -21,6 +21,10 @@
             <version>[1.0.0-SNAPSHOT,2)</version>
         </dependency>
         <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>org.springframework.context</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.apache.sshd</groupId>
             <artifactId>sshd-core</artifactId>
             <version>0.6.0</version>

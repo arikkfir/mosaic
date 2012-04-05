@@ -1,4 +1,4 @@
-package org.mosaic.server.boot.impl.publish.requirement;
+package org.mosaic.server.boot.impl.publish.requirement.support;
 
 import java.lang.reflect.Method;
 import org.mosaic.server.boot.impl.publish.BundlePublisher;
@@ -14,30 +14,24 @@ import static org.osgi.framework.Constants.OBJECTCLASS;
 /**
  * @author arik
  */
-public abstract class ServiceRequirement implements Requirement, ServiceTrackerCustomizer<Object, Object> {
+public abstract class AbstractTrackerRequirement extends AbstractMethodRequirement
+        implements ServiceTrackerCustomizer<Object, Object> {
 
-    protected final BundlePublisher publisher;
+    private final ServiceTracker<Object, Object> tracker;
 
-    protected final String beanName;
-
-    protected final Method targetMethod;
-
-    protected final ServiceTracker<Object, Object> tracker;
-
-    public ServiceRequirement( BundlePublisher publisher,
-                               Class<?> serviceType,
-                               String additionalFilter,
-                               String beanName,
-                               Method targetMethod ) {
-        this.publisher = publisher;
-        this.beanName = beanName;
-        this.targetMethod = targetMethod;
-        this.tracker = new ServiceTracker<>( this.publisher.getBundleContext(), createFilter( serviceType, additionalFilter ), this );
+    public AbstractTrackerRequirement( BundlePublisher publisher,
+                                       Class<?> serviceType,
+                                       String additionalFilter,
+                                       String beanName,
+                                       Method targetMethod ) {
+        super( publisher, beanName, targetMethod );
+        this.tracker = new ServiceTracker<>( getPublisher().getBundleContext(), createFilter( serviceType, additionalFilter ), this );
     }
 
     @Override
-    public void open() {
+    public boolean open() {
         this.tracker.open();
+        return false;
     }
 
     @Override
@@ -48,7 +42,7 @@ public abstract class ServiceRequirement implements Requirement, ServiceTrackerC
     @Override
     public Object addingService( ServiceReference<Object> serviceReference ) {
         // no-op
-        return this.publisher.getBundleContext().getService( serviceReference );
+        return getBundleContext().getService( serviceReference );
     }
 
     @Override
@@ -61,12 +55,8 @@ public abstract class ServiceRequirement implements Requirement, ServiceTrackerC
         // no-op
     }
 
-    protected void markAsSatisfied( Object state ) {
-        this.publisher.markAsSatisfied( this, state );
-    }
-
-    protected void markAsUnsatisfied() {
-        this.publisher.markAsUnsatisfied( this );
+    protected ServiceTracker<Object, Object> getTracker() {
+        return tracker;
     }
 
     private Filter createFilter( Class<?> serviceType, String additionalFilter ) {

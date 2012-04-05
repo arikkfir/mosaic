@@ -4,13 +4,14 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import org.mosaic.server.boot.impl.publish.BundlePublisher;
+import org.mosaic.server.boot.impl.publish.requirement.support.AbstractTrackerRequirement;
 import org.osgi.framework.ServiceReference;
 import org.springframework.context.ApplicationContext;
 
 /**
  * @author arik
  */
-public class ServiceRefRequirement extends ServiceRequirement {
+public class ServiceRefRequirement extends AbstractTrackerRequirement {
 
     private final boolean required;
 
@@ -49,8 +50,8 @@ public class ServiceRefRequirement extends ServiceRequirement {
         if( this.cache.getService() == service ) {
 
             // obtain a suitable replacement
-            ServiceReference<Object> newServiceReference = this.tracker.getServiceReference();
-            Object newService = this.publisher.getBundleContext().getService( newServiceReference );
+            ServiceReference<Object> newServiceReference = getTracker().getServiceReference();
+            Object newService = getBundleContext().getService( newServiceReference );
             if( newService != null ) {
 
                 // a replacement was found, cache it
@@ -75,22 +76,17 @@ public class ServiceRefRequirement extends ServiceRequirement {
 
     @Override
     public void apply( ApplicationContext applicationContext, Object state ) throws Exception {
-        targetMethod.invoke( applicationContext.getBean( this.beanName ), state );
+        invoke( applicationContext, state );
     }
 
     @Override
     public void applyInitial( ApplicationContext applicationContext ) throws Exception {
-        Object service = this.tracker.getService();
+        Object service = getTracker().getService();
         if( service == null ) {
             throw new IllegalStateException( "Service is null even though requirement was satisfied" );
         } else {
-            targetMethod.invoke( applicationContext.getBean( this.beanName ), service );
+            invoke( applicationContext, service );
         }
-    }
-
-    @Override
-    public void revert() throws Exception {
-        // no-op
     }
 
     private static class ServiceCache {
