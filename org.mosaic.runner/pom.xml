@@ -35,21 +35,25 @@
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.api</artifactId>
             <version>[1.0.0-SNAPSHOT,2)</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.mosaic.server</groupId>
             <artifactId>org.mosaic.server.api</artifactId>
             <version>[1.0.0-SNAPSHOT,2)</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.mosaic.server</groupId>
             <artifactId>org.mosaic.server.boot</artifactId>
             <version>[1.0.0-SNAPSHOT,2)</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.mosaic.server</groupId>
             <artifactId>org.mosaic.server.config</artifactId>
             <version>[1.0.0-SNAPSHOT,2)</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
@@ -64,5 +68,23 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>2.4</version>
+                <executions>
+                    <execution>
+                        <id>analyze</id>
+                        <configuration>
+                            <ignoreNonCompile>true</ignoreNonCompile>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
