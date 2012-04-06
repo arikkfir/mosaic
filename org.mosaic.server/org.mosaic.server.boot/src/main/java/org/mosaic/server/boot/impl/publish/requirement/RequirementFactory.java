@@ -173,7 +173,7 @@ public class RequirementFactory {
 
         T metaAnnotation = annotatedElement.getAnnotation( metaAnnotationType );
         if( metaAnnotation != null ) {
-            return new MetaAnnotation<T>( metaAnnotation, annotatedElement );
+            return new MetaAnnotation<>( metaAnnotation, annotatedElement );
         }
 
         for( Annotation annotation : annotatedElement.getAnnotations() ) {
