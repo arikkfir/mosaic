@@ -69,10 +69,10 @@ public class RequirementFactory {
         if( serviceRefAnn != null ) {
             //TODO 4/4/12: support more than one parameter (service properties)
             Class<?>[] parameterTypes = method.getParameterTypes();
-            if( parameterTypes.length != 1 ) {
+            if( parameterTypes.length == 0 ) {
 
-                // @ServiceRef methods must have exactly one parameter: the service itself
-                throw new IllegalStateException( "Method '" + method.getName() + "' in bean '" + beanDefinitionName + "' has the @" + ServiceRef.class.getSimpleName() + " annotation, but has an illegal number of parameters: " + parameterTypes.length );
+                // @ServiceRef methods must have at least one parameter
+                throw new IllegalStateException( "Method '" + method.getName() + "' in bean '" + beanDefinitionName + "' has no parameters, but has the @" + ServiceRef.class.getSimpleName() + " annotation" );
 
             } else if( parameterTypes[ 0 ].isAssignableFrom( List.class ) ) {
 
@@ -105,10 +105,10 @@ public class RequirementFactory {
         MetaAnnotation<ServiceBind> bindAnn = findMetaAnnotation( method, ServiceBind.class );
         if( bindAnn != null ) {
             Class<?>[] parameterTypes = method.getParameterTypes();
-            if( parameterTypes.length != 1 ) {
+            if( parameterTypes.length == 0 ) {
 
-                // @ServiceRef methods must have exactly one parameter: the service itself
-                throw new IllegalStateException( "Method '" + method.getName() + "' in bean '" + beanDefinitionName + "' has the @" + ServiceBind.class.getSimpleName() + " annotation, but has an illegal number of parameters: " + parameterTypes.length );
+                // @ServiceBind methods must have at least one parameter
+                throw new IllegalStateException( "Method '" + method.getName() + "' in bean '" + beanDefinitionName + "' has no parameters, but has the @" + ServiceBind.class.getSimpleName() + " annotation" );
 
             } else {
 
@@ -129,10 +129,10 @@ public class RequirementFactory {
         MetaAnnotation<ServiceUnbind> unbindAnn = findMetaAnnotation( method, ServiceUnbind.class );
         if( unbindAnn != null ) {
             Class<?>[] parameterTypes = method.getParameterTypes();
-            if( parameterTypes.length != 1 ) {
+            if( parameterTypes.length == 0 ) {
 
-                // @ServiceRef methods must have exactly one parameter: the service itself
-                throw new IllegalStateException( "Method '" + method.getName() + "' in bean '" + beanDefinitionName + "' has the @" + ServiceUnbind.class.getSimpleName() + " annotation, but has an illegal number of parameters: " + parameterTypes.length );
+                // @ServiceBind methods must have at least one parameter
+                throw new IllegalStateException( "Method '" + method.getName() + "' in bean '" + beanDefinitionName + "' has no parameters, but has the @" + ServiceUnbind.class.getSimpleName() + " annotation" );
 
             } else {
 
