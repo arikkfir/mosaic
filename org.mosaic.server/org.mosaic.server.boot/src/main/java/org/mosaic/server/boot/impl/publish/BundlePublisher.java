@@ -110,7 +110,7 @@ public class BundlePublisher {
         this.unsatisfied = null;
     }
 
-    public void markAsSatisfied( Requirement requirement, Object state ) {
+    public void markAsSatisfied( Requirement requirement, Object... state ) {
         synchronized( this.lock ) {
 
             this.unsatisfied.remove( requirement );
