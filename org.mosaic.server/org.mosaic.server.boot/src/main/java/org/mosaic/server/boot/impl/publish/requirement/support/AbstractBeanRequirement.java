@@ -19,6 +19,10 @@ public abstract class AbstractBeanRequirement extends AbstractRequirement {
         return beanFactory.getBean( this.beanName );
     }
 
+    protected String getBeanName() {
+        return beanName;
+    }
+
     @Override
     public final void onInitBean( Object bean, String beanName ) throws Exception {
         if( beanName.equals( this.beanName ) ) {
