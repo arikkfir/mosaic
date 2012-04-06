@@ -23,12 +23,17 @@ public abstract class AbstractRequirement implements Requirement {
     }
 
     @Override
-    public void apply( ApplicationContext applicationContext, Object state ) throws Exception {
+    public void onSatisfy( ApplicationContext applicationContext, Object state ) throws Exception {
         // no-op
     }
 
     @Override
-    public void applyInitial( ApplicationContext applicationContext ) throws Exception {
+    public void onInitBean( Object bean, String beanName ) throws Exception {
+        // no-op
+    }
+
+    @Override
+    public void onPublish( ApplicationContext applicationContext ) throws Exception {
         // no-op
     }
 

@@ -15,11 +15,18 @@ public abstract class AbstractBeanRequirement extends AbstractRequirement {
         this.beanName = beanName;
     }
 
-    protected String getBeanName() {
-        return beanName;
-    }
-
     protected Object getBean( BeanFactory beanFactory ) {
         return beanFactory.getBean( this.beanName );
+    }
+
+    @Override
+    public final void onInitBean( Object bean, String beanName ) throws Exception {
+        if( beanName.equals( this.beanName ) ) {
+            onInitBeanInternal( bean );
+        }
+    }
+
+    protected void onInitBeanInternal( Object bean ) throws Exception {
+        // no-op
     }
 }

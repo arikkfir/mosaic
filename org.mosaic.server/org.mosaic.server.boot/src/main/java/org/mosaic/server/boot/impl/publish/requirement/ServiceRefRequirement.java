@@ -75,17 +75,23 @@ public class ServiceRefRequirement extends AbstractTrackerRequirement {
     }
 
     @Override
-    public void apply( ApplicationContext applicationContext, Object state ) throws Exception {
-        invoke( applicationContext, state );
+    public boolean open() {
+        super.open();
+        return this.cache != null;
     }
 
     @Override
-    public void applyInitial( ApplicationContext applicationContext ) throws Exception {
+    public void onSatisfy( ApplicationContext applicationContext, Object state ) throws Exception {
+        invoke( getBean( applicationContext ), state );
+    }
+
+    @Override
+    protected void onInitBeanInternal( Object bean ) throws Exception {
         Object service = getTracker().getService();
         if( service == null ) {
             throw new IllegalStateException( "Service is null even though requirement was satisfied" );
         } else {
-            invoke( applicationContext, service );
+            invoke( bean, service );
         }
     }
 

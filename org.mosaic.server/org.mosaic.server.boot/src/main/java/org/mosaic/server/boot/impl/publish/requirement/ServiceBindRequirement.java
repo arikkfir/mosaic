@@ -20,12 +20,6 @@ public class ServiceBindRequirement extends AbstractTrackerRequirement {
     }
 
     @Override
-    public boolean open() {
-        super.open();
-        return true;
-    }
-
-    @Override
     public Object addingService( ServiceReference<Object> serviceReference ) {
         Object service = super.addingService( serviceReference );
         if( service != null ) {
@@ -35,16 +29,22 @@ public class ServiceBindRequirement extends AbstractTrackerRequirement {
     }
 
     @Override
-    public void apply( ApplicationContext applicationContext, Object state ) throws Exception {
-        invoke( applicationContext, state );
+    public boolean open() {
+        super.open();
+        return true;
     }
 
     @Override
-    public void applyInitial( ApplicationContext applicationContext ) throws Exception {
+    public void onSatisfy( ApplicationContext applicationContext, Object state ) throws Exception {
+        invoke( getBean( applicationContext ), state );
+    }
+
+    @Override
+    protected void onInitBeanInternal( Object bean ) throws Exception {
         Object[] services = getTracker().getServices();
         if( services != null ) {
             for( Object service : services ) {
-                invoke( applicationContext, service );
+                invoke( bean, service );
             }
         }
     }

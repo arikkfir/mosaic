@@ -14,7 +14,6 @@ import org.osgi.framework.BundleContext;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
-import org.springframework.context.ApplicationContext;
 
 import static org.mosaic.server.boot.impl.publish.spring.BeanFactoryUtils.registerBundleBeans;
 
@@ -84,24 +83,20 @@ public class BundlePublisher {
             }
         }
 
-        this.started = true;
         LOG.info( "Tracking bundle '{}'", BundleUtils.toString( this.bundle ) );
+
+        if( this.unsatisfied.isEmpty() ) {
+            publish();
+        }
+        this.started = true;
     }
 
     public void stop() {
         LOG.info( "No longer tracking bundle '{}'", BundleUtils.toString( this.bundle ) );
         this.started = false;
 
-        // revert any externals changes made by the requirements
-        revertRequirements();
-
         // close application context
-        try {
-            this.applicationContext.close();
-        } catch( Exception e ) {
-            LOG.error( "Could not properly close application context for bundle '{}': {}", BundleUtils.toString( this.bundle ), e.getMessage(), e );
-        }
-
+        close();
 
         // close our requirements
         for( Requirement requirement : this.requirements ) {
@@ -127,9 +122,9 @@ public class BundlePublisher {
 
             } else if( this.applicationContext != null ) {
 
-                // already published - just re-apply this requirement on our published context
+                // already published - just re-onSatisfy this requirement on our published context
                 try {
-                    requirement.apply( this.applicationContext, state );
+                    requirement.onSatisfy( this.applicationContext, state );
                 } catch( Exception e ) {
                     LOG.error( "Requirement '{}' could not be satisfied: {}", requirement, e.getMessage(), e );
                 }
@@ -137,19 +132,7 @@ public class BundlePublisher {
             } else if( unsatisfied.isEmpty() ) {
 
                 // we're not published - but all requirements are now satisfied - publish
-                try {
-                    LOG.info( "Publishing bundle '{}'", BundleUtils.toString( this.bundle ) );
-                    BundleApplicationContext applicationContext = new BundleApplicationContext( this.bundle );
-                    applicationContext.getBeanFactory().addBeanPostProcessor( new RequirementTargetsBeanPostProcessor( applicationContext ) );
-                    registerBundleBeans( this.bundle, applicationContext, applicationContext.getClassLoader(), this.osgiSpringNamespacePlugin );
-                    applicationContext.refresh();
-                    this.applicationContext = applicationContext;
-
-                } catch( Exception e ) {
-
-                    // publish failed - revert any effects requirements applied to the system (outside the app context)
-                    revertRequirements();
-                }
+                publish();
 
             }
         }
@@ -167,15 +150,45 @@ public class BundlePublisher {
 
             } else if( this.applicationContext != null ) {
 
-                LOG.info( "Closing bundle '{}'", BundleUtils.toString( this.bundle ) );
-                revertRequirements();
-                try {
-                    this.applicationContext.close();
-                } catch( Exception e ) {
-                    LOG.error( "Could not properly close application context for bundle '{}': {}", BundleUtils.toString( this.bundle ), e.getMessage(), e );
-                }
-                this.applicationContext = null;
+                close();
 
+            }
+        }
+    }
+
+    private void publish() {
+        try {
+            LOG.info( "Publishing bundle '{}'", BundleUtils.toString( this.bundle ) );
+            BundleApplicationContext applicationContext = new BundleApplicationContext( this.bundle );
+            applicationContext.getBeanFactory().addBeanPostProcessor( new RequirementTargetsBeanPostProcessor() );
+            registerBundleBeans( this.bundle, applicationContext, applicationContext.getClassLoader(), this.osgiSpringNamespacePlugin );
+            applicationContext.refresh();
+
+            for( Requirement requirement : this.requirements ) {
+                requirement.onPublish( applicationContext );
+            }
+
+            this.applicationContext = applicationContext;
+
+        } catch( Exception e ) {
+
+            // publish failed - revert any effects requirements applied to the system (outside the app context)
+            LOG.error( "Could not publish bundle '{}': {}", BundleUtils.toString( this.bundle ), e.getMessage(), e );
+            close();
+
+        }
+    }
+
+    private void close() {
+        LOG.info( "Closing bundle '{}'", BundleUtils.toString( this.bundle ) );
+        revertRequirements();
+        if( this.applicationContext != null ) {
+            try {
+                this.applicationContext.close();
+            } catch( Exception e ) {
+                LOG.error( "Could not properly close application context for bundle '{}': {}", BundleUtils.toString( this.bundle ), e.getMessage(), e );
+            } finally {
+                this.applicationContext = null;
             }
         }
     }
@@ -195,18 +208,12 @@ public class BundlePublisher {
 
     private class RequirementTargetsBeanPostProcessor implements BeanPostProcessor {
 
-        private final ApplicationContext applicationContext;
-
-        private RequirementTargetsBeanPostProcessor( ApplicationContext applicationContext ) {
-            this.applicationContext = applicationContext;
-        }
-
         @Override
         public Object postProcessBeforeInitialization( Object bean, String beanName ) throws BeansException {
             synchronized( lock ) {
                 for( Requirement requirement : satisfied ) {
                     try {
-                        requirement.applyInitial( this.applicationContext );
+                        requirement.onInitBean( bean, beanName );
                     } catch( Exception e ) {
                         throw new BeanCreationException( beanName, e.getMessage(), e );
                     }

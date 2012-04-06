@@ -26,9 +26,8 @@ public class ServiceExportRequirement extends AbstractBeanRequirement {
     }
 
     @Override
-    public void applyInitial( ApplicationContext applicationContext ) throws Exception {
-        this.registration = getBundleContext().registerService(
-                this.apiType.getName(), getBean( applicationContext ), null );
+    public void onPublish( ApplicationContext applicationContext ) throws Exception {
+        this.registration = getBundleContext().registerService( this.apiType.getName(), getBean( applicationContext ), null );
     }
 
     @Override

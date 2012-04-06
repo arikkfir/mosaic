@@ -20,12 +20,6 @@ public class ServiceUnbindRequirement extends AbstractTrackerRequirement {
     }
 
     @Override
-    public boolean open() {
-        super.open();
-        return true;
-    }
-
-    @Override
     public void removedService( ServiceReference<Object> serviceReference, Object service ) {
         // yes it's weird that in 'removedService' we're calling 'markAsSatisfied' but if you think about it - that's
         // the true meaning: we are still satisfied, and want to inform the publisher about it so we can inject to our bean
@@ -33,7 +27,13 @@ public class ServiceUnbindRequirement extends AbstractTrackerRequirement {
     }
 
     @Override
-    public void apply( ApplicationContext applicationContext, Object state ) throws Exception {
+    public boolean open() {
+        super.open();
+        return true;
+    }
+
+    @Override
+    public void onSatisfy( ApplicationContext applicationContext, Object state ) throws Exception {
         invoke( applicationContext, state );
     }
 }

@@ -27,7 +27,13 @@ public class MethodEndpointRequirement extends AbstractMethodRequirement impleme
     }
 
     @Override
-    public void applyInitial( ApplicationContext applicationContext ) throws Exception {
+    public boolean open() throws Exception {
+        super.open();
+        return true;
+    }
+
+    @Override
+    public void onPublish( ApplicationContext applicationContext ) throws Exception {
         Dictionary<String, Object> properties = new Hashtable<>();
         properties.put( TYPE, this.type.getName() );
         properties.put( SHORT_TYPE, this.type.getSimpleName() );
