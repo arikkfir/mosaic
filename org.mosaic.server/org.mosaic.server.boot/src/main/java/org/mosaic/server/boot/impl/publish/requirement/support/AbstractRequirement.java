@@ -23,7 +23,7 @@ public abstract class AbstractRequirement implements Requirement {
     }
 
     @Override
-    public void onSatisfy( ApplicationContext applicationContext, Object state ) throws Exception {
+    public void onSatisfy( ApplicationContext applicationContext, Object... state ) throws Exception {
         // no-op
     }
 
@@ -55,7 +55,7 @@ public abstract class AbstractRequirement implements Requirement {
         return this.publisher.getBundleContext();
     }
 
-    protected void markAsSatisfied( Object state ) {
+    protected void markAsSatisfied( Object... state ) {
         this.publisher.markAsSatisfied( this, state );
     }
 

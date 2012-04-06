@@ -1,8 +1,10 @@
 package org.mosaic.server.boot.impl.publish.requirement;
 
 import java.lang.reflect.Method;
-import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import org.mosaic.osgi.util.ServiceUtils;
 import org.mosaic.server.boot.impl.publish.BundlePublisher;
 import org.mosaic.server.boot.impl.publish.requirement.support.AbstractTrackerRequirement;
 import org.osgi.framework.ServiceReference;
@@ -31,13 +33,13 @@ public class ServiceRefRequirement extends AbstractTrackerRequirement {
     public Object addingService( ServiceReference<Object> serviceReference ) {
         Object newService = super.addingService( serviceReference );
 
-        if( this.cache == null ) {
+        if( this.cache == null && newService != null ) {
 
             // this is the first service we've found to match our requirement - cache it
             this.cache = new ServiceCache( newService, serviceReference );
 
             // notify published that we're satisfied - publish if needed
-            markAsSatisfied( newService );
+            markAsSatisfied();
 
         }
 
@@ -47,7 +49,7 @@ public class ServiceRefRequirement extends AbstractTrackerRequirement {
     @Override
     public void removedService( ServiceReference<Object> serviceReference, Object service ) {
 
-        if( this.cache.getService() == service ) {
+        if( this.cache != null && this.cache.service == service ) {
 
             // obtain a suitable replacement
             ServiceReference<Object> newServiceReference = getTracker().getServiceReference();
@@ -56,19 +58,23 @@ public class ServiceRefRequirement extends AbstractTrackerRequirement {
 
                 // a replacement was found, cache it
                 this.cache = new ServiceCache( newService, newServiceReference );
-                markAsSatisfied( newService );
-
-            } else if( this.required ) {
-
-                // no replacement was found - clear reference cache and inform publisher to un-publish bundle
-                this.cache = null;
-                markAsUnsatisfied();
+                markAsSatisfied();
 
             } else {
 
                 // no replacement was found - clear our reference cache
                 this.cache = null;
-                markAsSatisfied( null );
+                if( this.required ) {
+
+                    // inform publisher to un-publish bundle since this is a required dependency
+                    markAsUnsatisfied();
+
+                } else {
+
+                    // we're not required - just apply null to our bean
+                    markAsSatisfied();
+
+                }
 
             }
         }
@@ -77,46 +83,48 @@ public class ServiceRefRequirement extends AbstractTrackerRequirement {
     @Override
     public boolean open() {
         super.open();
-        return this.cache != null;
+        return !this.required || this.cache != null;
     }
 
     @Override
-    public void onSatisfy( ApplicationContext applicationContext, Object state ) throws Exception {
-        invoke( getBean( applicationContext ), state );
+    public void onSatisfy( ApplicationContext applicationContext, Object... state ) throws Exception {
+        invoke( getBean( applicationContext ), getServiceMethodArgs() );
     }
 
     @Override
     protected void onInitBeanInternal( Object bean ) throws Exception {
-        Object service = getTracker().getService();
-        if( service == null ) {
-            throw new IllegalStateException( "Service is null even though requirement was satisfied" );
-        } else {
-            invoke( bean, service );
+        invoke( bean, getServiceMethodArgs() );
+    }
+
+    protected Object[] getServiceMethodArgs() {
+        Method method = getTargetMethod();
+
+        List<Object> values = new LinkedList<>();
+        for( Class<?> type : method.getParameterTypes() ) {
+            if( this.cache == null ) {
+                values.add( null );
+            } else if( type.isAssignableFrom( Map.class ) ) {
+                values.add( ServiceUtils.getServiceProperties( this.cache.serviceReference ) );
+            } else if( type.isAssignableFrom( ServiceReference.class ) ) {
+                values.add( this.cache.serviceReference );
+            } else if( type.isAssignableFrom( getServiceType() ) ) {
+                values.add( this.cache.service );
+            } else {
+                throw new IllegalStateException( "Unsupported argument type ('" + type.getSimpleName() + "') in method '" + method.getName() + "' of bean '" + getBeanName() + "'" );
+            }
         }
+        return values.toArray();
     }
 
     private static class ServiceCache {
 
+        private final ServiceReference<?> serviceReference;
+
         private final Object service;
 
-        private final Map<String, Object> properties;
-
-        private ServiceCache( Object service, ServiceReference<Object> serviceReference ) {
+        private ServiceCache( Object service, ServiceReference<?> serviceReference ) {
+            this.serviceReference = serviceReference;
             this.service = service;
-
-            Map<String, Object> properties = new HashMap<>();
-            for( String propertyKey : serviceReference.getPropertyKeys() ) {
-                properties.put( propertyKey, serviceReference.getProperty( propertyKey ) );
-            }
-            this.properties = properties;
-        }
-
-        public Object getService() {
-            return service;
-        }
-
-        public Map<String, Object> getProperties() {
-            return properties;
         }
     }
 }

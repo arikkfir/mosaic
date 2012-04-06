@@ -31,10 +31,10 @@ public interface Requirement {
      * requirement which triggered the publish).
      *
      * @param applicationContext the application context of the bundle
-     * @param state              the state that was passed to {@link org.mosaic.server.boot.impl.publish.BundlePublisher#markAsSatisfied(Requirement, Object)}
+     * @param state              the state that was passed to {@link org.mosaic.server.boot.impl.publish.BundlePublisher#markAsSatisfied(Requirement, Object[])}
      * @throws Exception in case the requirement could not be applied
      */
-    void onSatisfy( ApplicationContext applicationContext, Object state ) throws Exception;
+    void onSatisfy( ApplicationContext applicationContext, Object... state ) throws Exception;
 
     /**
      * Called when bundle is being published and allows the requirement to initialize specific beans.

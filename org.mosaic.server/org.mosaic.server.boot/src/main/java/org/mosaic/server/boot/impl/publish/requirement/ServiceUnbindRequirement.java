@@ -1,6 +1,10 @@
 package org.mosaic.server.boot.impl.publish.requirement;
 
 import java.lang.reflect.Method;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import org.mosaic.osgi.util.ServiceUtils;
 import org.mosaic.server.boot.impl.publish.BundlePublisher;
 import org.mosaic.server.boot.impl.publish.requirement.support.AbstractTrackerRequirement;
 import org.osgi.framework.ServiceReference;
@@ -23,7 +27,7 @@ public class ServiceUnbindRequirement extends AbstractTrackerRequirement {
     public void removedService( ServiceReference<Object> serviceReference, Object service ) {
         // yes it's weird that in 'removedService' we're calling 'markAsSatisfied' but if you think about it - that's
         // the true meaning: we are still satisfied, and want to inform the publisher about it so we can inject to our bean
-        markAsSatisfied( service );
+        markAsSatisfied( serviceReference, service );
     }
 
     @Override
@@ -33,7 +37,28 @@ public class ServiceUnbindRequirement extends AbstractTrackerRequirement {
     }
 
     @Override
-    public void onSatisfy( ApplicationContext applicationContext, Object state ) throws Exception {
-        invoke( applicationContext, state );
+    public void onSatisfy( ApplicationContext applicationContext, Object... state ) throws Exception {
+        Object bean = getBean( applicationContext );
+        ServiceReference<?> serviceReference = ( ServiceReference<?> ) state[ 0 ];
+        Object service = state[ 1 ];
+        invoke( bean, getServiceMethodArgs( serviceReference, service ) );
+    }
+
+    protected Object[] getServiceMethodArgs( ServiceReference<?> sr, Object service ) {
+        Method method = getTargetMethod();
+
+        List<Object> values = new LinkedList<>();
+        for( Class<?> type : method.getParameterTypes() ) {
+            if( type.isAssignableFrom( Map.class ) ) {
+                values.add( ServiceUtils.getServiceProperties( sr ) );
+            } else if( type.isAssignableFrom( ServiceReference.class ) ) {
+                values.add( sr );
+            } else if( type.isAssignableFrom( getServiceType() ) ) {
+                values.add( service );
+            } else {
+                throw new IllegalStateException( "Unsupported argument type ('" + type.getSimpleName() + "') in method '" + method.getName() + "' of bean '" + getBeanName() + "'" );
+            }
+        }
+        return values.toArray();
     }
 }

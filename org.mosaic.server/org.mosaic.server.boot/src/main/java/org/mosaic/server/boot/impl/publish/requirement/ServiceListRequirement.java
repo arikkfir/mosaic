@@ -20,6 +20,10 @@ public class ServiceListRequirement extends AbstractTrackerRequirement {
                                    String beanName,
                                    Method targetMethod ) {
         super( publisher, serviceType, additionalFilter, beanName, targetMethod );
+        Class<?>[] parameterTypes = targetMethod.getParameterTypes();
+        if( parameterTypes.length != 1 || !parameterTypes[ 0 ].isAssignableFrom( List.class ) ) {
+            throw new IllegalArgumentException( "Method '" + getTargetMethod().getName() + "' is bean '" + beanName + "' has an illegal signature: must be single List parameter" );
+        }
     }
 
     @Override
