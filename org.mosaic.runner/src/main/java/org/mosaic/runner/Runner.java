@@ -116,7 +116,9 @@ public class Runner {
         try {
 
             // setup the bootstrap watcher and start the bootstrap bundle
-            new BundlesWatcher( felix.getBundleContext(), directory ).start( watcherName );
+            BundlesWatcher watcher = new BundlesWatcher( felix.getBundleContext(), watcherName, directory );
+            watcher.scan();
+            watcher.start();
 
         } catch( Exception e ) {
             throw new StartException( "Could not start '" + watcherName + "': " + e.getMessage(), e );
@@ -132,10 +134,20 @@ public class Runner {
             }
 
             // start the bootstrapper bundle which catapults the rest of the server
+            Bundle bootstrapBundle = null;
             for( Bundle bundle : bundles ) {
                 if( bundle.getSymbolicName().equals( "org.mosaic.server.boot" ) ) {
-                    bundle.start();
+                    if( bootstrapBundle != null ) {
+                        throw new IllegalStateException( "More than one bootstrap bundle found!" );
+                    } else {
+                        bootstrapBundle = bundle;
+                    }
                 }
+            }
+            if( bootstrapBundle == null ) {
+                throw new IllegalStateException( "Could not find bootstrap bundle!" );
+            } else {
+                bootstrapBundle.start();
             }
 
         } catch( Exception e ) {
