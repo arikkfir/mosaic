@@ -2,16 +2,14 @@ package org.mosaic.runner.watcher;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.nio.file.Files.newDirectoryStream;
 import static java.nio.file.Files.readAllLines;
 import static org.mosaic.runner.watcher.SystemPropertyUtils.resolvePlaceholders;
 
@@ -97,22 +95,25 @@ public class JarLinksWatchedResourceProvider implements WatchedResourceProvider 
             // search for files that match our pattern
             Collection<Path> updatedMatches = new LinkedHashSet<>();
             for( Map.Entry<Path, String> entry : this.pathPatterns.entrySet() ) {
-                for( Path match : Files.newDirectoryStream( entry.getKey(), entry.getValue() ) ) {
-                    match = match.normalize().toAbsolutePath();
-                    if( this.watchedJars.containsKey( match ) ) {
+                try( DirectoryStream<Path> dirStream = newDirectoryStream( entry.getKey(), entry.getValue() ) ) {
+                    for( Path match : dirStream ) {
+                        match = match.normalize().toAbsolutePath();
+                        if( this.watchedJars.containsKey( match ) ) {
 
-                        // this match is already being tracked - but still add it to the set of retained matches,
-                        // so it won't be removed in the next section
-                        updatedMatches.add( match );
+                            // this match is already being tracked - but still add it to the set of retained matches,
+                            // so it won't be removed in the next section
+                            updatedMatches.add( match );
 
-                    } else if( WatchUtils.isBundle( match ) ) {
+                        } else if( WatchUtils.isBundle( match ) ) {
 
-                        // new matching bundle - add it to our list of watched resources
-                        this.watchedJars.put( match, new WatchedResource( match, new JarWatchedResourceHandler( bundleContext ) ) );
-                        updatedMatches.add( match );
+                            // new matching bundle - add it to our list of watched resources
+                            this.watchedJars.put( match, new WatchedResource( match, new JarWatchedResourceHandler( bundleContext ) ) );
+                            updatedMatches.add( match );
 
+                        }
                     }
                 }
+
             }
 
             // we've updated our list of files matching our pattern with potentially new files; now remove from our
