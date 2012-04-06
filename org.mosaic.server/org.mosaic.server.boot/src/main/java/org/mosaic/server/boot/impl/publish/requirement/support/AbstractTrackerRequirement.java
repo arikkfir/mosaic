@@ -19,13 +19,18 @@ public abstract class AbstractTrackerRequirement extends AbstractMethodRequireme
 
     private final ServiceTracker<Object, Object> tracker;
 
+    private final Class<?> serviceType;
+
     public AbstractTrackerRequirement( BundlePublisher publisher,
                                        Class<?> serviceType,
                                        String additionalFilter,
                                        String beanName,
                                        Method targetMethod ) {
         super( publisher, beanName, targetMethod );
-        this.tracker = new ServiceTracker<>( getPublisher().getBundleContext(), createFilter( serviceType, additionalFilter ), this );
+        this.serviceType = serviceType;
+
+        Filter filter = createFilter( this.serviceType, additionalFilter );
+        this.tracker = new ServiceTracker<>( getPublisher().getBundleContext(), filter, this );
     }
 
     @Override
@@ -57,6 +62,10 @@ public abstract class AbstractTrackerRequirement extends AbstractMethodRequireme
 
     protected ServiceTracker<Object, Object> getTracker() {
         return tracker;
+    }
+
+    protected Class<?> getServiceType() {
+        return serviceType;
     }
 
     private Filter createFilter( Class<?> serviceType, String additionalFilter ) {
