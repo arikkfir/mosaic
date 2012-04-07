@@ -3,6 +3,8 @@ package org.mosaic.logging;
 import java.lang.ref.SoftReference;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.FrameworkUtil;
 
 /**
  * @author arik
@@ -10,6 +12,14 @@ import java.util.concurrent.ConcurrentHashMap;
 public class LoggerFactory {
 
     private final static Map<String, SoftReference<Logger>> LOGGERS = new ConcurrentHashMap<>( 1500, 0.75f, 32 );
+
+    public static Logger getBundleLogger( Class<?> clazz ) {
+        if( clazz == null ) {
+            return getLogger( "unknown-logger" );
+        }
+        Bundle bundle = FrameworkUtil.getBundle( clazz );
+        return bundle != null ? getLogger( bundle.getSymbolicName() ) : getLogger( clazz.getName() );
+    }
 
     public static Logger getLogger( Class<?> clazz ) {
         return getLogger( clazz == null ? "unknown-logger" : clazz.getName() );
