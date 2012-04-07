@@ -37,7 +37,7 @@ public class BundlesWatcher implements Runnable {
     }
 
     public void start() {
-        this.logger.info( "Watching bundles directory at: {}", this.directory );
+        this.logger.debug( "Watching bundles directory at: {}", this.directory );
         this.stop = false;
         this.thread = new Thread( this, this.name );
         this.thread.setDaemon( true );
@@ -67,7 +67,7 @@ public class BundlesWatcher implements Runnable {
             scan();
 
         }
-        this.logger.info( "Stopped watching bundles directory at: {}", this.directory );
+        this.logger.debug( "Stopped watching bundles directory at: {}", this.directory );
     }
 
     public void stop() {
