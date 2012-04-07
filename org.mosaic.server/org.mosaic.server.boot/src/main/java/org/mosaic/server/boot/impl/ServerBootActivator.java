@@ -11,13 +11,16 @@ import org.mosaic.osgi.util.BundleUtils;
 import org.mosaic.server.boot.impl.publish.BundlePublisher;
 import org.mosaic.server.boot.impl.publish.spring.OsgiSpringNamespacePlugin;
 import org.osgi.framework.*;
+import org.osgi.framework.wiring.FrameworkWiring;
 
 /**
  * @author arik
  */
-public class ServerBootActivator implements BundleActivator, BundleListener {
+public class ServerBootActivator implements BundleActivator, SynchronousBundleListener {
 
     private static final Logger LOG = LoggerFactory.getLogger( ServerBootActivator.class );
+
+    private BundleContext bundleContext;
 
     private Map<Long, BundlePublisher> bundleTrackers;
 
@@ -25,6 +28,8 @@ public class ServerBootActivator implements BundleActivator, BundleListener {
 
     @Override
     public void start( BundleContext bundleContext ) throws Exception {
+        this.bundleContext = bundleContext;
+
         bundleContext.registerService( MosaicHome.class, new MosaicHomeImpl(), null );
 
         this.bundleTrackers = new ConcurrentHashMap<>( 100 );
@@ -47,6 +52,7 @@ public class ServerBootActivator implements BundleActivator, BundleListener {
         this.springNamespacePlugin = null;
 
         this.bundleTrackers = null;
+        this.bundleContext = null;
     }
 
     @Override
@@ -64,13 +70,28 @@ public class ServerBootActivator implements BundleActivator, BundleListener {
 
             // if new bundle - just start it and return; also ensure it's still in INSTALLED state as events might arrive late
             // (it's the STARTED event that we really want and where we'll possibly track the bundle)
-            if( bundle.getState() == Bundle.INSTALLED ) {
+            Bundle systemBundle = this.bundleContext.getBundle( 0 );
+            FrameworkWiring frameworkWiring = systemBundle.adapt( FrameworkWiring.class );
+            frameworkWiring.resolveBundles( null );
+            Bundle[] bundles = systemBundle.getBundleContext().getBundles();
+            if( bundles != null ) {
+                for( Bundle b : bundles ) {
+                    if( b.getState() == Bundle.RESOLVED ) {
+                        try {
+                            b.start();
+                        } catch( BundleException e ) {
+                            LOG.warn( "Could not start bundle '{}': {}", BundleUtils.toString( b ), e.getMessage(), e );
+                        }
+                    }
+                }
+            }
+/*
                 try {
                     bundle.start();
                 } catch( BundleException e ) {
                     LOG.warn( "Could not start bundle '{}': {}", BundleUtils.toString( bundle ), e.getMessage(), e );
                 }
-            }
+*/
 
         } else if( event.getType() == BundleEvent.STARTED ) {
 
