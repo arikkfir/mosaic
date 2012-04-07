@@ -1,5 +1,7 @@
 package org.mosaic.lifecycle;
 
+import java.lang.annotation.Annotation;
+
 /**
  * @author arik
  */
@@ -9,4 +11,5 @@ public interface MethodEndpointInfo {
 
     String SHORT_TYPE = "methodEndpointShortType";
 
+    Class<? extends Annotation> getType();
 }

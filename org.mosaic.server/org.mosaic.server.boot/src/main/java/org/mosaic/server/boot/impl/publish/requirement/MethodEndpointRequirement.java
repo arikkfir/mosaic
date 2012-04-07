@@ -1,5 +1,6 @@
 package org.mosaic.server.boot.impl.publish.requirement;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Dictionary;
 import java.util.Hashtable;
@@ -14,14 +15,14 @@ import org.springframework.context.ApplicationContext;
  */
 public class MethodEndpointRequirement extends AbstractMethodRequirement implements MethodEndpointInfo {
 
-    private final Class<?> type;
+    private final Class<? extends Annotation> type;
 
     private ServiceRegistration<MethodEndpointInfo> registration;
 
     public MethodEndpointRequirement( BundlePublisher publisher,
                                       String beanName,
                                       Method targetMethod,
-                                      Class<?> type ) {
+                                      Class<? extends Annotation> type ) {
         super( publisher, beanName, targetMethod );
         this.type = type;
     }
@@ -43,5 +44,10 @@ public class MethodEndpointRequirement extends AbstractMethodRequirement impleme
     @Override
     public void revert() throws Exception {
         this.registration.unregister();
+    }
+
+    @Override
+    public Class<? extends Annotation> getType() {
+        return this.type;
     }
 }

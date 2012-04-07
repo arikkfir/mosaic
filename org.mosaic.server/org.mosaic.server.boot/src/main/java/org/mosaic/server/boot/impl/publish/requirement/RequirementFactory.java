@@ -157,7 +157,8 @@ public class RequirementFactory {
         if( metaAnnotation != null ) {
             AnnotatedElement container = metaAnnotation.container;
             if( container instanceof Class ) {
-                Class containerClass = ( Class ) container;
+                @SuppressWarnings( "unchecked" )
+                Class<? extends Annotation> containerClass = ( Class<? extends Annotation> ) container;
                 requirements.add( new MethodEndpointRequirement(
                         this.publisher, beanDefinitionName, method, containerClass ) );
             }
