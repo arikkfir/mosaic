@@ -45,30 +45,27 @@ public class Runner {
         this.logger.info( "    Work directory: {}", this.home.getWork() );
         this.logger.info( "******************************************************************************************" );
 
-        this.logger.info( " " );
-        this.logger.info( "Creating OSGi container: Apache Felix" );
-        this.logger.info( "**********************************************************" );
+        this.logger.debug( " " );
+        this.logger.debug( "Creating OSGi container: Apache Felix" );
+        this.logger.debug( "**********************************************************" );
         Felix felix = createFelix();
 
         this.logger.info( " " );
-        this.logger.info( "Deploying boot bundles" );
+        this.logger.info( "Bootstrapping..." );
         this.logger.info( "**********************************************************" );
-        watch( felix, this.home.getBoot(), "Bootstrap Bundles Watcher" );
-
-        this.logger.info( " " );
-        this.logger.info( "Bootstrapping server" );
-        this.logger.info( "**********************************************************" );
+        BundlesWatcher bootWatcher = watch( felix, this.home.getBoot(), "Bootstrap Bundles Watcher" );
         bootstrap( felix );
+        bootWatcher.start();
 
         this.logger.info( " " );
         this.logger.info( "Deploying server bundles" );
         this.logger.info( "**********************************************************" );
-        watch( felix, this.home.getServer(), "Server Bundles Watcher" );
+        watch( felix, this.home.getServer(), "Server Bundles Watcher" ).start();
 
         this.logger.info( " " );
         this.logger.info( "Deploying user bundles" );
         this.logger.info( "**********************************************************" );
-        watch( felix, this.home.getDeploy(), "User Bundles Watcher" );
+        watch( felix, this.home.getDeploy(), "User Bundles Watcher" ).start();
 
         this.logger.info( " " );
         this.logger.info( "**********************************************************" );
@@ -93,7 +90,7 @@ public class Runner {
                              "org.slf4j.spi;version=1.6.4," +
                              "org.slf4j.helpers;version=1.6.4" );
             for( Map.Entry<String, Object> entry : felixConfig.entrySet() ) {
-                this.logger.info( "    {} = {}", entry.getKey(), entry.getValue() );
+                this.logger.debug( "    {} = {}", entry.getKey(), entry.getValue() );
             }
 
             // create Felix instance and start it - it should start empty since we clean the bundles dir on startup
@@ -112,13 +109,13 @@ public class Runner {
         }
     }
 
-    private void watch( Felix felix, Path directory, String watcherName ) throws SystemExitException {
+    private BundlesWatcher watch( Felix felix, Path directory, String watcherName ) throws SystemExitException {
         try {
 
             // setup the bootstrap watcher and start the bootstrap bundle
             BundlesWatcher watcher = new BundlesWatcher( felix.getBundleContext(), watcherName, directory );
             watcher.scan();
-            watcher.start();
+            return watcher;
 
         } catch( Exception e ) {
             throw new SystemExitException( "Could not start '" + watcherName + "': " + e.getMessage(), e, ExitCode.START_ERROR );
