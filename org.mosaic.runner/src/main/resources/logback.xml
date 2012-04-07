@@ -27,7 +27,8 @@
     <!-- =========================================================================================================== -->
     <!--  Loggers configuration                                                                                      -->
     <!-- =========================================================================================================== -->
-    <logger name="org.springframework.core.env.StandardEnvironment" level="INFO"/>
+    <logger name="org.springframework" level="WARN"/>
+    <logger name="org.mosaic.server.boot.impl.publish.spring.BundleApplicationContext" level="WARN"/>
     <logger name="org.apache.felix" additivity="false">
         <appender-ref ref="framework"/>
     </logger>
