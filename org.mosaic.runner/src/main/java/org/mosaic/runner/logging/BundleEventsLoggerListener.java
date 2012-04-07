@@ -18,7 +18,7 @@ public class BundleEventsLoggerListener implements SynchronousBundleListener {
         switch( event.getType() ) {
             case BundleEvent.INSTALLED:
                 String origin = LogUtils.toString( event.getOrigin() );
-                this.logger.debug( "Installed bundle '{}'", bundle, origin );
+                this.logger.info( "Installed bundle '{}'", bundle, origin );
                 break;
 
             case BundleEvent.RESOLVED:

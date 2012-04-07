@@ -36,7 +36,7 @@ public class Runner {
         long start = currentTimeMillis();
 
         this.logger.info( "******************************************************************************************" );
-        this.logger.info( "Starting Mosaic server" );
+        this.logger.info( " Starting Mosaic server" );
         this.logger.info( "    Home:           {}", this.home.getHome() );
         this.logger.info( "    Boot:           {}", this.home.getBoot() );
         this.logger.info( "    Deployments:    {}", this.home.getDeploy() );
@@ -45,32 +45,26 @@ public class Runner {
         this.logger.info( "    Work directory: {}", this.home.getWork() );
         this.logger.info( "******************************************************************************************" );
 
-        this.logger.debug( " " );
-        this.logger.debug( "Creating OSGi container: Apache Felix" );
-        this.logger.debug( "**********************************************************" );
+        // create OSGi container
         Felix felix = createFelix();
 
-        this.logger.info( " " );
-        this.logger.info( "Bootstrapping..." );
-        this.logger.info( "**********************************************************" );
+        // bootstrap the server by deploying bundles in the 'boot' dir, and starting the boot bundle
         BundlesWatcher bootWatcher = watch( felix, this.home.getBoot(), "Bootstrap Bundles Watcher" );
         bootstrap( felix );
         bootWatcher.start();
 
-        this.logger.info( " " );
-        this.logger.info( "Deploying server bundles" );
-        this.logger.info( "**********************************************************" );
+        // deploy server bundles
         watch( felix, this.home.getServer(), "Server Bundles Watcher" ).start();
 
-        this.logger.info( " " );
-        this.logger.info( "Deploying user bundles" );
-        this.logger.info( "**********************************************************" );
+        // deploy user bundles
         watch( felix, this.home.getDeploy(), "User Bundles Watcher" ).start();
 
+        // print summary and wait for the server to shutdown
         this.logger.info( " " );
-        this.logger.info( "**********************************************************" );
-        this.logger.info( "Running (initialization took {} seconds)", ( currentTimeMillis() - start ) / 1000 );
-        this.logger.info( "**********************************************************" );
+        this.logger.info( "*************************************************************************" );
+        long startupDurationMillis = currentTimeMillis() - start;
+        this.logger.info( " Running (initialization took {} seconds, or {} milli-seconds)", startupDurationMillis / 1000, startupDurationMillis );
+        this.logger.info( "*************************************************************************" );
         this.logger.info( " " );
         return waitForOsgiContainerToStop( felix );
     }

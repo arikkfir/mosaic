@@ -32,7 +32,7 @@
     <logger name="org.apache.felix" additivity="false">
         <appender-ref ref="framework"/>
     </logger>
-    <logger name="org.osgi.framework" additivity="false">
+    <logger name="org.mosaic.osgi.bundles" additivity="false">
         <appender-ref ref="framework"/>
     </logger>
 
