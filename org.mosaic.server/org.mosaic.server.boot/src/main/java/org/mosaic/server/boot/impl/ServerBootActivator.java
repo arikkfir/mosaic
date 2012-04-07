@@ -18,7 +18,7 @@ import org.osgi.framework.wiring.FrameworkWiring;
  */
 public class ServerBootActivator implements BundleActivator, SynchronousBundleListener {
 
-    private static final Logger LOG = LoggerFactory.getLogger( ServerBootActivator.class );
+    private static final Logger LOG = LoggerFactory.getBundleLogger( ServerBootActivator.class );
 
     private BundleContext bundleContext;
 

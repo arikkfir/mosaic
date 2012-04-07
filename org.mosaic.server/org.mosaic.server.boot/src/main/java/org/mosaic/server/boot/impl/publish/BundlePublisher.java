@@ -22,7 +22,7 @@ import static org.mosaic.server.boot.impl.publish.spring.BeanFactoryUtils.regist
  */
 public class BundlePublisher {
 
-    private static final Logger LOG = LoggerFactory.getLogger( BundlePublisher.class );
+    private static final Logger LOG = LoggerFactory.getBundleLogger( BundlePublisher.class );
 
     private final Object lock = new Object();
 
