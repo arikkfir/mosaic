@@ -83,7 +83,7 @@ public class BundlePublisher {
             }
         }
 
-        LOG.info( "Tracking bundle '{}'", BundleUtils.toString( this.bundle ) );
+        LOG.debug( "Tracking bundle '{}'", BundleUtils.toString( this.bundle ) );
 
         if( this.unsatisfied.isEmpty() ) {
             publish();
@@ -92,7 +92,7 @@ public class BundlePublisher {
     }
 
     public void stop() {
-        LOG.info( "No longer tracking bundle '{}'", BundleUtils.toString( this.bundle ) );
+        LOG.debug( "No longer tracking bundle '{}'", BundleUtils.toString( this.bundle ) );
         this.started = false;
 
         // close application context
