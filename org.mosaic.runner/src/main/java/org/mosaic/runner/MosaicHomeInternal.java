@@ -27,7 +27,7 @@ public class MosaicHomeInternal {
 
     private final Path felixWork = work.resolve( "felix" );
 
-    public MosaicHomeInternal() throws ConfigurationException, IOException {
+    public MosaicHomeInternal() throws IOException {
         if( notExists( this.home ) ) {
             createDirectory( this.home );
         }

@@ -28,11 +28,11 @@ public class Runner {
 
     private final Logger logger = LoggerFactory.getLogger( Main.class );
 
-    public Runner( MosaicHomeInternal home ) throws StartException {
+    public Runner( MosaicHomeInternal home ) {
         this.home = home;
     }
 
-    public ExitCode run() throws StartException {
+    public ExitCode run() throws SystemExitException {
         long start = currentTimeMillis();
 
         this.logger.info( "******************************************************************************************" );
@@ -78,7 +78,7 @@ public class Runner {
         return waitForOsgiContainerToStop( felix );
     }
 
-    private Felix createFelix() throws StartException {
+    private Felix createFelix() throws SystemExitException {
         try {
 
             // build Felix configuration
@@ -108,11 +108,11 @@ public class Runner {
             return felix;
 
         } catch( Exception e ) {
-            throw new StartException( "Could not start OSGi container (Apache Felix): " + e.getMessage(), e );
+            throw new SystemExitException( "Could not start OSGi container (Apache Felix): " + e.getMessage(), e, ExitCode.START_ERROR );
         }
     }
 
-    private void watch( Felix felix, Path directory, String watcherName ) throws StartException {
+    private void watch( Felix felix, Path directory, String watcherName ) throws SystemExitException {
         try {
 
             // setup the bootstrap watcher and start the bootstrap bundle
@@ -121,11 +121,11 @@ public class Runner {
             watcher.start();
 
         } catch( Exception e ) {
-            throw new StartException( "Could not start '" + watcherName + "': " + e.getMessage(), e );
+            throw new SystemExitException( "Could not start '" + watcherName + "': " + e.getMessage(), e, ExitCode.START_ERROR );
         }
     }
 
-    private void bootstrap( Felix felix ) throws StartException {
+    private void bootstrap( Felix felix ) throws SystemExitException {
         try {
 
             Bundle[] bundles = felix.getBundleContext().getBundles();
@@ -151,7 +151,7 @@ public class Runner {
             }
 
         } catch( Exception e ) {
-            throw new StartException( "Could not start OSGi container (Apache Felix): " + e.getMessage(), e );
+            throw new SystemExitException( "Could not start OSGi container (Apache Felix): " + e.getMessage(), e, ExitCode.START_ERROR );
         }
     }
 

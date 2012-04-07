@@ -42,7 +42,7 @@ public class Main {
         }
     }
 
-    private static void setupLogging( MosaicHomeInternal home ) throws ConfigurationException {
+    private static void setupLogging( MosaicHomeInternal home ) throws SystemExitException {
         Path logbackFile = home.getEtc().resolve( Paths.get( "logback.xml" ) );
         if( exists( logbackFile ) ) {
             LoggerContext lc = ( LoggerContext ) org.slf4j.LoggerFactory.getILoggerFactory();
@@ -53,7 +53,7 @@ public class Main {
                 configurator.doConfigure( logbackFile.toFile() );
                 StatusPrinter.printInCaseOfErrorsOrWarnings( lc );
             } catch( JoranException e ) {
-                throw new ConfigurationException( "logging configuration error: " + e.getMessage(), e );
+                throw new SystemExitException( "logging configuration error: " + e.getMessage(), e, ExitCode.CONFIG_ERROR );
             }
         }
     }

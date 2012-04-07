@@ -3,7 +3,6 @@ package org.mosaic.runner.watcher;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.LinkedList;
-import org.mosaic.runner.StartException;
 import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +28,7 @@ public class BundlesWatcher implements Runnable {
 
     private boolean stop;
 
-    public BundlesWatcher( BundleContext bundleContext, String name, Path directory ) throws StartException {
+    public BundlesWatcher( BundleContext bundleContext, String name, Path directory ) {
         this.name = name;
         this.scanInterval = Long.getLong( "bundleScanInterval", DEFAULT_SCAN_INTERVAL );
         this.directory = directory;
