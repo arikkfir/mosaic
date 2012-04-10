@@ -4,9 +4,12 @@ import java.lang.reflect.Method;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import org.mosaic.logging.Logger;
+import org.mosaic.logging.LoggerFactory;
 import org.mosaic.osgi.util.ServiceUtils;
-import org.mosaic.server.boot.impl.publish.BundlePublisher;
+import org.mosaic.server.boot.impl.publish.BundleTracker;
 import org.mosaic.server.boot.impl.publish.requirement.support.AbstractTrackerRequirement;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.springframework.context.ApplicationContext;
 
@@ -15,12 +18,24 @@ import org.springframework.context.ApplicationContext;
  */
 public class ServiceBindRequirement extends AbstractTrackerRequirement {
 
-    public ServiceBindRequirement( BundlePublisher publisher,
+    private static final Logger LOG = LoggerFactory.getBundleLogger( ServiceBindRequirement.class );
+
+    public ServiceBindRequirement( BundleTracker tracker,
                                    Class<?> serviceType,
                                    String additionalFilter,
                                    String beanName,
                                    Method targetMethod ) {
-        super( publisher, serviceType, additionalFilter, beanName, targetMethod );
+        super( tracker, serviceType, additionalFilter, beanName, targetMethod );
+    }
+
+    @Override
+    public String toString() {
+        return "ServiceBind[" + getServiceType().getSimpleName() + "/" + getTargetMethod().getName() + "/" + getBeanName() + "]";
+    }
+
+    @Override
+    public int getPriority() {
+        return SERVICE_BIND_PRIORITY;
     }
 
     @Override
@@ -33,13 +48,13 @@ public class ServiceBindRequirement extends AbstractTrackerRequirement {
     }
 
     @Override
-    public boolean open() {
-        super.open();
+    protected boolean trackInternal() throws Exception {
+        super.trackInternal();
         return true;
     }
 
     @Override
-    public void onSatisfy( ApplicationContext applicationContext, Object... state ) throws Exception {
+    protected void onSatisfyInternal( ApplicationContext applicationContext, Object... state ) throws Exception {
         Object bean = getBean( applicationContext );
         ServiceReference<?> serviceReference = ( ServiceReference<?> ) state[ 0 ];
         Object service = state[ 1 ];
@@ -51,13 +66,19 @@ public class ServiceBindRequirement extends AbstractTrackerRequirement {
         ServiceReference<Object>[] serviceReferences = getTracker().getServiceReferences();
         if( serviceReferences != null ) {
             for( ServiceReference<Object> serviceReference : serviceReferences ) {
-                invoke( bean, getServiceMethodArgs( serviceReference ) );
+                Object[] args = getServiceMethodArgs( serviceReference );
+                if( args != null ) {
+                    invoke( bean, args );
+                } else {
+                    LOG.warn( "Initializing bean when bundle is not active?? For bundle: {}", getBundleName() );
+                }
             }
         }
     }
 
     protected Object[] getServiceMethodArgs( ServiceReference<?> sr ) {
-        return getServiceMethodArgs( sr, getBundleContext().getService( sr ) );
+        BundleContext bundleContext = getBundleContext();
+        return bundleContext == null ? null : getServiceMethodArgs( sr, bundleContext.getService( sr ) );
     }
 
     protected Object[] getServiceMethodArgs( ServiceReference<?> sr, Object service ) {

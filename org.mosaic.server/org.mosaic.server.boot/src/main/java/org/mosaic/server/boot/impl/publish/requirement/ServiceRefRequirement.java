@@ -5,8 +5,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import org.mosaic.osgi.util.ServiceUtils;
-import org.mosaic.server.boot.impl.publish.BundlePublisher;
+import org.mosaic.server.boot.impl.publish.BundleTracker;
 import org.mosaic.server.boot.impl.publish.requirement.support.AbstractTrackerRequirement;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.springframework.context.ApplicationContext;
 
@@ -19,14 +20,24 @@ public class ServiceRefRequirement extends AbstractTrackerRequirement {
 
     private ServiceCache cache;
 
-    public ServiceRefRequirement( BundlePublisher publisher,
+    public ServiceRefRequirement( BundleTracker tracker,
                                   Class<?> serviceType,
                                   String additionalFilter,
                                   boolean required,
                                   String beanName,
                                   Method targetMethod ) {
-        super( publisher, serviceType, additionalFilter, beanName, targetMethod );
+        super( tracker, serviceType, additionalFilter, beanName, targetMethod );
         this.required = required;
+    }
+
+    @Override
+    public String toString() {
+        return "ServiceRef[" + getServiceType().getSimpleName() + "/" + getTargetMethod().getName() + "/" + getBeanName() + "]";
+    }
+
+    @Override
+    public int getPriority() {
+        return SERVICE_REF_PRIORITY;
     }
 
     @Override
@@ -53,7 +64,13 @@ public class ServiceRefRequirement extends AbstractTrackerRequirement {
 
             // obtain a suitable replacement
             ServiceReference<Object> newServiceReference = getTracker().getServiceReference();
-            Object newService = getBundleContext().getService( newServiceReference );
+            BundleContext bundleContext = getBundleContext();
+            if( bundleContext == null ) {
+                this.cache = null;
+                return;
+            }
+
+            Object newService = newServiceReference == null ? null : bundleContext.getService( newServiceReference );
             if( newService != null ) {
 
                 // a replacement was found, cache it
@@ -81,13 +98,13 @@ public class ServiceRefRequirement extends AbstractTrackerRequirement {
     }
 
     @Override
-    public boolean open() {
-        super.open();
+    protected boolean trackInternal() throws Exception {
+        super.trackInternal();
         return !this.required || this.cache != null;
     }
 
     @Override
-    public void onSatisfy( ApplicationContext applicationContext, Object... state ) throws Exception {
+    protected void onSatisfyInternal( ApplicationContext applicationContext, Object... state ) throws Exception {
         invoke( getBean( applicationContext ), getServiceMethodArgs() );
     }
 

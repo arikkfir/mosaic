@@ -3,7 +3,7 @@ package org.mosaic.server.boot.impl.publish.requirement;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import org.mosaic.server.boot.impl.publish.BundlePublisher;
+import org.mosaic.server.boot.impl.publish.BundleTracker;
 import org.mosaic.server.boot.impl.publish.requirement.support.AbstractTrackerRequirement;
 import org.osgi.framework.ServiceReference;
 
@@ -14,16 +14,26 @@ public class ServiceListRequirement extends AbstractTrackerRequirement {
 
     private final List<Object> cachedReferences = new CopyOnWriteArrayList<>();
 
-    public ServiceListRequirement( BundlePublisher publisher,
+    public ServiceListRequirement( BundleTracker tracker,
                                    Class<?> serviceType,
                                    String additionalFilter,
                                    String beanName,
                                    Method targetMethod ) {
-        super( publisher, serviceType, additionalFilter, beanName, targetMethod );
+        super( tracker, serviceType, additionalFilter, beanName, targetMethod );
         Class<?>[] parameterTypes = targetMethod.getParameterTypes();
         if( parameterTypes.length != 1 || !parameterTypes[ 0 ].isAssignableFrom( List.class ) ) {
             throw new IllegalArgumentException( "Method '" + getTargetMethod().getName() + "' is bean '" + beanName + "' has an illegal signature: must be single List parameter" );
         }
+    }
+
+    @Override
+    public String toString() {
+        return "ServiceList[" + getServiceType().getSimpleName() + "/" + getTargetMethod().getName() + "/" + getBeanName() + "]";
+    }
+
+    @Override
+    public int getPriority() {
+        return SERVICE_LIST_PRIORITY;
     }
 
     @Override
@@ -39,8 +49,8 @@ public class ServiceListRequirement extends AbstractTrackerRequirement {
     }
 
     @Override
-    public boolean open() {
-        super.open();
+    protected boolean trackInternal() throws Exception {
+        super.trackInternal();
         return true;
     }
 

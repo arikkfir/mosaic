@@ -49,6 +49,16 @@ public class OsgiSpringNamespacePlugin implements EntityResolver, NamespaceHandl
         }
     }
 
+    public void open() {
+        LOG.debug( "Adding Spring namespace handler and entity resolver bundle listener" );
+        this.bundleContext.addBundleListener( this );
+    }
+
+    public void close() {
+        this.bundleContext.removeBundleListener( this );
+        LOG.debug( "Removing Spring namespace handler and entity resolver bundle listener" );
+    }
+
     @Override
     public void bundleChanged( BundleEvent event ) {
         Bundle bundle = event.getBundle();

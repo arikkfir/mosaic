@@ -5,7 +5,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import org.mosaic.osgi.util.ServiceUtils;
-import org.mosaic.server.boot.impl.publish.BundlePublisher;
+import org.mosaic.server.boot.impl.publish.BundleTracker;
 import org.mosaic.server.boot.impl.publish.requirement.support.AbstractTrackerRequirement;
 import org.osgi.framework.ServiceReference;
 import org.springframework.context.ApplicationContext;
@@ -15,12 +15,22 @@ import org.springframework.context.ApplicationContext;
  */
 public class ServiceUnbindRequirement extends AbstractTrackerRequirement {
 
-    public ServiceUnbindRequirement( BundlePublisher publisher,
+    public ServiceUnbindRequirement( BundleTracker tracker,
                                      Class<?> serviceType,
                                      String additionalFilter,
                                      String beanName,
                                      Method targetMethod ) {
-        super( publisher, serviceType, additionalFilter, beanName, targetMethod );
+        super( tracker, serviceType, additionalFilter, beanName, targetMethod );
+    }
+
+    @Override
+    public String toString() {
+        return "ServiceUnbind[" + getServiceType().getSimpleName() + "/" + getTargetMethod().getName() + "/" + getBeanName() + "]";
+    }
+
+    @Override
+    public int getPriority() {
+        return SERVICE_UNBIND_PRIORITY;
     }
 
     @Override
@@ -31,13 +41,13 @@ public class ServiceUnbindRequirement extends AbstractTrackerRequirement {
     }
 
     @Override
-    public boolean open() {
-        super.open();
+    protected boolean trackInternal() throws Exception {
+        super.trackInternal();
         return true;
     }
 
     @Override
-    public void onSatisfy( ApplicationContext applicationContext, Object... state ) throws Exception {
+    protected void onSatisfyInternal( ApplicationContext applicationContext, Object... state ) throws Exception {
         Object bean = getBean( applicationContext );
         ServiceReference<?> serviceReference = ( ServiceReference<?> ) state[ 0 ];
         Object service = state[ 1 ];

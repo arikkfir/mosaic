@@ -1,7 +1,10 @@
 package org.mosaic.server.boot.impl.publish.requirement;
 
-import org.mosaic.server.boot.impl.publish.BundlePublisher;
+import org.mosaic.logging.Logger;
+import org.mosaic.logging.LoggerFactory;
+import org.mosaic.server.boot.impl.publish.BundleTracker;
 import org.mosaic.server.boot.impl.publish.requirement.support.AbstractBeanRequirement;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 import org.springframework.context.ApplicationContext;
 
@@ -10,30 +13,50 @@ import org.springframework.context.ApplicationContext;
  */
 public class ServiceExportRequirement extends AbstractBeanRequirement {
 
+    private static final Logger LOG = LoggerFactory.getBundleLogger( ServiceExportRequirement.class );
+
     private final Class<?> apiType;
 
     private ServiceRegistration registration;
 
-    public ServiceExportRequirement( BundlePublisher publisher, String beanName, Class<?> apiType ) {
-        super( publisher, beanName );
+    public ServiceExportRequirement( BundleTracker tracker, String beanName, Class<?> apiType ) {
+        super( tracker, beanName );
         this.apiType = apiType;
     }
 
     @Override
-    public boolean open() throws Exception {
-        super.open();
+    public String toString() {
+        return "ServiceExport[" + this.apiType.getSimpleName() + "/" + getBeanName() + "]";
+    }
+
+    @Override
+    public int getPriority() {
+        return SERVICE_EXPORT_PRIORITY;
+    }
+
+    @Override
+    protected boolean trackInternal() throws Exception {
+        super.trackInternal();
         return true;
     }
 
     @Override
-    public void onPublish( ApplicationContext applicationContext ) throws Exception {
-        this.registration = getBundleContext().registerService( this.apiType.getName(), getBean( applicationContext ), null );
+    protected void publishInternal( ApplicationContext applicationContext ) throws Exception {
+        BundleContext bundleContext = getBundleContext();
+        if( bundleContext == null ) {
+            LOG.warn( "Publishing non-active bundle?? For bundle: {}", getBundleName() );
+        } else {
+            this.registration = bundleContext.registerService( this.apiType.getName(), getBean( applicationContext ), null );
+        }
     }
 
     @Override
-    public void revert() throws Exception {
+    protected void unpublishInternal() throws Exception {
         if( this.registration != null ) {
-            this.registration.unregister();
+            try {
+                this.registration.unregister();
+            } catch( IllegalStateException ignore ) {
+            }
         }
     }
 }

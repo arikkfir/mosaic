@@ -1,6 +1,6 @@
 package org.mosaic.server.boot.impl.publish.requirement.support;
 
-import org.mosaic.server.boot.impl.publish.BundlePublisher;
+import org.mosaic.server.boot.impl.publish.BundleTracker;
 import org.springframework.beans.factory.BeanFactory;
 
 /**
@@ -10,8 +10,8 @@ public abstract class AbstractBeanRequirement extends AbstractRequirement {
 
     private final String beanName;
 
-    protected AbstractBeanRequirement( BundlePublisher publisher, String beanName ) {
-        super( publisher );
+    protected AbstractBeanRequirement( BundleTracker tracker, String beanName ) {
+        super( tracker );
         this.beanName = beanName;
     }
 
@@ -24,10 +24,13 @@ public abstract class AbstractBeanRequirement extends AbstractRequirement {
     }
 
     @Override
-    public final void onInitBean( Object bean, String beanName ) throws Exception {
-        if( beanName.equals( this.beanName ) ) {
-            onInitBeanInternal( bean );
-        }
+    public boolean isBeanPublishable( Object bean, String beanName ) {
+        return this.beanName.equals( beanName );
+    }
+
+    @Override
+    protected void publishBeanInternal( Object bean, String beanName ) throws Exception {
+        onInitBeanInternal( bean );
     }
 
     protected void onInitBeanInternal( Object bean ) throws Exception {

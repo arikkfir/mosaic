@@ -2,7 +2,7 @@ package org.mosaic.server.boot.impl.publish.requirement.support;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import org.mosaic.server.boot.impl.publish.BundlePublisher;
+import org.mosaic.server.boot.impl.publish.BundleTracker;
 
 /**
  * @author arik
@@ -11,8 +11,8 @@ public abstract class AbstractMethodRequirement extends AbstractBeanRequirement 
 
     private final Method targetMethod;
 
-    protected AbstractMethodRequirement( BundlePublisher publisher, String beanName, Method targetMethod ) {
-        super( publisher, beanName );
+    protected AbstractMethodRequirement( BundleTracker tracker, String beanName, Method targetMethod ) {
+        super( tracker, beanName );
         this.targetMethod = targetMethod;
     }
 

@@ -1,11 +1,8 @@
 package org.mosaic.server.boot.impl.publish.requirement.support;
 
 import java.lang.reflect.Method;
-import org.mosaic.server.boot.impl.publish.BundlePublisher;
-import org.osgi.framework.Filter;
-import org.osgi.framework.FrameworkUtil;
-import org.osgi.framework.InvalidSyntaxException;
-import org.osgi.framework.ServiceReference;
+import org.mosaic.server.boot.impl.publish.BundleTracker;
+import org.osgi.framework.*;
 import org.osgi.util.tracker.ServiceTracker;
 import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
@@ -21,33 +18,34 @@ public abstract class AbstractTrackerRequirement extends AbstractMethodRequireme
 
     private final Class<?> serviceType;
 
-    public AbstractTrackerRequirement( BundlePublisher publisher,
+    public AbstractTrackerRequirement( BundleTracker tracker,
                                        Class<?> serviceType,
                                        String additionalFilter,
                                        String beanName,
                                        Method targetMethod ) {
-        super( publisher, beanName, targetMethod );
+        super( tracker, beanName, targetMethod );
         this.serviceType = serviceType;
 
         Filter filter = createFilter( this.serviceType, additionalFilter );
-        this.tracker = new ServiceTracker<>( getPublisher().getBundleContext(), filter, this );
+        this.tracker = new ServiceTracker<>( getBundleContext(), filter, this );
     }
 
     @Override
-    public boolean open() {
+    protected boolean trackInternal() throws Exception {
         this.tracker.open();
         return false;
     }
 
     @Override
-    public void close() {
+    protected void untrackInternal() throws Exception {
         this.tracker.close();
     }
 
     @Override
     public Object addingService( ServiceReference<Object> serviceReference ) {
         // no-op
-        return getBundleContext().getService( serviceReference );
+        BundleContext bundleContext = getBundleContext();
+        return bundleContext == null ? null : bundleContext.getService( serviceReference );
     }
 
     @Override

@@ -25,6 +25,14 @@
             <artifactId>org.apache.felix.framework</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.apache.felix.eventadmin</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.apache.felix.log</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>org.springframework.beans</artifactId>
         </dependency>
@@ -62,10 +70,6 @@
 
                         <!-- Since no other bundle will track this bundle's lifecycle, we must take care of our own -->
                         <Bundle-Activator>org.mosaic.server.boot.impl.ServerBootActivator</Bundle-Activator>
-
-                        <!-- This bundle must have this header since no one else is going to start it; other bundles
-                             will automatically be tracked by this bundle so they don't need it. -->
-                        <Mosaic-AutoStart>true</Mosaic-AutoStart>
 
                     </instructions>
                 </configuration>

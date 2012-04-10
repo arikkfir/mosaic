@@ -1,7 +1,6 @@
 package org.mosaic.server.boot.impl.publish;
 
-import java.util.Collection;
-import java.util.HashSet;
+import java.util.*;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
 import org.mosaic.osgi.util.BundleUtils;
@@ -20,9 +19,9 @@ import static org.mosaic.server.boot.impl.publish.spring.BeanFactoryUtils.regist
 /**
  * @author arik
  */
-public class BundlePublisher {
+public class BundleTracker {
 
-    private static final Logger LOG = LoggerFactory.getBundleLogger( BundlePublisher.class );
+    private static final Logger LOG = LoggerFactory.getBundleLogger( BundleTracker.class );
 
     private final Object lock = new Object();
 
@@ -40,67 +39,55 @@ public class BundlePublisher {
 
     private BundleApplicationContext applicationContext;
 
-    private boolean started;
+    private boolean tracking;
 
-    public BundlePublisher( Bundle bundle, OsgiSpringNamespacePlugin osgiSpringNamespacePlugin ) {
+    public BundleTracker( Bundle bundle, OsgiSpringNamespacePlugin osgiSpringNamespacePlugin ) {
         this.bundle = bundle;
         this.osgiSpringNamespacePlugin = osgiSpringNamespacePlugin;
         this.requirementFactory = new RequirementFactory( this, this.bundle, this.osgiSpringNamespacePlugin );
     }
 
-    public BundleContext getBundleContext() {
-        BundleContext bundleContext = this.bundle.getBundleContext();
-        if( bundleContext == null ) {
-            throw new IllegalStateException( "Cannot obtain bundle context - is bundle active? (" + BundleUtils.toString( this.bundle ) + ")" );
-        }
-        return bundleContext;
-    }
+    public void track() throws Exception {
+        LOG.info( "Tracking bundle '{}'", BundleUtils.toString( this.bundle ) );
 
-    @SuppressWarnings( "ConstantConditions" )
-    public void start() throws Exception {
-        this.requirements = new HashSet<>();
-        this.satisfied = new HashSet<>();
-        this.unsatisfied = new HashSet<>();
+        // initialize data structures
+        this.requirements = new LinkedHashSet<>();
+        this.satisfied = new LinkedHashSet<>();
+        this.unsatisfied = new LinkedHashSet<>();
 
-        // open our requirements; every requirement starts in the 'unsatisfied' state until it notifies us differently
+        // detect bundle requirements
         for( Requirement requirement : this.requirementFactory.detectRequirements() ) {
             try {
-                boolean satisfied = requirement.open();
-                this.requirements.add( requirement );
-                if( satisfied ) {
+                if( requirement.track() ) {
                     this.satisfied.add( requirement );
                 } else {
                     this.unsatisfied.add( requirement );
                 }
+                this.requirements.add( requirement );
 
             } catch( Exception e ) {
-
-                for( Requirement req : this.requirements ) {
-                    req.close();
+                for( Requirement req : getReversedRequirements() ) {
+                    req.untrack();
                 }
                 throw e;
-
             }
         }
+        this.tracking = true;
 
-        LOG.debug( "Tracking bundle '{}'", BundleUtils.toString( this.bundle ) );
-
+        // if all are satisfied, publish; otherwise, it will be published later when the requirements will be satisfied (other threads)
         if( this.unsatisfied.isEmpty() ) {
             publish();
         }
-        this.started = true;
     }
 
-    public void stop() {
-        LOG.debug( "No longer tracking bundle '{}'", BundleUtils.toString( this.bundle ) );
-        this.started = false;
+    public void untrack() {
+        // un-publish bundle
+        unpublish();
 
-        // close application context
-        close();
-
-        // close our requirements
-        for( Requirement requirement : this.requirements ) {
-            requirement.close();
+        // untrack our requirements
+        this.tracking = false;
+        for( Requirement requirement : getReversedRequirements() ) {
+            requirement.untrack();
         }
 
         // remove references
@@ -108,49 +95,47 @@ public class BundlePublisher {
         this.requirements = null;
         this.satisfied = null;
         this.unsatisfied = null;
+
+        LOG.info( "Untracked bundle '{}'", BundleUtils.toString( this.bundle ) );
+    }
+
+    public BundleContext getBundleContext() {
+        return this.bundle.getBundleContext();
     }
 
     public void markAsSatisfied( Requirement requirement, Object... state ) {
         synchronized( this.lock ) {
-
             this.unsatisfied.remove( requirement );
             this.satisfied.add( requirement );
+            if( this.tracking ) {
+                if( this.applicationContext != null ) {
 
-            if( !this.started ) {
-
-                // if we're not started yet, do nothing and return
-
-            } else if( this.applicationContext != null ) {
-
-                // already published - just re-onSatisfy this requirement on our published context
-                try {
+                    // already published - just re-onSatisfy this requirement on our published context
                     requirement.onSatisfy( this.applicationContext, state );
-                } catch( Exception e ) {
-                    LOG.error( "Requirement '{}' could not be satisfied: {}", requirement, e.getMessage(), e );
+
+                } else if( unsatisfied.isEmpty() ) {
+
+                    // we're not published - but all requirements are now satisfied - publish
+                    publish();
+
                 }
-
-            } else if( unsatisfied.isEmpty() ) {
-
-                // we're not published - but all requirements are now satisfied - publish
-                publish();
-
             }
         }
     }
 
+    public boolean isSatisfied( Requirement requirement ) {
+        return this.satisfied.contains( requirement );
+    }
+
     public void markAsUnsatisfied( Requirement requirement ) {
         synchronized( this.lock ) {
-
             this.unsatisfied.add( requirement );
             this.satisfied.remove( requirement );
+            if( this.tracking ) {
 
-            if( !this.started ) {
-
-                // if we're not started yet, do nothing and return
-
-            } else if( this.applicationContext != null ) {
-
-                close();
+                if( this.applicationContext != null ) {
+                    unpublish();
+                }
 
             }
         }
@@ -158,30 +143,34 @@ public class BundlePublisher {
 
     private void publish() {
         try {
-            LOG.info( "Publishing bundle '{}'", BundleUtils.toString( this.bundle ) );
+            LOG.debug( "Publishing bundle '{}'", BundleUtils.toString( this.bundle ) );
             BundleApplicationContext applicationContext = new BundleApplicationContext( this.bundle );
             applicationContext.getBeanFactory().addBeanPostProcessor( new RequirementTargetsBeanPostProcessor() );
             registerBundleBeans( this.bundle, applicationContext, applicationContext.getClassLoader(), this.osgiSpringNamespacePlugin );
             applicationContext.refresh();
 
             for( Requirement requirement : this.requirements ) {
-                requirement.onPublish( applicationContext );
+                requirement.publish( applicationContext );
             }
 
             this.applicationContext = applicationContext;
+            LOG.info( "Published bundle '{}'", BundleUtils.toString( this.bundle ) );
 
         } catch( Exception e ) {
 
             // publish failed - revert any effects requirements applied to the system (outside the app context)
             LOG.error( "Could not publish bundle '{}': {}", BundleUtils.toString( this.bundle ), e.getMessage(), e );
-            close();
+            unpublish();
 
         }
     }
 
-    private void close() {
-        LOG.info( "Closing bundle '{}'", BundleUtils.toString( this.bundle ) );
-        revertRequirements();
+    private void unpublish() {
+        LOG.debug( "Unpublishing bundle '{}'", BundleUtils.toString( this.bundle ) );
+        for( Requirement requirement : this.satisfied ) {
+            requirement.unpublish();
+        }
+
         if( this.applicationContext != null ) {
             try {
                 this.applicationContext.close();
@@ -191,19 +180,14 @@ public class BundlePublisher {
                 this.applicationContext = null;
             }
         }
+
+        LOG.info( "Unpublished bundle '{}'", BundleUtils.toString( this.bundle ) );
     }
 
-    @SuppressWarnings( "ConstantConditions" )
-    private void revertRequirements() {
-        synchronized( this.lock ) {
-            for( Requirement req : this.satisfied ) {
-                try {
-                    req.revert();
-                } catch( Exception e ) {
-                    LOG.error( "Requirement '{}' could not be reverted (after failed publish attempt): {}", req, e.getMessage(), e );
-                }
-            }
-        }
+    private Collection<Requirement> getReversedRequirements() {
+        List<Requirement> reversed = new LinkedList<>( this.requirements );
+        Collections.reverse( reversed );
+        return reversed;
     }
 
     private class RequirementTargetsBeanPostProcessor implements BeanPostProcessor {
@@ -213,7 +197,9 @@ public class BundlePublisher {
             synchronized( lock ) {
                 for( Requirement requirement : satisfied ) {
                     try {
-                        requirement.onInitBean( bean, beanName );
+                        if( requirement.isBeanPublishable( bean, beanName ) ) {
+                            requirement.publishBean( bean, beanName );
+                        }
                     } catch( Exception e ) {
                         throw new BeanCreationException( beanName, e.getMessage(), e );
                     }

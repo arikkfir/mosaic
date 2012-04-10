@@ -29,10 +29,12 @@
     <!-- =========================================================================================================== -->
     <logger name="org.springframework" level="WARN"/>
     <logger name="org.mosaic.server.boot.impl.publish.spring.BundleApplicationContext" level="WARN"/>
+    <logger name="org.mosaic.server.boot.impl.publish.spring.BundleEnvironment" level="WARN"/>
+    <logger name="org.apache.sshd" level="WARN"/>
     <logger name="org.apache.felix" additivity="false">
         <appender-ref ref="framework"/>
     </logger>
-    <logger name="org.mosaic.osgi.bundles" additivity="false">
+    <logger name="org.mosaic.osgi.log" additivity="false">
         <appender-ref ref="framework"/>
     </logger>
 
