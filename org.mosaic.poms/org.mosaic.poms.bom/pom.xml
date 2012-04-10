@@ -102,6 +102,16 @@
                 <groupId>org.apache.felix</groupId>
                 <artifactId>org.apache.felix.log</artifactId>
                 <version>1.0.1</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.osgi</groupId>
+                        <artifactId>org.osgi.core</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.osgi</groupId>
+                        <artifactId>org.osgi.compendium</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.apache.felix</groupId>
@@ -192,8 +202,19 @@
                 <version>3.1.1.RELEASE</version>
             </dependency>
             <!-- ============================================================ -->
-            <!-- JLine2 Terminal utility                                      -->
+            <!-- Command line / terminal dependencies                         -->
             <!-- ============================================================ -->
+            <dependency>
+                <groupId>org.apache.sshd</groupId>
+                <artifactId>sshd-core</artifactId>
+                <version>0.6.0</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
             <dependency>
                 <groupId>jline</groupId>
                 <artifactId>jline</artifactId>
@@ -203,6 +224,16 @@
                 <groupId>org.fusesource.jansi</groupId>
                 <artifactId>jansi</artifactId>
                 <version>1.8</version>
+            </dependency>
+            <dependency>
+                <groupId>net.sf.jopt-simple</groupId>
+                <artifactId>jopt-simple</artifactId>
+                <version>4.3</version>
+            </dependency>
+            <dependency>
+                <groupId>com.lexicalscope.jewelcli</groupId>
+                <artifactId>jewelcli</artifactId>
+                <version>0.8.2</version>
             </dependency>
             <!-- ============================================================ -->
             <!-- Quartz scheduler                                             -->
