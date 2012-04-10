@@ -21,15 +21,15 @@ public class ServiceEventsLoggerListener implements ServiceListener {
         Object objectClass = sr.getProperty( Constants.OBJECTCLASS );
         switch( event.getType() ) {
             case ServiceEvent.REGISTERED:
-                this.logger.trace( "Service for types '{}' has been registered by bundle '{}'", objectClass, bundle );
+                this.logger.debug( "Service for types '{}' has been registered by bundle '{}'", objectClass, bundle );
                 break;
 
             case ServiceEvent.MODIFIED:
-                this.logger.trace( "Service for types '{}' form bundle '{}' has been modified", objectClass, bundle );
+                this.logger.debug( "Service for types '{}' form bundle '{}' has been modified", objectClass, bundle );
                 break;
 
             case ServiceEvent.UNREGISTERING:
-                this.logger.trace( "Service for types '{}' from bundle '{}' has been unregistered", objectClass, bundle );
+                this.logger.debug( "Service for types '{}' from bundle '{}' has been unregistered", objectClass, bundle );
                 break;
         }
     }
