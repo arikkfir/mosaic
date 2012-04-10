@@ -65,6 +65,7 @@
                     <failBuild>true</failBuild>
                     <failOnWarning>true</failOnWarning>
                     <ignoreDirect>false</ignoreDirect>
+                    <ignoreNonCompile>true</ignoreNonCompile>
                     <verbose>true</verbose>
                 </configuration>
                 <executions>
