@@ -1,6 +1,7 @@
 package org.mosaic.osgi.util;
 
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 
 /**
  * @author arik
@@ -13,6 +14,16 @@ public abstract class BundleUtils {
         } else {
             return bundle.getSymbolicName() + "-" + bundle.getVersion() + "[" + bundle.getBundleId() + "]";
         }
+    }
+
+    public static String toString( BundleContext bundleContext ) {
+        if( bundleContext != null ) {
+            try {
+                return toString( bundleContext.getBundle() );
+            } catch( IllegalStateException ignore ) {
+            }
+        }
+        return "";
     }
 
 }
