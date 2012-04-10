@@ -21,18 +21,34 @@
             <version>[1.0.0-SNAPSHOT,2)</version>
         </dependency>
         <dependency>
+            <groupId>org.mosaic.server</groupId>
+            <artifactId>org.mosaic.server.api</artifactId>
+            <version>[1.0.0-SNAPSHOT,2)</version>
+        </dependency>
+        <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>org.springframework.context</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.sshd</groupId>
             <artifactId>sshd-core</artifactId>
-            <version>0.6.0</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.sshd</groupId>
-            <artifactId>sshd-pam</artifactId>
-            <version>0.6.0</version>
+            <groupId>jline</groupId>
+            <artifactId>jline</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>joda-time</groupId>
+            <artifactId>joda-time</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.fusesource.jansi</groupId>
+            <artifactId>jansi</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.sf.jopt-simple</groupId>
+            <artifactId>jopt-simple</artifactId>
         </dependency>
     </dependencies>
 
@@ -47,5 +63,26 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <configuration>
+                    <instructions>
+                        <Embed-Dependency>jline,jansi,jopt-simple,jewelcli,sshd*,mina*</Embed-Dependency>
+                        <Embed-Transitive>true</Embed-Transitive>
+                        <Import-Package>
+                            !com.jcraft.jzlib*,
+                            !org.bouncycastle*,
+                            !org.apache.tomcat*,
+                            *
+                        </Import-Package>
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
