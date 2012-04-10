@@ -29,7 +29,7 @@ public class FrameworkEventsLoggerListener implements FrameworkListener {
                 break;
 
             case FrameworkEvent.PACKAGES_REFRESHED:
-                this.logger.info( "Refreshed OSGi packages have been refreshed" );
+                this.logger.info( "Refreshed OSGi packages" );
                 break;
 
             case FrameworkEvent.STARTLEVEL_CHANGED:
