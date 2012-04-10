@@ -1,6 +1,8 @@
 package org.mosaic.lifecycle;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 /**
  * @author arik
@@ -11,5 +13,12 @@ public interface MethodEndpointInfo {
 
     String SHORT_TYPE = "methodEndpointShortType";
 
-    Class<? extends Annotation> getType();
+    boolean isOfType( Class<? extends Annotation> annotationType );
+
+    Annotation getType();
+
+    Method getMethod();
+
+    Object invoke( Object... arguments ) throws InvocationTargetException, IllegalAccessException;
+
 }
