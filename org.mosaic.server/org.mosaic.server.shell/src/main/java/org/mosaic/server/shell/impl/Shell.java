@@ -19,7 +19,6 @@ import org.joda.time.format.PeriodFormatterBuilder;
 import org.mosaic.lifecycle.BundleContextAware;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
-import org.mosaic.server.shell.impl.commands.ShellCommandsManager;
 import org.mosaic.server.shell.impl.io.IoUtils;
 import org.mosaic.server.shell.impl.io.LfToCrLfFilterOutputStream;
 import org.mosaic.server.shell.impl.io.Pipe;

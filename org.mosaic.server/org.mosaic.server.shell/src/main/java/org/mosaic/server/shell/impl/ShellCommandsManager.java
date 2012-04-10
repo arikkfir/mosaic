@@ -1,4 +1,4 @@
-package org.mosaic.server.shell.impl.commands;
+package org.mosaic.server.shell.impl;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
