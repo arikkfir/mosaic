@@ -6,7 +6,6 @@ import java.util.Map;
 import org.apache.felix.framework.Felix;
 import org.apache.felix.framework.cache.BundleCache;
 import org.apache.felix.framework.util.FelixConstants;
-import org.mosaic.runner.logging.BundleEventsLoggerListener;
 import org.mosaic.runner.logging.FelixLogger;
 import org.mosaic.runner.logging.FrameworkEventsLoggerListener;
 import org.mosaic.runner.logging.ServiceEventsLoggerListener;
@@ -44,6 +43,7 @@ public class Runner {
         this.logger.info( "    Server bundles: {}", this.home.getServer() );
         this.logger.info( "    Work directory: {}", this.home.getWork() );
         this.logger.info( "******************************************************************************************" );
+        this.logger.info( " " );
 
         // create OSGi container
         Felix felix = createFelix();
@@ -83,16 +83,12 @@ public class Runner {
                              "org.slf4j;version=1.6.4," +
                              "org.slf4j.spi;version=1.6.4," +
                              "org.slf4j.helpers;version=1.6.4" );
-            for( Map.Entry<String, Object> entry : felixConfig.entrySet() ) {
-                this.logger.debug( "    {} = {}", entry.getKey(), entry.getValue() );
-            }
 
             // create Felix instance and start it - it should start empty since we clean the bundles dir on startup
             Felix felix = new Felix( felixConfig );
             felix.start();
 
             // setup event loggers
-            felix.getBundleContext().addBundleListener( new BundleEventsLoggerListener() );
             felix.getBundleContext().addFrameworkListener( new FrameworkEventsLoggerListener() );
             felix.getBundleContext().addServiceListener( new ServiceEventsLoggerListener() );
 
@@ -108,6 +104,7 @@ public class Runner {
 
             // setup the bootstrap watcher and start the bootstrap bundle
             BundlesWatcher watcher = new BundlesWatcher( felix.getBundleContext(), watcherName, directory );
+            this.logger.debug( "Watching bundles directory at: {}", directory );
             watcher.scan();
             return watcher;
 
