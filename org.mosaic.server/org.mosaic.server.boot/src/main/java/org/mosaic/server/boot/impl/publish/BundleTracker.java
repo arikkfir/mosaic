@@ -41,6 +41,8 @@ public class BundleTracker {
 
     private boolean tracking;
 
+    private boolean publishing;
+
     public BundleTracker( Bundle bundle, OsgiSpringNamespacePlugin osgiSpringNamespacePlugin ) {
         this.bundle = bundle;
         this.osgiSpringNamespacePlugin = osgiSpringNamespacePlugin;
@@ -77,6 +79,11 @@ public class BundleTracker {
         // if all are satisfied, publish; otherwise, it will be published later when the requirements will be satisfied (other threads)
         if( this.unsatisfied.isEmpty() ) {
             publish();
+        } else {
+            LOG.info( "Bundle '{}' has unsatisfied dependencies, and will be published when they are satisfied. Dependencies are:", BundleUtils.toString( this.bundle ) );
+            for( Requirement requirement : this.unsatisfied ) {
+                LOG.info( "    {}", requirement );
+            }
         }
     }
 
@@ -142,26 +149,31 @@ public class BundleTracker {
     }
 
     private void publish() {
-        try {
-            LOG.debug( "Publishing bundle '{}'", BundleUtils.toString( this.bundle ) );
-            BundleApplicationContext applicationContext = new BundleApplicationContext( this.bundle );
-            applicationContext.getBeanFactory().addBeanPostProcessor( new RequirementTargetsBeanPostProcessor() );
-            registerBundleBeans( this.bundle, applicationContext, applicationContext.getClassLoader(), this.osgiSpringNamespacePlugin );
-            applicationContext.refresh();
+        if( !this.publishing ) {
+            this.publishing = true;
+            try {
+                LOG.debug( "Publishing bundle '{}'", BundleUtils.toString( this.bundle ) );
+                BundleApplicationContext applicationContext = new BundleApplicationContext( this.bundle );
+                applicationContext.getBeanFactory().addBeanPostProcessor( new RequirementTargetsBeanPostProcessor() );
+                registerBundleBeans( this.bundle, applicationContext, applicationContext.getClassLoader(), this.osgiSpringNamespacePlugin );
+                applicationContext.refresh();
 
-            for( Requirement requirement : this.requirements ) {
-                requirement.publish( applicationContext );
+                for( Requirement requirement : this.requirements ) {
+                    requirement.publish( applicationContext );
+                }
+
+                this.applicationContext = applicationContext;
+                LOG.info( "Published bundle '{}'", BundleUtils.toString( this.bundle ) );
+
+            } catch( Exception e ) {
+
+                // publish failed - revert any effects requirements applied to the system (outside the app context)
+                LOG.error( "Could not publish bundle '{}': {}", BundleUtils.toString( this.bundle ), e.getMessage(), e );
+                unpublish();
+
+            } finally {
+                this.publishing = false;
             }
-
-            this.applicationContext = applicationContext;
-            LOG.info( "Published bundle '{}'", BundleUtils.toString( this.bundle ) );
-
-        } catch( Exception e ) {
-
-            // publish failed - revert any effects requirements applied to the system (outside the app context)
-            LOG.error( "Could not publish bundle '{}': {}", BundleUtils.toString( this.bundle ), e.getMessage(), e );
-            unpublish();
-
         }
     }
 
