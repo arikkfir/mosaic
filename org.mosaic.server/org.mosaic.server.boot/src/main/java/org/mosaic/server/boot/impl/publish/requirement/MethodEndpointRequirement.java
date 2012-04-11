@@ -68,9 +68,11 @@ public class MethodEndpointRequirement extends AbstractMethodRequirement impleme
 
     @Override
     protected void unpublishInternal() throws Exception {
-        try {
-            this.registration.unregister();
-        } catch( IllegalStateException ignore ) {
+        if( this.registration != null ) {
+            try {
+                this.registration.unregister();
+            } catch( IllegalStateException ignore ) {
+            }
         }
         this.applicationContext = null;
     }
