@@ -214,7 +214,7 @@ public class ShellConsole implements Console {
         @Override
         public TablePrinter print( Object... values ) throws IOException {
             StringBuilder line = new StringBuilder( this.lineLength );
-            for( int i = 0; i < values.length; i++ ) {
+            for( int i = 0; i < values.length && i < this.titles.size(); i++ ) {
                 Integer colLength = this.lengths.get( i );
                 Object value = values[ i ];
 
