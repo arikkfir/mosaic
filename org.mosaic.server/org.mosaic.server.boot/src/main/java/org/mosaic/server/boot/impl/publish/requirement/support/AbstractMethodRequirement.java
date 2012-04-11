@@ -20,8 +20,16 @@ public abstract class AbstractMethodRequirement extends AbstractBeanRequirement 
         return targetMethod;
     }
 
-    protected void invoke( Object bean, Object... args )
-            throws InvocationTargetException, IllegalAccessException {
-        this.targetMethod.invoke( bean, args );
+    protected void invoke( Object bean, Object... args ) throws Exception {
+        try {
+            this.targetMethod.invoke( bean, args );
+        } catch( InvocationTargetException e ) {
+            Throwable cause = e.getCause();
+            if( cause instanceof Exception ) {
+                throw ( Exception ) cause;
+            } else {
+                throw e;
+            }
+        }
     }
 }
