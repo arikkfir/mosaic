@@ -47,7 +47,7 @@ public class WelcomeMessage {
         consoleReader.println( "---------------" );
         for( Bundle bundle : bundles ) {
             if( bundle.getSymbolicName().startsWith( "org.mosaic" ) ) {
-                consoleReader.println( "  " + rightPad( bundle.getSymbolicName(), 25 ) + ": " + bundle.getVersion() );
+                consoleReader.println( "  " + rightPad( bundle.getSymbolicName(), 35 ) + ": " + bundle.getVersion() );
             }
             states.put( bundle.getState(), states.get( bundle.getState() ) + 1 );
         }

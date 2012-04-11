@@ -3,11 +3,12 @@ package org.mosaic.server.shell.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import jline.UnixTerminal;
 import jline.console.ConsoleReader;
-import joptsimple.OptionParser;
+import joptsimple.OptionException;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
@@ -19,6 +20,8 @@ import org.joda.time.format.PeriodFormatterBuilder;
 import org.mosaic.lifecycle.BundleContextAware;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
+import org.mosaic.server.shell.impl.command.CommandInfo;
+import org.mosaic.server.shell.impl.command.ShellCommandsManager;
 import org.mosaic.server.shell.impl.io.IoUtils;
 import org.mosaic.server.shell.impl.io.LfToCrLfFilterOutputStream;
 import org.mosaic.server.shell.impl.io.Pipe;
@@ -143,24 +146,33 @@ public class Shell implements Command, Runnable, SessionAware, BundleContextAwar
             String line = this.consoleReader.readLine();
             while( line != null ) {
                 line = line.trim();
+                if( line.length() > 0 ) {
+                    String[] tokens = line.split( " " );
 
-                String[] tokens = line.split( " " );
+                    String[] args;
+                    if( tokens.length == 1 ) {
+                        args = new String[ 0 ];
+                    } else {
+                        args = new String[ tokens.length - 1 ];
+                        System.arraycopy( tokens, 1, args, 0, args.length );
+                    }
 
-                String[] args;
-                if( tokens.length == 1 ) {
-                    args = new String[ 0 ];
-                } else {
-                    args = new String[ tokens.length - 1 ];
-                    System.arraycopy( tokens, 1, args, 0, args.length );
+                    CommandInfo command = this.commandsManager.getCommand( tokens[ 0 ] );
+                    if( command == null ) {
+                        this.consoleReader.println( "Unknown command: " + tokens[ 0 ] );
+                    } else {
+                        PrintWriter printWriter = new PrintWriter( this.consoleReader.getOutput() );
+                        try {
+                            command.execute( printWriter, args );
+                        } catch( OptionException e ) {
+                            this.consoleReader.println( e.getMessage() );
+                        } catch( Exception e ) {
+                            e.printStackTrace( printWriter );
+                        } finally {
+                            printWriter.flush();
+                        }
+                    }
                 }
-
-                OptionParser parser = this.commandsManager.getParser( tokens[ 0 ] );
-                if( parser == null ) {
-                    this.consoleReader.println( "Unknown command: " + tokens[ 0 ] );
-                } else {
-                    this.consoleReader.println( "Running command: " + tokens[ 0 ] );
-                }
-
                 line = this.consoleReader.readLine();
             }
 

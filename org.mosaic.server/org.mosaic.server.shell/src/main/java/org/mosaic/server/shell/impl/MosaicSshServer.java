@@ -2,9 +2,14 @@ package org.mosaic.server.shell.impl;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import javax.annotation.PreDestroy;
 import org.apache.sshd.SshServer;
+import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.server.PasswordAuthenticator;
+import org.apache.sshd.server.UserAuth;
+import org.apache.sshd.server.auth.UserAuthNone;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerSession;
 import org.mosaic.MosaicHome;
@@ -55,6 +60,13 @@ public class MosaicSshServer {
                 return password.equals( username );
             }
         } );
+
+        List<NamedFactory<UserAuth>> factories = new ArrayList<NamedFactory<UserAuth>>();
+        factories.add( new UserAuthNone.Factory() );
+//        factories.add( new UserAuthPassword.Factory() );
+//        factories.add( new UserAuthPublicKey.Factory() );
+        this.sshServer.setUserAuthFactories( factories );
+
         try {
             this.sshServer.start();
         } catch( IOException e ) {
@@ -66,7 +78,7 @@ public class MosaicSshServer {
     @PreDestroy
     public void stop() throws InterruptedException {
         if( this.sshServer != null ) {
-            this.sshServer.stop();
+            this.sshServer.stop( true );
         }
     }
 
