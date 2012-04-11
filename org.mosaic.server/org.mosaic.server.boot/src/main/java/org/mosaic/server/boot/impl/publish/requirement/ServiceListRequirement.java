@@ -37,6 +37,11 @@ public class ServiceListRequirement extends AbstractTrackerRequirement {
     }
 
     @Override
+    public String toShortString() {
+        return "List<" + getServiceType().getSimpleName() + ">";
+    }
+
+    @Override
     public Object addingService( ServiceReference<Object> serviceReference ) {
         Object service = super.addingService( serviceReference );
         this.cachedReferences.add( service );

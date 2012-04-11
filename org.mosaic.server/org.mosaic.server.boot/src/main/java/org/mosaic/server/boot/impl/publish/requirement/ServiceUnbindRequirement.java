@@ -34,6 +34,11 @@ public class ServiceUnbindRequirement extends AbstractTrackerRequirement {
     }
 
     @Override
+    public String toShortString() {
+        return "Unbind of '" + getServiceType().getSimpleName() + "'";
+    }
+
+    @Override
     public void removedService( ServiceReference<Object> serviceReference, Object service ) {
         // yes it's weird that in 'removedService' we're calling 'markAsSatisfied' but if you think about it - that's
         // the true meaning: we are still satisfied, and want to inform the publisher about it so we can inject to our bean

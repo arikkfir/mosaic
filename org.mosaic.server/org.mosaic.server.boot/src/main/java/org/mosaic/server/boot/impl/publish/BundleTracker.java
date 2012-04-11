@@ -87,6 +87,23 @@ public class BundleTracker {
         }
     }
 
+    public boolean isTracking() {
+        return tracking;
+    }
+
+    public boolean isPublished() {
+        return this.applicationContext != null;
+    }
+
+    @SuppressWarnings( "UnusedDeclaration" )
+    public Collection<Requirement> getSatisfiedRequirements() {
+        return this.satisfied;
+    }
+
+    public Collection<Requirement> getUnsatisfiedRequirements() {
+        return this.unsatisfied;
+    }
+
     public void untrack() {
         // un-publish bundle
         unpublish();

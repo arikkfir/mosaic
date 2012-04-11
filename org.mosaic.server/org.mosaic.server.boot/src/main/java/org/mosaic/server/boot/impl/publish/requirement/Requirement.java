@@ -12,6 +12,8 @@ public interface Requirement {
 
     int getPriority();
 
+    String toShortString();
+
     boolean track() throws Exception;
 
     void untrack();
@@ -25,5 +27,4 @@ public interface Requirement {
     void publishBean( Object bean, String beanName ) throws Exception;
 
     void onSatisfy( ApplicationContext applicationContext, Object... state );
-
 }

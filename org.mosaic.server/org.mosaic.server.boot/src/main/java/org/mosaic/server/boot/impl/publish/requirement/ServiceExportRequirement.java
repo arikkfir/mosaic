@@ -35,6 +35,11 @@ public class ServiceExportRequirement extends AbstractBeanRequirement {
     }
 
     @Override
+    public String toShortString() {
+        return "Export as '" + this.apiType.getSimpleName() + "'";
+    }
+
+    @Override
     protected boolean trackInternal() throws Exception {
         super.trackInternal();
         return true;

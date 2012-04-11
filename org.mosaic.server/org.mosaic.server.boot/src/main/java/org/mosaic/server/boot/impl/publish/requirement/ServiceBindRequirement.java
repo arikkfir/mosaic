@@ -39,6 +39,11 @@ public class ServiceBindRequirement extends AbstractTrackerRequirement {
     }
 
     @Override
+    public String toShortString() {
+        return "Bind '" + getServiceType().getSimpleName() + "'";
+    }
+
+    @Override
     public Object addingService( ServiceReference<Object> serviceReference ) {
         Object service = super.addingService( serviceReference );
         if( service != null ) {

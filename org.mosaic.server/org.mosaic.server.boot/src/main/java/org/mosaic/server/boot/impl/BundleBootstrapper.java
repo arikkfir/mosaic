@@ -2,10 +2,14 @@ package org.mosaic.server.boot.impl;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import org.mosaic.lifecycle.BundleState;
+import org.mosaic.lifecycle.BundleStatus;
+import org.mosaic.lifecycle.BundleStatusHelper;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
 import org.mosaic.osgi.util.BundleUtils;
 import org.mosaic.server.boot.impl.publish.BundleTracker;
+import org.mosaic.server.boot.impl.publish.requirement.Requirement;
 import org.mosaic.server.boot.impl.publish.spring.OsgiSpringNamespacePlugin;
 import org.osgi.framework.*;
 import org.osgi.framework.wiring.FrameworkWiring;
@@ -13,7 +17,7 @@ import org.osgi.framework.wiring.FrameworkWiring;
 /**
  * @author arik
  */
-public class BundleBootstrapper implements SynchronousBundleListener {
+public class BundleBootstrapper implements SynchronousBundleListener, BundleStatusHelper {
 
     private static final Logger LOG = LoggerFactory.getBundleLogger( BundleBootstrapper.class );
 
@@ -23,9 +27,21 @@ public class BundleBootstrapper implements SynchronousBundleListener {
 
     private final Map<Long, BundleTracker> trackers = new ConcurrentHashMap<>( 100 );
 
+    private ServiceRegistration<BundleStatusHelper> helperReg;
+
     public BundleBootstrapper( BundleContext bundleContext, OsgiSpringNamespacePlugin springNamespacePlugin ) {
         this.bundleContext = bundleContext;
         this.springNamespacePlugin = springNamespacePlugin;
+    }
+
+    @Override
+    public BundleStatus getBundleStatus( long bundleId ) {
+        Bundle bundle = this.bundleContext.getBundle( bundleId );
+        if( bundle == null ) {
+            return null;
+        } else {
+            return new BundleStatusImpl( bundle );
+        }
     }
 
     public void open() {
@@ -38,9 +54,16 @@ public class BundleBootstrapper implements SynchronousBundleListener {
         }
 
         this.bundleContext.addBundleListener( this );
+        this.helperReg = this.bundleContext.registerService( BundleStatusHelper.class, this, null );
     }
 
     public void close() {
+        if( this.helperReg != null ) {
+            try {
+                this.helperReg.unregister();
+            } catch( IllegalArgumentException ignore ) {
+            }
+        }
         for( BundleTracker tracker : this.trackers.values() ) {
             tracker.untrack();
         }
@@ -169,6 +192,44 @@ public class BundleBootstrapper implements SynchronousBundleListener {
             // bundle has the mosaic bundle header, and has no activator - approved
             return true;
 
+        }
+    }
+
+    private class BundleStatusImpl implements BundleStatus {
+
+        private final BundleState state;
+
+        private final Collection<String> unsatisfiedRequirements;
+
+        public BundleStatusImpl( Bundle bundle ) {
+            BundleTracker tracker = trackers.get( bundle.getBundleId() );
+            if( tracker != null ) {
+                if( tracker.isTracking() && tracker.isPublished() ) {
+                    this.state = BundleState.PUBLISHED;
+                } else {
+                    this.state = BundleState.ACTIVE;
+                }
+
+                List<String> unsatisfiedRequirements = new LinkedList<>();
+                for( Requirement requirement : tracker.getUnsatisfiedRequirements() ) {
+                    unsatisfiedRequirements.add( requirement.toShortString() );
+                }
+                this.unsatisfiedRequirements = Collections.unmodifiableCollection( unsatisfiedRequirements );
+
+            } else {
+                this.state = BundleState.valueOfOsgiState( bundle.getState() );
+                this.unsatisfiedRequirements = Collections.emptyList();
+            }
+        }
+
+        @Override
+        public BundleState getState() {
+            return this.state;
+        }
+
+        @Override
+        public Collection<String> getUnsatisfiedRequirements() {
+            return this.unsatisfiedRequirements;
         }
     }
 }

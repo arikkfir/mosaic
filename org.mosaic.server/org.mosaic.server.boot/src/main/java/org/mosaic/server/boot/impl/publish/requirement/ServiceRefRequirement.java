@@ -41,6 +41,11 @@ public class ServiceRefRequirement extends AbstractTrackerRequirement {
     }
 
     @Override
+    public String toShortString() {
+        return getServiceType().getSimpleName();
+    }
+
+    @Override
     public Object addingService( ServiceReference<Object> serviceReference ) {
         Object newService = super.addingService( serviceReference );
 

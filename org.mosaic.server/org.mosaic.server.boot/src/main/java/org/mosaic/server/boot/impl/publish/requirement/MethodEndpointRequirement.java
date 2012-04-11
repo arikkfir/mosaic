@@ -46,6 +46,11 @@ public class MethodEndpointRequirement extends AbstractMethodRequirement impleme
     }
 
     @Override
+    public String toShortString() {
+        return "Export '" + getTargetMethod().getName() + "' as @" + this.type.annotationType().getSimpleName();
+    }
+
+    @Override
     protected boolean trackInternal() throws Exception {
         super.trackInternal();
         return true;
