@@ -3,10 +3,11 @@ package org.mosaic.server.shell.impl;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import jline.console.ConsoleReader;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
+import static org.mosaic.server.shell.impl.util.StringUtils.leftPad;
+import static org.mosaic.server.shell.impl.util.StringUtils.rightPad;
 import static org.osgi.framework.Bundle.*;
 
 /**
@@ -14,7 +15,7 @@ import static org.osgi.framework.Bundle.*;
  */
 public class WelcomeMessage {
 
-    public static void print( BundleContext bundleContext, ConsoleReader consoleReader ) throws IOException {
+    public static void print( BundleContext bundleContext, ShellConsole consoleReader ) throws IOException {
         consoleReader.println( "" );
         consoleReader.println( "*************************************************************" );
         consoleReader.println( "Welcome to Mosaic Server! (running on " + System.getProperty( "os.name" ) + ")" );
@@ -24,7 +25,7 @@ public class WelcomeMessage {
         consoleReader.println( "" );
     }
 
-    private static void printBundleCounts( BundleContext bundleContext, ConsoleReader consoleReader )
+    private static void printBundleCounts( BundleContext bundleContext, ShellConsole consoleReader )
             throws IOException {
         Bundle[] bundles = bundleContext.getBundles();
         if( bundles == null ) {
@@ -61,20 +62,5 @@ public class WelcomeMessage {
         consoleReader.println( "  " + leftPad( states.get( ACTIVE ), 3 ) + " active bundles (including published bundles)" );
         consoleReader.println( "  " + leftPad( states.get( STOPPING ), 3 ) + " stopping bundles" );
         consoleReader.println( "  " + leftPad( states.get( UNINSTALLED ), 3 ) + " uninstalled bundles" );
-    }
-
-    private static String rightPad( String text, int length ) {
-        while( text.length() < length ) {
-            text += ' ';
-        }
-        return text;
-    }
-
-    private static String leftPad( Object value, int length ) {
-        String text = value.toString();
-        while( text.length() < length ) {
-            text = ' ' + text;
-        }
-        return text;
     }
 }

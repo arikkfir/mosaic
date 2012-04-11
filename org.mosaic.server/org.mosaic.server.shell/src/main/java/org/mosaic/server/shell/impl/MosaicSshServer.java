@@ -6,7 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.PreDestroy;
 import org.apache.sshd.SshServer;
+import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.server.Command;
 import org.apache.sshd.server.PasswordAuthenticator;
 import org.apache.sshd.server.UserAuth;
 import org.apache.sshd.server.auth.UserAuthNone;
@@ -19,6 +21,7 @@ import org.mosaic.lifecycle.ServiceRef;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 /**
@@ -31,13 +34,13 @@ public class MosaicSshServer {
 
     private MosaicHome home;
 
-    private MosaicSshShellFactory shellFactory;
-
     private SshServer sshServer;
 
+    private ApplicationContext applicationContext;
+
     @Autowired
-    public void setShellFactory( MosaicSshShellFactory shellFactory ) {
-        this.shellFactory = shellFactory;
+    public void setApplicationContext( ApplicationContext applicationContext ) {
+        this.applicationContext = applicationContext;
     }
 
     @ServiceRef
@@ -53,7 +56,7 @@ public class MosaicSshServer {
 
         Path hostKeyFile = this.home.getWork().resolve( "host.ser" );
         this.sshServer.setKeyPairProvider( new SimpleGeneratorHostKeyProvider( hostKeyFile.toString() ) );
-        this.sshServer.setShellFactory( this.shellFactory );
+        this.sshServer.setShellFactory( new MosaicSshShellFactory() );
         this.sshServer.setPasswordAuthenticator( new PasswordAuthenticator() {
             @Override
             public boolean authenticate( String username, String password, ServerSession session ) {
@@ -78,8 +81,16 @@ public class MosaicSshServer {
     @PreDestroy
     public void stop() throws InterruptedException {
         if( this.sshServer != null ) {
-            this.sshServer.stop( true );
+            this.sshServer.stop( false );
         }
     }
 
+    private class MosaicSshShellFactory implements Factory<Command> {
+
+        @Override
+        public Command create() {
+            return applicationContext.getBean( Shell.class );
+        }
+
+    }
 }

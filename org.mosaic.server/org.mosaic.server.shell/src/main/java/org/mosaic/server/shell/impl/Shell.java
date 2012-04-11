@@ -6,7 +6,6 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import jline.UnixTerminal;
 import jline.console.ConsoleReader;
 import joptsimple.OptionException;
 import org.apache.sshd.server.Command;
@@ -125,7 +124,7 @@ public class Shell implements Command, Runnable, SessionAware, BundleContextAwar
 
         // create the console reader used for interacting with the user
         try {
-            this.consoleReader = new ConsoleReader( new PipeInputStream( this.inputQueue ), this.out, new UnixTerminal() );
+            this.consoleReader = new ConsoleReader( new PipeInputStream( this.inputQueue ), this.out, new ShellTerminal( env ) );
             this.consoleReader.setHistoryEnabled( true );
             this.consoleReader.setPrompt( "[mosaic@host.com]$ " );
         } catch( Exception e ) {
@@ -141,9 +140,10 @@ public class Shell implements Command, Runnable, SessionAware, BundleContextAwar
     @Override
     public void run() {
         long start = System.currentTimeMillis();
+        ShellConsole shellConsole = new ShellConsole( this.consoleReader );
         try {
-            WelcomeMessage.print( this.bundleContext, this.consoleReader );
-            String line = this.consoleReader.readLine();
+            WelcomeMessage.print( this.bundleContext, shellConsole );
+            String line = shellConsole.readLine();
             while( line != null ) {
                 line = line.trim();
                 if( line.length() > 0 ) {
@@ -159,28 +159,26 @@ public class Shell implements Command, Runnable, SessionAware, BundleContextAwar
 
                     CommandInfo command = this.commandsManager.getCommand( tokens[ 0 ] );
                     if( command == null ) {
-                        this.consoleReader.println( "Unknown command: " + tokens[ 0 ] );
+                        shellConsole.println( "Unknown command: " + tokens[ 0 ] );
                     } else {
-                        PrintWriter printWriter = new PrintWriter( this.consoleReader.getOutput() );
                         try {
-                            command.execute( printWriter, args );
+                            command.execute( shellConsole, args );
                         } catch( OptionException e ) {
-                            this.consoleReader.println( e.getMessage() );
+                            shellConsole.println( e.getMessage() );
                         } catch( Exception e ) {
+                            PrintWriter printWriter = new PrintWriter( this.consoleReader.getOutput() );
                             e.printStackTrace( printWriter );
-                        } finally {
                             printWriter.flush();
                         }
                     }
                 }
-                line = this.consoleReader.readLine();
+                line = shellConsole.readLine();
             }
 
             String duration = SESSION_DURATION_FORMATTER.print( new Period( start, System.currentTimeMillis() ) );
-            this.consoleReader.println();
-            this.consoleReader.println( "Goodbye! (session was " + duration + " long)" );
-            this.consoleReader.flush();
-            this.session.close( false );
+            shellConsole.println();
+            shellConsole.println( "Goodbye! (session was " + duration + " long)" );
+            shellConsole.flush();
 
         } catch( IOException e ) {
             LOG.error( "I/O error occurred in SSH session: {}", e.getMessage(), e );

@@ -1,11 +1,11 @@
 package org.mosaic.server.shell.impl.command;
 
-import java.io.PrintWriter;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import joptsimple.ArgumentAcceptingOptionSpec;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
@@ -15,6 +15,8 @@ import org.mosaic.describe.RequiredArg;
 import org.mosaic.lifecycle.MethodEndpointInfo;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
+import org.mosaic.server.shell.Args;
+import org.mosaic.server.shell.Console;
 import org.mosaic.server.shell.Option;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 import org.springframework.core.ParameterNameDiscoverer;
@@ -63,11 +65,11 @@ public class CommandInfo {
         return name;
     }
 
-    public void execute( PrintWriter printWriter, String[] args ) throws Exception {
+    public void execute( Console console, String[] args ) throws Exception {
         OptionSet optionSet = this.parser.parse( args );
         List<Object> argValues = new LinkedList<>();
         for( CommandOption option : this.options ) {
-            argValues.add( option.getValue( printWriter, optionSet ) );
+            argValues.add( option.getValue( console, optionSet ) );
         }
 
         try {
@@ -92,6 +94,11 @@ public class CommandInfo {
                                         Class<?> parameterType,
                                         Annotation[] parameterAnnotation ) {
 
+        Args argsAnn = findAnnotation( parameterAnnotation, Args.class );
+        if( argsAnn != null ) {
+            return new ArgumentsCommandOption();
+        }
+
         Option optionAnn = findAnnotation( parameterAnnotation, Option.class );
 
         Description descAnn = findAnnotation( parameterAnnotation, Description.class );
@@ -100,19 +107,16 @@ public class CommandInfo {
         RequiredArg requiredArgAnn = findAnnotation( parameterAnnotation, RequiredArg.class );
         boolean argRequired = requiredArgAnn != null && requiredArgAnn.value();
 
-        if( PrintWriter.class.equals( parameterType ) ) {
+        if( Console.class.equals( parameterType ) ) {
 
-            return new PrintWriterCommandOption();
+            return new ConsoleCommandOption();
 
-        } else if( Boolean.class.equals( parameterType ) ) {
+        } else if( Boolean.class.equals( parameterType ) || boolean.class.equals( parameterType ) ) {
 
-            @SuppressWarnings( { "unchecked", "UnusedDeclaration" } )
-            ArgumentAcceptingOptionSpec<Boolean> spec =
-                    addOption( parameterName, optionAnn, description )
-                            .withOptionalArg()
-                            .ofType( Boolean.class )
-                            .defaultsTo( true );
-            return new SimpleCommandOption( spec.options().iterator().next() );
+            return new BooleanCommandOption( addOption( parameterName, optionAnn, description )
+                                                     .options()
+                                                     .iterator()
+                                                     .next() );
 
         } else {
 
@@ -151,7 +155,7 @@ public class CommandInfo {
 
     private interface CommandOption {
 
-        Object getValue( PrintWriter printWriter, OptionSet options );
+        Object getValue( Console console, OptionSet options );
 
     }
 
@@ -164,16 +168,61 @@ public class CommandInfo {
         }
 
         @Override
-        public Object getValue( PrintWriter printWriter, OptionSet options ) {
+        public Object getValue( Console console, OptionSet options ) {
             return options.valueOf( alias );
         }
     }
 
-    private class PrintWriterCommandOption implements CommandOption {
+    private class BooleanCommandOption implements CommandOption {
+
+        private final String alias;
+
+        private BooleanCommandOption( String alias ) {
+            this.alias = alias;
+        }
 
         @Override
-        public Object getValue( PrintWriter printWriter, OptionSet options ) {
-            return printWriter;
+        public Object getValue( Console console, OptionSet options ) {
+            return options.has( this.alias );
+        }
+    }
+
+    private class ConsoleCommandOption implements CommandOption {
+
+        @Override
+        public Object getValue( Console console, OptionSet options ) {
+            return console;
+        }
+    }
+
+    private class ArgumentsCommandOption implements CommandOption {
+
+        @Override
+        public Object getValue( Console console, OptionSet options ) {
+            List<String> args = new LinkedList<>();
+            ListIterator<String> i = options.nonOptionArguments().listIterator();
+            while( i.hasNext() ) {
+                String arg = i.next();
+                if( arg.startsWith( "\"" ) ) {
+                    // loop while the starting quote is the *only* quote, and while we have more tokens to swallow
+                    while( arg.indexOf( '"', 1 ) < 0 && i.hasNext() ) {
+                        arg += ' ';
+                        arg += i.next();
+                    }
+
+                    int closingQuote = arg.lastIndexOf( '"' );
+                    if( closingQuote == 0 ) {
+                        // could not find closing quote - close it ourselves
+                        arg += '"';
+                    }
+                }
+
+                if( arg.startsWith( "\"" ) && arg.endsWith( "\"" ) ) {
+                    arg = arg.substring( 1, arg.lastIndexOf( '"' ) );
+                }
+                args.add( arg );
+            }
+            return args;
         }
     }
 }
