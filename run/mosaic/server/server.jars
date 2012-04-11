@@ -1,4 +1,5 @@
 ${project.home}/org.mosaic.server/org.mosaic.server.api/target:*.jar
 ${project.home}/org.mosaic.server/org.mosaic.server.config/target:*.jar
 ${project.home}/org.mosaic.server/org.mosaic.server.shell/target:*.jar
+${project.home}/org.mosaic.server/org.mosaic.server.shell.commands/target:*.jar
 ${user.home}/.m2/repository/joda-time/joda-time/2.1:*.jar
