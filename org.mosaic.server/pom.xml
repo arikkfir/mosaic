@@ -19,6 +19,7 @@
         <module>org.mosaic.server.boot</module>
         <module>org.mosaic.server.config</module>
         <module>org.mosaic.server.shell</module>
+        <module>org.mosaic.server.shell.commands</module>
     </modules>
 
 </project>
