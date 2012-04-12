@@ -1,17 +1,20 @@
 package org.mosaic.server.shell.impl.command;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import joptsimple.HelpFormatter;
 import joptsimple.OptionDescriptor;
+import org.mosaic.logging.Logger;
+import org.mosaic.logging.LoggerFactory;
 import org.mosaic.server.shell.Console;
 
 /**
  * @author arik
  */
 public class CommandHelpFormatter implements HelpFormatter {
+
+    private static final Logger LOG = LoggerFactory.getLogger( CommandHelpFormatter.class );
 
     private static ThreadLocal<Console> CONSOLE = new ThreadLocal<>();
 
@@ -106,11 +109,11 @@ public class CommandHelpFormatter implements HelpFormatter {
             table.done();
 
         } catch( IOException e ) {
-            PrintWriter printWriter = new PrintWriter( console.getWriter() );
             try {
-                e.printStackTrace( printWriter );
-            } finally {
-                printWriter.flush();
+                console.printStackTrace( e );
+            } catch( IOException e1 ) {
+                LOG.error( "Error printing exception: {}", e.getMessage(), e );
+                //TODO 4/12/12: log this and ignore
             }
         }
 

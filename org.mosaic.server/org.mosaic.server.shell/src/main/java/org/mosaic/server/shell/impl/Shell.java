@@ -3,7 +3,6 @@ package org.mosaic.server.shell.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import jline.console.ConsoleReader;
@@ -166,9 +165,7 @@ public class Shell implements Command, Runnable, SessionAware, BundleContextAwar
                         } catch( OptionException e ) {
                             shellConsole.println( e.getMessage() );
                         } catch( Exception e ) {
-                            PrintWriter printWriter = new PrintWriter( this.consoleReader.getOutput() );
-                            e.printStackTrace( printWriter );
-                            printWriter.flush();
+                            shellConsole.printStackTrace( e );
                         }
                     }
                 }
