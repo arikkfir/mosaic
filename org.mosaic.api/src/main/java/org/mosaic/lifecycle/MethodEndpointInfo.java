@@ -3,6 +3,7 @@ package org.mosaic.lifecycle;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import org.osgi.framework.Bundle;
 
 /**
  * @author arik
@@ -21,4 +22,5 @@ public interface MethodEndpointInfo {
 
     Object invoke( Object... arguments ) throws InvocationTargetException, IllegalAccessException;
 
+    Bundle getBundle();
 }

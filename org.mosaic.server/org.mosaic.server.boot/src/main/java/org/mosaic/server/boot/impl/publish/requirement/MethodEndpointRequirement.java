@@ -10,6 +10,7 @@ import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
 import org.mosaic.server.boot.impl.publish.BundleTracker;
 import org.mosaic.server.boot.impl.publish.requirement.support.AbstractMethodRequirement;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 import org.springframework.context.ApplicationContext;
@@ -105,5 +106,10 @@ public class MethodEndpointRequirement extends AbstractMethodRequirement impleme
         } else {
             return getTargetMethod().invoke( getBean( applicationContext ), arguments );
         }
+    }
+
+    @Override
+    public Bundle getBundle() {
+        return getBundleContext().getBundle();
     }
 }
