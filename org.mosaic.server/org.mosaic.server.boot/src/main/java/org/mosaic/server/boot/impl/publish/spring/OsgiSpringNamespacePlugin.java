@@ -39,12 +39,9 @@ public class OsgiSpringNamespacePlugin implements EntityResolver, NamespaceHandl
     public OsgiSpringNamespacePlugin( BundleContext bundleContext ) {
         this.bundleContext = bundleContext;
 
-        Bundle[] bundles = this.bundleContext.getBundles();
-        if( bundles != null ) {
-            for( Bundle bundle : bundles ) {
-                if( bundle.getState() == Bundle.RESOLVED || bundle.getState() == Bundle.ACTIVE ) {
-                    processResolvedBundle( bundle );
-                }
+        for( Bundle bundle : BundleUtils.getAllBundles( this.bundleContext ) ) {
+            if( bundle.getState() == Bundle.RESOLVED || bundle.getState() == Bundle.ACTIVE ) {
+                processResolvedBundle( bundle );
             }
         }
     }

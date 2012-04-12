@@ -1,8 +1,10 @@
 package org.mosaic.server.shell.impl;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import org.mosaic.osgi.util.BundleUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
@@ -31,8 +33,9 @@ public class WelcomeMessage {
 
     private static void printBundleCounts( BundleContext bundleContext, ShellConsole consoleReader )
             throws IOException {
-        Bundle[] bundles = bundleContext.getBundles();
-        if( bundles == null ) {
+
+        Collection<Bundle> bundles = BundleUtils.getAllBundles( bundleContext );
+        if( bundles.isEmpty() ) {
             consoleReader.println()
                          .println( "No bundles are hosted!" )
                          .println();

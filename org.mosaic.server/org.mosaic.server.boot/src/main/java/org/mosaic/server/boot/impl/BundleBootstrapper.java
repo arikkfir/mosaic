@@ -160,14 +160,9 @@ public class BundleBootstrapper implements SynchronousBundleListener, BundleStat
     }
 
     private Collection<Bundle> findBundlesInStates( Integer... states ) {
-        Bundle[] bundles = this.bundleContext.getBundle( 0 ).getBundleContext().getBundles();
-        if( bundles == null ) {
-            return Collections.emptyList();
-        }
-
         Collection<Integer> bundleStates = Arrays.asList( states );
         Collection<Bundle> resolvedBundles = new LinkedList<>();
-        for( Bundle bundle : bundles ) {
+        for( Bundle bundle : BundleUtils.getAllBundles( this.bundleContext ) ) {
             if( bundleStates.contains( bundle.getState() ) ) {
                 resolvedBundles.add( bundle );
             }
