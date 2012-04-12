@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.mosaic.describe.Description;
 import org.mosaic.lifecycle.*;
+import org.mosaic.osgi.util.BundleUtils;
 import org.mosaic.server.shell.Args;
 import org.mosaic.server.shell.Console;
 import org.mosaic.server.shell.Option;
@@ -18,7 +19,7 @@ import org.springframework.stereotype.Component;
  * @author arik
  */
 @Component
-public class Commands implements BundleContextAware {
+public class ListCommands implements BundleContextAware {
 
     private BundleContext bundleContext;
 
@@ -34,6 +35,7 @@ public class Commands implements BundleContextAware {
         this.bundleContext = bundleContext;
     }
 
+    @Description( "Lists installed bundles, optionally filtered by name or symbolic name" )
     @ShellCommand( "list" )
     public void listBundles(
 
@@ -48,18 +50,56 @@ public class Commands implements BundleContextAware {
             boolean reqs,
 
             @Args
-            List<String> args
+            List<String> filters
 
     ) throws IOException {
 
-        Bundle[] bundles = this.bundleContext.getBundles();
-        if( bundles == null ) {
-            console.println( "No bundles are installed (huh!!?)." );
-            return;
-        }
+        List<Bundle> matches = findMatchingBundles( exact, filters );
+        if( matches.isEmpty() ) {
+            console.println( "No bundles match requested filters." );
+        } else {
+            Console.TableHeaders headers =
+                    console.createTable()
+                           .addHeader( "ID", 5 )
+                           .addHeader( "State", 10 )
+                           .addHeader( "Name", 45 )
+                           .addHeader( "Symbolic Name", 50 );
+            if( reqs ) {
+                headers.addHeader( "Missing requirements", 30 );
+            }
 
-        List<Bundle> matches = new ArrayList<>( bundles.length );
-        for( Bundle bundle : bundles ) {
+            Console.TablePrinter table = headers.start();
+            StringBuilder reqsString = new StringBuilder( 100 );
+            for( Bundle bundle : matches ) {
+                reqsString.delete( 0, Integer.MAX_VALUE );
+
+                String state;
+                if( this.statusHelper != null ) {
+                    BundleStatus status = this.statusHelper.getBundleStatus( bundle.getBundleId() );
+                    state = status.getState().name();
+                    for( String unsatisfied : status.getUnsatisfiedRequirements() ) {
+                        if( reqsString.length() > 0 ) {
+                            reqsString.append( ',' );
+                        }
+                        reqsString.append( unsatisfied );
+                    }
+                } else {
+                    state = BundleState.valueOfOsgiState( bundle.getState() ).name();
+                }
+
+                table.print( bundle.getBundleId(),
+                             capitalize( state ),
+                             bundle.getHeaders().get( Constants.BUNDLE_NAME ),
+                             bundle.getSymbolicName(),
+                             reqsString );
+            }
+            table.done();
+        }
+    }
+
+    private List<Bundle> findMatchingBundles( boolean exact, List<String> args ) {
+        List<Bundle> matches = new ArrayList<>( 100 );
+        for( Bundle bundle : BundleUtils.getAllBundles( this.bundleContext ) ) {
             String bundleName = bundle.getHeaders().get( Constants.BUNDLE_NAME );
             String symbolicName = bundle.getSymbolicName();
 
@@ -81,48 +121,13 @@ public class Commands implements BundleContextAware {
                 matches.add( bundle );
             }
         }
+        return matches;
+    }
 
-        if( matches.isEmpty() ) {
-            console.println( "No bundles match requested filters." );
-        } else {
-            Console.TableHeaders headers =
-                    console.createTable()
-                           .addHeader( "ID", 5 )
-                           .addHeader( "State", 10 )
-                           .addHeader( "Name", 45 )
-                           .addHeader( "Symbolic Name", 50 );
-            if( reqs ) {
-                headers.addHeader( "Missing requirements", 30 );
-            }
-
-            Console.TablePrinter table = headers.start();
-            StringBuilder reqsString = new StringBuilder( 100 );
-            for( Bundle bundle : matches ) {
-                reqsString.delete( 0, Integer.MAX_VALUE );
-
-                String bundleName = bundle.getHeaders().get( Constants.BUNDLE_NAME );
-                String symbolicName = bundle.getSymbolicName();
-                String state;
-                if( this.statusHelper != null ) {
-                    BundleStatus status = this.statusHelper.getBundleStatus( bundle.getBundleId() );
-                    state = status.getState().name();
-                    for( String unsatisfied : status.getUnsatisfiedRequirements() ) {
-                        if( reqsString.length() > 0 ) {
-                            reqsString.append( ',' );
-                        }
-                        reqsString.append( unsatisfied );
-                    }
-                } else {
-                    state = BundleState.valueOfOsgiState( bundle.getState() ).name();
-                }
-
-                state = state.toLowerCase();
-                state = Character.toUpperCase( state.charAt( 0 ) ) + state.substring( 1 );
-
-                table.print( bundle.getBundleId(), state, bundleName, symbolicName, reqsString );
-            }
-            table.done();
-        }
+    private String capitalize( String state ) {
+        state = state.toLowerCase();
+        state = Character.toUpperCase( state.charAt( 0 ) ) + state.substring( 1 );
+        return state;
     }
 
 }
