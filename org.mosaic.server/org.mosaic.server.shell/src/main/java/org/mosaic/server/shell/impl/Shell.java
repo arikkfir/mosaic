@@ -19,7 +19,7 @@ import org.joda.time.format.PeriodFormatterBuilder;
 import org.mosaic.lifecycle.BundleContextAware;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
-import org.mosaic.server.shell.impl.command.CommandInfo;
+import org.mosaic.server.shell.impl.command.ShellCommand;
 import org.mosaic.server.shell.impl.command.ShellCommandsManager;
 import org.mosaic.server.shell.impl.io.IoUtils;
 import org.mosaic.server.shell.impl.io.LfToCrLfFilterOutputStream;
@@ -157,12 +157,12 @@ public class Shell implements Command, Runnable, SessionAware, BundleContextAwar
                         System.arraycopy( tokens, 1, args, 0, args.length );
                     }
 
-                    CommandInfo command = this.commandsManager.getCommand( tokens[ 0 ] );
-                    if( command == null ) {
+                    ShellCommand shellCommand = this.commandsManager.getCommand( tokens[ 0 ] );
+                    if( shellCommand == null ) {
                         shellConsole.println( "Unknown command: " + tokens[ 0 ] );
                     } else {
                         try {
-                            command.execute( shellConsole, args );
+                            shellCommand.execute( shellConsole, args );
                         } catch( OptionException e ) {
                             shellConsole.println( e.getMessage() );
                         } catch( Exception e ) {

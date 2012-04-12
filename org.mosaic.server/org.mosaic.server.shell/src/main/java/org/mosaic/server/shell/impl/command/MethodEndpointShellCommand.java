@@ -1,5 +1,6 @@
 package org.mosaic.server.shell.impl.command;
 
+import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -15,9 +16,11 @@ import org.mosaic.describe.RequiredArg;
 import org.mosaic.lifecycle.MethodEndpointInfo;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
+import org.mosaic.server.shell.ArgDescription;
 import org.mosaic.server.shell.Args;
 import org.mosaic.server.shell.Console;
 import org.mosaic.server.shell.Option;
+import org.osgi.framework.Constants;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 import org.springframework.core.ParameterNameDiscoverer;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -27,11 +30,15 @@ import static java.util.Arrays.asList;
 /**
  * @author arik
  */
-public class CommandInfo {
+public class MethodEndpointShellCommand implements ShellCommand {
 
-    private static final Logger LOG = LoggerFactory.getLogger( CommandInfo.class );
+    private static final Logger LOG = LoggerFactory.getLogger( MethodEndpointShellCommand.class );
 
     private final String name;
+
+    private final String description;
+
+    private String additionalArgumentsDescription;
 
     private final MethodEndpointInfo endpoint;
 
@@ -39,11 +46,15 @@ public class CommandInfo {
 
     private final List<CommandOption> options = new LinkedList<>();
 
-    CommandInfo( MethodEndpointInfo endpoint ) {
+    public MethodEndpointShellCommand( MethodEndpointInfo endpoint ) {
         this.endpoint = endpoint;
         this.parser = new OptionParser();
+        this.parser.formatHelpWith( new CommandHelpFormatter() );
 
         Method method = endpoint.getMethod();
+
+        Description descAnn = method.getAnnotation( Description.class );
+        this.description = descAnn == null ? "" : descAnn.value();
 
         ParameterNameDiscoverer parameterNameDiscoverer = new LocalVariableTableParameterNameDiscoverer();
         String[] parameterNames = parameterNameDiscoverer.getParameterNames( method );
@@ -61,11 +72,13 @@ public class CommandInfo {
         this.name = commandName;
     }
 
+    @Override
     public String getName() {
         return name;
     }
 
-    public void execute( Console console, String[] args ) throws Exception {
+    @Override
+    public void execute( Console console, String... args ) throws Exception {
         OptionSet optionSet = this.parser.parse( args );
         List<Object> argValues = new LinkedList<>();
         for( CommandOption option : this.options ) {
@@ -90,19 +103,52 @@ public class CommandInfo {
         }
     }
 
+    @Override
+    public String getOrigin() {
+        return this.endpoint.getBundle().getHeaders().get( Constants.BUNDLE_NAME );
+    }
+
+    @Override
+    public String getDescription() {
+        return this.description;
+    }
+
+    @Override
+    public String getAdditionalArgumentsDescription() {
+        return this.additionalArgumentsDescription;
+    }
+
+    @Override
+    public void showHelp( Console console ) throws IOException {
+        CommandHelpFormatter.set( this, console );
+        try {
+            this.parser.printHelpOn( console.getWriter() );
+        } finally {
+            CommandHelpFormatter.reset();
+        }
+    }
+
     private CommandOption createOption( String parameterName,
                                         Class<?> parameterType,
                                         Annotation[] parameterAnnotation ) {
 
+        Description descAnn = findAnnotation( parameterAnnotation, Description.class );
+        String description = descAnn == null ? "" : descAnn.value();
+
+        ArgDescription argDescAnn = findAnnotation( parameterAnnotation, ArgDescription.class );
+        String argDesc = argDescAnn == null ? parameterName : argDescAnn.value();
+
         Args argsAnn = findAnnotation( parameterAnnotation, Args.class );
         if( argsAnn != null ) {
+            if( this.additionalArgumentsDescription != null ) {
+                throw new IllegalStateException( "Commands cannot have two @Args parameters (" + this.name + ")" );
+            } else {
+                this.additionalArgumentsDescription = argDesc;
+            }
             return new ArgumentsCommandOption();
         }
 
         Option optionAnn = findAnnotation( parameterAnnotation, Option.class );
-
-        Description descAnn = findAnnotation( parameterAnnotation, Description.class );
-        String description = descAnn == null ? "" : descAnn.value();
 
         RequiredArg requiredArgAnn = findAnnotation( parameterAnnotation, RequiredArg.class );
         boolean argRequired = requiredArgAnn != null && requiredArgAnn.value();
@@ -128,7 +174,7 @@ public class CommandInfo {
             } else {
                 spec = builder.withOptionalArg();
             }
-            spec.ofType( parameterType );
+            spec.ofType( parameterType ).describedAs( argDesc );
             return new SimpleCommandOption( spec.options().iterator().next() );
 
         }

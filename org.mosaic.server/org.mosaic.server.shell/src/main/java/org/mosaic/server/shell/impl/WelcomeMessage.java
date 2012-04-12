@@ -16,22 +16,26 @@ import static org.osgi.framework.Bundle.*;
 public class WelcomeMessage {
 
     public static void print( BundleContext bundleContext, ShellConsole consoleReader ) throws IOException {
-        consoleReader.println( "" );
-        consoleReader.println( "*************************************************************" );
-        consoleReader.println( "Welcome to Mosaic Server! (running on " + System.getProperty( "os.name" ) + ")" );
+        consoleReader.println()
+                     .println( "*************************************************************" )
+                     .println()
+                     .println( "Welcome to Mosaic Server! (running on " + System.getProperty( "os.name" ) + ")" )
+                     .println( "-------------------------------------------------------------" );
+
         printBundleCounts( bundleContext, consoleReader );
-        consoleReader.println( "" );
-        consoleReader.println( "*************************************************************" );
-        consoleReader.println( "" );
+
+        consoleReader.println()
+                     .println( "*************************************************************" )
+                     .println();
     }
 
     private static void printBundleCounts( BundleContext bundleContext, ShellConsole consoleReader )
             throws IOException {
         Bundle[] bundles = bundleContext.getBundles();
         if( bundles == null ) {
-            consoleReader.println();
-            consoleReader.println( "No bundles are hosted!" );
-            consoleReader.println();
+            consoleReader.println()
+                         .println( "No bundles are hosted!" )
+                         .println();
             return;
         }
 
@@ -43,24 +47,26 @@ public class WelcomeMessage {
         states.put( STOPPING, 0 );
         states.put( UNINSTALLED, 0 );
 
-        consoleReader.println();
-        consoleReader.println( "Server bundles:" );
-        consoleReader.println( "---------------" );
+        consoleReader.println()
+                     .println( "Server bundles:" )
+                     .println( "---------------" );
         for( Bundle bundle : bundles ) {
             if( bundle.getSymbolicName().startsWith( "org.mosaic" ) ) {
-                consoleReader.println( "  " + rightPad( bundle.getSymbolicName(), 35 ) + ": " + bundle.getVersion() );
+                String symbolicName = rightPad( bundle.getSymbolicName(), 35 );
+                String version = bundle.getVersion().toString();
+                consoleReader.print( "  " ).print( symbolicName ).print( ": " ).println( version );
             }
             states.put( bundle.getState(), states.get( bundle.getState() ) + 1 );
         }
 
-        consoleReader.println();
-        consoleReader.println( "Currently hosting:" );
-        consoleReader.println( "------------------" );
-        consoleReader.println( "  " + leftPad( states.get( INSTALLED ), 3 ) + " installed bundles" );
-        consoleReader.println( "  " + leftPad( states.get( RESOLVED ), 3 ) + " resolved bundles" );
-        consoleReader.println( "  " + leftPad( states.get( STARTING ), 3 ) + " starting bundles" );
-        consoleReader.println( "  " + leftPad( states.get( ACTIVE ), 3 ) + " active bundles (including published bundles)" );
-        consoleReader.println( "  " + leftPad( states.get( STOPPING ), 3 ) + " stopping bundles" );
-        consoleReader.println( "  " + leftPad( states.get( UNINSTALLED ), 3 ) + " uninstalled bundles" );
+        consoleReader.println()
+                     .println( "Currently hosting:" )
+                     .println( "------------------" )
+                     .print( "  " ).print( leftPad( states.get( INSTALLED ), 3 ) ).println( " installed bundles" )
+                     .print( "  " ).print( leftPad( states.get( RESOLVED ), 3 ) ).println( " resolved bundles" )
+                     .print( "  " ).print( leftPad( states.get( STARTING ), 3 ) ).println( " starting bundles" )
+                     .print( "  " ).print( leftPad( states.get( ACTIVE ), 3 ) ).println( " active bundles (including published bundles)" )
+                     .print( "  " ).print( leftPad( states.get( STOPPING ), 3 ) ).println( " stopping bundles" )
+                     .print( "  " ).print( leftPad( states.get( UNINSTALLED ), 3 ) ).println( " uninstalled bundles" );
     }
 }

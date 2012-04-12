@@ -2,13 +2,14 @@ package org.mosaic.server.shell.impl;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import jline.console.ConsoleReader;
 import org.mosaic.server.shell.Console;
 
-import static org.mosaic.server.shell.impl.util.StringUtils.repeat;
-import static org.mosaic.server.shell.impl.util.StringUtils.rightPad;
+import static java.lang.Math.max;
+import static org.mosaic.server.shell.impl.util.StringUtils.*;
 
 /**
  * @author arik
@@ -42,8 +43,9 @@ public class ShellConsole implements Console {
     }
 
     @Override
-    public void flush() throws IOException {
+    public Console flush() throws IOException {
         this.consoleReader.flush();
+        return this;
     }
 
     @Override
@@ -92,18 +94,21 @@ public class ShellConsole implements Console {
     }
 
     @Override
-    public void print( final CharSequence s ) throws IOException {
+    public Console print( final CharSequence s ) throws IOException {
         this.consoleReader.print( s );
+        return this;
     }
 
     @Override
-    public void println( final CharSequence s ) throws IOException {
+    public Console println( final CharSequence s ) throws IOException {
         this.consoleReader.println( s );
+        return this;
     }
 
     @Override
-    public void println() throws IOException {
+    public Console println() throws IOException {
         this.consoleReader.println();
+        return this;
     }
 
     @Override
@@ -122,8 +127,9 @@ public class ShellConsole implements Console {
     }
 
     @Override
-    public void beep() throws IOException {
+    public Console beep() throws IOException {
         this.consoleReader.beep();
+        return this;
     }
 
     @Override
@@ -132,18 +138,21 @@ public class ShellConsole implements Console {
     }
 
     @Override
-    public void resetPromptLine( String prompt, String buffer, int cursorDest ) throws IOException {
+    public Console resetPromptLine( String prompt, String buffer, int cursorDest ) throws IOException {
         this.consoleReader.resetPromptLine( prompt, buffer, cursorDest );
+        return this;
     }
 
     @Override
-    public void printSearchStatus( String searchTerm, String match ) throws IOException {
+    public Console printSearchStatus( String searchTerm, String match ) throws IOException {
         this.consoleReader.printSearchStatus( searchTerm, match );
+        return this;
     }
 
     @Override
-    public void restoreLine( String originalPrompt, int cursorDest ) throws IOException {
+    public Console restoreLine( String originalPrompt, int cursorDest ) throws IOException {
         this.consoleReader.restoreLine( originalPrompt, cursorDest );
+        return this;
     }
 
     @Override
@@ -166,7 +175,14 @@ public class ShellConsole implements Console {
         return new Table();
     }
 
+    @Override
+    public TableHeaders createTable( int indent ) {
+        return new Table( indent );
+    }
+
     private class Table implements TableHeaders, TablePrinter {
+
+        private final String indent;
 
         private final List<String> titles = new LinkedList<>();
 
@@ -176,6 +192,14 @@ public class ShellConsole implements Console {
 
         private String chromeLine;
 
+        private Table() {
+            this( 0 );
+        }
+
+        private Table( int indent ) {
+            this.indent = repeat( ' ', indent );
+        }
+
         @Override
         public TableHeaders addHeader( String title, int width ) {
             if( title.length() > width ) {
@@ -184,6 +208,7 @@ public class ShellConsole implements Console {
             this.titles.add( title );
             this.lengths.add( width );
             this.lineLength += width + 1;
+            //TODO 4/12/12: add support for widths by percentages (using terminal getWidth)
             return this;
         }
 
@@ -205,35 +230,53 @@ public class ShellConsole implements Console {
             headerLine.append( '|' );
             this.chromeLine = chromeLine.toString();
 
-            consoleReader.println( chromeLine );
-            consoleReader.println( headerLine );
-            consoleReader.println( chromeLine );
+            ShellConsole.this.print( this.indent ).println( chromeLine );
+            ShellConsole.this.print( this.indent ).println( headerLine );
+            ShellConsole.this.print( this.indent ).println( chromeLine );
             return this;
         }
 
         @Override
         public TablePrinter print( Object... values ) throws IOException {
-            StringBuilder line = new StringBuilder( this.lineLength );
-            for( int i = 0; i < values.length && i < this.titles.size(); i++ ) {
-                Integer colLength = this.lengths.get( i );
-                Object value = values[ i ];
 
-                String text = value == null ? "" : value.toString();
-                if( text.length() > colLength ) {
-                    text = text.substring( 0, colLength );
+            // build a matrix of values - outer list is the columns, and each inner list is lines for that column value
+            List<List<String>> matrix = new ArrayList<>( values.length );
+            int lineCount = 1;
+            for( int colIndex = 0; colIndex < this.titles.size(); colIndex++ ) {
+                Integer colLength = this.lengths.get( colIndex );
+                Object value;
+                if( colIndex >= values.length || values[ colIndex ] == null ) {
+                    value = "";
+                } else {
+                    value = values[ colIndex ];
                 }
 
-                line.append( '|' ).append( rightPad( text, colLength ) );
+                List<String> valueLines = splitLinesOnLengthAndWords( value.toString(), colLength );
+                matrix.add( valueLines );
+                lineCount = max( valueLines.size(), lineCount );
             }
-            line.append( '|' );
 
-            consoleReader.println( line );
+            StringBuilder buffer = new StringBuilder( this.lineLength );
+            for( int lineIndex = 0; lineIndex < lineCount; lineIndex++ ) {
+                buffer.delete( 0, Integer.MAX_VALUE );
+                for( int colIndex = 0; colIndex < this.titles.size(); colIndex++ ) {
+                    Integer colLength = this.lengths.get( colIndex );
+                    List<String> colLines = matrix.get( colIndex );
+                    String line = lineIndex < colLines.size()
+                            ? rightPad( colLines.get( lineIndex ), colLength )
+                            : repeat( ' ', colLength );
+                    buffer.append( '|' ).append( line );
+                }
+                buffer.append( '|' );
+                ShellConsole.this.print( this.indent ).println( buffer );
+            }
+
             return this;
         }
 
         @Override
         public void done() throws IOException {
-            consoleReader.println( chromeLine );
+            ShellConsole.this.print( this.indent ).println( chromeLine );
         }
     }
 }

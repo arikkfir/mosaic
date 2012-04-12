@@ -27,6 +27,8 @@ public interface Console {
 
     TableHeaders createTable();
 
+    TableHeaders createTable( int indent );
+
     Writer getWriter();
 
     int getWidth();
@@ -35,7 +37,7 @@ public interface Console {
 
     boolean setCursorPosition( int position ) throws IOException;
 
-    void flush() throws IOException;
+    Console flush() throws IOException;
 
     boolean backspace() throws IOException;
 
@@ -55,11 +57,11 @@ public interface Console {
 
     String readLine( String prompt, Character mask ) throws IOException;
 
-    void print( CharSequence s ) throws IOException;
+    Console print( CharSequence s ) throws IOException;
 
-    void println( CharSequence s ) throws IOException;
+    Console println( CharSequence s ) throws IOException;
 
-    void println() throws IOException;
+    Console println() throws IOException;
 
     boolean delete() throws IOException;
 
@@ -67,15 +69,15 @@ public interface Console {
 
     boolean clearScreen() throws IOException;
 
-    void beep() throws IOException;
+    Console beep() throws IOException;
 
     boolean paste() throws IOException;
 
-    void resetPromptLine( String prompt, String buffer, int cursorDest ) throws IOException;
+    Console resetPromptLine( String prompt, String buffer, int cursorDest ) throws IOException;
 
-    void printSearchStatus( String searchTerm, String match ) throws IOException;
+    Console printSearchStatus( String searchTerm, String match ) throws IOException;
 
-    void restoreLine( String originalPrompt, int cursorDest ) throws IOException;
+    Console restoreLine( String originalPrompt, int cursorDest ) throws IOException;
 
     int searchBackwards( String searchTerm, int startIndex );
 
