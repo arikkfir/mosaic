@@ -1,6 +1,7 @@
 package org.mosaic.server.shell.impl;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -178,6 +179,20 @@ public class ShellConsole implements Console {
     @Override
     public TableHeaders createTable( int indent ) {
         return new Table( indent );
+    }
+
+    @Override
+    public Console printStackTrace( Throwable throwable ) throws IOException {
+        PrintWriter printWriter = new PrintWriter( getWriter() );
+        throwable.printStackTrace( printWriter );
+        printWriter.flush();
+        return this;
+    }
+
+    @Override
+    public Console printStackTrace( String message, Throwable throwable ) throws IOException {
+        println( message );
+        return printStackTrace( throwable );
     }
 
     private class Table implements TableHeaders, TablePrinter {

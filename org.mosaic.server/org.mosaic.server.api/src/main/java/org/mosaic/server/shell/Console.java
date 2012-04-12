@@ -29,6 +29,10 @@ public interface Console {
 
     TableHeaders createTable( int indent );
 
+    Console printStackTrace( Throwable throwable ) throws IOException;
+
+    Console printStackTrace( String message, Throwable throwable ) throws IOException;
+
     Writer getWriter();
 
     int getWidth();
