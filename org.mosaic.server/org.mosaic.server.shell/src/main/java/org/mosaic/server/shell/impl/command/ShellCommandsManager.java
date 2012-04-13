@@ -1,7 +1,7 @@
 package org.mosaic.server.shell.impl.command;
 
 import java.io.IOException;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import org.mosaic.lifecycle.MethodEndpointInfo;
 import org.mosaic.lifecycle.ServiceBind;
@@ -47,6 +47,13 @@ public class ShellCommandsManager {
         return null;
     }
 
+    public Collection<ShellCommand> getCommands() {
+        List<ShellCommand> commands = new ArrayList<>( this.commands.values() );
+        commands.add( this.helpCommand );
+        Collections.sort( commands, new CommandComparator() );
+        return commands;
+    }
+
     private class HelpCommand implements ShellCommand {
 
         @Override
@@ -64,7 +71,7 @@ public class ShellCommandsManager {
                                                     .addHeader( "Description", 50 )
                                                     .addHeader( "Origin", 40 )
                                                     .start();
-                for( ShellCommand command : commands.values() ) {
+                for( ShellCommand command : getCommands() ) {
                     table.print( command.getName(), command.getDescription(), command.getOrigin() );
                 }
                 table.done();
@@ -103,6 +110,15 @@ public class ShellCommandsManager {
             console.println( "Shows currently available commands, or, when given command name(s)," );
             console.println( "prints specific help about these commands." );
             console.println( "Syntax: help [command-name]*" );
+        }
+
+    }
+
+    private static class CommandComparator implements Comparator<ShellCommand> {
+
+        @Override
+        public int compare( ShellCommand o1, ShellCommand o2 ) {
+            return o1.getName().compareTo( o2.getName() );
         }
     }
 }
