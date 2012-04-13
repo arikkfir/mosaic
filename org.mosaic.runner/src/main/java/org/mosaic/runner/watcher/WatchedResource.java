@@ -24,7 +24,7 @@ public class WatchedResource implements WatchedResourceHandler {
 
     private static final long ERROR_QUIET_TIME = 1000 * 30;
 
-    private static final long QUIET_PERIOD = 1000 * 3;
+    private static final long DEFAULT_QUIET_PERIOD = 1000 * 3;
 
     private final Logger logger = LoggerFactory.getLogger( getClass() );
 
@@ -36,7 +36,10 @@ public class WatchedResource implements WatchedResourceHandler {
 
     private long lastSuccessfulCheck;
 
+    private long quietPeriod;
+
     public WatchedResource( Path resource, WatchedResourceHandler resourceHandler ) {
+        this.quietPeriod = Long.getLong( "watchQuietPeriod", DEFAULT_QUIET_PERIOD );
         this.resource = resource.normalize().toAbsolutePath();
         this.resourceHandler = resourceHandler;
     }
@@ -54,8 +57,7 @@ public class WatchedResource implements WatchedResourceHandler {
             this.resourceHandler.handleNoLongerExists( resource );
         } catch( Exception e ) {
             successiveErrorCount++;
-            this.logger.error( "Error while processing resource '{}': {}",
-                               new Object[] { resource, e.getMessage(), e } );
+            this.logger.error( "Error while processing resource '{}'", new Object[] { resource, e } );
         }
     }
 
@@ -200,7 +202,7 @@ public class WatchedResource implements WatchedResourceHandler {
             // resource has not changed since the last time we've processed it - indicate to caller and return
             return true;
 
-        } else if( currentTimeMillis() - resourceModificationTime < QUIET_PERIOD ) {
+        } else if( currentTimeMillis() - resourceModificationTime < this.quietPeriod ) {
 
             // resource was *JUST* modified - wait a little while to ensure that the process that updated it is finished
             // (e.g. if the file-copy operation that updated it might still be running and writing to the file...)
