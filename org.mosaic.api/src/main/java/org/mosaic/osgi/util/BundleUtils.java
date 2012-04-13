@@ -3,6 +3,7 @@ package org.mosaic.osgi.util;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedList;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
@@ -38,4 +39,14 @@ public abstract class BundleUtils {
         return "";
     }
 
+    public static Collection<Bundle> findBundlesInStates( BundleContext bundleContext, Integer... states ) {
+        Collection<Integer> bundleStates = Arrays.asList( states );
+        Collection<Bundle> resolvedBundles = new LinkedList<>();
+        for( Bundle bundle : getAllBundles( bundleContext ) ) {
+            if( bundleStates.contains( bundle.getState() ) ) {
+                resolvedBundles.add( bundle );
+            }
+        }
+        return resolvedBundles;
+    }
 }
