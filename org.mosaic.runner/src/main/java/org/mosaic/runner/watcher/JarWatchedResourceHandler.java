@@ -70,6 +70,7 @@ public class JarWatchedResourceHandler implements WatchedResourceHandler {
         } else {
 
             // a bundle was previously installed from this resource - update it to represent the latest resource contents
+            bundle.stop();
             bundle.update( newInputStream( resource, StandardOpenOption.READ ) );
 
         }

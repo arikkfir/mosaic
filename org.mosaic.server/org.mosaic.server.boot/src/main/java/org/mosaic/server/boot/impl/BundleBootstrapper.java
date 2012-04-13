@@ -12,7 +12,6 @@ import org.mosaic.server.boot.impl.publish.BundleTracker;
 import org.mosaic.server.boot.impl.publish.requirement.Requirement;
 import org.mosaic.server.boot.impl.publish.spring.OsgiSpringNamespacePlugin;
 import org.osgi.framework.*;
-import org.osgi.framework.wiring.FrameworkWiring;
 
 /**
  * @author arik
@@ -45,30 +44,35 @@ public class BundleBootstrapper implements SynchronousBundleListener, BundleStat
     }
 
     public void open() {
-        LOG.debug( "Opened bundle bootstrapper" );
+        LOG.debug( "Opening bundle bootstrapper" );
 
-        for( Bundle bundle : findBundlesInStates( Bundle.ACTIVE ) ) {
-            if( shouldTrackBundle( bundle ) ) {
+        this.helperReg = this.bundleContext.registerService( BundleStatusHelper.class, this, null );
+        this.bundleContext.addBundleListener( this );
+
+        for( Bundle bundle : BundleUtils.findBundlesInStates( this.bundleContext, Bundle.ACTIVE ) ) {
+            if( bundle.getBundleId() != this.bundleContext.getBundle().getBundleId() && shouldTrackBundle( bundle ) ) {
                 trackBundle( bundle );
             }
         }
 
-        this.bundleContext.addBundleListener( this );
-        this.helperReg = this.bundleContext.registerService( BundleStatusHelper.class, this, null );
+        LOG.info( "Opened bundle bootstrapper" );
     }
 
     public void close() {
+        LOG.debug( "Stopping bundle bootstrapper" );
+
+        for( BundleTracker tracker : this.trackers.values() ) {
+            tracker.untrack();
+        }
         if( this.helperReg != null ) {
             try {
                 this.helperReg.unregister();
             } catch( IllegalArgumentException ignore ) {
             }
         }
-        for( BundleTracker tracker : this.trackers.values() ) {
-            tracker.untrack();
-        }
         this.bundleContext.removeBundleListener( this );
-        LOG.debug( "Stopped bundle bootstrapper" );
+
+        LOG.info( "Stopped bundle bootstrapper" );
     }
 
     @Override
@@ -76,40 +80,30 @@ public class BundleBootstrapper implements SynchronousBundleListener, BundleStat
         Bundle bundle = event.getBundle();
         switch( event.getType() ) {
             case BundleEvent.INSTALLED:
-                LOG.debug( "Installed bundle '{}'", BundleUtils.toString( bundle ), BundleUtils.toString( event.getOrigin() ) );
-                startResolvedBundles();
+                LOG.info( "Installed bundle '{}'", BundleUtils.toString( bundle ), BundleUtils.toString( event.getOrigin() ) );
                 break;
 
             case BundleEvent.RESOLVED:
-                LOG.debug( "Resolved bundle '{}'", bundle );
+                LOG.info( "Resolved bundle '{}'", bundle );
                 break;
 
             case BundleEvent.STARTING:
-                LOG.debug( "Starting bundle '{}'", bundle );
-                break;
-
-            case BundleEvent.LAZY_ACTIVATION:
-                LOG.debug( "Lazy-activating bundle '{}' (will be activated lazily when needed)", bundle );
+                LOG.info( "Starting bundle '{}'", bundle );
                 break;
 
             case BundleEvent.STARTED:
+                LOG.info( "Started bundle '{}'", bundle );
                 if( shouldTrackBundle( bundle ) ) {
                     trackBundle( bundle );
-                } else {
-                    LOG.info( "Started bundle '{}'", bundle );
                 }
                 break;
 
             case BundleEvent.UPDATED:
-                LOG.debug( "Updated bundle '{}'", bundle );
+                LOG.info( "Updated bundle '{}'", bundle );
                 break;
 
             case BundleEvent.STOPPING:
-                LOG.debug( "Stopping bundle '{}'", bundle );
-                break;
-
-            case BundleEvent.STOPPED:
-                LOG.info( "Stopped bundle '{}'", bundle );
+                LOG.info( "Stopping bundle '{}'", bundle );
                 BundleTracker tracker = this.trackers.remove( bundle.getBundleId() );
                 if( tracker != null ) {
                     try {
@@ -120,33 +114,18 @@ public class BundleBootstrapper implements SynchronousBundleListener, BundleStat
                 }
                 break;
 
+            case BundleEvent.STOPPED:
+                LOG.info( "Stopped bundle '{}'", bundle );
+                break;
+
             case BundleEvent.UNRESOLVED:
-                LOG.debug( "Unresolved bundle '{}'", bundle );
+                LOG.info( "Unresolved bundle '{}'", bundle );
                 break;
 
             case BundleEvent.UNINSTALLED:
                 LOG.info( "Uninstalled bundle '{}'", bundle );
                 break;
         }
-    }
-
-    private void startResolvedBundles() {
-        resolveBundles();
-        for( Bundle bundle : findBundlesInStates( Bundle.RESOLVED ) ) {
-            if( bundle.getBundleId() != this.bundleContext.getBundle().getBundleId() ) {
-                try {
-                    bundle.start();
-                } catch( BundleException e ) {
-                    LOG.warn( "Could not start bundle '{}': {}", BundleUtils.toString( bundle ), e.getMessage(), e );
-                }
-            }
-        }
-    }
-
-    private void resolveBundles() {
-        Bundle systemBundle = this.bundleContext.getBundle( 0 );
-        FrameworkWiring frameworkWiring = systemBundle.adapt( FrameworkWiring.class );
-        frameworkWiring.resolveBundles( null );
     }
 
     private void trackBundle( Bundle bundle ) {
@@ -159,32 +138,21 @@ public class BundleBootstrapper implements SynchronousBundleListener, BundleStat
         }
     }
 
-    private Collection<Bundle> findBundlesInStates( Integer... states ) {
-        Collection<Integer> bundleStates = Arrays.asList( states );
-        Collection<Bundle> resolvedBundles = new LinkedList<>();
-        for( Bundle bundle : BundleUtils.getAllBundles( this.bundleContext ) ) {
-            if( bundleStates.contains( bundle.getState() ) ) {
-                resolvedBundles.add( bundle );
-            }
-        }
-        return resolvedBundles;
-    }
-
     private boolean shouldTrackBundle( Bundle bundle ) {
         if( bundle.getEntryPaths( "/META-INF/spring/" ) == null ) {
 
-            // all mosaic bundles must have the 'Mosaic-Bundle' header
+            // has no spring files therefor there is no use for it to be tracked
             return false;
 
         } else if( bundle.getHeaders().get( Constants.BUNDLE_ACTIVATOR ) != null ) {
 
             // mosaic bundles must not have activators
-            LOG.warn( "Bundle '{}' is a Mosaic bundle, but also has a 'Bundle-Activator' header; Mosaic bundles must have no activator, and therefor will be ignored and treated as a standard bundle.", BundleUtils.toString( bundle ) );
+            LOG.warn( "Bundle '{}' has Spring bean files in '/META-INF/spring', but also has a 'Bundle-Activator' header; Mosaic bundles must have no activator, and therefor will be ignored and treated as a standard bundle.", BundleUtils.toString( bundle ) );
             return false;
 
         } else {
 
-            // bundle has the mosaic bundle header, and has no activator - approved
+            // bundle has spring files, and has no activator - approved
             return true;
 
         }
