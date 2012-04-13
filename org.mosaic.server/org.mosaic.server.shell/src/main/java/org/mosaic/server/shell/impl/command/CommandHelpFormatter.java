@@ -113,7 +113,6 @@ public class CommandHelpFormatter implements HelpFormatter {
                 console.printStackTrace( e );
             } catch( IOException e1 ) {
                 LOG.error( "Error printing exception: {}", e.getMessage(), e );
-                //TODO 4/12/12: log this and ignore
             }
         }
 
