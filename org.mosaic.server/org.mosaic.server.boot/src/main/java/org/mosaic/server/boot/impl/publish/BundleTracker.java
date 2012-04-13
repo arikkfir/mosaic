@@ -50,9 +50,7 @@ public class BundleTracker {
     }
 
     public void track() throws Exception {
-        LOG.debug( "" );
         LOG.info( "Tracking bundle '{}'", BundleUtils.toString( this.bundle ) );
-        LOG.debug( "" );
 
         // initialize data structures
         this.requirements = new LinkedHashSet<>();
@@ -124,9 +122,7 @@ public class BundleTracker {
         this.satisfied = null;
         this.unsatisfied = null;
 
-        LOG.debug( "" );
         LOG.info( "Untracked bundle '{}'", BundleUtils.toString( this.bundle ) );
-        LOG.debug( "" );
     }
 
     public BundleContext getBundleContext() {
@@ -175,9 +171,7 @@ public class BundleTracker {
         if( !this.publishing ) {
             this.publishing = true;
             try {
-                LOG.debug( "" );
                 LOG.debug( "Publishing bundle '{}'", BundleUtils.toString( this.bundle ) );
-                LOG.debug( "" );
                 BundleApplicationContext applicationContext = new BundleApplicationContext( this.bundle );
                 applicationContext.getBeanFactory().addBeanPostProcessor( new RequirementTargetsBeanPostProcessor() );
                 registerBundleBeans( this.bundle, applicationContext, applicationContext.getClassLoader(), this.osgiSpringNamespacePlugin );
@@ -188,9 +182,7 @@ public class BundleTracker {
                 }
 
                 this.applicationContext = applicationContext;
-                LOG.info( "" );
                 LOG.info( "Published bundle '{}'", BundleUtils.toString( this.bundle ) );
-                LOG.info( "" );
 
             } catch( Exception e ) {
 
@@ -205,9 +197,7 @@ public class BundleTracker {
     }
 
     private void unpublish() {
-        LOG.debug( "" );
         LOG.debug( "Unpublishing bundle '{}'", BundleUtils.toString( this.bundle ) );
-        LOG.debug( "" );
         for( Requirement requirement : this.satisfied ) {
             requirement.unpublish();
         }
@@ -222,9 +212,7 @@ public class BundleTracker {
             }
         }
 
-        LOG.debug( "" );
         LOG.info( "Unpublished bundle '{}'", BundleUtils.toString( this.bundle ) );
-        LOG.debug( "" );
     }
 
     private Collection<Requirement> getReversedRequirements() {
