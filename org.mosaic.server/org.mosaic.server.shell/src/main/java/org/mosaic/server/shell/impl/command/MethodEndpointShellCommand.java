@@ -145,7 +145,13 @@ public class MethodEndpointShellCommand implements ShellCommand {
             } else {
                 this.additionalArgumentsDescription = argDesc;
             }
-            return new ArgumentsCommandOption();
+            if( parameterType.equals( String[].class ) ) {
+                return new ArgsArrayCommandOption();
+            } else if( parameterType.equals( List.class ) ) {
+                return new ArgsListCommandOption();
+            } else {
+                throw new IllegalStateException( "@Args must only be used on String[] or List<String> arguments (" + this.name + ")" );
+            }
         }
 
         Option optionAnn = findAnnotation( parameterAnnotation, Option.class );
@@ -241,7 +247,7 @@ public class MethodEndpointShellCommand implements ShellCommand {
         }
     }
 
-    private class ArgumentsCommandOption implements CommandOption {
+    private class ArgsListCommandOption implements CommandOption {
 
         @Override
         public Object getValue( Console console, OptionSet options ) {
@@ -269,6 +275,37 @@ public class MethodEndpointShellCommand implements ShellCommand {
                 args.add( arg );
             }
             return args;
+        }
+    }
+
+    private class ArgsArrayCommandOption implements CommandOption {
+
+        @Override
+        public Object getValue( Console console, OptionSet options ) {
+            List<String> args = new LinkedList<>();
+            ListIterator<String> i = options.nonOptionArguments().listIterator();
+            while( i.hasNext() ) {
+                String arg = i.next();
+                if( arg.startsWith( "\"" ) ) {
+                    // loop while the starting quote is the *only* quote, and while we have more tokens to swallow
+                    while( arg.indexOf( '"', 1 ) < 0 && i.hasNext() ) {
+                        arg += ' ';
+                        arg += i.next();
+                    }
+
+                    int closingQuote = arg.lastIndexOf( '"' );
+                    if( closingQuote == 0 ) {
+                        // could not find closing quote - close it ourselves
+                        arg += '"';
+                    }
+                }
+
+                if( arg.startsWith( "\"" ) && arg.endsWith( "\"" ) ) {
+                    arg = arg.substring( 1, arg.lastIndexOf( '"' ) );
+                }
+                args.add( arg );
+            }
+            return args.toArray( new String[ args.size() ] );
         }
     }
 }
