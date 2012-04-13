@@ -97,18 +97,21 @@ public class ShellConsole implements Console {
     @Override
     public Console print( final CharSequence s ) throws IOException {
         this.consoleReader.print( s );
+        flush();
         return this;
     }
 
     @Override
     public Console println( final CharSequence s ) throws IOException {
         this.consoleReader.println( s );
+        flush();
         return this;
     }
 
     @Override
     public Console println() throws IOException {
         this.consoleReader.println();
+        flush();
         return this;
     }
 
@@ -135,24 +138,29 @@ public class ShellConsole implements Console {
 
     @Override
     public boolean paste() throws IOException {
-        return this.consoleReader.paste();
+        boolean paste = this.consoleReader.paste();
+        flush();
+        return paste;
     }
 
     @Override
     public Console resetPromptLine( String prompt, String buffer, int cursorDest ) throws IOException {
         this.consoleReader.resetPromptLine( prompt, buffer, cursorDest );
+        flush();
         return this;
     }
 
     @Override
     public Console printSearchStatus( String searchTerm, String match ) throws IOException {
         this.consoleReader.printSearchStatus( searchTerm, match );
+        flush();
         return this;
     }
 
     @Override
     public Console restoreLine( String originalPrompt, int cursorDest ) throws IOException {
         this.consoleReader.restoreLine( originalPrompt, cursorDest );
+        flush();
         return this;
     }
 
@@ -186,6 +194,7 @@ public class ShellConsole implements Console {
         PrintWriter printWriter = new PrintWriter( getWriter() );
         throwable.printStackTrace( printWriter );
         printWriter.flush();
+        flush();
         return this;
     }
 
