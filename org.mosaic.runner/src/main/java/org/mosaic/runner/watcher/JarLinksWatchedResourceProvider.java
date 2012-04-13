@@ -24,7 +24,7 @@ public class JarLinksWatchedResourceProvider implements WatchedResourceProvider 
 
     private final Path directory;
 
-    private final Map<Path, WatchedResource> watchedJarLinks = new HashMap<>();
+    private final Map<Path, WatchedResource> watchedJarLinks = new TreeMap<>();
 
     private final JarLinkResourceHandler jarLinkResourceHandler = new JarLinkResourceHandler();
 
