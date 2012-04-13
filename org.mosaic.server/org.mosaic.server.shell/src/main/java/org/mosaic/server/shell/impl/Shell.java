@@ -3,9 +3,14 @@ package org.mosaic.server.shell.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Collection;
+import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import jline.console.ConsoleReader;
+import jline.console.completer.Completer;
 import joptsimple.OptionException;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
@@ -126,6 +131,36 @@ public class Shell implements Command, Runnable, SessionAware, BundleContextAwar
             this.consoleReader = new ConsoleReader( new PipeInputStream( this.inputQueue ), this.out, new ShellTerminal( env ) );
             this.consoleReader.setHistoryEnabled( true );
             this.consoleReader.setPrompt( "[mosaic@host.com]$ " );
+            this.consoleReader.addCompleter( new Completer() {
+                @Override
+                public int complete( String buffer, int cursor, List<CharSequence> candidates ) {
+                    if( candidates == null ) {
+                        return -1;
+                    }
+
+                    Collection<ShellCommand> commands = commandsManager.getCommands();
+                    SortedSet<String> commandNames = new TreeSet<>();
+                    for( ShellCommand command : commands ) {
+                        commandNames.add( command.getName() );
+                    }
+
+                    if( buffer == null ) {
+                        candidates.addAll( commandNames );
+                    } else {
+                        for( String match : commandNames.tailSet( buffer ) ) {
+                            if( !match.startsWith( buffer ) ) {
+                                break;
+                            }
+                            candidates.add( match );
+                        }
+                    }
+                    if( candidates.size() == 1 ) {
+                        candidates.set( 0, candidates.get( 0 ) + " " );
+                    }
+                    return candidates.isEmpty() ? -1 : 0;
+                }
+            } );
+
         } catch( Exception e ) {
             throw new IllegalStateException( "Cannot start SSH console session: " + e.getMessage(), e );
         }
