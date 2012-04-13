@@ -1,6 +1,5 @@
 package org.mosaic.runner;
 
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.felix.framework.Felix;
@@ -45,19 +44,9 @@ public class Runner {
         this.logger.info( "******************************************************************************************" );
         this.logger.info( " " );
 
-        // create OSGi container
         Felix felix = createFelix();
-
-        // bootstrap the server by deploying bundles in the 'boot' dir, and starting the boot bundle
-        BundlesWatcher bootWatcher = watch( felix, this.home.getBoot(), "Bootstrap Bundles Watcher" );
+        watch( felix );
         bootstrap( felix );
-        bootWatcher.start();
-
-        // deploy server bundles
-        watch( felix, this.home.getServer(), "Server Bundles Watcher" ).start();
-
-        // deploy user bundles
-        watch( felix, this.home.getDeploy(), "User Bundles Watcher" ).start();
 
         // print summary and wait for the server to shutdown
         this.logger.info( " " );
@@ -99,17 +88,18 @@ public class Runner {
         }
     }
 
-    private BundlesWatcher watch( Felix felix, Path directory, String watcherName ) throws SystemExitException {
+    private void watch( Felix felix ) throws SystemExitException {
         try {
 
-            // setup the bootstrap watcher and start the bootstrap bundle
-            BundlesWatcher watcher = new BundlesWatcher( felix.getBundleContext(), watcherName, directory );
-            this.logger.debug( "Watching bundles directory at: {}", directory );
+            BundlesWatcher watcher = new BundlesWatcher( felix.getBundleContext(),
+                                                         this.home.getBoot(),
+                                                         this.home.getServer(),
+                                                         this.home.getDeploy() );
             watcher.scan();
-            return watcher;
+            watcher.start();
 
         } catch( Exception e ) {
-            throw new SystemExitException( "Could not start '" + watcherName + "': " + e.getMessage(), e, ExitCode.START_ERROR );
+            throw new SystemExitException( "Could not start bundles watcher: " + e.getMessage(), e, ExitCode.START_ERROR );
         }
     }
 

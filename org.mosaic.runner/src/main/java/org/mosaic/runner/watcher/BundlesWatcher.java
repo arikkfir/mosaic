@@ -20,11 +20,17 @@ public class BundlesWatcher implements Runnable {
 
     private boolean stop;
 
-    public BundlesWatcher( BundleContext bundleContext, String name, Path directory ) {
+    public BundlesWatcher( BundleContext bundleContext, Path... directories ) {
+        this( bundleContext, "BundlesWatcher", directories );
+    }
+
+    public BundlesWatcher( BundleContext bundleContext, String name, Path... directories ) {
         this.name = name;
         this.scanInterval = Long.getLong( "bundleScanInterval", DEFAULT_SCAN_INTERVAL );
-        this.watchedResourceProviders.add( new JarLinksWatchedResourceProvider( bundleContext, directory ) );
-        this.watchedResourceProviders.add( new JarsWatchedResourceProvider( bundleContext, directory ) );
+        for( Path directory : directories ) {
+            this.watchedResourceProviders.add( new JarLinksWatchedResourceProvider( bundleContext, directory ) );
+            this.watchedResourceProviders.add( new JarsWatchedResourceProvider( bundleContext, directory ) );
+        }
     }
 
     public void start() {
