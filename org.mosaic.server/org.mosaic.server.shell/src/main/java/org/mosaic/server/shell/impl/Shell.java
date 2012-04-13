@@ -176,6 +176,7 @@ public class Shell implements Command, Runnable, SessionAware, BundleContextAwar
             shellConsole.println();
             shellConsole.println( "Goodbye! (session was " + duration + " long)" );
             shellConsole.flush();
+            this.session.disconnect( 0, "" );
 
         } catch( IOException e ) {
             LOG.error( "I/O error occurred in SSH session: {}", e.getMessage(), e );
