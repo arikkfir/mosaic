@@ -70,8 +70,7 @@ public class WatchedResource implements WatchedResourceHandler {
             this.resourceHandler.handleIllegalFile( resource );
         } catch( Exception e ) {
             successiveErrorCount++;
-            this.logger.error( "Error while processing resource '{}': {}",
-                               new Object[] { resource, e.getMessage(), e } );
+            this.logger.error( "Error while processing resource '{}'", resource, e );
         }
     }
 
@@ -84,8 +83,7 @@ public class WatchedResource implements WatchedResourceHandler {
             return this.resourceHandler.getLastUpdateTime( resource );
         } catch( Exception e ) {
             successiveErrorCount++;
-            this.logger.error( "Error while processing resource '{}': {}",
-                               new Object[] { resource, e.getMessage(), e } );
+            this.logger.error( "Error while processing resource '{}'", resource, e );
             return Long.MAX_VALUE;
         }
     }
@@ -99,8 +97,7 @@ public class WatchedResource implements WatchedResourceHandler {
             this.resourceHandler.handleUpdated( resource );
         } catch( Exception e ) {
             successiveErrorCount++;
-            this.logger.error( "Error while processing resource '{}': {}",
-                               new Object[] { resource, e.getMessage(), e } );
+            this.logger.error( "Error while processing resource '{}'", resource, e );
         }
     }
 
@@ -113,8 +110,7 @@ public class WatchedResource implements WatchedResourceHandler {
             this.resourceHandler.handleUpToDate( resource );
         } catch( Exception e ) {
             successiveErrorCount++;
-            this.logger.error( "Error while processing resource '{}': {}",
-                               new Object[] { resource, e.getMessage(), e } );
+            this.logger.error( "Error while processing resource '{}'", resource, e );
         }
     }
 
