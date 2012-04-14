@@ -68,6 +68,7 @@ public class MethodEndpointRequirement extends AbstractMethodRequirement impleme
             Dictionary<String, Object> properties = new Hashtable<>();
             properties.put( TYPE, this.type.annotationType().getName() );
             properties.put( SHORT_TYPE, this.type.annotationType().getSimpleName() );
+            properties.put( METHOD_NAME, getTargetMethod().getName() );
             this.registration = bundleContext.registerService( MethodEndpointInfo.class, this, properties );
         }
     }

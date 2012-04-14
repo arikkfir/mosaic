@@ -14,6 +14,8 @@ public interface MethodEndpointInfo {
 
     String SHORT_TYPE = "methodEndpointShortType";
 
+    String METHOD_NAME = "methodName";
+
     boolean isOfType( Class<? extends Annotation> annotationType );
 
     Annotation getType();
