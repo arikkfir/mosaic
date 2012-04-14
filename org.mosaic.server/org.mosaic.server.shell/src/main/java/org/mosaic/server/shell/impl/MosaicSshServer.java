@@ -48,7 +48,8 @@ public class MosaicSshServer {
     }
 
     @ConfigListener( "ssh" )
-    public void configure( Configuration cfg ) {
+    public void configure( Configuration cfg ) throws InterruptedException {
+        stop();
 
         this.sshServer = SshServer.setUpDefaultServer();
         this.sshServer.setPort( cfg.getAs( "port", Integer.class, 9080 ) );
