@@ -2,6 +2,7 @@ package org.mosaic.server.boot.impl.publish.spring;
 
 import org.mosaic.osgi.util.BundleUtils;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.wiring.BundleWiring;
 import org.springframework.context.support.GenericApplicationContext;
 
 /**
@@ -10,9 +11,15 @@ import org.springframework.context.support.GenericApplicationContext;
 public class BundleApplicationContext extends GenericApplicationContext {
 
     public BundleApplicationContext( Bundle bundle ) {
+        BundleWiring wiring = bundle.adapt( BundleWiring.class );
+        if( wiring == null ) {
+            throw new IllegalStateException( "Bundle '" + bundle.getSymbolicName() + "' is uninstalled!" );
+        }
+
+
         setAllowBeanDefinitionOverriding( false );
         setAllowCircularReferences( false );
-        setClassLoader( new BundleClassLoader( bundle ) );
+        setClassLoader( wiring.getClassLoader() );
         setDisplayName( "ApplicationContext[" + BundleUtils.toString( bundle ) + "]" );
         setEnvironment( new BundleEnvironment( bundle ) );
         setId( BundleUtils.toString( bundle ) );

@@ -1,6 +1,7 @@
 package org.mosaic.server.boot.impl.publish.spring;
 
 import org.osgi.framework.Bundle;
+import org.osgi.framework.wiring.BundleWiring;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
 /**
@@ -9,9 +10,14 @@ import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 public class BundleBeanFactory extends DefaultListableBeanFactory {
 
     public BundleBeanFactory( Bundle bundle ) {
+        BundleWiring wiring = bundle.adapt( BundleWiring.class );
+        if( wiring == null ) {
+            throw new IllegalStateException( "Bundle '" + bundle.getSymbolicName() + "' is uninstalled!" );
+        }
+
         setAllowBeanDefinitionOverriding( false );
         setAllowCircularReferences( false );
-        setBeanClassLoader( new BundleClassLoader( bundle ) );
+        setBeanClassLoader( wiring.getClassLoader() );
         setCacheBeanMetadata( false );
     }
 }
