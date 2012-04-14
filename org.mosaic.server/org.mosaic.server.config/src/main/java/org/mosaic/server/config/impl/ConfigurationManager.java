@@ -52,7 +52,7 @@ public class ConfigurationManager {
         this.mosaicHome = mosaicHome;
     }
 
-    @ServiceBind
+    @ServiceBind( filter = "methodEndpointShortType=ConfigListener" )
     public void addListener( MethodEndpointInfo methodEndpointInfo ) {
         if( methodEndpointInfo.isOfType( ConfigListener.class ) ) {
             String configurationName = getValue( methodEndpointInfo.getType() ).toString();
@@ -60,7 +60,7 @@ public class ConfigurationManager {
         }
     }
 
-    @ServiceUnbind
+    @ServiceUnbind( filter = "methodEndpointShortType=ConfigListener" )
     public void removeListener( MethodEndpointInfo methodEndpointInfo ) {
         if( methodEndpointInfo.isOfType( ConfigListener.class ) ) {
             String configurationName = getValue( methodEndpointInfo.getType() ).toString();
