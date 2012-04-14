@@ -1,7 +1,6 @@
 package org.mosaic.server.shell.impl;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.PreDestroy;
@@ -53,35 +52,38 @@ public class MosaicSshServer {
 
         this.sshServer = SshServer.setUpDefaultServer();
         this.sshServer.setPort( cfg.getAs( "port", Integer.class, 9080 ) );
-
-        Path hostKeyFile = this.home.getWork().resolve( "host.ser" );
-        this.sshServer.setKeyPairProvider( new SimpleGeneratorHostKeyProvider( hostKeyFile.toString() ) );
         this.sshServer.setShellFactory( new MosaicSshShellFactory() );
-        this.sshServer.setPasswordAuthenticator( new PasswordAuthenticator() {
-            @Override
-            public boolean authenticate( String username, String password, ServerSession session ) {
-                return password.equals( username );
-            }
-        } );
-
-        List<NamedFactory<UserAuth>> factories = new ArrayList<NamedFactory<UserAuth>>();
-        factories.add( new UserAuthNone.Factory() );
-//        factories.add( new UserAuthPassword.Factory() );
-//        factories.add( new UserAuthPublicKey.Factory() );
-        this.sshServer.setUserAuthFactories( factories );
+        this.sshServer.setPasswordAuthenticator( new MosaicPasswordAuthenticator() );
+        this.sshServer.setUserAuthFactories( createUserAuthFactories() );
+        this.sshServer.setKeyPairProvider( new SimpleGeneratorHostKeyProvider( this.home.getWork().resolve( "host.ser" ).toString() ) );
 
         try {
             this.sshServer.start();
         } catch( IOException e ) {
             LOG.warn( "Could not start Mosaic shell service: {}", e.getMessage(), e );
         }
-
     }
 
     @PreDestroy
     public void stop() throws InterruptedException {
         if( this.sshServer != null ) {
             this.sshServer.stop( false );
+        }
+    }
+
+    private List<NamedFactory<UserAuth>> createUserAuthFactories() {
+        List<NamedFactory<UserAuth>> factories = new ArrayList<>();
+        factories.add( new UserAuthNone.Factory() );
+        //TODO: factories.add( new UserAuthPassword.Factory() );
+        //TODO: factories.add( new UserAuthPublicKey.Factory() );
+        return factories;
+    }
+
+    private static class MosaicPasswordAuthenticator implements PasswordAuthenticator {
+
+        @Override
+        public boolean authenticate( String username, String password, ServerSession session ) {
+            return password.equals( username );
         }
     }
 
