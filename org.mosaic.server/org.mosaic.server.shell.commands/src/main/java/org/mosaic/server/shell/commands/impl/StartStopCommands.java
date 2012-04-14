@@ -58,10 +58,7 @@ public class StartStopCommands extends AbstractCommand {
         }
         table.done();
 
-        console.print( "Start these bundles? [Y/n]" ).flush();
-        int response = console.readCharacter( 'Y', 'n' );
-        console.println();
-        if( response == 'Y' ) {
+        if( console.ask( "Start these bundles? [Y/n]", 'y', 'n' ) == 'y' ) {
             for( Bundle bundle : matches ) {
                 try {
                     bundle.start();
@@ -97,6 +94,12 @@ public class StartStopCommands extends AbstractCommand {
             return;
         } else {
             matches = filterBundlesByState( matches, ACTIVE );
+            for( Bundle match : matches ) {
+                if( match.getSymbolicName().equals( "org.mosaic.server.shell" ) ) {
+                    console.println( "Cannot stop the shell bundle from within a shell. You may physically delete the shell bundle file to achieve that." );
+                    return;
+                }
+            }
         }
 
         Console.TablePrinter table = createBundlesTable( console );
@@ -108,13 +111,10 @@ public class StartStopCommands extends AbstractCommand {
         }
         table.done();
 
-        console.print( "Start these bundles? [Y/n]" ).flush();
-        int response = console.readCharacter( 'Y', 'n' );
-        console.println();
-        if( response == 'Y' ) {
+        if( console.ask( "Start these bundles? [Y/n]", 'y', 'n' ) == 'y' ) {
             for( Bundle bundle : matches ) {
                 try {
-                    bundle.start();
+                    bundle.stop();
                 } catch( BundleException e ) {
                     if( stackTraces ) {
                         console.printStackTrace( e );

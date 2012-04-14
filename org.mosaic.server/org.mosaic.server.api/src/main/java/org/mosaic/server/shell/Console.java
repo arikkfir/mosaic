@@ -6,7 +6,6 @@ import java.io.Writer;
 /**
  * @author arik
  */
-@SuppressWarnings( "UnusedDeclaration" )
 public interface Console {
 
     interface TableHeaders {
@@ -31,35 +30,38 @@ public interface Console {
 
     Console printStackTrace( Throwable throwable ) throws IOException;
 
+    @SuppressWarnings( "UnusedDeclaration" )
     Console printStackTrace( String message, Throwable throwable ) throws IOException;
 
     Writer getWriter();
 
+    @SuppressWarnings( "UnusedDeclaration" )
     int getWidth();
 
+    @SuppressWarnings( "UnusedDeclaration" )
     int getHeight();
 
+    @SuppressWarnings( "UnusedDeclaration" )
     boolean setCursorPosition( int position ) throws IOException;
 
     Console flush() throws IOException;
 
+    @SuppressWarnings( "UnusedDeclaration" )
     boolean backspace() throws IOException;
 
+    @SuppressWarnings( "UnusedDeclaration" )
     int moveCursor( int num ) throws IOException;
 
-    boolean replace( int num, String replacement );
+    @SuppressWarnings( "UnusedDeclaration" )
+    boolean replace( int num, String replacement ) throws IOException;
 
     int readCharacter() throws IOException;
 
     int readCharacter( char... allowed ) throws IOException;
 
+    int ask( String question, char... allowed ) throws IOException;
+
     String readLine() throws IOException;
-
-    String readLine( Character mask ) throws IOException;
-
-    String readLine( String prompt ) throws IOException;
-
-    String readLine( String prompt, Character mask ) throws IOException;
 
     Console print( CharSequence s ) throws IOException;
 
@@ -67,25 +69,19 @@ public interface Console {
 
     Console println() throws IOException;
 
+    @SuppressWarnings( "UnusedDeclaration" )
     boolean delete() throws IOException;
 
+    @SuppressWarnings( "UnusedDeclaration" )
     boolean killLine() throws IOException;
 
+    @SuppressWarnings( "UnusedDeclaration" )
     boolean clearScreen() throws IOException;
 
+    @SuppressWarnings( "UnusedDeclaration" )
     Console beep() throws IOException;
 
+    @SuppressWarnings( "UnusedDeclaration" )
     boolean paste() throws IOException;
 
-    Console resetPromptLine( String prompt, String buffer, int cursorDest ) throws IOException;
-
-    Console printSearchStatus( String searchTerm, String match ) throws IOException;
-
-    Console restoreLine( String originalPrompt, int cursorDest ) throws IOException;
-
-    int searchBackwards( String searchTerm, int startIndex );
-
-    int searchBackwards( String searchTerm );
-
-    int searchBackwards( String searchTerm, int startIndex, boolean startsWith );
 }

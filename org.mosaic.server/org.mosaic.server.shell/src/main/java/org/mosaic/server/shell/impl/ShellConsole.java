@@ -1,15 +1,18 @@
 package org.mosaic.server.shell.impl;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import jline.console.ConsoleReader;
 import org.mosaic.server.shell.Console;
 
 import static java.lang.Math.max;
+import static java.lang.Thread.currentThread;
 import static org.mosaic.server.shell.impl.util.StringUtils.*;
 
 /**
@@ -60,8 +63,10 @@ public class ShellConsole implements Console {
     }
 
     @Override
-    public boolean replace( int num, String replacement ) {
-        return this.consoleReader.replace( num, replacement );
+    public boolean replace( int num, String replacement ) throws IOException {
+        boolean replace = this.consoleReader.replace( num, replacement );
+        flush();
+        return replace;
     }
 
     @Override
@@ -71,27 +76,39 @@ public class ShellConsole implements Console {
 
     @Override
     public int readCharacter( final char... allowed ) throws IOException {
-        return this.consoleReader.readCharacter( allowed );
+        Arrays.sort( allowed ); // always need to sort before binarySearch
+        while( !currentThread().isInterrupted() ) {
+            int i = readCharacter();
+            if( i < 0 ) {
+                throw new EOFException( "Connection terminated" );
+            }
+
+            char c = ( char ) i;
+            if( Arrays.binarySearch( allowed, c ) >= 0 ) {
+                return c;
+            }
+        }
+        throw new EOFException( "Connection terminated" );
+    }
+
+    @Override
+    public int ask( String question, char... allowed ) throws IOException {
+        this.consoleReader.print( question );
+        this.consoleReader.print( " [" );
+        for( int i = 0, allowedLength = allowed.length; i < allowedLength; i++ ) {
+            if( i > 0 ) {
+                this.consoleReader.print( "/" );
+            }
+            this.consoleReader.print( allowed[ i ] + "" );
+        }
+        this.consoleReader.print( "] " );
+        this.consoleReader.flush();
+        return readCharacter( allowed );
     }
 
     @Override
     public String readLine() throws IOException {
         return this.consoleReader.readLine();
-    }
-
-    @Override
-    public String readLine( Character mask ) throws IOException {
-        return this.consoleReader.readLine( mask );
-    }
-
-    @Override
-    public String readLine( String prompt ) throws IOException {
-        return this.consoleReader.readLine( prompt );
-    }
-
-    @Override
-    public String readLine( String prompt, Character mask ) throws IOException {
-        return this.consoleReader.readLine( prompt, mask );
     }
 
     @Override
@@ -141,42 +158,6 @@ public class ShellConsole implements Console {
         boolean paste = this.consoleReader.paste();
         flush();
         return paste;
-    }
-
-    @Override
-    public Console resetPromptLine( String prompt, String buffer, int cursorDest ) throws IOException {
-        this.consoleReader.resetPromptLine( prompt, buffer, cursorDest );
-        flush();
-        return this;
-    }
-
-    @Override
-    public Console printSearchStatus( String searchTerm, String match ) throws IOException {
-        this.consoleReader.printSearchStatus( searchTerm, match );
-        flush();
-        return this;
-    }
-
-    @Override
-    public Console restoreLine( String originalPrompt, int cursorDest ) throws IOException {
-        this.consoleReader.restoreLine( originalPrompt, cursorDest );
-        flush();
-        return this;
-    }
-
-    @Override
-    public int searchBackwards( String searchTerm, int startIndex ) {
-        return this.consoleReader.searchBackwards( searchTerm, startIndex );
-    }
-
-    @Override
-    public int searchBackwards( String searchTerm ) {
-        return this.consoleReader.searchBackwards( searchTerm );
-    }
-
-    @Override
-    public int searchBackwards( String searchTerm, int startIndex, boolean startsWith ) {
-        return this.consoleReader.searchBackwards( searchTerm, startIndex, startsWith );
     }
 
     @Override

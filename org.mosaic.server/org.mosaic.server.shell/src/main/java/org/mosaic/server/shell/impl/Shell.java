@@ -28,7 +28,6 @@ import org.mosaic.server.shell.impl.command.ShellCommandsManager;
 import org.mosaic.server.shell.impl.io.IoUtils;
 import org.mosaic.server.shell.impl.io.LfToCrLfFilterOutputStream;
 import org.mosaic.server.shell.impl.io.Pipe;
-import org.mosaic.server.shell.impl.io.PipeInputStream;
 import org.osgi.framework.BundleContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -78,6 +77,8 @@ public class Shell implements Command, Runnable, SessionAware, BundleContextAwar
     private Thread inputThread;
 
     private ServerSession session;
+
+    private boolean running;
 
     @Autowired
     public void setCommandsManager( ShellCommandsManager commandsManager ) {
@@ -129,37 +130,9 @@ public class Shell implements Command, Runnable, SessionAware, BundleContextAwar
         // create the console reader used for interacting with the user
         try {
             this.consoleReader = new ConsoleReader( new PipeInputStream( this.inputQueue ), this.out, new ShellTerminal( env ) );
-            this.consoleReader.setHistoryEnabled( true );
+            //TODO: this.consoleReader.setHistoryEnabled( true );
             this.consoleReader.setPrompt( "[mosaic@host.com]$ " );
-            this.consoleReader.addCompleter( new Completer() {
-                @Override
-                public int complete( String buffer, int cursor, List<CharSequence> candidates ) {
-                    if( candidates == null ) {
-                        return -1;
-                    }
-
-                    Collection<ShellCommand> commands = commandsManager.getCommands();
-                    SortedSet<String> commandNames = new TreeSet<>();
-                    for( ShellCommand command : commands ) {
-                        commandNames.add( command.getName() );
-                    }
-
-                    if( buffer == null ) {
-                        candidates.addAll( commandNames );
-                    } else {
-                        for( String match : commandNames.tailSet( buffer ) ) {
-                            if( !match.startsWith( buffer ) ) {
-                                break;
-                            }
-                            candidates.add( match );
-                        }
-                    }
-                    if( candidates.size() == 1 ) {
-                        candidates.set( 0, candidates.get( 0 ) + " " );
-                    }
-                    return candidates.isEmpty() ? -1 : 0;
-                }
-            } );
+            this.consoleReader.addCompleter( new CommandCompleter() );
 
         } catch( Exception e ) {
             throw new IllegalStateException( "Cannot start SSH console session: " + e.getMessage(), e );
@@ -173,12 +146,14 @@ public class Shell implements Command, Runnable, SessionAware, BundleContextAwar
 
     @Override
     public void run() {
+        this.running = true;
+
         long start = System.currentTimeMillis();
         ShellConsole shellConsole = new ShellConsole( this.consoleReader );
         try {
             WelcomeMessage.print( this.bundleContext, shellConsole );
-            String line = shellConsole.readLine();
-            while( line != null ) {
+            String line;
+            while( this.running && ( line = shellConsole.readLine() ) != null ) {
                 line = line.trim();
                 if( line.length() > 0 ) {
                     String[] tokens = line.split( " " );
@@ -198,40 +173,39 @@ public class Shell implements Command, Runnable, SessionAware, BundleContextAwar
                         try {
                             shellCommand.execute( shellConsole, args );
                         } catch( OptionException e ) {
-                            shellConsole.println( e.getMessage() );
+                            if( this.running ) {
+                                shellConsole.println( e.getMessage() );
+                            }
                         } catch( Exception e ) {
-                            shellConsole.printStackTrace( e );
+                            if( this.running ) {
+                                shellConsole.printStackTrace( e );
+                            }
                         }
                     }
                 }
-                line = shellConsole.readLine();
             }
 
-            String duration = SESSION_DURATION_FORMATTER.print( new Period( start, System.currentTimeMillis() ) );
-            shellConsole.println();
-            shellConsole.println( "Goodbye! (session was " + duration + " long)" );
-            shellConsole.flush();
+            if( this.running ) {
+                String duration = SESSION_DURATION_FORMATTER.print( new Period( start, System.currentTimeMillis() ) );
+                shellConsole.println();
+                shellConsole.println( "Goodbye! (session was " + duration + " long)" );
+                shellConsole.flush();
+            }
             this.session.disconnect( 0, "" );
 
         } catch( IOException e ) {
             LOG.error( "I/O error occurred in SSH session: {}", e.getMessage(), e );
             this.session.close( true );
+        } finally {
+            this.running = false;
         }
     }
 
     @Override
     public void destroy() {
+        this.running = false;
         this.consoleThread.interrupt();
-        try {
-            this.consoleThread.join();
-        } catch( InterruptedException ignore ) {
-        }
-
         this.inputThread.interrupt();
-        try {
-            this.inputThread.join();
-        } catch( InterruptedException ignore ) {
-        }
 
         IoUtils.flush( out, err );
         IoUtils.close( in, out, err );
@@ -241,5 +215,65 @@ public class Shell implements Command, Runnable, SessionAware, BundleContextAwar
         }
 
         this.inputQueue = null;
+    }
+
+    private class CommandCompleter implements Completer {
+
+        @Override
+        public int complete( String buffer, int cursor, List<CharSequence> candidates ) {
+            if( candidates == null ) {
+                return -1;
+            }
+
+            Collection<ShellCommand> commands = commandsManager.getCommands();
+            SortedSet<String> commandNames = new TreeSet<>();
+            for( ShellCommand command : commands ) {
+                commandNames.add( command.getName() );
+            }
+
+            if( buffer == null ) {
+                candidates.addAll( commandNames );
+            } else {
+                for( String match : commandNames.tailSet( buffer ) ) {
+                    if( !match.startsWith( buffer ) ) {
+                        break;
+                    }
+                    candidates.add( match );
+                }
+            }
+            if( candidates.size() == 1 ) {
+                candidates.set( 0, candidates.get( 0 ) + " " );
+            }
+            return candidates.isEmpty() ? -1 : 0;
+        }
+    }
+
+    private class PipeInputStream extends InputStream {
+
+        private final BlockingQueue<Integer> inputQueue;
+
+        private PipeInputStream( BlockingQueue<Integer> inputQueue ) {
+            this.inputQueue = inputQueue;
+        }
+
+        @Override
+        public int read() throws IOException {
+            try {
+/*
+            Integer poll = inputQueue.poll( 3, TimeUnit.SECONDS );
+            while( poll == null ) {
+                poll = inputQueue.poll( 3, TimeUnit.SECONDS );
+            }
+*/
+                if( running ) {
+                    return inputQueue.take();
+                } else {
+                    return -1;
+                }
+
+            } catch( InterruptedException e ) {
+                return -1;
+            }
+        }
     }
 }
