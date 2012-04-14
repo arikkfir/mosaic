@@ -63,11 +63,11 @@ public interface Console {
 
     String readLine() throws IOException;
 
-    Console print( CharSequence s ) throws IOException;
-
-    Console println( CharSequence s ) throws IOException;
+    Console print( Object n ) throws IOException;
 
     Console println() throws IOException;
+
+    Console println( Object n ) throws IOException;
 
     @SuppressWarnings( "UnusedDeclaration" )
     boolean delete() throws IOException;

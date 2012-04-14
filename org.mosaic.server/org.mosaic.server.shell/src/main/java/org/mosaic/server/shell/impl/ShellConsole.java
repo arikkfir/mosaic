@@ -112,15 +112,8 @@ public class ShellConsole implements Console {
     }
 
     @Override
-    public Console print( final CharSequence s ) throws IOException {
-        this.consoleReader.print( s );
-        flush();
-        return this;
-    }
-
-    @Override
-    public Console println( final CharSequence s ) throws IOException {
-        this.consoleReader.println( s );
+    public Console print( Object s ) throws IOException {
+        this.consoleReader.print( s == null ? "" : s.toString() );
         flush();
         return this;
     }
@@ -128,6 +121,13 @@ public class ShellConsole implements Console {
     @Override
     public Console println() throws IOException {
         this.consoleReader.println();
+        flush();
+        return this;
+    }
+
+    @Override
+    public Console println( Object s ) throws IOException {
+        this.consoleReader.println( s == null ? "" : s.toString() );
         flush();
         return this;
     }
@@ -181,7 +181,7 @@ public class ShellConsole implements Console {
 
     @Override
     public Console printStackTrace( String message, Throwable throwable ) throws IOException {
-        println( message );
+        this.consoleReader.println( message );
         return printStackTrace( throwable );
     }
 
