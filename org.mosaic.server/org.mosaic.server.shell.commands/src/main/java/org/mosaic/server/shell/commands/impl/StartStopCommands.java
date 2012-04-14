@@ -10,7 +10,6 @@ import org.mosaic.server.shell.ShellCommand;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
-import org.springframework.stereotype.Component;
 
 import static org.mosaic.osgi.util.BundleUtils.filterBundlesByState;
 import static org.mosaic.osgi.util.BundleUtils.findMatchingBundles;
@@ -19,7 +18,6 @@ import static org.osgi.framework.Bundle.*;
 /**
  * @author arik
  */
-@Component
 public class StartStopCommands extends AbstractCommand {
 
     @Description( "Starts the given bundle(s)" )
