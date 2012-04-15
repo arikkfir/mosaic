@@ -205,6 +205,11 @@
             <!-- Command line / terminal dependencies                         -->
             <!-- ============================================================ -->
             <dependency>
+                <groupId>org.apache.mina</groupId>
+                <artifactId>mina-core</artifactId>
+                <version>2.0.2</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.sshd</groupId>
                 <artifactId>sshd-core</artifactId>
                 <version>0.6.0</version>
@@ -234,6 +239,19 @@
                 <groupId>com.lexicalscope.jewelcli</groupId>
                 <artifactId>jewelcli</artifactId>
                 <version>0.8.2</version>
+            </dependency>
+            <!-- ============================================================ -->
+            <!-- Database                                                     -->
+            <!-- ============================================================ -->
+            <dependency>
+                <groupId>commons-dbcp</groupId>
+                <artifactId>commons-dbcp</artifactId>
+                <version>1.4</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jolbox</groupId>
+                <artifactId>bonecp</artifactId>
+                <version>0.7.1.RELEASE</version>
             </dependency>
             <!-- ============================================================ -->
             <!-- Quartz scheduler                                             -->
