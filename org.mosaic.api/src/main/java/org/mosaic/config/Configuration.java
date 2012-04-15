@@ -9,9 +9,12 @@ public interface Configuration extends Map<String, String> {
 
     String getName();
 
-    @SuppressWarnings( "UnusedDeclaration" )
-    <T> T getAs( String key, Class<T> type );
+    <T> T get( String key, Class<T> type );
 
-    <T> T getAs( String key, Class<T> type, T defaultValue );
+    <T> T get( String key, Class<T> type, T defaultValue );
+
+    <T> T require( String key, Class<T> type );
+
+    <T> T require( String key, Class<T> type, T defaultValue );
 
 }

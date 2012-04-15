@@ -101,17 +101,37 @@ public class ConfigurationImpl implements Configuration {
         return false;
     }
 
-    public <T> T getAs( String key, Class<T> type ) {
-        return getAs( key, type, null );
+    public <T> T get( String key, Class<T> type ) {
+        return get( key, type, null );
     }
 
     @Override
-    public <T> T getAs( String key, Class<T> type, T defaultValue ) {
+    public <T> T get( String key, Class<T> type, T defaultValue ) {
         String stringValue = get( key );
         if( stringValue == null ) {
             return defaultValue;
         } else {
             return this.conversionService.convert( stringValue, type );
+        }
+    }
+
+    @Override
+    public <T> T require( String key, Class<T> type ) {
+        T value = get( key, type );
+        if( value == null ) {
+            throw new IllegalStateException( "Value is missing for key '" + key + "'" );
+        } else {
+            return value;
+        }
+    }
+
+    @Override
+    public <T> T require( String key, Class<T> type, T defaultValue ) {
+        T value = get( key, type, defaultValue );
+        if( value == null ) {
+            throw new IllegalStateException( "Value is missing for key '" + key + "'" );
+        } else {
+            return value;
         }
     }
 
