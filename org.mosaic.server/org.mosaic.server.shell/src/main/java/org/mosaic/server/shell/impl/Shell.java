@@ -3,6 +3,7 @@ package org.mosaic.server.shell.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.SortedSet;
@@ -11,6 +12,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import jline.console.ConsoleReader;
 import jline.console.completer.Completer;
+import jline.console.history.FileHistory;
 import joptsimple.OptionException;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.Environment;
@@ -20,6 +22,7 @@ import org.apache.sshd.server.session.ServerSession;
 import org.joda.time.Period;
 import org.joda.time.format.PeriodFormatter;
 import org.joda.time.format.PeriodFormatterBuilder;
+import org.mosaic.MosaicHome;
 import org.mosaic.lifecycle.BundleContextAware;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
@@ -58,6 +61,8 @@ public class Shell implements Command, Runnable, SessionAware, BundleContextAwar
 
     private BundleContext bundleContext;
 
+    private MosaicHome mosaicHome;
+
     private ShellCommandsManager commandsManager;
 
     private BlockingQueue<Integer> inputQueue;
@@ -76,13 +81,19 @@ public class Shell implements Command, Runnable, SessionAware, BundleContextAwar
 
     private Thread inputThread;
 
-    private ServerSession session;
+    private MosaicServerSession session;
 
     private boolean running;
+
+    private FileHistory history;
 
     @Autowired
     public void setCommandsManager( ShellCommandsManager commandsManager ) {
         this.commandsManager = commandsManager;
+    }
+
+    public void setMosaicHome( MosaicHome mosaicHome ) {
+        this.mosaicHome = mosaicHome;
     }
 
     @Override
@@ -92,7 +103,7 @@ public class Shell implements Command, Runnable, SessionAware, BundleContextAwar
 
     @Override
     public void setSession( ServerSession session ) {
-        this.session = session;
+        this.session = ( MosaicServerSession ) session;
     }
 
     @Override
@@ -129,9 +140,13 @@ public class Shell implements Command, Runnable, SessionAware, BundleContextAwar
 
         // create the console reader used for interacting with the user
         try {
+            String username = this.session.getUsername();
+            Path historyFile = this.mosaicHome.getWork().resolve( "history/" + username );
+            this.history = new FileHistory( historyFile.toFile() );
+
             this.consoleReader = new ConsoleReader( new PipeInputStream( this.inputQueue ), this.out, new ShellTerminal( env ) );
-            //TODO: this.consoleReader.setHistoryEnabled( true );
-            this.consoleReader.setPrompt( "[mosaic@host.com]$ " );
+            this.consoleReader.setHistory( history );
+            this.consoleReader.setPrompt( "[" + this.session.getUsername() + "@host.com]$ " );
             this.consoleReader.addCompleter( new CommandCompleter() );
 
         } catch( Exception e ) {
@@ -185,24 +200,33 @@ public class Shell implements Command, Runnable, SessionAware, BundleContextAwar
                 }
             }
 
-            if( this.running ) {
-                String duration = SESSION_DURATION_FORMATTER.print( new Period( start, System.currentTimeMillis() ) );
-                shellConsole.println();
-                shellConsole.println( "Goodbye! (session was " + duration + " long)" );
-                shellConsole.flush();
+            // persist history
+            try {
+                this.history.flush();
+            } catch( IOException ignore ) {
             }
-            this.session.disconnect( 0, "" );
 
         } catch( IOException e ) {
             LOG.error( "I/O error occurred in SSH session: {}", e.getMessage(), e );
-            this.session.close( true );
         } finally {
             this.running = false;
+            if( !this.session.isClosing() ) {
+                try {
+                    String duration = SESSION_DURATION_FORMATTER.print( new Period( start, System.currentTimeMillis() ) );
+                    shellConsole.println();
+                    shellConsole.println( "Goodbye! (session was " + duration + " long)" );
+                    shellConsole.flush();
+                    this.session.close( false );
+                } catch( IOException ignore ) {
+                }
+            }
         }
+
     }
 
     @Override
     public void destroy() {
+
         this.running = false;
         this.consoleThread.interrupt();
         this.inputThread.interrupt();
@@ -259,12 +283,6 @@ public class Shell implements Command, Runnable, SessionAware, BundleContextAwar
         @Override
         public int read() throws IOException {
             try {
-/*
-            Integer poll = inputQueue.poll( 3, TimeUnit.SECONDS );
-            while( poll == null ) {
-                poll = inputQueue.poll( 3, TimeUnit.SECONDS );
-            }
-*/
                 if( running ) {
                     return inputQueue.take();
                 } else {

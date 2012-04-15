@@ -4,15 +4,18 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.PreDestroy;
+import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.SshServer;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.PasswordAuthenticator;
 import org.apache.sshd.server.UserAuth;
 import org.apache.sshd.server.auth.UserAuthNone;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerSession;
+import org.apache.sshd.server.session.SessionFactory;
 import org.mosaic.MosaicHome;
 import org.mosaic.config.ConfigListener;
 import org.mosaic.config.Configuration;
@@ -57,6 +60,12 @@ public class MosaicSshServer {
         this.sshServer.setPasswordAuthenticator( new MosaicPasswordAuthenticator() );
         this.sshServer.setUserAuthFactories( createUserAuthFactories() );
         this.sshServer.setKeyPairProvider( new SimpleGeneratorHostKeyProvider( this.home.getWork().resolve( "host.ser" ).toString() ) );
+        this.sshServer.setSessionFactory( new SessionFactory() {
+            @Override
+            protected AbstractSession doCreateSession( IoSession ioSession ) throws Exception {
+                return new MosaicServerSession( server, ioSession );
+            }
+        } );
 
         try {
             this.sshServer.start();
@@ -92,7 +101,9 @@ public class MosaicSshServer {
 
         @Override
         public Command create() {
-            return applicationContext.getBean( Shell.class );
+            Shell shell = applicationContext.getBean( Shell.class );
+            shell.setMosaicHome( home );
+            return shell;
         }
 
     }
