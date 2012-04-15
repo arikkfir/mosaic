@@ -20,6 +20,7 @@
         <module>org.mosaic.server.config</module>
         <module>org.mosaic.server.shell</module>
         <module>org.mosaic.server.shell.commands</module>
+        <module>org.mosaic.server.db</module>
     </modules>
 
 </project>
