@@ -254,6 +254,14 @@
                 <version>0.7.1.RELEASE</version>
             </dependency>
             <!-- ============================================================ -->
+            <!-- Google Libraries                                             -->
+            <!-- ============================================================ -->
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>11.0.2</version>
+            </dependency>
+            <!-- ============================================================ -->
             <!-- Quartz scheduler                                             -->
             <!-- ============================================================ -->
             <dependency>
