@@ -7,6 +7,9 @@ import java.util.Map;
  */
 public interface Configuration extends Map<String, String> {
 
+    String getName();
+
+    @SuppressWarnings( "UnusedDeclaration" )
     <T> T getAs( String key, Class<T> type );
 
     <T> T getAs( String key, Class<T> type, T defaultValue );

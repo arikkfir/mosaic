@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArraySet;
 import org.mosaic.config.Configuration;
 import org.mosaic.lifecycle.MethodEndpointInfo;
 import org.mosaic.logging.Logger;
@@ -13,21 +12,20 @@ import org.springframework.core.convert.ConversionService;
 
 import static java.nio.file.Files.*;
 import static java.nio.file.StandardOpenOption.READ;
+import static org.mosaic.logging.LoggerFactory.getBundleLogger;
 
 /**
  * @author arik
  */
 public class ConfigurationImpl implements Configuration {
 
-    private static final Logger LOG = LoggerFactory.getBundleLogger( ConfigurationImpl.class );
+    private final Logger logger;
 
     private final String name;
 
     private final Path path;
 
     private final ConversionService conversionService;
-
-    private final Set<MethodEndpointInfo> listeners = new CopyOnWriteArraySet<>();
 
     private Map<String, String> data = Collections.emptyMap();
 
@@ -38,46 +36,48 @@ public class ConfigurationImpl implements Configuration {
         String fileName = this.path.getFileName().toString();
         this.name = fileName.substring( 0, fileName.indexOf( '.' ) );
         this.conversionService = conversionService;
+        this.logger = LoggerFactory.getLogger(
+                getBundleLogger( ConfigurationManager.class ).getName() + "." + this.name );
     }
 
     public Path getPath() {
         return path;
     }
 
-    public synchronized void addListener( MethodEndpointInfo listener ) {
-        this.listeners.add( listener );
-        refresh();
-        invokeListener( listener );
+    public boolean matches( String pattern ) {
+        return this.path.getFileSystem().getPathMatcher( pattern ).matches( this.path );
     }
 
-    public synchronized Collection<MethodEndpointInfo> getListeners() {
-        return this.listeners;
+    public void invoke( MethodEndpointInfo listener ) {
+        try {
+            logger.debug( "Invoking @ConfigListener '{}' for configuration '{}'", listener, this.name );
+            listener.invoke( this );
+        } catch( Exception e ) {
+            logger.error( "Error invoking @ConfigListener for configuration '{}': {}", this.name, e.getMessage(), e );
+        }
     }
 
-    public synchronized void removeListener( MethodEndpointInfo listener ) {
-        this.listeners.remove( listener );
-    }
-
-    public synchronized void refresh() {
+    public synchronized boolean refresh() {
         if( isDirectory( this.path ) || !exists( this.path ) || !isReadable( this.path ) ) {
 
             if( this.modificationTime > 0 ) {
 
-                LOG.warn( "Configuration '{}' no longer exists/readable at: {}", this.name, this.path );
+                logger.warn( "Configuration '{}' no longer exists/readable at: {}", this.name, this.path );
                 this.data = Collections.emptyMap();
                 this.modificationTime = 0;
-                invokeListeners();
+                return true;
 
             }
 
         } else {
 
             try {
+
                 long modificationTime = getLastModifiedTime( this.path ).toMillis();
                 if( modificationTime > this.modificationTime ) {
                     this.modificationTime = modificationTime;
 
-                    LOG.info( "Refreshing configuration '{}' from: {}", this.name, this.path );
+                    logger.info( "Refreshing configuration '{}' from: {}", this.name, this.path );
                     Map<String, String> data = new HashMap<>();
                     try( InputStream inputStream = newInputStream( this.path, READ ) ) {
 
@@ -89,14 +89,16 @@ public class ConfigurationImpl implements Configuration {
 
                     }
 
-                    this.data = data;
-                    invokeListeners();
+                    this.data = Collections.unmodifiableMap( data );
+                    return true;
                 }
+
             } catch( IOException e ) {
-                LOG.error( "Could not refresh configuration '{}': {}", this.path.getFileName().toString(), e.getMessage(), e );
+                logger.error( "Could not refresh configuration '{}': {}", this.path.getFileName().toString(), e.getMessage(), e );
             }
 
         }
+        return false;
     }
 
     public <T> T getAs( String key, Class<T> type ) {
@@ -111,6 +113,11 @@ public class ConfigurationImpl implements Configuration {
         } else {
             return this.conversionService.convert( stringValue, type );
         }
+    }
+
+    @Override
+    public String getName() {
+        return this.name;
     }
 
     @Override
@@ -171,21 +178,5 @@ public class ConfigurationImpl implements Configuration {
     @Override
     public Set<Entry<String, String>> entrySet() {
         return data.entrySet();
-    }
-
-    private void invokeListeners() {
-        for( MethodEndpointInfo listener : this.listeners ) {
-            invokeListener( listener );
-        }
-    }
-
-    private void invokeListener( MethodEndpointInfo listener ) {
-        try {
-            LOG.debug( "Invoking @ConfigListener '{}' for configuration '{}'", listener, this.name );
-            listener.invoke( this );
-        } catch( Exception e ) {
-            LOG.error( "Error invoking @ConfigListener for configuration '{}': {}",
-                       this.path.getFileName().toString(), e.getMessage(), e );
-        }
     }
 }

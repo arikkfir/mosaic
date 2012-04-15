@@ -3,7 +3,9 @@ package org.mosaic.server.config.impl;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.PostConstruct;
@@ -34,7 +36,9 @@ public class ConfigurationManager {
 
     private static final long SCAN_INTERVAL = 1000;
 
-    private final Map<String, ConfigurationImpl> configurations = new ConcurrentHashMap<>();
+    private final Map<Path, ConfigurationImpl> configurations = new ConcurrentHashMap<>();
+
+    private final Collection<MethodEndpointInfo> listeners = new LinkedList<>();
 
     private ConversionService conversionService;
 
@@ -53,23 +57,24 @@ public class ConfigurationManager {
     }
 
     @ServiceBind( filter = "methodEndpointShortType=ConfigListener" )
-    public void addListener( MethodEndpointInfo methodEndpointInfo ) {
+    public synchronized void addListener( MethodEndpointInfo methodEndpointInfo ) {
         if( methodEndpointInfo.isOfType( ConfigListener.class ) ) {
-            String configurationName = getValue( methodEndpointInfo.getType() ).toString();
-            getConfiguration( configurationName ).addListener( methodEndpointInfo );
+            this.listeners.add( methodEndpointInfo );
+            invokeListener( methodEndpointInfo, true );
         }
     }
 
     @ServiceUnbind( filter = "methodEndpointShortType=ConfigListener" )
-    public void removeListener( MethodEndpointInfo methodEndpointInfo ) {
+    public synchronized void removeListener( MethodEndpointInfo methodEndpointInfo ) {
         if( methodEndpointInfo.isOfType( ConfigListener.class ) ) {
-            String configurationName = getValue( methodEndpointInfo.getType() ).toString();
-            getConfiguration( configurationName ).removeListener( methodEndpointInfo );
+            this.listeners.remove( methodEndpointInfo );
         }
     }
 
     @PostConstruct
     public void init() {
+        scan();
+
         this.scanner = new Scanner();
         Thread t = new Thread( scanner, "ConfigurationsWatcher" );
         t.setDaemon( true );
@@ -81,42 +86,60 @@ public class ConfigurationManager {
         if( this.scanner != null ) {
             this.scanner.stop = true;
         }
-        LOG.info( "Stopped configuration manager" );
+    }
+
+    private synchronized void invokeListener( MethodEndpointInfo listener, boolean invokeIfUpToDate ) {
+        for( ConfigurationImpl configuration : this.configurations.values() ) {
+            if( listenerMatchesConfiguration( listener, configuration ) ) {
+                boolean updated = configuration.refresh();
+                if( invokeIfUpToDate || updated ) {
+                    configuration.invoke( listener );
+                }
+            }
+        }
     }
 
     private synchronized void scan() {
-        try( DirectoryStream<Path> stream = newDirectoryStream( this.mosaicHome.getEtc(), "*.properties" ) ) {
-            for( Path path : stream ) {
-                path = path.normalize().toAbsolutePath();
-                getConfiguration( path.getFileName().toString() ).refresh();
-            }
 
-            Iterator<Map.Entry<String, ConfigurationImpl>> iterator = this.configurations.entrySet().iterator();
-            while( iterator.hasNext() ) {
-                Map.Entry<String, ConfigurationImpl> entry = iterator.next();
-                ConfigurationImpl configuration = entry.getValue();
-                if( !exists( configuration.getPath() ) && configuration.getListeners().isEmpty() ) {
-                    iterator.remove();
+        Collection<ConfigurationImpl> updated = new LinkedList<>();
+        try( DirectoryStream<Path> stream = newDirectoryStream( this.mosaicHome.getEtc(), "*.properties" ) ) {
+
+            for( Path configFile : stream ) {
+                ConfigurationImpl configuration = this.configurations.get( configFile );
+                if( configuration == null ) {
+                    configuration = new ConfigurationImpl( configFile, this.conversionService );
+                    this.configurations.put( configFile, configuration );
+                }
+                if( configuration.refresh() ) {
+                    updated.add( configuration );
                 }
             }
 
         } catch( IOException e ) {
-            LOG.error( "Could not watch directory '{}': {}", this.mosaicHome.getEtc(), e.getMessage(), e );
+            LOG.error( "Could not search for configurations in '{}': {}", this.mosaicHome.getEtc(), e.getMessage(), e );
+        }
+
+        for( ConfigurationImpl configuration : updated ) {
+            for( MethodEndpointInfo listener : this.listeners ) {
+                if( listenerMatchesConfiguration( listener, configuration ) ) {
+                    configuration.invoke( listener );
+                }
+            }
+        }
+
+        this.configurations.values().iterator();
+        Iterator<ConfigurationImpl> iterator = this.configurations.values().iterator();
+        while( iterator.hasNext() ) {
+            ConfigurationImpl configuration = iterator.next();
+            if( !exists( configuration.getPath() ) ) {
+                iterator.remove();
+            }
         }
     }
 
-    private synchronized ConfigurationImpl getConfiguration( String configName ) {
-        if( configName.toLowerCase().endsWith( ".properties" ) ) {
-            configName = configName.substring( 0, configName.length() - ".properties".length() );
-        }
-
-        ConfigurationImpl configuration = this.configurations.get( configName );
-        if( configuration == null ) {
-            Path file = this.mosaicHome.getEtc().resolve( configName + ".properties" );
-            configuration = new ConfigurationImpl( file, this.conversionService );
-            this.configurations.put( configName, configuration );
-        }
-        return configuration;
+    private boolean listenerMatchesConfiguration( MethodEndpointInfo listener, ConfigurationImpl configuration ) {
+        String pattern = getValue( listener.getType() ).toString();
+        return configuration.matches( "glob:" + this.mosaicHome.getEtc() + "/" + pattern + ".properties" );
     }
 
     private class Scanner implements Runnable {
