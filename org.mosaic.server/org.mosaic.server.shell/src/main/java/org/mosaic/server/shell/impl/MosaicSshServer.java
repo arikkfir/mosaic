@@ -55,7 +55,7 @@ public class MosaicSshServer {
         stop();
 
         this.sshServer = SshServer.setUpDefaultServer();
-        this.sshServer.setPort( cfg.getAs( "port", Integer.class, 9080 ) );
+        this.sshServer.setPort( cfg.require( "port", Integer.class, 9080 ) );
         this.sshServer.setShellFactory( new MosaicSshShellFactory() );
         this.sshServer.setPasswordAuthenticator( new MosaicPasswordAuthenticator() );
         this.sshServer.setUserAuthFactories( createUserAuthFactories() );
