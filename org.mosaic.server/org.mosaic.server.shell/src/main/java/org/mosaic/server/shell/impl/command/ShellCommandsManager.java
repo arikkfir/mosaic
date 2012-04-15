@@ -19,14 +19,14 @@ public class ShellCommandsManager {
 
     private final HelpCommand helpCommand = new HelpCommand();
 
-    @ServiceBind
+    @ServiceBind( filter = "methodEndpointShortType=ShellCommand" )
     public synchronized void addListener( MethodEndpointInfo methodEndpointInfo ) {
         if( methodEndpointInfo.isOfType( org.mosaic.server.shell.ShellCommand.class ) ) {
             this.commands.put( methodEndpointInfo, new MethodEndpointShellCommand( methodEndpointInfo ) );
         }
     }
 
-    @ServiceUnbind
+    @ServiceUnbind( filter = "methodEndpointShortType=ShellCommand" )
     public synchronized void removeListener( MethodEndpointInfo methodEndpointInfo ) {
         if( methodEndpointInfo.isOfType( org.mosaic.server.shell.ShellCommand.class ) ) {
             this.commands.remove( methodEndpointInfo );
