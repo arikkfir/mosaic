@@ -11,7 +11,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import org.mosaic.MosaicHome;
-import org.mosaic.config.ConfigListener;
 import org.mosaic.lifecycle.MethodEndpointInfo;
 import org.mosaic.lifecycle.ServiceBind;
 import org.mosaic.lifecycle.ServiceRef;
@@ -58,17 +57,13 @@ public class ConfigurationManager {
 
     @ServiceBind( filter = "methodEndpointShortType=ConfigListener" )
     public synchronized void addListener( MethodEndpointInfo methodEndpointInfo ) {
-        if( methodEndpointInfo.isOfType( ConfigListener.class ) ) {
-            this.listeners.add( methodEndpointInfo );
-            invokeListener( methodEndpointInfo, true );
-        }
+        this.listeners.add( methodEndpointInfo );
+        invokeListener( methodEndpointInfo, true );
     }
 
     @ServiceUnbind( filter = "methodEndpointShortType=ConfigListener" )
     public synchronized void removeListener( MethodEndpointInfo methodEndpointInfo ) {
-        if( methodEndpointInfo.isOfType( ConfigListener.class ) ) {
-            this.listeners.remove( methodEndpointInfo );
-        }
+        this.listeners.remove( methodEndpointInfo );
     }
 
     @PostConstruct
