@@ -216,7 +216,6 @@ public class BundleTracker {
     }
 
     private Collection<Requirement> getReversedRequirements() {
-        //TODO 4/13/12: is this needed? or just covering for a deeper problem?
         if( this.requirements == null ) {
             return Collections.emptyList();
         }
