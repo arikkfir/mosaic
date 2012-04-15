@@ -69,6 +69,14 @@ public class Runner {
             felixConfig.put( FelixConstants.LOG_LOGGER_PROP, new FelixLogger() );
             felixConfig.put( FelixConstants.LOG_LEVEL_PROP, FelixLogger.LOG_DEBUG + "" );
             felixConfig.put( Constants.FRAMEWORK_SYSTEMPACKAGES_EXTRA,
+                             "javax.annotation;version=1.7.0," +
+                             "javax.management;version=1.7.0," +
+                             "javax.naming;version=1.7.0," +
+                             "javax.naming.spi;version=1.7.0," +
+                             "javax.sql;version=1.7.0," +
+                             "javax.xml.parsers;version=1.7.0," +
+                             "org.w3c.dom;version=1.7.0," +
+                             "sun.misc;version=1.7.0," +
                              "org.slf4j;version=1.6.4," +
                              "org.slf4j.spi;version=1.6.4," +
                              "org.slf4j.helpers;version=1.6.4" );
