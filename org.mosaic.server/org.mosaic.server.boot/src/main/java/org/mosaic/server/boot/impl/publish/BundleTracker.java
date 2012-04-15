@@ -174,7 +174,7 @@ public class BundleTracker {
                 LOG.debug( "Publishing bundle '{}'", BundleUtils.toString( this.bundle ) );
                 BundleApplicationContext applicationContext = new BundleApplicationContext( this.bundle );
                 applicationContext.getBeanFactory().addBeanPostProcessor( new RequirementTargetsBeanPostProcessor() );
-                registerBundleBeans( this.bundle, applicationContext, applicationContext.getClassLoader(), this.osgiSpringNamespacePlugin );
+                registerBundleBeans( this.bundle, applicationContext, this.osgiSpringNamespacePlugin );
                 applicationContext.refresh();
 
                 for( Requirement requirement : this.requirements ) {

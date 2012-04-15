@@ -36,7 +36,7 @@ public class RequirementFactory {
 
     public Collection<Requirement> detectRequirements() {
         BundleBeanFactory beanFactory = new BundleBeanFactory( this.bundle );
-        registerBundleBeans( this.bundle, beanFactory, beanFactory.getBeanClassLoader(), this.osgiSpringNamespacePlugin );
+        registerBundleBeans( this.bundle, beanFactory, this.osgiSpringNamespacePlugin );
 
         List<Requirement> requirements = new LinkedList<>();
         for( String beanDefinitionName : beanFactory.getBeanDefinitionNames() ) {

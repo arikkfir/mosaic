@@ -3,6 +3,7 @@ package org.mosaic.server.boot.impl.publish.spring;
 import java.net.URL;
 import java.util.Enumeration;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.wiring.BundleWiring;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
@@ -16,14 +17,18 @@ public abstract class BeanFactoryUtils {
 
     public static void registerBundleBeans( Bundle bundle,
                                             BeanDefinitionRegistry beanFactory,
-                                            ClassLoader classLoader,
                                             OsgiSpringNamespacePlugin osgiSpringNamespacePlugin ) {
+        BundleWiring wiring = bundle.adapt( BundleWiring.class );
+        if( wiring == null ) {
+            throw new IllegalArgumentException( "Bundle has no wiring!" );
+        }
+
         XmlBeanDefinitionReader xmlReader = new XmlBeanDefinitionReader( beanFactory );
-        xmlReader.setBeanClassLoader( classLoader );
+        xmlReader.setBeanClassLoader( wiring.getClassLoader() );
         xmlReader.setEntityResolver( osgiSpringNamespacePlugin );
         xmlReader.setEnvironment( new BundleEnvironment( bundle ) );
         xmlReader.setNamespaceHandlerResolver( osgiSpringNamespacePlugin );
-        xmlReader.setResourceLoader( new OsgiResourcePatternResolver( bundle, classLoader ) );
+        xmlReader.setResourceLoader( new OsgiResourcePatternResolver( bundle, wiring.getClassLoader() ) );
 
         Enumeration<URL> xmlFiles = bundle.findEntries( "/META-INF/spring/", "*.xml", true );
         while( xmlFiles.hasMoreElements() ) {
