@@ -5,21 +5,17 @@
         <groupId>org.mosaic.poms</groupId>
         <artifactId>org.mosaic.poms.parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
-        <relativePath>org.mosaic.poms/org.mosaic.poms.parent/pom.xml</relativePath>
+        <relativePath>../org.mosaic.poms/org.mosaic.poms.parent/pom.xml</relativePath>
     </parent>
 
-    <groupId>org.mosaic</groupId>
-    <artifactId>org.mosaic</artifactId>
+    <groupId>org.mosaic.test</groupId>
+    <artifactId>org.mosaic.test</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <name>Mosaic</name>
+    <name>Mosaic :: Test</name>
     <packaging>pom</packaging>
 
     <modules>
-        <module>org.mosaic.poms</module>
-        <module>org.mosaic.runner</module>
-        <module>org.mosaic.api</module>
-        <module>org.mosaic.server</module>
-        <module>org.mosaic.test</module>
+        <module>org.mosaic.test.tx</module>
     </modules>
 
 </project>
