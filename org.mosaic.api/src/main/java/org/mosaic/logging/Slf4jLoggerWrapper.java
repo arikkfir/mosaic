@@ -1,5 +1,8 @@
 package org.mosaic.logging;
 
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.Writer;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
@@ -171,5 +174,40 @@ public class Slf4jLoggerWrapper implements Logger {
         }
 
         return this;
+    }
+
+    @Override
+    public PrintWriter getPrintWriter() {
+        return new PrintWriter( new LoggerWriter() );
+    }
+
+    private class LoggerWriter extends Writer {
+
+        private final StringBuilder buffer = new StringBuilder( 4096 );
+
+        @Override
+        public void write( char[] chars, int off, int len ) throws IOException {
+            synchronized( this ) {
+                for( int i = off; i < chars.length && i < off + len; i++ ) {
+                    char c = chars[ i ];
+                    if( c == '\n' ) {
+                        info( this.buffer.toString() );
+                        this.buffer.delete( 0, Integer.MAX_VALUE );
+                    } else {
+                        this.buffer.append( c );
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void flush() throws IOException {
+            // no-op
+        }
+
+        @Override
+        public void close() throws IOException {
+            // no-op
+        }
     }
 }

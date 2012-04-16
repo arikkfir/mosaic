@@ -1,5 +1,7 @@
 package org.mosaic.logging;
 
+import java.io.PrintWriter;
+
 /**
  * @author arik
  */
@@ -9,6 +11,7 @@ public interface Logger {
 
     boolean isTraceEnabled();
 
+    @SuppressWarnings( "UnusedDeclaration" )
     Logger trace( String msg, Object... args );
 
     boolean isDebugEnabled();
@@ -27,4 +30,5 @@ public interface Logger {
 
     Logger error( String msg, Object... args );
 
+    PrintWriter getPrintWriter();
 }
