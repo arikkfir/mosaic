@@ -1,9 +1,7 @@
 package org.mosaic.runner.watcher;
 
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
+import java.util.*;
 import org.osgi.framework.*;
 import org.osgi.framework.wiring.BundleRevisions;
 import org.osgi.framework.wiring.FrameworkWiring;
@@ -26,6 +24,8 @@ public class BundlesWatcher implements Runnable {
     private final long scanInterval;
 
     private final Collection<WatchedResourceProvider> watchedResourceProviders = new LinkedList<>();
+
+    private final Set<Long> unresolvedBundles = new HashSet<>();
 
     private boolean stop;
 
@@ -112,16 +112,20 @@ public class BundlesWatcher implements Runnable {
             if( bundle.getState() == Bundle.INSTALLED || bundle.getState() == Bundle.RESOLVED ) {
                 try {
                     bundle.start();
+                    this.unresolvedBundles.remove( bundle.getBundleId() );
                 } catch( BundleException e ) {
                     // we basically ignore this because something is still missing for it - it will be started
                     // in a future cycle when the missing dependency is added to the server
-                    LOG.debug( "Could not start bundle '{}-{}[{}]': {}",
-                               new Object[] {
-                                       bundle.getSymbolicName(),
-                                       bundle.getVersion(),
-                                       bundle.getBundleId(),
-                                       e.getMessage()
-                               } );
+                    if( !this.unresolvedBundles.contains( bundle.getBundleId() ) ) {
+                        this.unresolvedBundles.add( bundle.getBundleId() );
+                        LOG.warn( "Could not start bundle '{}-{}[{}]': {}",
+                                  new Object[] {
+                                          bundle.getSymbolicName(),
+                                          bundle.getVersion(),
+                                          bundle.getBundleId(),
+                                          e.getMessage()
+                                  } );
+                    }
                 }
             }
         }
