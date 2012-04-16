@@ -31,6 +31,7 @@
     <logger name="org.mosaic.server.boot.impl.publish.spring.BundleApplicationContext" level="WARN"/>
     <logger name="org.mosaic.server.boot.impl.publish.spring.BundleEnvironment" level="WARN"/>
     <logger name="org.apache.sshd" level="WARN"/>
+    <logger name="org.mosaic.server.shell.impl.MosaicServerSession" level="WARN"/>
     <logger name="org.apache.felix" additivity="false">
         <appender-ref ref="framework"/>
     </logger>
