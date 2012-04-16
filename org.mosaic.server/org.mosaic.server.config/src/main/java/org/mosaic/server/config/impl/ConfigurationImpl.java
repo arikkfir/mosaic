@@ -5,9 +5,10 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.*;
 import org.mosaic.config.Configuration;
-import org.mosaic.lifecycle.MethodEndpointInfo;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
 import org.springframework.core.convert.ConversionService;
 
 import static java.nio.file.Files.*;
@@ -19,6 +20,8 @@ import static org.mosaic.logging.LoggerFactory.getBundleLogger;
  */
 public class ConfigurationImpl implements Configuration {
 
+    private final BundleContext bundleContext;
+
     private final Logger logger;
 
     private final String name;
@@ -27,11 +30,14 @@ public class ConfigurationImpl implements Configuration {
 
     private final ConversionService conversionService;
 
+    private ServiceRegistration<Configuration> registration;
+
     private Map<String, String> data = Collections.emptyMap();
 
     private long modificationTime;
 
-    public ConfigurationImpl( Path path, ConversionService conversionService ) {
+    public ConfigurationImpl( BundleContext bundleContext, Path path, ConversionService conversionService ) {
+        this.bundleContext = bundleContext;
         this.path = path;
         String fileName = this.path.getFileName().toString();
         this.name = fileName.substring( 0, fileName.indexOf( '.' ) );
@@ -44,20 +50,29 @@ public class ConfigurationImpl implements Configuration {
         return path;
     }
 
-    public boolean matches( String pattern ) {
-        return this.path.getFileSystem().getPathMatcher( pattern ).matches( this.path );
-    }
+    public synchronized void register() {
+        Dictionary<String, Object> dict = new Hashtable<>();
+        dict.put( "name", this.name );
+        dict.put( "path", this.path.toString() );
+        dict.put( "modificationTime", this.modificationTime );
 
-    public void invoke( MethodEndpointInfo listener ) {
-        try {
-            logger.debug( "Invoking @ConfigListener '{}' for configuration '{}'", listener, this.name );
-            listener.invoke( this );
-        } catch( Exception e ) {
-            logger.error( "Error invoking @ConfigListener for configuration '{}': {}", this.name, e.getMessage(), e );
+        if( this.registration == null ) {
+            this.registration = this.bundleContext.registerService( Configuration.class, this, dict );
+        } else {
+            this.registration.setProperties( dict );
         }
     }
 
-    public synchronized boolean refresh() {
+    public synchronized void unregister() {
+        if( this.registration != null ) {
+            try {
+                this.registration.unregister();
+            } catch( IllegalStateException ignore ) {
+            }
+        }
+    }
+
+    public synchronized void refresh() {
         if( isDirectory( this.path ) || !exists( this.path ) || !isReadable( this.path ) ) {
 
             if( this.modificationTime > 0 ) {
@@ -65,7 +80,7 @@ public class ConfigurationImpl implements Configuration {
                 logger.warn( "Configuration '{}' no longer exists/readable at: {}", this.name, this.path );
                 this.data = Collections.emptyMap();
                 this.modificationTime = 0;
-                return true;
+                unregister();
 
             }
 
@@ -90,7 +105,7 @@ public class ConfigurationImpl implements Configuration {
                     }
 
                     this.data = Collections.unmodifiableMap( data );
-                    return true;
+                    register();
                 }
 
             } catch( IOException e ) {
@@ -98,7 +113,6 @@ public class ConfigurationImpl implements Configuration {
             }
 
         }
-        return false;
     }
 
     public <T> T get( String key, Class<T> type ) {
@@ -167,22 +181,22 @@ public class ConfigurationImpl implements Configuration {
 
     @Override
     public String put( String key, String value ) {
-        return data.put( key, value );
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public String remove( Object key ) {
-        return data.remove( key );
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void putAll( Map<? extends String, ? extends String> m ) {
-        data.putAll( m );
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void clear() {
-        data.clear();
+        throw new UnsupportedOperationException();
     }
 
     @Override

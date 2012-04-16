@@ -3,6 +3,7 @@ package org.mosaic.server.shell.impl;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.SshServer;
@@ -17,7 +18,6 @@ import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.SessionFactory;
 import org.mosaic.MosaicHome;
-import org.mosaic.config.ConfigListener;
 import org.mosaic.config.Configuration;
 import org.mosaic.lifecycle.ServiceRef;
 import org.mosaic.logging.Logger;
@@ -36,9 +36,20 @@ public class MosaicSshServer {
 
     private MosaicHome home;
 
+    private Configuration configuration;
+
     private SshServer sshServer;
 
     private ApplicationContext applicationContext;
+
+    @ServiceRef( filter = "name=ssh" )
+    public void setConfiguration( Configuration configuration ) throws InterruptedException {
+        this.configuration = configuration;
+        if( this.sshServer != null ) {
+            stop();
+            init();
+        }
+    }
 
     @Autowired
     public void setApplicationContext( ApplicationContext applicationContext ) {
@@ -50,12 +61,10 @@ public class MosaicSshServer {
         this.home = home;
     }
 
-    @ConfigListener( "ssh" )
-    public void configure( Configuration cfg ) throws InterruptedException {
-        stop();
-
+    @PostConstruct
+    public synchronized void init() throws InterruptedException {
         this.sshServer = SshServer.setUpDefaultServer();
-        this.sshServer.setPort( cfg.require( "port", Integer.class, 9080 ) );
+        this.sshServer.setPort( this.configuration.require( "port", Integer.class, 9080 ) );
         this.sshServer.setShellFactory( new MosaicSshShellFactory() );
         this.sshServer.setPasswordAuthenticator( new MosaicPasswordAuthenticator() );
         this.sshServer.setUserAuthFactories( createUserAuthFactories() );
