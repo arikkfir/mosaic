@@ -32,7 +32,7 @@ public class ServiceRefRequirement extends AbstractTrackerRequirement {
 
     @Override
     public String toString() {
-        return "ServiceRef[" + getServiceType().getSimpleName() + "/" + getTargetMethod().getName() + "/" + getBeanName() + "]";
+        return "ServiceRef[type=" + getServiceType().getSimpleName() + ", target-method=" + getTargetMethod().getName() + ", target-bean=" + getBeanName() + "]";
     }
 
     @Override
@@ -60,6 +60,20 @@ public class ServiceRefRequirement extends AbstractTrackerRequirement {
         }
 
         return newService;
+    }
+
+    @Override
+    public void modifiedService( ServiceReference<Object> serviceReference, Object service ) {
+        if( this.cache != null ) {
+
+            if( this.cache.serviceReference.compareTo( serviceReference ) == 0 && this.cache.service == service ) {
+
+                // re-wire; the bean already has it, but since the service is updated, we want to re-inject it to signal this
+                markAsSatisfied();
+
+            }
+
+        }
     }
 
     @Override
