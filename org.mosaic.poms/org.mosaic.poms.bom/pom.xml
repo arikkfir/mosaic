@@ -252,6 +252,7 @@
                 <groupId>com.jolbox</groupId>
                 <artifactId>bonecp</artifactId>
                 <version>0.7.1.RELEASE</version>
+                <classifier>jdk5</classifier>
             </dependency>
             <!-- ============================================================ -->
             <!-- Google Libraries                                             -->
