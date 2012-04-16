@@ -9,8 +9,7 @@ import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.nio.file.Files.newDirectoryStream;
-import static java.nio.file.Files.readAllLines;
+import static java.nio.file.Files.*;
 import static org.mosaic.runner.watcher.SystemPropertyUtils.resolvePlaceholders;
 
 /**
@@ -95,23 +94,28 @@ public class JarLinksWatchedResourceProvider implements WatchedResourceProvider 
             // search for files that match our pattern
             Collection<Path> updatedMatches = new LinkedHashSet<>();
             for( Map.Entry<Path, String> entry : this.pathPatterns.entrySet() ) {
-                try( DirectoryStream<Path> dirStream = newDirectoryStream( entry.getKey(), entry.getValue() ) ) {
-                    for( Path match : dirStream ) {
-                        match = match.normalize().toAbsolutePath();
-                        if( this.watchedJars.containsKey( match ) ) {
+                Path directory = entry.getKey();
+                if( exists( directory ) && isDirectory( directory ) ) {
 
-                            // this match is already being tracked - but still add it to the set of retained matches,
-                            // so it won't be removed in the next section
-                            updatedMatches.add( match );
+                    try( DirectoryStream<Path> dirStream = newDirectoryStream( directory, entry.getValue() ) ) {
+                        for( Path match : dirStream ) {
+                            match = match.normalize().toAbsolutePath();
+                            if( this.watchedJars.containsKey( match ) ) {
 
-                        } else if( WatchUtils.isBundle( match ) ) {
+                                // this match is already being tracked - but still add it to the set of retained matches,
+                                // so it won't be removed in the next section
+                                updatedMatches.add( match );
 
-                            // new matching bundle - add it to our list of watched resources
-                            this.watchedJars.put( match, new WatchedResource( match, new JarWatchedResourceHandler( bundleContext ) ) );
-                            updatedMatches.add( match );
+                            } else if( WatchUtils.isBundle( match ) ) {
 
+                                // new matching bundle - add it to our list of watched resources
+                                this.watchedJars.put( match, new WatchedResource( match, new JarWatchedResourceHandler( bundleContext ) ) );
+                                updatedMatches.add( match );
+
+                            }
                         }
                     }
+
                 }
 
             }
