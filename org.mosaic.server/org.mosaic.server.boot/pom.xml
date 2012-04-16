@@ -14,6 +14,27 @@
     <name>Mosaic :: Server :: Bootstrapper</name>
     <packaging>bundle</packaging>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <version>2.3.7</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <instructions>
+
+                        <Provide-Capability>org.mosaic.boot</Provide-Capability>
+
+                        <!-- Since no other bundle will track this bundle's lifecycle, we must take care of our own -->
+                        <Bundle-Activator>org.mosaic.server.boot.impl.ServerBootActivator</Bundle-Activator>
+
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
     <dependencies>
         <dependency>
             <groupId>org.mosaic</groupId>
@@ -53,24 +74,5 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <version>2.3.7</version>
-                <extensions>true</extensions>
-                <configuration>
-                    <instructions>
-
-                        <!-- Since no other bundle will track this bundle's lifecycle, we must take care of our own -->
-                        <Bundle-Activator>org.mosaic.server.boot.impl.ServerBootActivator</Bundle-Activator>
-
-                    </instructions>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 
 </project>

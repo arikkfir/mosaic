@@ -14,6 +14,28 @@
     <name>Mosaic :: Server :: Shell</name>
     <packaging>bundle</packaging>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <configuration>
+                    <instructions>
+                        <Require-Capability>org.mosaic.boot</Require-Capability>
+                        <Embed-Dependency>jline,jansi,jopt-simple,jewelcli,sshd*,mina*</Embed-Dependency>
+                        <Embed-Transitive>true</Embed-Transitive>
+                        <Import-Package>
+                            !com.jcraft.jzlib*,
+                            !org.bouncycastle*,
+                            !org.apache.tomcat*,
+                            *
+                        </Import-Package>
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
     <dependencies>
         <dependency>
             <groupId>org.mosaic</groupId>
@@ -79,26 +101,5 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <configuration>
-                    <instructions>
-                        <Embed-Dependency>jline,jansi,jopt-simple,jewelcli,sshd*,mina*</Embed-Dependency>
-                        <Embed-Transitive>true</Embed-Transitive>
-                        <Import-Package>
-                            !com.jcraft.jzlib*,
-                            !org.bouncycastle*,
-                            !org.apache.tomcat*,
-                            *
-                        </Import-Package>
-                    </instructions>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 
 </project>
