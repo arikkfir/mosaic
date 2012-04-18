@@ -7,3 +7,5 @@ ${project.home}/org.mosaic.server/org.mosaic.server.shell.commands/target:*.jar
 ${project.home}/org.mosaic.server/org.mosaic.server.transaction/target:*.jar
 ${user.home}/.m2/repository/joda-time/joda-time/2.1:*.jar
 ${user.home}/.m2/repository/mysql/mysql-connector-java/5.1.19:*.jar
+${user.home}/.m2/repository/com/googlecode/guava-osgi/guava-osgi/11.0.1:*.jar
+${user.home}/.m2/repository/commons-codec/commons-codec/1.6:*.jar
