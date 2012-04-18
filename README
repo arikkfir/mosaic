@@ -1,1 +1,4 @@
 [ Tasks ]
+
+- Missing requirements can be implemented using OSGi "Find Listeners" (see OSGi Core specification chapter 55)
+
