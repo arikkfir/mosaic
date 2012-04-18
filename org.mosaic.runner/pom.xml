@@ -15,6 +15,10 @@
     <packaging>jar</packaging>
 
     <dependencies>
+        <!-- ============================================================ -->
+        <!-- Logging: SLF4J is propagated to bundles through the system   -->
+        <!-- bundle, and not deployed as a real bundle.                   -->
+        <!-- ============================================================ -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
@@ -27,57 +31,12 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
         </dependency>
+        <!-- ============================================================ -->
+        <!-- Felix (and OSGi) APIs                                        -->
+        <!-- ============================================================ -->
         <dependency>
             <groupId>org.apache.felix</groupId>
             <artifactId>org.apache.felix.framework</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.mosaic</groupId>
-            <artifactId>org.mosaic.api</artifactId>
-            <version>[1.0.0-SNAPSHOT,2)</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mosaic.server</groupId>
-            <artifactId>org.mosaic.server.api</artifactId>
-            <version>[1.0.0-SNAPSHOT,2)</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mosaic.server</groupId>
-            <artifactId>org.mosaic.server.boot</artifactId>
-            <version>[1.0.0-SNAPSHOT,2)</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mosaic.server</groupId>
-            <artifactId>org.mosaic.server.config</artifactId>
-            <version>[1.0.0-SNAPSHOT,2)</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mosaic.server</groupId>
-            <artifactId>org.mosaic.server.shell</artifactId>
-            <version>[1.0.0-SNAPSHOT,2)</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mosaic.server</groupId>
-            <artifactId>org.mosaic.server.shell.commands</artifactId>
-            <version>[1.0.0-SNAPSHOT,2)</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mosaic.server</groupId>
-            <artifactId>org.mosaic.server.transaction</artifactId>
-            <version>[1.0.0-SNAPSHOT,2)</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mosaic.test</groupId>
-            <artifactId>org.mosaic.test.tx</artifactId>
-            <version>[1.0.0-SNAPSHOT,2)</version>
-            <scope>provided</scope>
         </dependency>
     </dependencies>
 
