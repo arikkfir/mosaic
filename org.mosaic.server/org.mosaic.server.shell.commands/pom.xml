@@ -33,6 +33,9 @@
     </build>
 
     <dependencies>
+        <!-- ============================================================ -->
+        <!-- Mosaic APIs                                                  -->
+        <!-- ============================================================ -->
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.api</artifactId>
@@ -43,10 +46,16 @@
             <artifactId>org.mosaic.server.api</artifactId>
             <version>[1.0.0-SNAPSHOT,2)</version>
         </dependency>
+        <!-- ============================================================ -->
+        <!-- OSGi API                                                     -->
+        <!-- ============================================================ -->
         <dependency>
             <groupId>org.apache.felix</groupId>
             <artifactId>org.apache.felix.framework</artifactId>
         </dependency>
+        <!-- ============================================================ -->
+        <!-- Spring Framework                                             -->
+        <!-- ============================================================ -->
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>org.springframework.context</artifactId>
