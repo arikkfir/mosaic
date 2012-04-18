@@ -12,16 +12,20 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.PasswordAuthenticator;
+import org.apache.sshd.server.PublickeyAuthenticator;
 import org.apache.sshd.server.UserAuth;
-import org.apache.sshd.server.auth.UserAuthNone;
+import org.apache.sshd.server.auth.UserAuthPassword;
+import org.apache.sshd.server.auth.UserAuthPublicKey;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
-import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.session.SessionFactory;
 import org.mosaic.MosaicHome;
 import org.mosaic.config.Configuration;
 import org.mosaic.lifecycle.ServiceRef;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
+import org.mosaic.server.shell.impl.session.MosaicServerSession;
+import org.mosaic.server.shell.impl.session.Shell;
+import org.mosaic.server.shell.impl.session.UserAuthLocalhostNone;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
@@ -40,7 +44,26 @@ public class MosaicSshServer {
 
     private SshServer sshServer;
 
+    private PasswordAuthenticator passwordAuthenticator;
+
+    private PublickeyAuthenticator publicKeyAuthenticator;
+
     private ApplicationContext applicationContext;
+
+    @Autowired
+    public void setPasswordAuthenticator( PasswordAuthenticator passwordAuthenticator ) {
+        this.passwordAuthenticator = passwordAuthenticator;
+    }
+
+    @Autowired
+    public void setPublicKeyAuthenticator( PublickeyAuthenticator publicKeyAuthenticator ) {
+        this.publicKeyAuthenticator = publicKeyAuthenticator;
+    }
+
+    @Autowired
+    public void setApplicationContext( ApplicationContext applicationContext ) {
+        this.applicationContext = applicationContext;
+    }
 
     @ServiceRef( filter = "name=ssh" )
     public void setConfiguration( Configuration configuration ) throws InterruptedException {
@@ -49,11 +72,6 @@ public class MosaicSshServer {
             stop();
             init();
         }
-    }
-
-    @Autowired
-    public void setApplicationContext( ApplicationContext applicationContext ) {
-        this.applicationContext = applicationContext;
     }
 
     @ServiceRef
@@ -66,9 +84,10 @@ public class MosaicSshServer {
         this.sshServer = SshServer.setUpDefaultServer();
         this.sshServer.setPort( this.configuration.require( "port", Integer.class, 9080 ) );
         this.sshServer.setShellFactory( new MosaicSshShellFactory() );
-        this.sshServer.setPasswordAuthenticator( new MosaicPasswordAuthenticator() );
+        this.sshServer.setPasswordAuthenticator( this.passwordAuthenticator );
         this.sshServer.setUserAuthFactories( createUserAuthFactories() );
         this.sshServer.setKeyPairProvider( new SimpleGeneratorHostKeyProvider( this.home.getWork().resolve( "host.ser" ).toString() ) );
+        this.sshServer.setPublickeyAuthenticator( this.publicKeyAuthenticator );
         this.sshServer.setSessionFactory( new SessionFactory() {
             @Override
             protected AbstractSession doCreateSession( IoSession ioSession ) throws Exception {
@@ -92,18 +111,10 @@ public class MosaicSshServer {
 
     private List<NamedFactory<UserAuth>> createUserAuthFactories() {
         List<NamedFactory<UserAuth>> factories = new ArrayList<>();
-        factories.add( new UserAuthNone.Factory() );
-        //TODO: factories.add( new UserAuthPassword.Factory() );
-        //TODO: factories.add( new UserAuthPublicKey.Factory() );
+        factories.add( new UserAuthLocalhostNone.Factory() );
+        factories.add( new UserAuthPassword.Factory() );
+        factories.add( new UserAuthPublicKey.Factory() );
         return factories;
-    }
-
-    private static class MosaicPasswordAuthenticator implements PasswordAuthenticator {
-
-        @Override
-        public boolean authenticate( String username, String password, ServerSession session ) {
-            return password.equals( username );
-        }
     }
 
     private class MosaicSshShellFactory implements Factory<Command> {

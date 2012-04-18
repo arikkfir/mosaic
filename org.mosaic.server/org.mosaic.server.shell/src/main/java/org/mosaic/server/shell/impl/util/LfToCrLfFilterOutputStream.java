@@ -1,4 +1,4 @@
-package org.mosaic.server.shell.impl.io;
+package org.mosaic.server.shell.impl.util;
 
 import java.io.FilterOutputStream;
 import java.io.IOException;

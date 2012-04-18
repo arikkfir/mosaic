@@ -1,4 +1,4 @@
-package org.mosaic.server.shell.impl;
+package org.mosaic.server.shell.impl.session;
 
 import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.common.FactoryManager;

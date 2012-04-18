@@ -1,4 +1,4 @@
-package org.mosaic.server.shell.impl.io;
+package org.mosaic.server.shell.impl.util;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,7 +14,7 @@ import static java.lang.Thread.currentThread;
  */
 public class Pipe implements Runnable {
 
-    private static final Logger LOG = LoggerFactory.getLogger( Pipe.class );
+    private static final Logger LOG = LoggerFactory.getBundleLogger( Pipe.class );
 
     private final InputStream in;
 

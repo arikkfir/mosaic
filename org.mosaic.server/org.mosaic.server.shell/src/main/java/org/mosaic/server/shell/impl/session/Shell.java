@@ -1,4 +1,4 @@
-package org.mosaic.server.shell.impl;
+package org.mosaic.server.shell.impl.session;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,9 +29,9 @@ import org.mosaic.logging.LoggerFactory;
 import org.mosaic.server.shell.ExitSessionException;
 import org.mosaic.server.shell.impl.command.ShellCommand;
 import org.mosaic.server.shell.impl.command.ShellCommandsManager;
-import org.mosaic.server.shell.impl.io.IoUtils;
-import org.mosaic.server.shell.impl.io.LfToCrLfFilterOutputStream;
-import org.mosaic.server.shell.impl.io.Pipe;
+import org.mosaic.server.shell.impl.util.IoUtils;
+import org.mosaic.server.shell.impl.util.LfToCrLfFilterOutputStream;
+import org.mosaic.server.shell.impl.util.Pipe;
 import org.osgi.framework.BundleContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;

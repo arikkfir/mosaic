@@ -1,4 +1,4 @@
-package org.mosaic.server.shell.impl;
+package org.mosaic.server.shell.impl.session;
 
 import jline.TerminalSupport;
 import org.apache.sshd.server.Environment;
