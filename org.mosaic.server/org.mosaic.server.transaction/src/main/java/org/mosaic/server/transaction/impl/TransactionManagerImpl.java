@@ -17,13 +17,13 @@ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
 
 /**
  * @author arik
  */
-public class TransactionManagerImpl implements TransactionManager {
+public class TransactionManagerImpl implements TransactionManager, DataSource {
 
     private static final Logger LOG = LoggerFactory.getBundleLogger( TransactionManagerImpl.class );
 
@@ -82,18 +82,29 @@ public class TransactionManagerImpl implements TransactionManager {
     }
 
     @Override
-    public TransactionStatus getTransaction( TransactionDefinition definition ) throws TransactionException {
-        return this.springTxMgr.getTransaction( definition );
+    public Object begin( String name ) {
+        DefaultTransactionDefinition txDef = new DefaultTransactionDefinition();
+        txDef.setName( name );
+        txDef.setPropagationBehavior( TransactionDefinition.PROPAGATION_REQUIRED );
+        return this.springTxMgr.getTransaction( txDef );
     }
 
     @Override
-    public void commit( TransactionStatus status ) throws TransactionException {
-        this.springTxMgr.commit( status );
+    public void rollback( Object tx ) {
+        if( tx instanceof TransactionStatus ) {
+            this.springTxMgr.rollback( ( TransactionStatus ) tx );
+        } else {
+            throw new IllegalArgumentException( tx + " is not a transaction object" );
+        }
     }
 
     @Override
-    public void rollback( TransactionStatus status ) throws TransactionException {
-        this.springTxMgr.rollback( status );
+    public void commit( Object tx ) {
+        if( tx instanceof TransactionStatus ) {
+            this.springTxMgr.commit( ( TransactionStatus ) tx );
+        } else {
+            throw new IllegalArgumentException( tx + " is not a transaction object" );
+        }
     }
 
     @Override
