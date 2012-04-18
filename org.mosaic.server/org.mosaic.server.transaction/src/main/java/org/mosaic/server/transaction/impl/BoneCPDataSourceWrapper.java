@@ -7,9 +7,9 @@ import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import java.util.logging.Logger;
 import javax.sql.DataSource;
 import org.mosaic.config.Configuration;
+import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -28,7 +28,7 @@ public class BoneCPDataSourceWrapper implements DataSource, Closeable {
         SERIALIZABLE
     }
 
-    private static final org.mosaic.logging.Logger LOG = LoggerFactory.getBundleLogger( BoneCPDataSourceWrapper.class );
+    private static final Logger LOG = LoggerFactory.getBundleLogger( BoneCPDataSourceWrapper.class );
 
     private final String name;
 
@@ -111,7 +111,7 @@ public class BoneCPDataSourceWrapper implements DataSource, Closeable {
     }
 
     @Override
-    public Logger getParentLogger() throws SQLFeatureNotSupportedException {
+    public java.util.logging.Logger getParentLogger() throws SQLFeatureNotSupportedException {
         throw new SQLFeatureNotSupportedException( "Mosaic data source uses SLF4J and not Java-Util-Logging" );
     }
 
