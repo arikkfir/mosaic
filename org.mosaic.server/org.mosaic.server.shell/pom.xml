@@ -37,6 +37,9 @@
     </build>
 
     <dependencies>
+        <!-- ============================================================ -->
+        <!-- Mosaic APIs                                                  -->
+        <!-- ============================================================ -->
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.api</artifactId>
@@ -47,22 +50,31 @@
             <artifactId>org.mosaic.server.api</artifactId>
             <version>[1.0.0-SNAPSHOT,2)</version>
         </dependency>
+        <!-- ============================================================ -->
+        <!-- OSGi API                                                     -->
+        <!-- ============================================================ -->
         <dependency>
             <groupId>org.apache.felix</groupId>
             <artifactId>org.apache.felix.framework</artifactId>
         </dependency>
+        <!-- ============================================================ -->
+        <!-- Spring Framework                                             -->
+        <!-- ============================================================ -->
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>org.springframework.beans</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
-            <artifactId>org.springframework.core</artifactId>
+            <artifactId>org.springframework.context</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
-            <artifactId>org.springframework.context</artifactId>
+            <artifactId>org.springframework.core</artifactId>
         </dependency>
+        <!-- ============================================================ -->
+        <!-- Mina and SSH daemon                                          -->
+        <!-- ============================================================ -->
         <dependency>
             <groupId>org.apache.mina</groupId>
             <artifactId>mina-core</artifactId>
@@ -71,6 +83,9 @@
             <groupId>org.apache.sshd</groupId>
             <artifactId>sshd-core</artifactId>
         </dependency>
+        <!-- ============================================================ -->
+        <!-- Console and terminal                                         -->
+        <!-- ============================================================ -->
         <dependency>
             <groupId>jline</groupId>
             <artifactId>jline</artifactId>
@@ -88,6 +103,9 @@
             <groupId>net.sf.jopt-simple</groupId>
             <artifactId>jopt-simple</artifactId>
         </dependency>
+        <!-- ============================================================ -->
+        <!-- Google and Apache Commons utilities                          -->
+        <!-- ============================================================ -->
         <dependency>
             <groupId>com.googlecode.guava-osgi</groupId>
             <artifactId>guava-osgi</artifactId>
