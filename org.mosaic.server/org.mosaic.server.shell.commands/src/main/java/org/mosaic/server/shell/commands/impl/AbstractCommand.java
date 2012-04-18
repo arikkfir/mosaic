@@ -1,5 +1,7 @@
 package org.mosaic.server.shell.commands.impl;
 
+import java.util.Collection;
+import java.util.Collections;
 import org.mosaic.lifecycle.*;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -39,5 +41,24 @@ public abstract class AbstractCommand implements BundleContextAware {
         state = state.toLowerCase();
         state = Character.toUpperCase( state.charAt( 0 ) ) + state.substring( 1 );
         return state;
+    }
+
+    private static class SimpleBundleStatus implements BundleStatus {
+
+        private final Bundle bundle;
+
+        public SimpleBundleStatus( Bundle bundle ) {
+            this.bundle = bundle;
+        }
+
+        @Override
+        public BundleState getState() {
+            return BundleState.valueOfOsgiState( this.bundle.getState() );
+        }
+
+        @Override
+        public Collection<String> getUnsatisfiedRequirements() {
+            return Collections.emptyList();
+        }
     }
 }
