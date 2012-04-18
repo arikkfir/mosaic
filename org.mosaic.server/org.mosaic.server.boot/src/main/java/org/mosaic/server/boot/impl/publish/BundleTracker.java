@@ -13,7 +13,6 @@ import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 
 import static org.mosaic.server.boot.impl.BundleBootstrapper.ACTIVATION_LOG;
-import static org.mosaic.server.boot.impl.publish.spring.BeanFactoryUtils.registerBundleBeans;
 
 /**
  * @author arik
@@ -169,9 +168,8 @@ public class BundleTracker {
             this.publishing = true;
             try {
                 ACTIVATION_LOG.debug( "Publishing bundle '{}'", BundleUtils.toString( this.bundle ) );
-                BundleApplicationContext applicationContext = new BundleApplicationContext( this.bundle );
+                BundleApplicationContext applicationContext = new BundleApplicationContext( this.bundle, this.osgiSpringNamespacePlugin );
                 applicationContext.getBeanFactory().addBeanPostProcessor( new RequirementTargetsBeanPostProcessor() );
-                registerBundleBeans( this.bundle, applicationContext, this.osgiSpringNamespacePlugin );
                 applicationContext.refresh();
 
                 for( Requirement requirement : this.requirements ) {
