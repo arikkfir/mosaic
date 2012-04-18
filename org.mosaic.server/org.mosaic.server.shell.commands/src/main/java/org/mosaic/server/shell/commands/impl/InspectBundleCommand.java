@@ -77,7 +77,7 @@ public class InspectBundleCommand extends AbstractCommand {
                              boolean requirements,
                              boolean wires )
             throws IOException {
-        //TODO: headers (only latest revision - highlight that!)
+        //FEATURE: headers (only latest revision - highlight that!)
         BundleStatus status = getBundleStatus( bundle );
 
         console.println();
@@ -161,13 +161,13 @@ public class InspectBundleCommand extends AbstractCommand {
                 List<BundleWire> providedWires = wiring.getProvidedWires( null );
                 if( providedWires != null ) {
                     for( BundleWire wire : providedWires ) {
-                        //TODO 4/14/12: show wire
+                        //FEATURE 4/14/12: show wire
                     }
                 }
                 List<BundleWire> requiredWires = wiring.getRequiredWires( null );
                 if( requiredWires != null ) {
                     for( BundleWire wire : requiredWires ) {
-                        //TODO 4/14/12: show wire
+                        //FEATURE 4/14/12: show wire
                     }
                 }
             }

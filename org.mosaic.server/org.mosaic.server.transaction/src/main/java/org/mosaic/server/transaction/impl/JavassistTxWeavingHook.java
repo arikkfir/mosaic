@@ -25,8 +25,8 @@ import static org.osgi.framework.FrameworkUtil.getBundle;
 
 /**
  * @author arik
- * @todo 4/17/12 the 'addCatch' works only if adding '-XX:-UseSplitVerifier' to the JVM options (see https://play.lighthouseapp.com/projects/57987/tickets/1234-javalangverifyerror-inconsistent-stackmap-frames-when-i-try-to-use-play-124-rc2-and-java-7)
- * @todo 4/17/12 reuse ClassPool instances to improve performance
+ * @WISH 4/17/12 the 'addCatch' works only if adding '-XX:-UseSplitVerifier' to the JVM options (see https://play.lighthouseapp.com/projects/57987/tickets/1234-javalangverifyerror-inconsistent-stackmap-frames-when-i-try-to-use-play-124-rc2-and-java-7)
+ * @WISH 4/17/12 reuse ClassPool instances to improve performance
  */
 @SuppressWarnings( "NullableProblems" )
 @Component

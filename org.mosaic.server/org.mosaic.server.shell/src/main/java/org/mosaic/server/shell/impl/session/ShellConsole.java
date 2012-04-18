@@ -213,7 +213,7 @@ public class ShellConsole implements Console {
             this.titles.add( title );
             this.lengths.add( width );
             this.lineLength += width + 1;
-            //TODO 4/12/12: add support for widths by percentages (using terminal getWidth)
+            //FEATURE 4/12/12: add support for widths by percentages (using terminal getWidth)
             return this;
         }
 
