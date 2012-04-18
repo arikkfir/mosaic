@@ -29,7 +29,6 @@ public class DataSourceManager {
 
     @ServiceBind( filter = DATASOURCE_FILTER )
     public synchronized void addDataSourceConfiguration( Configuration configuration ) throws SQLException {
-        //TODO 4/18/12: support driver selection in ds configuration (wait until driver is loaded, etc, like tracker)
         TransactionManagerImpl transactionSource = this.pools.get( configuration.getName() );
         if( transactionSource == null ) {
             transactionSource = new TransactionManagerImpl( configuration.getName(), this.jdbcDriverRegistrar );
