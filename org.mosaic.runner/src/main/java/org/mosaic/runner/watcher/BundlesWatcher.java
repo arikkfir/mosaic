@@ -1,5 +1,6 @@
 package org.mosaic.runner.watcher;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import org.osgi.framework.*;
@@ -19,7 +20,7 @@ public class BundlesWatcher implements Runnable {
 
     private final BundleContext bundleContext;
 
-    private final String name;
+    private final Path ignoreFlagFile;
 
     private final long scanInterval;
 
@@ -29,13 +30,9 @@ public class BundlesWatcher implements Runnable {
 
     private boolean stop;
 
-    public BundlesWatcher( BundleContext bundleContext, Path... directories ) {
-        this( bundleContext, "BundlesWatcher", directories );
-    }
-
-    public BundlesWatcher( BundleContext bundleContext, String name, Path... directories ) {
+    public BundlesWatcher( BundleContext bundleContext, Path ignoreFlagFile, Path... directories ) {
         this.bundleContext = bundleContext;
-        this.name = name;
+        this.ignoreFlagFile = ignoreFlagFile;
         this.scanInterval = Long.getLong( "bundleScanInterval", DEFAULT_SCAN_INTERVAL );
         for( Path directory : directories ) {
             this.watchedResourceProviders.add( new JarLinksWatchedResourceProvider( bundleContext, directory ) );
@@ -45,12 +42,19 @@ public class BundlesWatcher implements Runnable {
 
     public void start() {
         this.stop = false;
-        Thread thread = new Thread( this, this.name );
+        Thread thread = new Thread( this, "BundlesWatcher" );
         thread.setDaemon( true );
         thread.start();
     }
 
     public void scan() {
+
+        // if the ignore file flag exists, it means the user wants us to avoid checking updates until he removes it
+        if( Files.exists( this.ignoreFlagFile ) ) {
+            return;
+        }
+
+        // no ignore file - continue with scanning
         for( WatchedResourceProvider watchedResourceProvider : this.watchedResourceProviders ) {
             for( WatchedResource watchedResource : watchedResourceProvider.getWatchedResources() ) {
                 watchedResource.checkForUpdates();

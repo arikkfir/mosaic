@@ -100,6 +100,7 @@ public class Runner {
         try {
 
             BundlesWatcher watcher = new BundlesWatcher( felix.getBundleContext(),
+                                                         this.home.getHome().resolve( "pause" ),
                                                          this.home.getBoot(),
                                                          this.home.getServer(),
                                                          this.home.getDeploy() );
