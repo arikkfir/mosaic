@@ -32,7 +32,7 @@
                     <instructions>
                         <Require-Capability>org.mosaic.boot</Require-Capability>
                         <Provide-Capability>org.mosaic.transaction</Provide-Capability>
-                        <Embed-Dependency>bonecp,guava,javassist*</Embed-Dependency>
+                        <Embed-Dependency>bonecp,javassist*</Embed-Dependency>
                         <Embed-Transitive>true</Embed-Transitive>
                         <Import-Package>
                             !com.sun*,
@@ -84,19 +84,19 @@
             <artifactId>joda-time</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.google.code.findbugs</groupId>
-                    <artifactId>jsr305</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>com.googlecode.guava-osgi</groupId>
+            <artifactId>guava-osgi</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jolbox</groupId>
             <artifactId>bonecp</artifactId>
             <classifier>jdk5</classifier>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.javassist</groupId>
