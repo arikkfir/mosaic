@@ -11,7 +11,7 @@
     <!-- =========================================================================================================== -->
     <!-- Scan for @Component(s)                                                                                      -->
     <!-- =========================================================================================================== -->
-    <context:component-scan base-package="org.mosaic.server.db.impl"/>
+    <context:component-scan base-package="org.mosaic.server.transaction.impl"/>
 
 
 </beans>

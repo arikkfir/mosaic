@@ -69,7 +69,7 @@
         </dependency>
         <dependency>
             <groupId>org.mosaic.server</groupId>
-            <artifactId>org.mosaic.server.db</artifactId>
+            <artifactId>org.mosaic.server.transaction</artifactId>
             <version>[1.0.0-SNAPSHOT,2)</version>
             <scope>provided</scope>
         </dependency>
