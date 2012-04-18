@@ -27,11 +27,23 @@
     <!-- =========================================================================================================== -->
     <!--  Loggers configuration                                                                                      -->
     <!-- =========================================================================================================== -->
+
+    <!-- mosaic loggers (uncomment to enable) -->
+    <!--<logger name="org.mosaic.server.transaction" level="TRACE"/>-->
+    <logger name="org.mosaic.server.boot.install" level="WARN"/>
+    <logger name="org.mosaic.server.boot.resolve" level="WARN"/>
+    <logger name="org.mosaic.server.boot.activation" level="WARN"/>
+
+    <!-- suppress spring logs -->
     <logger name="org.springframework" level="WARN"/>
     <logger name="org.mosaic.server.boot.impl.publish.spring.BundleApplicationContext" level="WARN"/>
     <logger name="org.mosaic.server.boot.impl.publish.spring.BundleEnvironment" level="WARN"/>
+
+    <!-- suppress sshd logs -->
     <logger name="org.apache.sshd" level="WARN"/>
     <logger name="org.mosaic.server.shell.impl.MosaicServerSession" level="WARN"/>
+
+    <!-- redirect felix OSGi logs to a different file -->
     <logger name="org.apache.felix" additivity="false">
         <appender-ref ref="framework"/>
     </logger>
