@@ -1,4 +1,4 @@
-package org.mosaic.lifecycle;
+package org.mosaic.osgi;
 
 /**
  * @author arik

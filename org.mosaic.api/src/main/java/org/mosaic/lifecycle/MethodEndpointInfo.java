@@ -3,7 +3,6 @@ package org.mosaic.lifecycle;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import org.osgi.framework.Bundle;
 
 /**
  * @author arik
@@ -16,7 +15,10 @@ public interface MethodEndpointInfo {
 
     String METHOD_NAME = "methodName";
 
+    @SuppressWarnings( "UnusedDeclaration" )
     boolean isOfType( Class<? extends Annotation> annotationType );
+
+    String getOrigin();
 
     Annotation getType();
 
@@ -24,5 +26,4 @@ public interface MethodEndpointInfo {
 
     Object invoke( Object... arguments ) throws InvocationTargetException, IllegalAccessException;
 
-    Bundle getBundle();
 }
