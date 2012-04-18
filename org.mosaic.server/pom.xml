@@ -21,6 +21,7 @@
         <module>org.mosaic.server.shell</module>
         <module>org.mosaic.server.shell.commands</module>
         <module>org.mosaic.server.transaction</module>
+        <module>org.mosaic.server.web</module>
     </modules>
 
 </project>
