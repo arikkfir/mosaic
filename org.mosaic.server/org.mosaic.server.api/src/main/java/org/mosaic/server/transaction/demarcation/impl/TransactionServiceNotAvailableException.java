@@ -1,4 +1,4 @@
-package org.mosaic.server.transaction;
+package org.mosaic.server.transaction.demarcation.impl;
 
 import org.mosaic.osgi.util.BundleUtils;
 import org.osgi.framework.BundleContext;

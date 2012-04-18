@@ -1,4 +1,4 @@
-package org.mosaic.server.shell;
+package org.mosaic.server.shell.console;
 
 import java.io.IOException;
 import java.io.Writer;
