@@ -25,7 +25,7 @@ import org.springframework.transaction.TransactionStatus;
  */
 public class TransactionManagerImpl implements TransactionManager {
 
-    private static final Logger LOG = LoggerFactory.getLogger( TransactionManagerImpl.class );
+    private static final Logger LOG = LoggerFactory.getBundleLogger( TransactionManagerImpl.class );
 
     private final BoneCPDataSourceWrapper rawDataSource;
 

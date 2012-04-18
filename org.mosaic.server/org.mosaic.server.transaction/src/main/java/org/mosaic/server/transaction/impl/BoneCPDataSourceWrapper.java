@@ -28,7 +28,7 @@ public class BoneCPDataSourceWrapper implements DataSource, Closeable {
         SERIALIZABLE
     }
 
-    private static final org.mosaic.logging.Logger LOG = LoggerFactory.getLogger( BoneCPDataSourceWrapper.class );
+    private static final org.mosaic.logging.Logger LOG = LoggerFactory.getBundleLogger( BoneCPDataSourceWrapper.class );
 
     private final String name;
 
