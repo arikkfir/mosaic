@@ -18,7 +18,7 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import org.mosaic.lifecycle.BundleContextAware;
+import org.mosaic.lifecycle.ContextRef;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
 import org.mosaic.osgi.util.BundleUtils;
@@ -34,7 +34,7 @@ import static java.lang.reflect.Modifier.isAbstract;
  * @author arik
  */
 @Component
-public class JdbcDriverRegistrar implements BundleListener, BundleContextAware {
+public class JdbcDriverRegistrar implements BundleListener {
 
     private static final Logger LOG = LoggerFactory.getBundleLogger( JdbcDriverRegistrar.class );
 
@@ -42,7 +42,7 @@ public class JdbcDriverRegistrar implements BundleListener, BundleContextAware {
 
     private final Map<Bundle, Collection<Driver>> driverClasses = new ConcurrentHashMap<>();
 
-    @Override
+    @ContextRef
     public void setBundleContext( BundleContext bundleContext ) {
         this.bundleContext = bundleContext;
     }
