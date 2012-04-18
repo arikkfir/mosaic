@@ -5,6 +5,9 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.wiring.BundleWiring;
 import org.springframework.context.support.GenericApplicationContext;
 
+import static org.mosaic.server.boot.impl.publish.spring.SpringUtils.createBundleSpringEnvironment;
+import static org.mosaic.server.boot.impl.publish.spring.SpringUtils.registerBundleBeans;
+
 /**
  * @author arik
  */
@@ -23,12 +26,12 @@ public class BundleApplicationContext extends GenericApplicationContext {
         setAllowCircularReferences( false );
         setClassLoader( wiring.getClassLoader() );
         setDisplayName( "ApplicationContext[" + BundleUtils.toString( bundle ) + "]" );
-        setEnvironment( new BundleEnvironment( bundle ) );
+        setEnvironment( createBundleSpringEnvironment( bundle ) );
         setId( BundleUtils.toString( bundle ) );
         setResourceLoader( new OsgiResourcePatternResolver( bundle, getClassLoader() ) );
 
         // add bundle beans
-        BeanFactoryUtils.registerBundleBeans( bundle, this, springNamespacePlugin );
+        registerBundleBeans( bundle, this, springNamespacePlugin );
 
     }
 

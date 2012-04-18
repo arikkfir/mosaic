@@ -5,14 +5,13 @@ import java.lang.reflect.Method;
 import java.util.*;
 import org.mosaic.lifecycle.*;
 import org.mosaic.server.boot.impl.publish.BundleTracker;
-import org.mosaic.server.boot.impl.publish.spring.BeanFactoryUtils;
 import org.mosaic.server.boot.impl.publish.spring.BundleBeanFactory;
 import org.mosaic.server.boot.impl.publish.spring.OsgiSpringNamespacePlugin;
+import org.mosaic.server.boot.impl.publish.spring.SpringUtils;
 import org.osgi.framework.Bundle;
 import org.springframework.core.MethodParameter;
 import org.springframework.util.ReflectionUtils;
 
-import static org.mosaic.server.boot.impl.publish.spring.BeanFactoryUtils.registerBundleBeans;
 import static org.springframework.core.GenericCollectionTypeResolver.getCollectionParameterType;
 
 /**
@@ -35,12 +34,11 @@ public class RequirementFactory {
     }
 
     public Collection<Requirement> detectRequirements() {
-        BundleBeanFactory beanFactory = new BundleBeanFactory( this.bundle );
-        registerBundleBeans( this.bundle, beanFactory, this.osgiSpringNamespacePlugin );
+        BundleBeanFactory beanFactory = new BundleBeanFactory( this.bundle, this.osgiSpringNamespacePlugin );
 
         List<Requirement> requirements = new LinkedList<>();
         for( String beanDefinitionName : beanFactory.getBeanDefinitionNames() ) {
-            Class<?> beanClass = BeanFactoryUtils.getBeanClass( this.bundle, beanFactory, beanDefinitionName );
+            Class<?> beanClass = SpringUtils.getBeanClass( this.bundle, beanFactory, beanDefinitionName );
             if( beanClass != null ) {
 
                 // detect service classes for registration

@@ -1,19 +1,39 @@
 package org.mosaic.server.boot.impl.publish.spring;
 
 import java.net.URL;
+import java.util.Dictionary;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.wiring.BundleWiring;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.MapPropertySource;
+import org.springframework.core.env.StandardEnvironment;
 import org.springframework.core.io.UrlResource;
 
 /**
  * @author arik
  */
-public abstract class BeanFactoryUtils {
+public abstract class SpringUtils {
+
+    public static ConfigurableEnvironment createBundleSpringEnvironment( Bundle bundle ) {
+        Map<String, Object> headersMap = new HashMap<>();
+        Dictionary<String, String> headers = bundle.getHeaders();
+        Enumeration<String> headerNames = headers.keys();
+        while( headerNames.hasMoreElements() ) {
+            String headerName = headerNames.nextElement();
+            headersMap.put( headerName, headers.get( headerName ) );
+        }
+
+        StandardEnvironment environment = new StandardEnvironment();
+        environment.getPropertySources().addFirst( new MapPropertySource( "bundle", headersMap ) );
+        return environment;
+    }
 
     public static void registerBundleBeans( Bundle bundle,
                                             BeanDefinitionRegistry beanFactory,
@@ -26,7 +46,7 @@ public abstract class BeanFactoryUtils {
         XmlBeanDefinitionReader xmlReader = new XmlBeanDefinitionReader( beanFactory );
         xmlReader.setBeanClassLoader( wiring.getClassLoader() );
         xmlReader.setEntityResolver( osgiSpringNamespacePlugin );
-        xmlReader.setEnvironment( new BundleEnvironment( bundle ) );
+        xmlReader.setEnvironment( createBundleSpringEnvironment( bundle ) );
         xmlReader.setNamespaceHandlerResolver( osgiSpringNamespacePlugin );
         xmlReader.setResourceLoader( new OsgiResourcePatternResolver( bundle, wiring.getClassLoader() ) );
 
