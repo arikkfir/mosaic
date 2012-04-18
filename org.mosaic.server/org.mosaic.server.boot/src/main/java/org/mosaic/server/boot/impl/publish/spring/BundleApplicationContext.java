@@ -24,7 +24,6 @@ public class BundleApplicationContext extends GenericApplicationContext {
         setEnvironment( new BundleEnvironment( bundle ) );
         setId( BundleUtils.toString( bundle ) );
         setResourceLoader( new OsgiResourcePatternResolver( bundle, getClassLoader() ) );
-        getBeanFactory().addBeanPostProcessor( new BundleContextAwareBeanPostProcessor( bundle.getBundleContext() ) );
     }
 
 }

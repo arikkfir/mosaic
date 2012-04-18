@@ -24,10 +24,17 @@
                 <configuration>
                     <instructions>
 
-                        <Provide-Capability>org.mosaic.boot</Provide-Capability>
+                        <!-- This is a capability signaling the server bootstrapping - other server bundles should require it -->
+                        <Provide-Capability>org.mosaic.server.boot</Provide-Capability>
 
                         <!-- Since no other bundle will track this bundle's lifecycle, we must take care of our own -->
                         <Bundle-Activator>org.mosaic.server.boot.impl.ServerBootActivator</Bundle-Activator>
+
+                        <!-- Since we're implementing some Mosaic-API types, our import-package policy needs to be stricter -->
+                        <Import-Package>
+                            org.mosaic;version:="[1.0,1.1)",
+                            *
+                        </Import-Package>
 
                     </instructions>
                 </configuration>

@@ -2,11 +2,11 @@ package org.mosaic.server.boot.impl;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import org.mosaic.lifecycle.BundleState;
-import org.mosaic.lifecycle.BundleStatus;
-import org.mosaic.lifecycle.BundleStatusHelper;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
+import org.mosaic.osgi.BundleState;
+import org.mosaic.osgi.BundleStatus;
+import org.mosaic.osgi.BundleStatusHelper;
 import org.mosaic.osgi.util.BundleUtils;
 import org.mosaic.server.boot.impl.publish.BundleTracker;
 import org.mosaic.server.boot.impl.publish.requirement.Requirement;

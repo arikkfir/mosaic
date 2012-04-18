@@ -4,11 +4,12 @@ import org.springframework.context.ApplicationContext;
 
 public interface Requirement {
 
-    int SERVICE_REF_PRIORITY = 10;
-    int SERVICE_LIST_PRIORITY = 20;
-    int SERVICE_BIND_PRIORITY = 30;
-    int SERVICE_UNBIND_PRIORITY = 30;
-    int SERVICE_EXPORT_PRIORITY = 40;
+    int BUNDLE_CONTEXT_PRIORITY = 10;
+    int SERVICE_REF_PRIORITY = 20;
+    int SERVICE_LIST_PRIORITY = 30;
+    int SERVICE_BIND_PRIORITY = 40;
+    int SERVICE_UNBIND_PRIORITY = 50;
+    int SERVICE_EXPORT_PRIORITY = 60;
 
     int getPriority();
 

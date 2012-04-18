@@ -51,6 +51,7 @@ public class RequirementFactory {
 
                 // detect method requirements
                 for( Method method : ReflectionUtils.getUniqueDeclaredMethods( beanClass ) ) {
+                    detectBundleContextRef( beanDefinitionName, method, requirements );
                     detectServiceRef( beanDefinitionName, method, requirements );
                     detectServiceBind( beanDefinitionName, method, requirements );
                     detectServiceUnbind( beanDefinitionName, method, requirements );
@@ -60,6 +61,29 @@ public class RequirementFactory {
         }
         Collections.sort( requirements, new RequirementPriorityComparator() );
         return requirements;
+    }
+
+    private void detectBundleContextRef( String beanDefinitionName, Method method, List<Requirement> requirements ) {
+        ContextRef contextRefAnn = findAnnotation( method, ContextRef.class );
+        if( contextRefAnn != null ) {
+            Class<?>[] parameterTypes = method.getParameterTypes();
+            if( parameterTypes.length == 0 ) {
+
+                // @ServiceRef methods must have at least one parameter
+                throw new IllegalStateException( "Method '" + method.getName() + "' in bean '" + beanDefinitionName + "' has no parameters, but has the @" + ContextRef.class.getSimpleName() + " annotation" );
+
+            } else if( parameterTypes.length > 1 ) {
+
+                // @ContextRef methods must have exactly one parameter
+                throw new IllegalStateException( "Method '" + method.getName() + "' in bean '" + beanDefinitionName + "' has the @" + ContextRef.class.getSimpleName() + " annotation, but has more than one parameter" );
+
+            } else {
+
+                // add the new requirement
+                requirements.add( new BundleContextRequirement( this.tracker, beanDefinitionName, method ) );
+
+            }
+        }
     }
 
     private void detectServiceRef( String beanDefinitionName, Method method, Collection<Requirement> requirements ) {

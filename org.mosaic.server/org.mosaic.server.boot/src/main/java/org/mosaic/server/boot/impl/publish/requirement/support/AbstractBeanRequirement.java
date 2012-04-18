@@ -29,7 +29,7 @@ public abstract class AbstractBeanRequirement extends AbstractRequirement {
     }
 
     @Override
-    protected void publishBeanInternal( Object bean, String beanName ) throws Exception {
+    protected final void publishBeanInternal( Object bean, String beanName ) throws Exception {
         onInitBeanInternal( bean );
     }
 
