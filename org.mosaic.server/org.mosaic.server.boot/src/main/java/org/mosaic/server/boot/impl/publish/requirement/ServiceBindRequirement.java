@@ -53,6 +53,13 @@ public class ServiceBindRequirement extends AbstractTrackerRequirement {
     }
 
     @Override
+    public void modifiedService( ServiceReference<Object> serviceReference, Object service ) {
+        if( service != null ) {
+            markAsSatisfied( serviceReference, service );
+        }
+    }
+
+    @Override
     protected boolean trackInternal() throws Exception {
         super.trackInternal();
         return true;
@@ -61,9 +68,8 @@ public class ServiceBindRequirement extends AbstractTrackerRequirement {
     @Override
     protected void onSatisfyInternal( ApplicationContext applicationContext, Object... state ) throws Exception {
         Object bean = getBean( applicationContext );
-        ServiceReference<?> serviceReference = ( ServiceReference<?> ) state[ 0 ];
-        Object service = state[ 1 ];
-        invoke( bean, getServiceMethodArgs( serviceReference, service ) );
+        Object[] args = getServiceMethodArgs( ( ServiceReference<?> ) state[ 0 ], state[ 1 ] );
+        invoke( bean, args );
     }
 
     @Override
