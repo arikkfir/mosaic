@@ -21,11 +21,14 @@ public class OsgiResourcePatternResolver extends PathMatchingResourcePatternReso
 
     @Override
     protected boolean isJarResource( Resource resource ) throws IOException {
+        // spring doesn't recognize Felix 'bundle://' URLs so we add support for that here
         return resource.getURL().getProtocol().equals( "bundle" ) || super.isJarResource( resource );
     }
 
     @Override
     protected Resource resolveRootDirResource( Resource original ) throws IOException {
+        // spring doesn't recognize Felix 'bundle://' URLs so we add support for that here
+
         URL originalUrl = original.getURL();
         String protocol = originalUrl.getProtocol();
         if( "bundle".equals( protocol ) ) {
