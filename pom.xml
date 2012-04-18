@@ -21,6 +21,7 @@
         <module>org.mosaic.api</module>
         <module>org.mosaic.server</module>
         <module>org.mosaic.test</module>
+        <module>run/org.mosaic.idea</module>
     </modules>
 
 </project>
