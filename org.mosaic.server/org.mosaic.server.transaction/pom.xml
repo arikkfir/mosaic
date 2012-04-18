@@ -17,24 +17,18 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <version>2.4</version>
-                <configuration>
-                    <failBuild>false</failBuild>
-                    <failOnWarning>false</failOnWarning>
-                </configuration>
-            </plugin>
-            <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
                 <configuration>
                     <instructions>
-                        <Require-Capability>org.mosaic.boot</Require-Capability>
+                        <Require-Capability>org.mosaic.server.boot</Require-Capability>
                         <Provide-Capability>org.mosaic.transaction</Provide-Capability>
-                        <Embed-Dependency>bonecp,javassist*</Embed-Dependency>
+                        <Embed-Dependency>bonecp,javassist</Embed-Dependency>
                         <Embed-Transitive>true</Embed-Transitive>
                         <Import-Package>
+                            org.mosaic.server.transaction;version="[1.0,1.1)",
+                            org.osgi.framework;version="[1.6,1.7)",
+                            org.osgi.framework.hooks.weaving;version="[1.0,1.1)",
                             !com.sun*,
                             *
                         </Import-Package>
@@ -45,6 +39,9 @@
     </build>
 
     <dependencies>
+        <!-- ============================================================ -->
+        <!-- Mosaic APIs                                                  -->
+        <!-- ============================================================ -->
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.api</artifactId>
@@ -55,17 +52,19 @@
             <artifactId>org.mosaic.server.api</artifactId>
             <version>[1.0.0-SNAPSHOT,2)</version>
         </dependency>
+        <!-- ============================================================ -->
+        <!-- OSGi API                                                     -->
+        <!-- ============================================================ -->
         <dependency>
             <groupId>org.apache.felix</groupId>
             <artifactId>org.apache.felix.framework</artifactId>
         </dependency>
+        <!-- ============================================================ -->
+        <!-- Spring Framework                                             -->
+        <!-- ============================================================ -->
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>org.springframework.beans</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>org.springframework.core</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
@@ -79,14 +78,16 @@
             <groupId>org.springframework</groupId>
             <artifactId>org.springframework.transaction</artifactId>
         </dependency>
-        <dependency>
-            <groupId>joda-time</groupId>
-            <artifactId>joda-time</artifactId>
-        </dependency>
+        <!-- ============================================================ -->
+        <!-- Google Guava libraries                                       -->
+        <!-- ============================================================ -->
         <dependency>
             <groupId>com.googlecode.guava-osgi</groupId>
             <artifactId>guava-osgi</artifactId>
         </dependency>
+        <!-- ============================================================ -->
+        <!-- Connection Pooling BoneCP framework                          -->
+        <!-- ============================================================ -->
         <dependency>
             <groupId>com.jolbox</groupId>
             <artifactId>bonecp</artifactId>
@@ -98,6 +99,9 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!-- ============================================================ -->
+        <!-- Bytecode Weaving Framework                                   -->
+        <!-- ============================================================ -->
         <dependency>
             <groupId>org.javassist</groupId>
             <artifactId>javassist</artifactId>
