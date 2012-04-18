@@ -23,9 +23,9 @@ import org.mosaic.config.Configuration;
 import org.mosaic.lifecycle.ServiceRef;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
+import org.mosaic.server.shell.impl.auth.UserAuthLocalhostNone;
 import org.mosaic.server.shell.impl.session.MosaicServerSession;
-import org.mosaic.server.shell.impl.session.Shell;
-import org.mosaic.server.shell.impl.session.UserAuthLocalhostNone;
+import org.mosaic.server.shell.impl.session.Session;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
@@ -34,9 +34,11 @@ import org.springframework.stereotype.Component;
  * @author arik
  */
 @Component
-public class MosaicSshServer {
+public class SshServerManager {
 
-    private static final Logger LOG = LoggerFactory.getBundleLogger( MosaicSshServer.class );
+    private static final Logger LOG = LoggerFactory.getBundleLogger( SshServerManager.class );
+
+    private MosaicSessionFactory sessionFactory = new MosaicSessionFactory();
 
     private MosaicHome home;
 
@@ -81,6 +83,8 @@ public class MosaicSshServer {
 
     @PostConstruct
     public synchronized void init() throws InterruptedException {
+
+        // create a new SSH daemon server and configure it
         this.sshServer = SshServer.setUpDefaultServer();
         this.sshServer.setPort( this.configuration.require( "port", Integer.class, 9080 ) );
         this.sshServer.setShellFactory( new MosaicSshShellFactory() );
@@ -88,18 +92,15 @@ public class MosaicSshServer {
         this.sshServer.setUserAuthFactories( createUserAuthFactories() );
         this.sshServer.setKeyPairProvider( new SimpleGeneratorHostKeyProvider( this.home.getWork().resolve( "host.ser" ).toString() ) );
         this.sshServer.setPublickeyAuthenticator( this.publicKeyAuthenticator );
-        this.sshServer.setSessionFactory( new SessionFactory() {
-            @Override
-            protected AbstractSession doCreateSession( IoSession ioSession ) throws Exception {
-                return new MosaicServerSession( server, ioSession );
-            }
-        } );
+        this.sshServer.setSessionFactory( this.sessionFactory );
 
+        // start the new SSH daemon server
         try {
             this.sshServer.start();
         } catch( IOException e ) {
             LOG.warn( "Could not start Mosaic shell service: {}", e.getMessage(), e );
         }
+
     }
 
     @PreDestroy
@@ -117,13 +118,21 @@ public class MosaicSshServer {
         return factories;
     }
 
+    private static class MosaicSessionFactory extends SessionFactory {
+
+        @Override
+        protected AbstractSession doCreateSession( IoSession ioSession ) throws Exception {
+            return new MosaicServerSession( this.server, ioSession );
+        }
+    }
+
     private class MosaicSshShellFactory implements Factory<Command> {
 
         @Override
         public Command create() {
-            Shell shell = applicationContext.getBean( Shell.class );
-            shell.setMosaicHome( home );
-            return shell;
+            Session session = applicationContext.getBean( Session.class );
+            session.setMosaicHome( home );
+            return session;
         }
 
     }

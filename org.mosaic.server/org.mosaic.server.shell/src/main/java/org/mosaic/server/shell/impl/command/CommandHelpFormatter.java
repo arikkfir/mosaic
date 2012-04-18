@@ -7,7 +7,7 @@ import joptsimple.HelpFormatter;
 import joptsimple.OptionDescriptor;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
-import org.mosaic.server.shell.Console;
+import org.mosaic.server.shell.console.Console;
 
 /**
  * @author arik

@@ -6,11 +6,11 @@ import org.apache.sshd.server.Environment;
 /**
  * @author arik
  */
-public class ShellTerminal extends TerminalSupport {
+public class SshTerminal extends TerminalSupport {
 
     private final Environment environment;
 
-    public ShellTerminal( Environment environment ) {
+    public SshTerminal( Environment environment ) {
         super( true );
         this.environment = environment;
     }

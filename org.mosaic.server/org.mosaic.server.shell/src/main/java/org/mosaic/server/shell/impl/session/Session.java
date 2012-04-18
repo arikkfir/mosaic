@@ -19,11 +19,8 @@ import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.session.ServerSession;
-import org.joda.time.Period;
-import org.joda.time.format.PeriodFormatter;
-import org.joda.time.format.PeriodFormatterBuilder;
 import org.mosaic.MosaicHome;
-import org.mosaic.lifecycle.BundleContextAware;
+import org.mosaic.lifecycle.ContextRef;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
 import org.mosaic.server.shell.ExitSessionException;
@@ -42,23 +39,9 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Scope( "prototype" )
-public class Shell implements Command, Runnable, SessionAware, BundleContextAware {
+public class Session implements Command, Runnable, SessionAware {
 
-    private static final Logger LOG = LoggerFactory.getBundleLogger( Shell.class );
-
-    private static final PeriodFormatter SESSION_DURATION_FORMATTER = new PeriodFormatterBuilder()
-            .appendDays()
-            .appendSuffix( " day", " days" )
-            .appendSeparator( ", " )
-            .appendHours()
-            .appendSuffix( " hour", " hours" )
-            .appendSeparator( ", " )
-            .appendMinutes()
-            .appendSuffix( " minute", " minutes" )
-            .appendSeparator( " and " )
-            .appendSeconds()
-            .appendSuffix( " second", " seconds" )
-            .toFormatter();
+    private static final Logger LOG = LoggerFactory.getBundleLogger( Session.class );
 
     private BundleContext bundleContext;
 
@@ -93,11 +76,19 @@ public class Shell implements Command, Runnable, SessionAware, BundleContextAwar
         this.commandsManager = commandsManager;
     }
 
+    /**
+     * Sets the Mosaic home. Used for storing the shell history files for users.
+     * <p/>
+     * NOT annotated with @ServiceRef because this bean is in the "prototype" scope which is not supported for service
+     * injection.
+     *
+     * @param mosaicHome the mosaic home directory
+     */
     public void setMosaicHome( MosaicHome mosaicHome ) {
         this.mosaicHome = mosaicHome;
     }
 
-    @Override
+    @ContextRef
     public void setBundleContext( BundleContext bundleContext ) {
         this.bundleContext = bundleContext;
     }
@@ -145,7 +136,7 @@ public class Shell implements Command, Runnable, SessionAware, BundleContextAwar
             Path historyFile = this.mosaicHome.getWork().resolve( "history/" + username );
             this.history = new FileHistory( historyFile.toFile() );
 
-            this.consoleReader = new ConsoleReader( new PipeInputStream( this.inputQueue ), this.out, new ShellTerminal( env ) );
+            this.consoleReader = new ConsoleReader( new PipeInputStream( this.inputQueue ), this.out, new SshTerminal( env ) );
             this.consoleReader.setHistory( history );
             this.consoleReader.setPrompt( "[" + this.session.getUsername() + "@host.com]$ " );
             this.consoleReader.addCompleter( new CommandCompleter() );
@@ -164,12 +155,11 @@ public class Shell implements Command, Runnable, SessionAware, BundleContextAwar
     public void run() {
         this.running = true;
 
-        long start = System.currentTimeMillis();
-        ShellConsole shellConsole = new ShellConsole( this.consoleReader );
+        ConsoleImpl console = new ConsoleImpl( this.consoleReader );
         try {
-            WelcomeMessage.print( this.bundleContext, shellConsole );
+            WelcomeMessage.print( this.bundleContext, console );
             String line;
-            while( this.running && ( line = shellConsole.readLine() ) != null ) {
+            while( this.running && ( line = console.readLine() ) != null ) {
                 line = line.trim();
                 if( line.length() > 0 ) {
                     String[] tokens = line.split( " " );
@@ -184,19 +174,19 @@ public class Shell implements Command, Runnable, SessionAware, BundleContextAwar
 
                     ShellCommand shellCommand = this.commandsManager.getCommand( tokens[ 0 ] );
                     if( shellCommand == null ) {
-                        shellConsole.println( "Unknown command: " + tokens[ 0 ] );
+                        console.println( "Unknown command: " + tokens[ 0 ] );
                     } else {
                         try {
-                            shellCommand.execute( shellConsole, args );
+                            shellCommand.execute( console, args );
                         } catch( ExitSessionException e ) {
                             this.inputQueue.offer( -1 );
                         } catch( OptionException e ) {
                             if( this.running ) {
-                                shellConsole.println( e.getMessage() );
+                                console.println( e.getMessage() );
                             }
                         } catch( Exception e ) {
                             if( this.running ) {
-                                shellConsole.printStackTrace( e );
+                                console.printStackTrace( e );
                             }
                         }
                     }
@@ -215,10 +205,9 @@ public class Shell implements Command, Runnable, SessionAware, BundleContextAwar
             this.running = false;
             if( !this.session.isClosing() ) {
                 try {
-                    String duration = SESSION_DURATION_FORMATTER.print( new Period( start, System.currentTimeMillis() ) );
-                    shellConsole.println();
-                    shellConsole.println( "Goodbye! (session was " + duration + " long)" );
-                    shellConsole.flush();
+                    console.println();
+                    console.println( "Goodbye!" );
+                    console.flush();
                     this.session.close( false );
                 } catch( IOException ignore ) {
                 }

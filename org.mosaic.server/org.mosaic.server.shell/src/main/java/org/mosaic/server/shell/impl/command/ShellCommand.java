@@ -1,7 +1,7 @@
 package org.mosaic.server.shell.impl.command;
 
 import java.io.IOException;
-import org.mosaic.server.shell.Console;
+import org.mosaic.server.shell.console.Console;
 
 /**
  * @author arik

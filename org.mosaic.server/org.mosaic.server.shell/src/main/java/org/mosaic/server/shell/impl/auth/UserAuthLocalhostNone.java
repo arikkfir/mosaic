@@ -1,4 +1,4 @@
-package org.mosaic.server.shell.impl.session;
+package org.mosaic.server.shell.impl.auth;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;

@@ -16,8 +16,11 @@ import org.mosaic.describe.RequiredArg;
 import org.mosaic.lifecycle.MethodEndpointInfo;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
-import org.mosaic.server.shell.*;
-import org.osgi.framework.Constants;
+import org.mosaic.server.shell.ArgDescription;
+import org.mosaic.server.shell.Args;
+import org.mosaic.server.shell.ExitSessionException;
+import org.mosaic.server.shell.Option;
+import org.mosaic.server.shell.console.Console;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 import org.springframework.core.ParameterNameDiscoverer;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -105,7 +108,7 @@ public class MethodEndpointShellCommand implements ShellCommand {
 
     @Override
     public String getOrigin() {
-        return this.endpoint.getBundle().getHeaders().get( Constants.BUNDLE_NAME );
+        return this.endpoint.getOrigin();
     }
 
     @Override

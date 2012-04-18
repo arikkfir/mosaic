@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.mosaic.lifecycle.MethodEndpointInfo;
 import org.mosaic.lifecycle.ServiceBind;
 import org.mosaic.lifecycle.ServiceUnbind;
-import org.mosaic.server.shell.Console;
+import org.mosaic.server.shell.console.Console;
 import org.springframework.stereotype.Component;
 
 /**

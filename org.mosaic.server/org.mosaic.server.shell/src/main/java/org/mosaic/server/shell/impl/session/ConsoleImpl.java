@@ -9,7 +9,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import jline.console.ConsoleReader;
-import org.mosaic.server.shell.Console;
+import org.mosaic.server.shell.console.Console;
 
 import static java.lang.Math.max;
 import static java.lang.Thread.currentThread;
@@ -18,11 +18,11 @@ import static org.mosaic.server.shell.impl.util.StringUtils.*;
 /**
  * @author arik
  */
-public class ShellConsole implements Console {
+public class ConsoleImpl implements Console {
 
     private final ConsoleReader consoleReader;
 
-    public ShellConsole( ConsoleReader consoleReader ) {
+    public ConsoleImpl( ConsoleReader consoleReader ) {
         this.consoleReader = consoleReader;
     }
 
@@ -235,9 +235,9 @@ public class ShellConsole implements Console {
             headerLine.append( '|' );
             this.chromeLine = chromeLine.toString();
 
-            ShellConsole.this.print( this.indent ).println( chromeLine );
-            ShellConsole.this.print( this.indent ).println( headerLine );
-            ShellConsole.this.print( this.indent ).println( chromeLine );
+            ConsoleImpl.this.print( this.indent ).println( chromeLine );
+            ConsoleImpl.this.print( this.indent ).println( headerLine );
+            ConsoleImpl.this.print( this.indent ).println( chromeLine );
             return this;
         }
 
@@ -273,7 +273,7 @@ public class ShellConsole implements Console {
                     buffer.append( '|' ).append( line );
                 }
                 buffer.append( '|' );
-                ShellConsole.this.print( this.indent ).println( buffer );
+                ConsoleImpl.this.print( this.indent ).println( buffer );
             }
 
             return this;
@@ -281,7 +281,7 @@ public class ShellConsole implements Console {
 
         @Override
         public void done() throws IOException {
-            ShellConsole.this.print( this.indent ).println( chromeLine );
+            ConsoleImpl.this.print( this.indent ).println( chromeLine );
         }
     }
 }

@@ -25,9 +25,10 @@
                         <Embed-Dependency>jline,jansi,jopt-simple,jewelcli,sshd*,mina*</Embed-Dependency>
                         <Embed-Transitive>true</Embed-Transitive>
                         <Import-Package>
-                            !com.jcraft.jzlib*,
-                            !org.bouncycastle*,
-                            !org.apache.tomcat*,
+                            org.mosaic.server.shell.console;version="[1.0,1.1)",
+                            com.jcraft.jzlib*;resolution="optional",
+                            org.bouncycastle*;resolution="optional",
+                            org.apache.tomcat*;resolution="optional",
                             *
                         </Import-Package>
                     </instructions>
@@ -91,10 +92,6 @@
             <artifactId>jline</artifactId>
         </dependency>
         <dependency>
-            <groupId>joda-time</groupId>
-            <artifactId>joda-time</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.fusesource.jansi</groupId>
             <artifactId>jansi</artifactId>
             <scope>provided</scope>
@@ -104,16 +101,8 @@
             <artifactId>jopt-simple</artifactId>
         </dependency>
         <!-- ============================================================ -->
-        <!-- Google and Apache Commons utilities                          -->
+        <!-- Apache Commons                                               -->
         <!-- ============================================================ -->
-        <dependency>
-            <groupId>com.googlecode.guava-osgi</groupId>
-            <artifactId>guava-osgi</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-        </dependency>
         <dependency>
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
