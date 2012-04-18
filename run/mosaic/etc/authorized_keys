@@ -1,0 +1,5 @@
+#
+# This file should contain authorized SSH public keys that are allowed to connect (via SSH)
+# to the Mosaic server. The format of this file is exactly the same as the standard, OpenSSH
+# 'authorized_keys' file (usually found in a server's "~/.ssh/authorized_keys" path).
+#
