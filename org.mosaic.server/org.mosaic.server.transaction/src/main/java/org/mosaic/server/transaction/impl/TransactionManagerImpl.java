@@ -31,7 +31,7 @@ public class TransactionManagerImpl implements TransactionManager {
 
     private TransactionAwareDataSourceProxy txDataSource;
 
-    private DataSourceTransactionManager transactionManager;
+    private DataSourceTransactionManager springTxMgr;
 
     private ServiceRegistration registration;
 
@@ -44,17 +44,17 @@ public class TransactionManagerImpl implements TransactionManager {
         this.txDataSource = new TransactionAwareDataSourceProxy( this.rawDataSource );
 
         // create a transaction manager used by @Transactional classes
-        this.transactionManager = new DataSourceTransactionManager( this.rawDataSource );
-        this.transactionManager.setValidateExistingTransaction( true );
-        this.transactionManager.afterPropertiesSet();
+        this.springTxMgr = new DataSourceTransactionManager( this.rawDataSource );
+        this.springTxMgr.setValidateExistingTransaction( true );
+        this.springTxMgr.afterPropertiesSet();
     }
 
     public void updateConfiguration( Configuration configuration ) {
         this.rawDataSource.init( configuration );
 
         // create a transaction manager for the *RAW* data source (NEVER TO THE TX DATA SOURCE! THE TX-MGR MUST WORK AGAINST THE ACTUAL DATA SOURCE!)
-        this.transactionManager.setNestedTransactionAllowed( configuration.get( "nestedTransactionsAllowed", Boolean.class, false ) );
-        this.transactionManager.setRollbackOnCommitFailure( configuration.get( "rollbackOnCommitFailure", Boolean.class, false ) );
+        this.springTxMgr.setNestedTransactionAllowed( configuration.get( "nestedTransactionsAllowed", Boolean.class, false ) );
+        this.springTxMgr.setRollbackOnCommitFailure( configuration.get( "rollbackOnCommitFailure", Boolean.class, false ) );
 
         // register as a data source and transaction manager
         Dictionary<String, Object> dsDict = new Hashtable<>();
@@ -83,17 +83,17 @@ public class TransactionManagerImpl implements TransactionManager {
 
     @Override
     public TransactionStatus getTransaction( TransactionDefinition definition ) throws TransactionException {
-        return this.transactionManager.getTransaction( definition );
+        return this.springTxMgr.getTransaction( definition );
     }
 
     @Override
     public void commit( TransactionStatus status ) throws TransactionException {
-        this.transactionManager.commit( status );
+        this.springTxMgr.commit( status );
     }
 
     @Override
     public void rollback( TransactionStatus status ) throws TransactionException {
-        this.transactionManager.rollback( status );
+        this.springTxMgr.rollback( status );
     }
 
     @Override
