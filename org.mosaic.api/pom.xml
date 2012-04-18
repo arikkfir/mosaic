@@ -15,21 +15,33 @@
     <packaging>bundle</packaging>
 
     <dependencies>
+        <!-- ============================================================ -->
+        <!-- BND @Version API                                             -->
+        <!-- ============================================================ -->
         <dependency>
             <groupId>biz.aQute</groupId>
             <artifactId>bndlib</artifactId>
             <optional>true</optional>
         </dependency>
+        <!-- ============================================================ -->
+        <!-- Logging (used by our Logger implementation)                  -->
+        <!-- The 'jcl-over-slf4j' dependency is not really used, but      -->
+        <!-- we put it here just so IntelliJ won't highlight as errors    -->
+        <!-- usages of commons-logging (which is why we're putting it in  -->
+        <!-- 'runtime' scope which prohibits compile-time usage of it).   -->
+        <!-- ============================================================ -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>jcl-over-slf4j</artifactId>
             <scope>runtime</scope>
         </dependency>
+        <!-- ============================================================ -->
+        <!-- OSGi API                                                     -->
+        <!-- ============================================================ -->
         <dependency>
             <groupId>org.apache.felix</groupId>
             <artifactId>org.apache.felix.framework</artifactId>
