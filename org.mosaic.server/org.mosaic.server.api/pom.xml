@@ -16,19 +16,19 @@
 
     <dependencies>
         <!-- ============================================================ -->
+        <!-- BND @Version API                                             -->
+        <!-- ============================================================ -->
+        <dependency>
+            <groupId>biz.aQute</groupId>
+            <artifactId>bndlib</artifactId>
+        </dependency>
+        <!-- ============================================================ -->
         <!-- Mosaic APIs                                                  -->
         <!-- ============================================================ -->
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.api</artifactId>
             <version>[1.0.0-SNAPSHOT,2)</version>
-        </dependency>
-        <!-- ============================================================ -->
-        <!-- BND @Version API                                             -->
-        <!-- ============================================================ -->
-        <dependency>
-            <groupId>biz.aQute</groupId>
-            <artifactId>bndlib</artifactId>
         </dependency>
         <!-- ============================================================ -->
         <!-- Spring Framework                                             -->
