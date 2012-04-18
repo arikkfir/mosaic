@@ -3,8 +3,8 @@ package org.mosaic.server.shell.commands.impl;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
-import org.joda.time.DateTime;
 import org.mosaic.describe.Description;
 import org.mosaic.osgi.BundleStatus;
 import org.mosaic.osgi.util.BundleUtils;
@@ -102,7 +102,7 @@ public class InspectBundleCommand extends AbstractCommand {
         console.print( "Symbolic name: " ).println( bundle.getSymbolicName() );
         console.print( "Version:       " ).println( bundle.getVersion() );
         console.print( "State:         " ).println( status.getState() );
-        console.print( "Last modified: " ).println( new DateTime( bundle.getLastModified() ) );
+        console.print( "Last modified: " ).println( new Date( bundle.getLastModified() ) );
         console.print( "Location:      " ).println( bundle.getLocation() );
 
         Collection<String> unsatisfiedRequirements = status.getUnsatisfiedRequirements();
