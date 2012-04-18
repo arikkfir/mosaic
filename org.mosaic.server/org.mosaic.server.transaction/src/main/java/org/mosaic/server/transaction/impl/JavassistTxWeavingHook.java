@@ -6,7 +6,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import javassist.*;
-import org.mosaic.lifecycle.BundleContextAware;
+import org.mosaic.lifecycle.ContextRef;
 import org.mosaic.lifecycle.ServiceExport;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
@@ -31,7 +31,7 @@ import static org.osgi.framework.FrameworkUtil.getBundle;
 @SuppressWarnings( "NullableProblems" )
 @Component
 @ServiceExport( WeavingHook.class )
-public class JavassistTxWeavingHook implements WeavingHook, BundleContextAware {
+public class JavassistTxWeavingHook implements WeavingHook {
 
     private static final String BEGIN_TX_CODE =
             "{\n" +
@@ -68,7 +68,7 @@ public class JavassistTxWeavingHook implements WeavingHook, BundleContextAware {
         this.orgMosaicServerTransactionPackageVersion = getBundle( Transactions.class ).getVersion().toString();
     }
 
-    @Override
+    @ContextRef
     public void setBundleContext( BundleContext bundleContext ) {
         this.bundleContext = bundleContext;
 
