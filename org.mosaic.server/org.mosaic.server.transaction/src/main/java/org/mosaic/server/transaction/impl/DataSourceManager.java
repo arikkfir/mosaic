@@ -18,7 +18,7 @@ public class DataSourceManager {
 
     public static final String DATASOURCE_FILTER = "name=*-ds";
 
-    private final Map<String, TransactionManagerImpl> pools = new HashMap<>();
+    private final Map<String, TransactionManagerImpl> txManagers = new HashMap<>();
 
     private JdbcDriverRegistrar jdbcDriverRegistrar;
 
@@ -29,17 +29,17 @@ public class DataSourceManager {
 
     @ServiceBind( filter = DATASOURCE_FILTER )
     public synchronized void addDataSourceConfiguration( Configuration configuration ) throws SQLException {
-        TransactionManagerImpl transactionSource = this.pools.get( configuration.getName() );
-        if( transactionSource == null ) {
-            transactionSource = new TransactionManagerImpl( configuration.getName(), this.jdbcDriverRegistrar );
-            this.pools.put( configuration.getName(), transactionSource );
+        TransactionManagerImpl txMgr = this.txManagers.get( configuration.getName() );
+        if( txMgr == null ) {
+            txMgr = new TransactionManagerImpl( configuration.getName(), this.jdbcDriverRegistrar );
+            this.txManagers.put( configuration.getName(), txMgr );
         }
-        transactionSource.updateConfiguration( configuration );
+        txMgr.updateConfiguration( configuration );
     }
 
     @ServiceUnbind( filter = DATASOURCE_FILTER )
     public synchronized void removeDataSourceConfiguration( Configuration configuration ) {
-        TransactionManagerImpl removed = this.pools.remove( configuration.getName() );
+        TransactionManagerImpl removed = this.txManagers.remove( configuration.getName() );
         if( removed != null ) {
             removed.destroy();
         }
@@ -47,9 +47,9 @@ public class DataSourceManager {
 
     @PreDestroy
     public synchronized void destroy() throws SQLException {
-        for( TransactionManagerImpl transactionSource : this.pools.values() ) {
-            transactionSource.destroy();
+        for( TransactionManagerImpl txMgr : this.txManagers.values() ) {
+            txMgr.destroy();
         }
-        this.pools.clear();
+        this.txManagers.clear();
     }
 }
