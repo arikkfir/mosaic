@@ -26,6 +26,7 @@ import org.mosaic.MosaicHome;
 import org.mosaic.lifecycle.BundleContextAware;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
+import org.mosaic.server.shell.ExitSessionException;
 import org.mosaic.server.shell.impl.command.ShellCommand;
 import org.mosaic.server.shell.impl.command.ShellCommandsManager;
 import org.mosaic.server.shell.impl.io.IoUtils;
@@ -187,6 +188,8 @@ public class Shell implements Command, Runnable, SessionAware, BundleContextAwar
                     } else {
                         try {
                             shellCommand.execute( shellConsole, args );
+                        } catch( ExitSessionException e ) {
+                            this.inputQueue.offer( -1 );
                         } catch( OptionException e ) {
                             if( this.running ) {
                                 shellConsole.println( e.getMessage() );

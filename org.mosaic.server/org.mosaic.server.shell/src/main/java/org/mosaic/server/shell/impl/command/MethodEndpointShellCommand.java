@@ -16,10 +16,7 @@ import org.mosaic.describe.RequiredArg;
 import org.mosaic.lifecycle.MethodEndpointInfo;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
-import org.mosaic.server.shell.ArgDescription;
-import org.mosaic.server.shell.Args;
-import org.mosaic.server.shell.Console;
-import org.mosaic.server.shell.Option;
+import org.mosaic.server.shell.*;
 import org.osgi.framework.Constants;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 import org.springframework.core.ParameterNameDiscoverer;
@@ -91,6 +88,9 @@ public class MethodEndpointShellCommand implements ShellCommand {
         } catch( InvocationTargetException e ) {
             Throwable cause = e.getCause();
             Exception ex = e;
+            if( cause instanceof ExitSessionException ) {
+                throw ( ExitSessionException ) cause;
+            }
             if( cause instanceof Exception ) {
                 ex = ( Exception ) cause;
             }
