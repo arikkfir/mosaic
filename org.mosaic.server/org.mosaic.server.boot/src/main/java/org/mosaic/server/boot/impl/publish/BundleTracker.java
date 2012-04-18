@@ -1,8 +1,6 @@
 package org.mosaic.server.boot.impl.publish;
 
 import java.util.*;
-import org.mosaic.logging.Logger;
-import org.mosaic.logging.LoggerFactory;
 import org.mosaic.osgi.util.BundleUtils;
 import org.mosaic.server.boot.impl.publish.requirement.Requirement;
 import org.mosaic.server.boot.impl.publish.requirement.RequirementFactory;
@@ -14,14 +12,13 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 
+import static org.mosaic.server.boot.impl.BundleBootstrapper.ACTIVATION_LOG;
 import static org.mosaic.server.boot.impl.publish.spring.BeanFactoryUtils.registerBundleBeans;
 
 /**
  * @author arik
  */
 public class BundleTracker {
-
-    private static final Logger LOG = LoggerFactory.getBundleLogger( BundleTracker.class );
 
     private final Object lock = new Object();
 
@@ -50,7 +47,7 @@ public class BundleTracker {
     }
 
     public void track() throws Exception {
-        LOG.info( "Tracking bundle '{}'", BundleUtils.toString( this.bundle ) );
+        ACTIVATION_LOG.info( "Tracking bundle '{}'", BundleUtils.toString( this.bundle ) );
 
         // initialize data structures
         this.requirements = new LinkedHashSet<>();
@@ -80,9 +77,9 @@ public class BundleTracker {
         if( this.unsatisfied.isEmpty() ) {
             publish();
         } else {
-            LOG.info( "Bundle '{}' has unsatisfied dependencies, and will be published when they are satisfied. Dependencies are:", BundleUtils.toString( this.bundle ) );
+            ACTIVATION_LOG.info( "Bundle '{}' has unsatisfied dependencies, and will be published when they are satisfied. Dependencies are:", BundleUtils.toString( this.bundle ) );
             for( Requirement requirement : this.unsatisfied ) {
-                LOG.info( "    {}", requirement );
+                ACTIVATION_LOG.info( "    {}", requirement );
             }
         }
     }
@@ -105,7 +102,7 @@ public class BundleTracker {
     }
 
     public void untrack() {
-        LOG.debug( "Untracking bundle '{}'", BundleUtils.toString( this.bundle ) );
+        ACTIVATION_LOG.debug( "Untracking bundle '{}'", BundleUtils.toString( this.bundle ) );
 
         // un-publish bundle
         unpublish();
@@ -122,7 +119,7 @@ public class BundleTracker {
         this.satisfied = null;
         this.unsatisfied = null;
 
-        LOG.info( "Untracked bundle '{}'", BundleUtils.toString( this.bundle ) );
+        ACTIVATION_LOG.info( "Untracked bundle '{}'", BundleUtils.toString( this.bundle ) );
     }
 
     public BundleContext getBundleContext() {
@@ -171,7 +168,7 @@ public class BundleTracker {
         if( !this.publishing ) {
             this.publishing = true;
             try {
-                LOG.debug( "Publishing bundle '{}'", BundleUtils.toString( this.bundle ) );
+                ACTIVATION_LOG.debug( "Publishing bundle '{}'", BundleUtils.toString( this.bundle ) );
                 BundleApplicationContext applicationContext = new BundleApplicationContext( this.bundle );
                 applicationContext.getBeanFactory().addBeanPostProcessor( new RequirementTargetsBeanPostProcessor() );
                 registerBundleBeans( this.bundle, applicationContext, this.osgiSpringNamespacePlugin );
@@ -182,12 +179,12 @@ public class BundleTracker {
                 }
 
                 this.applicationContext = applicationContext;
-                LOG.info( "Published bundle '{}'", BundleUtils.toString( this.bundle ) );
+                ACTIVATION_LOG.info( "Published bundle '{}'", BundleUtils.toString( this.bundle ) );
 
             } catch( Exception e ) {
 
                 // publish failed - revert any effects requirements applied to the system (outside the app context)
-                LOG.error( "Could not publish bundle '{}': {}", BundleUtils.toString( this.bundle ), e.getMessage(), e );
+                ACTIVATION_LOG.error( "Could not publish bundle '{}': {}", BundleUtils.toString( this.bundle ), e.getMessage(), e );
                 unpublish();
 
             } finally {
@@ -197,7 +194,7 @@ public class BundleTracker {
     }
 
     private void unpublish() {
-        LOG.debug( "Unpublishing bundle '{}'", BundleUtils.toString( this.bundle ) );
+        ACTIVATION_LOG.debug( "Unpublishing bundle '{}'", BundleUtils.toString( this.bundle ) );
         for( Requirement requirement : this.satisfied ) {
             requirement.unpublish();
         }
@@ -206,13 +203,13 @@ public class BundleTracker {
             try {
                 this.applicationContext.close();
             } catch( Exception e ) {
-                LOG.error( "Could not properly close application context for bundle '{}': {}", BundleUtils.toString( this.bundle ), e.getMessage(), e );
+                ACTIVATION_LOG.error( "Could not properly close application context for bundle '{}': {}", BundleUtils.toString( this.bundle ), e.getMessage(), e );
             } finally {
                 this.applicationContext = null;
             }
         }
 
-        LOG.info( "Unpublished bundle '{}'", BundleUtils.toString( this.bundle ) );
+        ACTIVATION_LOG.info( "Unpublished bundle '{}'", BundleUtils.toString( this.bundle ) );
     }
 
     private Collection<Requirement> getReversedRequirements() {

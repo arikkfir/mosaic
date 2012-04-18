@@ -18,6 +18,12 @@ import org.osgi.framework.*;
  */
 public class BundleBootstrapper implements SynchronousBundleListener, BundleStatusHelper {
 
+    public static final Logger INSTALL_LOG = LoggerFactory.getLogger( LoggerFactory.getBundleLogger( BundleBootstrapper.class ).getName() + ".install" );
+
+    public static final Logger RESOLVE_LOG = LoggerFactory.getLogger( LoggerFactory.getBundleLogger( BundleBootstrapper.class ).getName() + ".resolve" );
+
+    public static final Logger ACTIVATION_LOG = LoggerFactory.getLogger( LoggerFactory.getBundleLogger( BundleBootstrapper.class ).getName() + ".activation" );
+
     private static final Logger LOG = LoggerFactory.getBundleLogger( BundleBootstrapper.class );
 
     private final BundleContext bundleContext;
@@ -80,30 +86,30 @@ public class BundleBootstrapper implements SynchronousBundleListener, BundleStat
         Bundle bundle = event.getBundle();
         switch( event.getType() ) {
             case BundleEvent.INSTALLED:
-                LOG.info( "Installed bundle '{}'", BundleUtils.toString( bundle ), BundleUtils.toString( event.getOrigin() ) );
+                INSTALL_LOG.info( "Installed bundle '{}'", BundleUtils.toString( bundle ), BundleUtils.toString( event.getOrigin() ) );
                 break;
 
             case BundleEvent.RESOLVED:
-                LOG.info( "Resolved bundle '{}'", bundle );
+                RESOLVE_LOG.info( "Resolved bundle '{}'", bundle );
                 break;
 
             case BundleEvent.STARTING:
-                LOG.info( "Starting bundle '{}'", bundle );
+                ACTIVATION_LOG.debug( "Starting bundle '{}'", bundle );
                 break;
 
             case BundleEvent.STARTED:
-                LOG.info( "Started bundle '{}'", bundle );
+                ACTIVATION_LOG.info( "Started bundle '{}'", bundle );
                 if( shouldTrackBundle( bundle ) ) {
                     trackBundle( bundle );
                 }
                 break;
 
             case BundleEvent.UPDATED:
-                LOG.info( "Updated bundle '{}'", bundle );
+                ACTIVATION_LOG.info( "Updated bundle '{}'", bundle );
                 break;
 
             case BundleEvent.STOPPING:
-                LOG.info( "Stopping bundle '{}'", bundle );
+                ACTIVATION_LOG.debug( "Stopping bundle '{}'", bundle );
                 BundleTracker tracker = this.trackers.remove( bundle.getBundleId() );
                 if( tracker != null ) {
                     try {
@@ -115,15 +121,15 @@ public class BundleBootstrapper implements SynchronousBundleListener, BundleStat
                 break;
 
             case BundleEvent.STOPPED:
-                LOG.info( "Stopped bundle '{}'", bundle );
+                ACTIVATION_LOG.info( "Stopped bundle '{}'", bundle );
                 break;
 
             case BundleEvent.UNRESOLVED:
-                LOG.info( "Unresolved bundle '{}'", bundle );
+                RESOLVE_LOG.info( "Unresolved bundle '{}'", bundle );
                 break;
 
             case BundleEvent.UNINSTALLED:
-                LOG.info( "Uninstalled bundle '{}'", bundle );
+                INSTALL_LOG.info( "Uninstalled bundle '{}'", bundle );
                 break;
         }
     }
