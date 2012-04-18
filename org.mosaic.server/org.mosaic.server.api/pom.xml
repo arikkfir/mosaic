@@ -15,19 +15,31 @@
     <packaging>bundle</packaging>
 
     <dependencies>
+        <!-- ============================================================ -->
+        <!-- Mosaic APIs                                                  -->
+        <!-- ============================================================ -->
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.api</artifactId>
             <version>[1.0.0-SNAPSHOT,2)</version>
         </dependency>
+        <!-- ============================================================ -->
+        <!-- BND @Version API                                             -->
+        <!-- ============================================================ -->
         <dependency>
             <groupId>biz.aQute</groupId>
             <artifactId>bndlib</artifactId>
         </dependency>
+        <!-- ============================================================ -->
+        <!-- Spring Framework                                             -->
+        <!-- ============================================================ -->
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>org.springframework.transaction</artifactId>
         </dependency>
+        <!-- ============================================================ -->
+        <!-- OSGi API                                                     -->
+        <!-- ============================================================ -->
         <dependency>
             <groupId>org.apache.felix</groupId>
             <artifactId>org.apache.felix.framework</artifactId>
