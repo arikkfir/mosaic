@@ -21,7 +21,11 @@
                 <artifactId>maven-bundle-plugin</artifactId>
                 <configuration>
                     <instructions>
-                        <Require-Capability>org.mosaic.boot</Require-Capability>
+                        <Require-Capability>org.mosaic.server.boot</Require-Capability>
+                        <Import-Package>
+                            org.mosaic.osgi;version="[1.0,1.1)",
+                            *
+                        </Import-Package>
                     </instructions>
                 </configuration>
             </plugin>

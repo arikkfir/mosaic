@@ -2,14 +2,18 @@ package org.mosaic.server.shell.commands.impl;
 
 import java.util.Collection;
 import java.util.Collections;
-import org.mosaic.lifecycle.*;
+import org.mosaic.lifecycle.ContextRef;
+import org.mosaic.lifecycle.ServiceRef;
+import org.mosaic.osgi.BundleState;
+import org.mosaic.osgi.BundleStatus;
+import org.mosaic.osgi.BundleStatusHelper;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
 /**
  * @author arik
  */
-public abstract class AbstractCommand implements BundleContextAware {
+public abstract class AbstractCommand {
 
     private BundleContext bundleContext;
 
@@ -24,7 +28,7 @@ public abstract class AbstractCommand implements BundleContextAware {
         return bundleContext;
     }
 
-    @Override
+    @ContextRef
     public void setBundleContext( BundleContext bundleContext ) {
         this.bundleContext = bundleContext;
     }

@@ -2,9 +2,9 @@ package org.mosaic.server.shell.commands.impl;
 
 import java.io.IOException;
 import org.mosaic.describe.Description;
-import org.mosaic.server.shell.Console;
 import org.mosaic.server.shell.ExitSessionException;
 import org.mosaic.server.shell.ShellCommand;
+import org.mosaic.server.shell.console.Console;
 import org.springframework.stereotype.Component;
 
 /**
