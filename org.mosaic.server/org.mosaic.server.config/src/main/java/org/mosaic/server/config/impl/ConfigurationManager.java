@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import org.mosaic.MosaicHome;
-import org.mosaic.lifecycle.BundleContextAware;
+import org.mosaic.lifecycle.ContextRef;
 import org.mosaic.lifecycle.ServiceRef;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
@@ -25,7 +25,7 @@ import static java.nio.file.Files.newDirectoryStream;
  * @author arik
  */
 @Component
-public class ConfigurationManager implements BundleContextAware {
+public class ConfigurationManager {
 
     private static final Logger LOG = LoggerFactory.getBundleLogger( ConfigurationManager.class );
 
@@ -41,7 +41,7 @@ public class ConfigurationManager implements BundleContextAware {
 
     private BundleContext bundleContext;
 
-    @Override
+    @ContextRef
     public void setBundleContext( BundleContext bundleContext ) {
         this.bundleContext = bundleContext;
     }
