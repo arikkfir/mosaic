@@ -26,7 +26,7 @@ public class BundlesWatcher implements Runnable {
 
     private final Collection<WatchedResourceProvider> watchedResourceProviders = new LinkedList<>();
 
-    private final Set<Long> unresolvedBundles = new HashSet<>();
+    private final Map<Long, BundleStartError> bundleStartErrors = new HashMap<>();
 
     private boolean stop;
 
@@ -116,12 +116,24 @@ public class BundlesWatcher implements Runnable {
             if( bundle.getState() == Bundle.INSTALLED || bundle.getState() == Bundle.RESOLVED ) {
                 try {
                     bundle.start();
-                    this.unresolvedBundles.remove( bundle.getBundleId() );
+                    this.bundleStartErrors.remove( bundle.getBundleId() );
                 } catch( BundleException e ) {
+                    long now = System.currentTimeMillis();
+
                     // we basically ignore this because something is still missing for it - it will be started
                     // in a future cycle when the missing dependency is added to the server
-                    if( !this.unresolvedBundles.contains( bundle.getBundleId() ) ) {
-                        this.unresolvedBundles.add( bundle.getBundleId() );
+
+                    // since we don't want to flood the log, we will only log this error if this is the first error,
+                    // the error message has changed, or if more than 30 seconds have passed since the previous error
+                    BundleStartError lastError = this.bundleStartErrors.get( bundle.getBundleId() );
+                    if( lastError == null || !lastError.message.equalsIgnoreCase( e.getMessage() ) || now - lastError.time > ( 1000 * 30 ) ) {
+                        if( lastError == null ) {
+                            lastError = new BundleStartError();
+                            this.bundleStartErrors.put( bundle.getBundleId(), lastError );
+                        }
+                        lastError.message = e.getMessage();
+                        lastError.time = now;
+
                         LOG.warn( "Could not start bundle '{}-{}[{}]': {}",
                                   new Object[] {
                                           bundle.getSymbolicName(),
@@ -150,5 +162,13 @@ public class BundlesWatcher implements Runnable {
             scan();
 
         }
+    }
+
+    private class BundleStartError {
+
+        private String message;
+
+        private long time;
+
     }
 }
