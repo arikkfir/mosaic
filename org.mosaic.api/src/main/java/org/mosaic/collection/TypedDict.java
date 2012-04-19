@@ -15,6 +15,8 @@ public interface TypedDict<V> extends Dict<V> {
 
     <T> void addAs( String key, T value );
 
+    <T> void putAs( String key, T value );
+
     <T> Map<String, T> toMapAs( Class<T> type );
 
 }

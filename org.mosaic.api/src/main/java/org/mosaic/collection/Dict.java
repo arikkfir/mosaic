@@ -22,6 +22,8 @@ public interface Dict<V> extends Map<String, List<V>> {
 
     void add( String key, V value );
 
+    void put( String key, V value );
+
     Map<String, V> toMap();
 
 }

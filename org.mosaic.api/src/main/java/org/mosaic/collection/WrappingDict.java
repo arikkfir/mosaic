@@ -56,7 +56,7 @@ public class WrappingDict<V> implements Dict<V> {
         if( value != null ) {
             return value;
         } else {
-            throw new IllegalStateException( "Key '" + key + "' has no value" );
+            throw new MissingRequiredValueException( key );
         }
     }
 
@@ -66,6 +66,18 @@ public class WrappingDict<V> implements Dict<V> {
         if( values == null ) {
             values = this.listFactory.createList();
             this.map.put( key, values );
+        }
+        values.add( value );
+    }
+
+    @Override
+    public void put( String key, V value ) {
+        List<V> values = this.map.get( key );
+        if( values == null ) {
+            values = this.listFactory.createList();
+            this.map.put( key, values );
+        } else {
+            values.clear();
         }
         values.add( value );
     }

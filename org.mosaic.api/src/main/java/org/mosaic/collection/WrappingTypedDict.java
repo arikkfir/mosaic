@@ -22,7 +22,8 @@ public class WrappingTypedDict<V> extends WrappingDict<V> implements TypedDict<V
 
     public WrappingTypedDict( Map<String, List<V>> map,
                               ListFactory<V> vListFactory,
-                              ConversionService conversionService, Class<V> valueType ) {
+                              ConversionService conversionService,
+                              Class<V> valueType ) {
         super( map, vListFactory );
         this.conversionService = conversionService;
         this.valueType = valueType;
@@ -56,6 +57,11 @@ public class WrappingTypedDict<V> extends WrappingDict<V> implements TypedDict<V
     @Override
     public <T> void addAs( String key, T value ) {
         add( key, this.conversionService.convert( value, this.valueType ) );
+    }
+
+    @Override
+    public <T> void putAs( String key, T value ) {
+        put( key, this.conversionService.convert( value, this.valueType ) );
     }
 
     @Override
