@@ -14,7 +14,24 @@
     <name>Mosaic :: IDEA</name>
     <packaging>jar</packaging>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>2.4</version>
+                <configuration>
+                    <failOnWarning>false</failOnWarning>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
     <dependencies>
+        <dependency>
+            <groupId>org.mosaic</groupId>
+            <artifactId>org.mosaic.runner</artifactId>
+            <version>[1.0.0-SNAPSHOT,2)</version>
+        </dependency>
         <!-- ============================================================ -->
         <!-- These dependencies are here only so IntelliJ will "Make"     -->
         <!-- them before it runs our server. This module is never         -->
@@ -23,12 +40,6 @@
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.api</artifactId>
-            <version>[1.0.0-SNAPSHOT,2)</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mosaic</groupId>
-            <artifactId>org.mosaic.runner</artifactId>
             <version>[1.0.0-SNAPSHOT,2)</version>
             <scope>provided</scope>
         </dependency>
@@ -68,20 +79,24 @@
             <version>[1.0.0-SNAPSHOT,2)</version>
             <scope>provided</scope>
         </dependency>
-        <!--
-                <dependency>
-                    <groupId>org.mosaic.server.web</groupId>
-                    <artifactId>org.mosaic.server.web.dispatcher</artifactId>
-                    <version>[1.0.0-SNAPSHOT,2)</version>
-                    <scope>provided</scope>
-                </dependency>
-                <dependency>
-                    <groupId>org.mosaic.server.web</groupId>
-                    <artifactId>org.mosaic.server.web.jetty</artifactId>
-                    <version>[1.0.0-SNAPSHOT,2)</version>
-                    <scope>provided</scope>
-                </dependency>
-        -->
+        <dependency>
+            <groupId>org.mosaic.server.web</groupId>
+            <artifactId>org.mosaic.server.web.application</artifactId>
+            <version>[1.0.0-SNAPSHOT,2)</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mosaic.server.web</groupId>
+            <artifactId>org.mosaic.server.web.dispatcher</artifactId>
+            <version>[1.0.0-SNAPSHOT,2)</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mosaic.server.web</groupId>
+            <artifactId>org.mosaic.server.web.jetty</artifactId>
+            <version>[1.0.0-SNAPSHOT,2)</version>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>org.mosaic.test</groupId>
             <artifactId>org.mosaic.test.tx</artifactId>
