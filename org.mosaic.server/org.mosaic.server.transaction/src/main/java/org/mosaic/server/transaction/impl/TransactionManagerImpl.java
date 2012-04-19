@@ -1,31 +1,50 @@
 package org.mosaic.server.transaction.impl;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import java.util.Dictionary;
-import java.util.Hashtable;
+import java.util.*;
 import javax.sql.DataSource;
-import org.mosaic.config.Configuration;
+import org.mosaic.collection.TypedDict;
+import org.mosaic.collection.WrappingTypedDict;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
 import org.mosaic.server.transaction.TransactionManager;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy;
-import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
+
+import static java.nio.file.Files.*;
+import static java.nio.file.StandardOpenOption.READ;
+import static org.mosaic.logging.LoggerFactory.getBundleLogger;
 
 /**
  * @author arik
  */
 public class TransactionManagerImpl implements TransactionManager, DataSource {
 
-    private static final Logger LOG = LoggerFactory.getBundleLogger( TransactionManagerImpl.class );
+    public static final String[] TX_MGR_INTERFACES = new String[] {
+            TransactionManager.class.getName(),
+            DataSource.class.getName()
+    };
+
+    private final Logger logger;
+
+    private final Path path;
+
+    private final String name;
+
+    private final ConversionService conversionService;
 
     private final BoneCPDataSourceWrapper rawDataSource;
 
@@ -33,12 +52,25 @@ public class TransactionManagerImpl implements TransactionManager, DataSource {
 
     private DataSourceTransactionManager springTxMgr;
 
-    private ServiceRegistration registration;
+    private ServiceRegistration<?> registration;
 
-    public TransactionManagerImpl( String name, JdbcDriverRegistrar jdbcDriverRegistrar ) {
+    private long modificationTime;
+
+    public TransactionManagerImpl( Path configFile,
+                                   JdbcDriverRegistrar jdbcDriverRegistrar,
+                                   ConversionService conversionService ) {
+        this.path = configFile;
+
+        // discover name
+        String fileName = this.path.getFileName().toString();
+        this.name = fileName.substring( 0, fileName.length() - ".properties".length() );
+
+        // create logger
+        this.logger = LoggerFactory.getLogger( getBundleLogger( TransactionManagerImpl.class ).getName() + "." + this.name );
+        this.conversionService = conversionService;
 
         // create the actual BoneCP data source which will manage the connection pool
-        this.rawDataSource = new BoneCPDataSourceWrapper( name, jdbcDriverRegistrar );
+        this.rawDataSource = new BoneCPDataSourceWrapper( this.name, jdbcDriverRegistrar );
 
         // create a data-source proxy which will add spring-aware transactions to the data source
         this.txDataSource = new TransactionAwareDataSourceProxy( this.rawDataSource );
@@ -49,27 +81,70 @@ public class TransactionManagerImpl implements TransactionManager, DataSource {
         this.springTxMgr.afterPropertiesSet();
     }
 
-    public void updateConfiguration( Configuration configuration ) {
-        this.rawDataSource.init( configuration );
+    public Path getPath() {
+        return path;
+    }
+
+    public void refresh() {
+        if( isDirectory( this.path ) || !exists( this.path ) || !isReadable( this.path ) ) {
+
+            if( this.modificationTime > 0 ) {
+
+                logger.warn( "Data source '{}' no longer exists/readable at: {}", this.name, this.path );
+                this.modificationTime = 0;
+                unregister();
+
+            }
+
+        } else {
+
+            try {
+
+                long modificationTime = getLastModifiedTime( this.path ).toMillis();
+                if( modificationTime > this.modificationTime ) {
+                    this.modificationTime = modificationTime;
+
+                    logger.info( "Creating data source '{}' from: {}", this.name, this.path );
+                    TypedDict<String> data = createEmptyMap();
+                    try( InputStream inputStream = newInputStream( this.path, READ ) ) {
+
+                        Properties properties = new Properties();
+                        properties.load( inputStream );
+                        for( String propertyName : properties.stringPropertyNames() ) {
+                            data.put( propertyName, properties.getProperty( propertyName ) );
+                        }
+
+                    }
+                    register( data );
+                }
+
+            } catch( IOException e ) {
+                logger.error( "Could not refresh configuration '{}': {}", this.path.getFileName().toString(), e.getMessage(), e );
+            }
+
+        }
+    }
+
+    public void register( TypedDict<String> cfg ) {
+        this.rawDataSource.init( cfg );
 
         // create a transaction manager for the *RAW* data source (NEVER TO THE TX DATA SOURCE! THE TX-MGR MUST WORK AGAINST THE ACTUAL DATA SOURCE!)
-        this.springTxMgr.setNestedTransactionAllowed( configuration.getValueAs( "nestedTransactionsAllowed", Boolean.class, false ) );
-        this.springTxMgr.setRollbackOnCommitFailure( configuration.getValueAs( "rollbackOnCommitFailure", Boolean.class, false ) );
+        this.springTxMgr.setNestedTransactionAllowed( cfg.getValueAs( "nestedTransactionsAllowed", Boolean.class, false ) );
+        this.springTxMgr.setRollbackOnCommitFailure( cfg.getValueAs( "rollbackOnCommitFailure", Boolean.class, false ) );
 
         // register as a data source and transaction manager
         Dictionary<String, Object> dsDict = new Hashtable<>();
-        dsDict.put( "name", configuration.getName() );
-        this.registration = FrameworkUtil.getBundle( getClass() ).getBundleContext().registerService(
-                new String[] {
-                        TransactionManager.class.getName(),
-                        DataSource.class.getName(),
-                        PlatformTransactionManager.class.getName()
-                },
-                this, dsDict );
+        dsDict.put( "name", this.name );
+        if( this.registration != null ) {
+            this.registration.setProperties( dsDict );
+        } else {
+            Bundle bundle = FrameworkUtil.getBundle( getClass() );
+            this.registration = bundle.getBundleContext().registerService( TX_MGR_INTERFACES, this, dsDict );
+        }
     }
 
-    public void destroy() {
-        LOG.info( "Shutting down connection pool '{}'", this.rawDataSource.getPoolName() );
+    public void unregister() {
+        this.logger.info( "Shutting down connection pool '{}'", this.rawDataSource.getPoolName() );
         try {
             this.registration.unregister();
         } catch( IllegalStateException ignore ) {
@@ -77,7 +152,7 @@ public class TransactionManagerImpl implements TransactionManager, DataSource {
         try {
             this.rawDataSource.close();
         } catch( Exception e ) {
-            LOG.error( "Could not close data source '{}': {}", this.rawDataSource.getPoolName(), e.getMessage(), e );
+            this.logger.error( "Could not close data source '{}': {}", this.rawDataSource.getPoolName(), e.getMessage(), e );
         }
     }
 
@@ -150,5 +225,13 @@ public class TransactionManagerImpl implements TransactionManager, DataSource {
     @Override
     public boolean isWrapperFor( Class<?> type ) throws SQLException {
         return this.txDataSource.isWrapperFor( type );
+    }
+
+    private WrappingTypedDict<String> createEmptyMap() {
+        return createMap( new HashMap<String, List<String>>() );
+    }
+
+    private WrappingTypedDict<String> createMap( Map<String, List<String>> data ) {
+        return new WrappingTypedDict<>( data, this.conversionService, String.class );
     }
 }

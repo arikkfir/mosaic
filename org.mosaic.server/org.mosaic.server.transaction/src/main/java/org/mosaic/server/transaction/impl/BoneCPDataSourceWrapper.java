@@ -8,7 +8,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import javax.sql.DataSource;
-import org.mosaic.config.Configuration;
+import org.mosaic.collection.TypedDict;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
 
@@ -47,7 +47,7 @@ public class BoneCPDataSourceWrapper implements DataSource, Closeable {
         return this.name;
     }
 
-    public void init( Configuration cfg ) {
+    public void init( TypedDict<String> cfg ) {
         BoneCPConfig bcpConfig = new BoneCPConfig();
         bcpConfig.setAcquireIncrement( gi( cfg, "acquireIncrement", 1 ) );
         bcpConfig.setAcquireRetryAttempts( gi( cfg, "acquireRetryAttempts", 0 ) );
@@ -74,7 +74,7 @@ public class BoneCPDataSourceWrapper implements DataSource, Closeable {
         bcpConfig.setPartitionCount( gi( cfg, "partitionCount", 1 ) );
         bcpConfig.setPassword( gs( cfg, "password" ) );
         bcpConfig.setPoolAvailabilityThreshold( gi( cfg, "poolAvailabilityThreshold", 0 ) );
-        bcpConfig.setPoolName( cfg.getName() );
+        bcpConfig.setPoolName( this.name );
         bcpConfig.setQueryExecuteTimeLimit( gl( cfg, "queryExecuteTimeLimit", 1000 * 60 ), MILLISECONDS );
         bcpConfig.setReleaseHelperThreads( gi( cfg, "releaseHelperThreads", 0 ) );
         bcpConfig.setServiceOrder( gs( cfg, "serviceOrder", "FIFO" ) );
@@ -172,31 +172,31 @@ public class BoneCPDataSourceWrapper implements DataSource, Closeable {
         }
     }
 
-    private int gi( Configuration cfg, String key, int defaultValue ) {
+    private int gi( TypedDict<String> cfg, String key, int defaultValue ) {
         return cfg.getValueAs( key, Integer.class, defaultValue );
     }
 
-    private long gl( Configuration cfg, String key, long defaultValue ) {
+    private long gl( TypedDict<String> cfg, String key, long defaultValue ) {
         return cfg.getValueAs( key, Long.class, defaultValue );
     }
 
-    private boolean gb( Configuration cfg, String key, boolean defaultValue ) {
+    private boolean gb( TypedDict<String> cfg, String key, boolean defaultValue ) {
         return cfg.getValueAs( key, Boolean.class, defaultValue );
     }
 
-    private String rs( Configuration cfg, String key ) {
+    private String rs( TypedDict<String> cfg, String key ) {
         return cfg.requireValueAs( key, String.class );
     }
 
-    private String gs( Configuration cfg, String key, String defaultValue ) {
+    private String gs( TypedDict<String> cfg, String key, String defaultValue ) {
         return cfg.getValueAs( key, String.class, defaultValue );
     }
 
-    private String gs( Configuration cfg, String key ) {
+    private String gs( TypedDict<String> cfg, String key ) {
         return cfg.getValueAs( key, String.class );
     }
 
-    private <T extends Enum> T ge( Configuration cfg, String key, Class<T> type, T defaultValue ) {
+    private <T extends Enum> T ge( TypedDict<String> cfg, String key, Class<T> type, T defaultValue ) {
         return cfg.getValueAs( key, type, defaultValue );
     }
 

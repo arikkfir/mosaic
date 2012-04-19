@@ -25,7 +25,7 @@ public class WeavingTest {
 
     private DataSource dataSource;
 
-    @ServiceRef( filter = "name=main-ds" )
+    @ServiceRef( filter = "name=main" )
     public void setDataSource( DataSource dataSource ) {
         this.dataSource = dataSource;
     }
