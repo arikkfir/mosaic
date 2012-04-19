@@ -15,6 +15,7 @@
     <packaging>pom</packaging>
 
     <modules>
+        <module>org.mosaic.server.web.application</module>
         <module>org.mosaic.server.web.dispatcher</module>
         <module>org.mosaic.server.web.jetty</module>
     </modules>
