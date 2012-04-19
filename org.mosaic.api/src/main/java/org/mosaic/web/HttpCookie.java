@@ -7,9 +7,9 @@ public interface HttpCookie {
 
     String getName();
 
-    Object getValue();
+    String getValue();
 
-    void setValue( Object value );
+    void setValue( String value );
 
     String getDomain();
 
@@ -17,7 +17,7 @@ public interface HttpCookie {
 
     String getPath();
 
-    void setPath();
+    void setPath( String path );
 
     Integer getMaxAge();
 
