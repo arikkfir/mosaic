@@ -1,4 +1,5 @@
 [ Tasks ]
 
 WISH: Missing requirements can be implemented using OSGi "Find Listeners" (see OSGi Core specification chapter 55)
+TODO: user loaders should be implemented using method endpoints, not a UserLoader interface
 
