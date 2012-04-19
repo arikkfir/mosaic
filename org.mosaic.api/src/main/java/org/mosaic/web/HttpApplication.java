@@ -1,7 +1,6 @@
 package org.mosaic.web;
 
 import java.util.Set;
-import java.util.regex.Pattern;
 import org.mosaic.collection.TypedDict;
 
 /**
@@ -15,10 +14,12 @@ public interface HttpApplication extends TypedDict<Object> {
 
     Set<String> getVirtualHosts();
 
-    Set<String> getAllowedClientAddresses();
+    boolean isHostIncluded( String host );
 
-    Set<String> getRestrictedClientAddresses();
+    boolean isAddressAllowed( String address );
 
-    Set<Pattern> getPermissionPatterns( String... roles );
+    Set<String> getAvailableRoles();
+
+    boolean isPermissionIncluded( String permission, String... roles );
 
 }
