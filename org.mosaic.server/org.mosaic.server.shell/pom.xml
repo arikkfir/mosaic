@@ -26,9 +26,9 @@
                         <Embed-Transitive>true</Embed-Transitive>
                         <Import-Package>
                             org.mosaic.server.shell.console;version="[1.0,1.1)",
-                            com.jcraft.jzlib*;resolution="optional",
-                            org.bouncycastle*;resolution="optional",
-                            org.apache.tomcat*;resolution="optional",
+                            com.jcraft.jzlib*;resolution:="optional",
+                            org.bouncycastle*;resolution:="optional",
+                            org.apache.tomcat*;resolution:="optional",
                             *
                         </Import-Package>
                     </instructions>
