@@ -80,22 +80,22 @@ public class DataSourceManager {
 
     private synchronized void scan() {
 
-        Path dataSourcesDir = this.home.getEtc().resolve( "data-sources" );
-        if( Files.exists( dataSourcesDir ) && Files.isDirectory( dataSourcesDir ) ) {
+        Path dir = this.home.getEtc().resolve( "data-sources" );
+        if( Files.exists( dir ) && Files.isDirectory( dir ) ) {
 
-            try( DirectoryStream<Path> stream = newDirectoryStream( dataSourcesDir, "*.properties" ) ) {
+            try( DirectoryStream<Path> stream = newDirectoryStream( dir, "*.properties" ) ) {
 
-                for( Path configFile : stream ) {
-                    TransactionManagerImpl txMgr = this.txManagers.get( configFile );
+                for( Path dsFile : stream ) {
+                    TransactionManagerImpl txMgr = this.txManagers.get( dsFile );
                     if( txMgr == null ) {
-                        txMgr = new TransactionManagerImpl( configFile, this.jdbcDriverRegistrar, this.conversionService );
-                        this.txManagers.put( configFile, txMgr );
+                        txMgr = new TransactionManagerImpl( dsFile, this.jdbcDriverRegistrar, this.conversionService );
+                        this.txManagers.put( dsFile, txMgr );
                     }
                     txMgr.refresh();
                 }
 
             } catch( IOException e ) {
-                LOG.error( "Could not search for configurations in '{}': {}", this.home.getEtc(), e.getMessage(), e );
+                LOG.error( "Could not search for data sources in '{}': {}", dir, e.getMessage(), e );
             }
 
         }
