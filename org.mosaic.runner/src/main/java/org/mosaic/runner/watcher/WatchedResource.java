@@ -20,7 +20,7 @@ public class WatchedResource implements WatchedResourceHandler {
         UPDATED,
     }
 
-    private static final long MIN_ERROR_COUNT_FOR_QUIET = 5;
+    private static final long MAX_SUCCESSIVE_ERRORS = 2;
 
     private static final long ERROR_QUIET_TIME = 1000 * 30;
 
@@ -34,7 +34,7 @@ public class WatchedResource implements WatchedResourceHandler {
 
     private int successiveErrorCount = 0;
 
-    private long lastSuccessfulCheck;
+    private long lastAttempt;
 
     private long quietPeriod;
 
@@ -118,7 +118,7 @@ public class WatchedResource implements WatchedResourceHandler {
         long time = System.currentTimeMillis();
 
         UpdateResult result;
-        if( this.successiveErrorCount < MIN_ERROR_COUNT_FOR_QUIET || time - this.lastSuccessfulCheck >= ERROR_QUIET_TIME ) {
+        if( this.successiveErrorCount < MAX_SUCCESSIVE_ERRORS || time - this.lastAttempt >= ERROR_QUIET_TIME ) {
 
             // save current error count so we can test if it changed after this current check
             int previousErrorCount = this.successiveErrorCount;
@@ -129,8 +129,8 @@ public class WatchedResource implements WatchedResourceHandler {
             // if error count did not change, reset it since it means we've had a fully successful check
             if( previousErrorCount == this.successiveErrorCount ) {
                 this.successiveErrorCount = 0;
-                this.lastSuccessfulCheck = time;
             }
+            this.lastAttempt = time;
             return result;
 
         } else {
