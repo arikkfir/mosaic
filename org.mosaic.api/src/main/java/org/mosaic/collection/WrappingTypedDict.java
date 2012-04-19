@@ -10,7 +10,7 @@ import org.springframework.core.convert.ConversionService;
  */
 public class WrappingTypedDict<V> extends WrappingDict<V> implements TypedDict<V> {
 
-    private final ConversionService conversionService;
+    protected final ConversionService conversionService;
 
     private final Class<V> valueType;
 
