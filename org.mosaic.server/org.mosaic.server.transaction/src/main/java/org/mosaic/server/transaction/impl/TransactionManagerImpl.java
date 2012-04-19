@@ -56,10 +56,10 @@ public class TransactionManagerImpl implements TransactionManager, DataSource {
 
     private long modificationTime;
 
-    public TransactionManagerImpl( Path configFile,
+    public TransactionManagerImpl( Path dataSourceFile,
                                    JdbcDriverRegistrar jdbcDriverRegistrar,
                                    ConversionService conversionService ) {
-        this.path = configFile;
+        this.path = dataSourceFile;
 
         // discover name
         String fileName = this.path.getFileName().toString();
@@ -119,7 +119,7 @@ public class TransactionManagerImpl implements TransactionManager, DataSource {
                 }
 
             } catch( IOException e ) {
-                logger.error( "Could not refresh configuration '{}': {}", this.path.getFileName().toString(), e.getMessage(), e );
+                logger.error( "Could not refresh data source '{}': {}", this.path.getFileName().toString(), e.getMessage(), e );
             }
 
         }
