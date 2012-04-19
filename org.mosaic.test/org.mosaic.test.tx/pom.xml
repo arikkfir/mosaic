@@ -22,7 +22,7 @@
                 <configuration>
                     <instructions>
                         <Require-Capability>
-                            org.mosaic.boot,
+                            org.mosaic.server.boot,
                             org.mosaic.transaction
                         </Require-Capability>
                     </instructions>
