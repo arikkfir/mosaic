@@ -19,7 +19,7 @@ import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.session.ServerSession;
-import org.mosaic.MosaicHome;
+import org.mosaic.Home;
 import org.mosaic.lifecycle.ContextRef;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
@@ -45,7 +45,7 @@ public class Session implements Command, Runnable, SessionAware {
 
     private BundleContext bundleContext;
 
-    private MosaicHome mosaicHome;
+    private Home home;
 
     private ShellCommandsManager commandsManager;
 
@@ -82,10 +82,10 @@ public class Session implements Command, Runnable, SessionAware {
      * NOT annotated with @ServiceRef because this bean is in the "prototype" scope which is not supported for service
      * injection.
      *
-     * @param mosaicHome the mosaic home directory
+     * @param home the mosaic home directory
      */
-    public void setMosaicHome( MosaicHome mosaicHome ) {
-        this.mosaicHome = mosaicHome;
+    public void setHome( Home home ) {
+        this.home = home;
     }
 
     @ContextRef
@@ -133,7 +133,7 @@ public class Session implements Command, Runnable, SessionAware {
         // create the console reader used for interacting with the user
         try {
             String username = this.session.getUsername();
-            Path historyFile = this.mosaicHome.getWork().resolve( "history/" + username );
+            Path historyFile = this.home.getWork().resolve( "history/" + username );
             this.history = new FileHistory( historyFile.toFile() );
 
             this.consoleReader = new ConsoleReader( new PipeInputStream( this.inputQueue ), this.out, new SshTerminal( env ) );

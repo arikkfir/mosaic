@@ -2,7 +2,7 @@ package org.mosaic.server.boot.impl;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import org.mosaic.MosaicHome;
+import org.mosaic.Home;
 import org.mosaic.server.boot.impl.publish.spring.OsgiSpringNamespacePlugin;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -20,7 +20,7 @@ public class ServerBootActivator implements BundleActivator {
 
     @Override
     public void start( BundleContext bundleContext ) throws Exception {
-        bundleContext.registerService( MosaicHome.class, new MosaicHomeService(), null );
+        bundleContext.registerService( Home.class, new HomeService(), null );
 
         this.logListener = new MosaicLogListener( bundleContext );
         this.logListener.open();
@@ -44,7 +44,7 @@ public class ServerBootActivator implements BundleActivator {
         this.logListener = null;
     }
 
-    private class MosaicHomeService implements MosaicHome {
+    private class HomeService implements Home {
 
         private final Path home;
 
@@ -58,7 +58,7 @@ public class ServerBootActivator implements BundleActivator {
 
         private final Path work;
 
-        private MosaicHomeService() {
+        private HomeService() {
             this.home = Paths.get( System.getProperty( "mosaic.home" ) );
             this.boot = Paths.get( System.getProperty( "mosaic.home.boot" ) );
             this.deploy = Paths.get( System.getProperty( "mosaic.home.deploy" ) );

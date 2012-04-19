@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import org.mosaic.MosaicHome;
+import org.mosaic.Home;
 import org.mosaic.lifecycle.ContextRef;
 import org.mosaic.lifecycle.ServiceRef;
 import org.mosaic.logging.Logger;
@@ -35,7 +35,7 @@ public class ConfigurationManager {
 
     private ConversionService conversionService;
 
-    private MosaicHome mosaicHome;
+    private Home home;
 
     private ConfigurationManager.Scanner scanner;
 
@@ -52,8 +52,8 @@ public class ConfigurationManager {
     }
 
     @ServiceRef
-    public void setMosaicHome( MosaicHome mosaicHome ) {
-        this.mosaicHome = mosaicHome;
+    public void setHome( Home home ) {
+        this.home = home;
     }
 
     @PostConstruct
@@ -75,7 +75,7 @@ public class ConfigurationManager {
 
     private synchronized void scan() {
 
-        try( DirectoryStream<Path> stream = newDirectoryStream( this.mosaicHome.getEtc(), "*.properties" ) ) {
+        try( DirectoryStream<Path> stream = newDirectoryStream( this.home.getEtc(), "*.properties" ) ) {
 
             for( Path configFile : stream ) {
                 ConfigurationImpl configuration = this.configurations.get( configFile );
@@ -87,7 +87,7 @@ public class ConfigurationManager {
             }
 
         } catch( IOException e ) {
-            LOG.error( "Could not search for configurations in '{}': {}", this.mosaicHome.getEtc(), e.getMessage(), e );
+            LOG.error( "Could not search for configurations in '{}': {}", this.home.getEtc(), e.getMessage(), e );
         }
 
         this.configurations.values().iterator();

@@ -5,7 +5,7 @@ import java.nio.file.Path;
 /**
  * @author arik
  */
-public interface MosaicHome {
+public interface Home {
 
     Path getHome();
 

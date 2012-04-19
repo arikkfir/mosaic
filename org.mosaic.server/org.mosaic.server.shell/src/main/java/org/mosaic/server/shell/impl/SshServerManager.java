@@ -18,7 +18,7 @@ import org.apache.sshd.server.auth.UserAuthPassword;
 import org.apache.sshd.server.auth.UserAuthPublicKey;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.SessionFactory;
-import org.mosaic.MosaicHome;
+import org.mosaic.Home;
 import org.mosaic.config.Configuration;
 import org.mosaic.lifecycle.ServiceRef;
 import org.mosaic.logging.Logger;
@@ -40,7 +40,7 @@ public class SshServerManager {
 
     private MosaicSessionFactory sessionFactory = new MosaicSessionFactory();
 
-    private MosaicHome home;
+    private Home home;
 
     private Configuration configuration;
 
@@ -77,7 +77,7 @@ public class SshServerManager {
     }
 
     @ServiceRef
-    public void setHome( MosaicHome home ) {
+    public void setHome( Home home ) {
         this.home = home;
     }
 
@@ -131,7 +131,7 @@ public class SshServerManager {
         @Override
         public Command create() {
             Session session = applicationContext.getBean( Session.class );
-            session.setMosaicHome( home );
+            session.setHome( home );
             return session;
         }
 

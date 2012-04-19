@@ -19,7 +19,7 @@ import java.security.interfaces.DSAPublicKey;
 import java.security.interfaces.RSAPublicKey;
 import org.apache.sshd.server.PublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
-import org.mosaic.MosaicHome;
+import org.mosaic.Home;
 import org.mosaic.lifecycle.ServiceRef;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
@@ -36,10 +36,10 @@ public class AuthorizedPublicKeyAuthenticator implements PublickeyAuthenticator 
 
     private static final Logger LOG = LoggerFactory.getBundleLogger( AuthorizedPublicKeyAuthenticator.class );
 
-    private MosaicHome home;
+    private Home home;
 
     @ServiceRef
-    public void setHome( MosaicHome home ) {
+    public void setHome( Home home ) {
         this.home = home;
     }
 
