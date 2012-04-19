@@ -22,6 +22,9 @@
                 <configuration>
                     <instructions>
                         <Require-Capability>org.mosaic.server.boot</Require-Capability>
+                        <Provide-Capability>org.mosaic.server.web</Provide-Capability>
+                        <Embed-Dependency>jetty*</Embed-Dependency>
+                        <Embed-Transitive>true</Embed-Transitive>
                     </instructions>
                 </configuration>
             </plugin>
@@ -63,6 +66,34 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>org.springframework.core</artifactId>
+        </dependency>
+        <!-- ============================================================ -->
+        <!-- Jetty                                                        -->
+        <!-- ============================================================ -->
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-ajp</artifactId>
+            <version>8.1.3.v20120416</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+            <version>8.1.3.v20120416</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-servlet</artifactId>
+            <version>8.1.3.v20120416</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-servlets</artifactId>
+            <version>8.1.3.v20120416</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-util</artifactId>
+            <version>8.1.3.v20120416</version>
         </dependency>
     </dependencies>
 
