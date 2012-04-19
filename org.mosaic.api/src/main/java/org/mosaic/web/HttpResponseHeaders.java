@@ -35,14 +35,6 @@ public interface HttpResponseHeaders extends TypedDict<String> {
 
     void addCookie( HttpCookie cookie );
 
-    HttpCookie getCookie( String name );
-
-    HttpCookie getOrCreateCookie( String name );
-
-    void removeCookie( String name );
-
-    void removeCookie( String name, String domain, String path );
-
     String getETag();
 
     void setETag( String eTag );

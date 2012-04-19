@@ -61,8 +61,33 @@ public class HttpCookieImpl implements HttpCookie {
     }
 
     @Override
-    public boolean isSecure() {
+    public boolean getSecure() {
         return this.cookie.getSecure();
+    }
+
+    @Override
+    public void setSecure( boolean secure ) {
+        this.cookie.setSecure( secure );
+    }
+
+    @Override
+    public boolean getHttpOnly() {
+        return this.cookie.isHttpOnly();  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public void setHttpOnly( boolean httpOnly ) {
+        this.cookie.setHttpOnly( httpOnly );
+    }
+
+    @Override
+    public int getVersion() {
+        return this.cookie.getVersion();
+    }
+
+    @Override
+    public void setVersion( int version ) {
+        this.cookie.setVersion( version );
     }
 
     @Override

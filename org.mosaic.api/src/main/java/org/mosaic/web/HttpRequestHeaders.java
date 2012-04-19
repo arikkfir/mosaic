@@ -24,9 +24,7 @@ public interface HttpRequestHeaders extends TypedDict<String> {
 
     String getCacheControl();
 
-    String getContentEncoding();
-
-    String getContentLanguage();
+    List<Locale> getContentLanguage();
 
     Long getContentLength();
 
@@ -48,6 +46,9 @@ public interface HttpRequestHeaders extends TypedDict<String> {
 
     URL getReferer();
 
+    /**
+     * @todo would be nice to return a "Device" object here
+     */
     String getUserAgent();
 
 }

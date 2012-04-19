@@ -23,10 +23,20 @@ public interface HttpCookie {
 
     void setMaxAge( Integer maxAge );
 
-    boolean isSecure();
+    boolean getSecure();
+
+    void setSecure( boolean secure );
 
     String getComment();
 
     void setComment( String comment );
+
+    boolean getHttpOnly();
+
+    void setHttpOnly( boolean httpOnly );
+
+    int getVersion();
+
+    void setVersion( int version );
 
 }
