@@ -8,18 +8,30 @@ import java.util.regex.Pattern;
 import javax.xml.parsers.ParserConfigurationException;
 import org.mosaic.collection.TypedDict;
 import org.mosaic.collection.WrappingTypedDict;
+import org.mosaic.logging.Logger;
+import org.mosaic.logging.LoggerFactory;
 import org.mosaic.web.HttpApplication;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceRegistration;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.util.LinkedCaseInsensitiveMap;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
 
+import static java.nio.file.Files.*;
+import static java.util.Collections.unmodifiableMap;
+import static org.mosaic.logging.LoggerFactory.getBundleLogger;
 import static org.mosaic.server.web.application.impl.DomUtils.*;
 
 /**
  * @author arik
  */
 public class HttpApplicationImpl extends WrappingTypedDict<Object> implements HttpApplication {
+
+    private final Logger logger;
+
+    private final Path path;
 
     private final String name;
 
@@ -33,71 +45,73 @@ public class HttpApplicationImpl extends WrappingTypedDict<Object> implements Ht
 
     private Map<String, Role> rolesMap;
 
-    public HttpApplicationImpl( Path appFile, ConversionService conversionService )
-            throws ParserConfigurationException, IOException, SAXException {
+    private ServiceRegistration<HttpApplication> registration;
+
+    private long modificationTime;
+
+    public HttpApplicationImpl( Path appFile, ConversionService conversionService ) {
         super( new ConcurrentHashMap<String, List<Object>>(), conversionService, Object.class );
+
+        this.path = appFile;
 
         String fileName = appFile.getFileName().toString();
         this.name = fileName.substring( 0, fileName.length() - ".xml".length() );
+        this.logger = LoggerFactory.getLogger( getBundleLogger( HttpApplicationImpl.class ).getName() + "." + this.name );
+    }
 
-        Element appElt = parseDocument( appFile ).getDocumentElement();
-        if( !appElt.getLocalName().equals( "application" ) ) {
-            throw new IllegalArgumentException( "Could not find <application> tag in application file '" + appFile + "'" );
-        }
+    public void refresh() {
+        if( isDirectory( this.path ) || !exists( this.path ) || !isReadable( this.path ) ) {
 
-        // parse virtual hosts
-        Element virtualHostsElt = getFirstChildElement( appElt, "virtual-hosts" );
-        Set<Pattern> virtualHosts = new HashSet<>();
-        if( virtualHostsElt != null ) {
-            for( Element virtualHostElt : getChildElements( virtualHostsElt, "virtual-host" ) ) {
-                virtualHosts.add( Pattern.compile( virtualHostElt.getTextContent().trim() ) );
+            if( this.modificationTime > 0 ) {
+
+                logger.info( "Application '{}' no longer exists/readable at: {}", this.name, this.path );
+                this.modificationTime = 0;
+                unregister();
+
             }
-        }
-        this.virtualHosts = Collections.unmodifiableSet( virtualHosts );
 
-        // parse security
-        Element securityElt = getFirstChildElement( appElt, "security" );
-        if( securityElt != null ) {
+        } else {
 
-            // parse allowed-client-addresses
-            Element allowedClientAddressesElt = getFirstChildElement( securityElt, "allowed-client-addresses" );
-            Set<Pattern> allowedClientAddresses = new HashSet<>();
-            if( allowedClientAddressesElt != null ) {
-                for( Element addressElt : getChildElements( allowedClientAddressesElt, "address" ) ) {
-                    allowedClientAddresses.add( Pattern.compile( addressElt.getTextContent().trim() ) );
+            try {
+
+                long modificationTime = getLastModifiedTime( this.path ).toMillis();
+                if( modificationTime > this.modificationTime ) {
+                    this.modificationTime = modificationTime;
+                    register();
                 }
-            }
-            this.allowedClientAddresses = Collections.unmodifiableSet( allowedClientAddresses );
 
-            // parse restricted-client-addresses
-            Element restrictedClientAddressesElt = getFirstChildElement( securityElt, "restricted-client-addresses" );
-            Set<Pattern> restrictedClientAddresses = new HashSet<>();
-            if( restrictedClientAddressesElt != null ) {
-                for( Element addressElt : getChildElements( restrictedClientAddressesElt, "address" ) ) {
-                    restrictedClientAddresses.add( Pattern.compile( addressElt.getTextContent().trim() ) );
-                }
-            }
-            this.restrictedClientAddresses = Collections.unmodifiableSet( restrictedClientAddresses );
-
-            // parse role permissions
-            Element rolesElt = getFirstChildElement( securityElt, "roles" );
-            Set<Role> rootRoles = new HashSet<>();
-            if( rolesElt != null ) {
-                for( Element roleElt : getChildElements( rolesElt ) ) {
-                    rootRoles.add( new Role( roleElt ) );
-                }
+            } catch( Exception e ) {
+                logger.error( "Could not refresh application '{}': {}", this.name, e.getMessage(), e );
             }
 
-            // populate roles map
-            Map<String, Role> rolesMap = new LinkedCaseInsensitiveMap<>();
-            for( Role rootRole : rootRoles ) {
-                rootRole.populateRoles( rolesMap );
-            }
-            this.rolesMap = Collections.unmodifiableMap( rolesMap );
         }
+    }
 
+    public void register() throws IOException, SAXException, ParserConfigurationException {
+        logger.info( "Adding application '{}' from: {}", this.name, this.path );
+        parse();
 
-        this.parameters = new WrappingTypedDict<>( Collections.<String, List<String>>emptyMap(), this.conversionService, String.class );
+        // register as a data source and transaction manager
+        Dictionary<String, Object> dsDict = new Hashtable<>();
+        dsDict.put( "name", this.name );
+        if( this.registration != null ) {
+            this.registration.setProperties( dsDict );
+        } else {
+            Bundle bundle = FrameworkUtil.getBundle( getClass() );
+            this.registration = bundle.getBundleContext().registerService( HttpApplication.class, this, dsDict );
+        }
+    }
+
+    public void unregister() {
+        this.logger.info( "Removing application '{}'", this.name );
+        try {
+            this.registration.unregister();
+        } catch( IllegalStateException ignore ) {
+        }
+    }
+
+    public Path getPath() {
+        return path;
     }
 
     @Override
@@ -173,6 +187,74 @@ public class HttpApplicationImpl extends WrappingTypedDict<Object> implements Ht
             }
         }
         return false;
+    }
+
+    private void parse() throws IOException, SAXException, ParserConfigurationException {
+        Element appElt = parseDocument( this.path ).getDocumentElement();
+        if( !appElt.getLocalName().equals( "application" ) ) {
+            throw new IllegalArgumentException( "Could not find <application> tag in application file '" + this.path + "'" );
+        }
+
+        // parse virtual hosts
+        Element virtualHostsElt = getFirstChildElement( appElt, "virtual-hosts" );
+        Set<Pattern> virtualHosts = new HashSet<>();
+        if( virtualHostsElt != null ) {
+            for( Element virtualHostElt : getChildElements( virtualHostsElt, "virtual-host" ) ) {
+                virtualHosts.add( Pattern.compile( virtualHostElt.getTextContent().trim() ) );
+            }
+        }
+        this.virtualHosts = Collections.unmodifiableSet( virtualHosts );
+
+        // parse security
+        Element securityElt = getFirstChildElement( appElt, "security" );
+        if( securityElt != null ) {
+
+            // parse allowed-client-addresses
+            Element allowedClientAddressesElt = getFirstChildElement( securityElt, "allowed-client-addresses" );
+            Set<Pattern> allowedClientAddresses = new HashSet<>();
+            if( allowedClientAddressesElt != null ) {
+                for( Element addressElt : getChildElements( allowedClientAddressesElt, "address" ) ) {
+                    allowedClientAddresses.add( Pattern.compile( addressElt.getTextContent().trim() ) );
+                }
+            }
+            this.allowedClientAddresses = Collections.unmodifiableSet( allowedClientAddresses );
+
+            // parse restricted-client-addresses
+            Element restrictedClientAddressesElt = getFirstChildElement( securityElt, "restricted-client-addresses" );
+            Set<Pattern> restrictedClientAddresses = new HashSet<>();
+            if( restrictedClientAddressesElt != null ) {
+                for( Element addressElt : getChildElements( restrictedClientAddressesElt, "address" ) ) {
+                    restrictedClientAddresses.add( Pattern.compile( addressElt.getTextContent().trim() ) );
+                }
+            }
+            this.restrictedClientAddresses = Collections.unmodifiableSet( restrictedClientAddresses );
+
+            // parse role permissions
+            Element rolesElt = getFirstChildElement( securityElt, "roles" );
+            Set<Role> rootRoles = new HashSet<>();
+            if( rolesElt != null ) {
+                for( Element roleElt : getChildElements( rolesElt ) ) {
+                    rootRoles.add( new Role( roleElt ) );
+                }
+            }
+
+            // populate roles map
+            Map<String, Role> rolesMap = new LinkedCaseInsensitiveMap<>();
+            for( Role rootRole : rootRoles ) {
+                rootRole.populateRoles( rolesMap );
+            }
+            this.rolesMap = unmodifiableMap( rolesMap );
+        }
+
+        // parse parameters
+        Element paramsElt = getFirstChildElement( appElt, "parameters" );
+        WrappingTypedDict<String> params = new WrappingTypedDict<>( this.conversionService, String.class );
+        if( paramsElt != null ) {
+            for( Element paramElt : getChildElements( paramsElt ) ) {
+                params.add( paramElt.getLocalName(), paramElt.getTextContent().trim() );
+            }
+        }
+        this.parameters = new WrappingTypedDict<>( unmodifiableMap( params.getMap() ), this.conversionService, String.class );
     }
 
 }
