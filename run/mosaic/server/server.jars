@@ -5,6 +5,8 @@ ${project.home}/org.mosaic.server/org.mosaic.server.config/target:*.jar
 ${project.home}/org.mosaic.server/org.mosaic.server.shell/target:*.jar
 ${project.home}/org.mosaic.server/org.mosaic.server.shell.commands/target:*.jar
 ${project.home}/org.mosaic.server/org.mosaic.server.transaction/target:*.jar
+${project.home}/org.mosaic.server/org.mosaic.server.web/org.mosaic.server.web.application/target:*.jar
+${project.home}/org.mosaic.server/org.mosaic.server.web/org.mosaic.server.web.dispatcher/target:*.jar
 ${project.home}/org.mosaic.server/org.mosaic.server.web/org.mosaic.server.web.jetty/target:*.jar
 
 #
