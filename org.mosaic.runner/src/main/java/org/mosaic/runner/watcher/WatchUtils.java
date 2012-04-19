@@ -2,7 +2,9 @@ package org.mosaic.runner.watcher;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.jar.Attributes;
 import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 
 import static java.nio.file.Files.*;
 
@@ -16,7 +18,13 @@ public abstract class WatchUtils {
             if( !isDirectory( path ) && isRegularFile( path ) && isReadable( path ) ) {
                 if( path.getFileName().toString().toLowerCase().endsWith( ".jar" ) ) {
                     JarFile jarFile = new JarFile( path.toFile(), true, JarFile.OPEN_READ );
-                    return jarFile.getManifest().getMainAttributes().getValue( "Bundle-SymbolicName" ) != null;
+                    Manifest manifest = jarFile.getManifest();
+                    if( manifest != null ) {
+                        Attributes mainAttributes = manifest.getMainAttributes();
+                        if( mainAttributes != null ) {
+                            return mainAttributes.getValue( "Bundle-SymbolicName" ) != null;
+                        }
+                    }
                 }
             }
         } catch( IOException e ) {
