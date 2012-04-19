@@ -2,4 +2,5 @@
 
 WISH: Missing requirements can be implemented using OSGi "Find Listeners" (see OSGi Core specification chapter 55)
 TODO: user loaders should be implemented using method endpoints, not a UserLoader interface
-
+TODO: start a 'server' framework instance, and another 'deploy' instance whose system bundle export all packages from the 'server' instance
+TODO: create an XML SCHEMA file (XSD) for HTTP application files
