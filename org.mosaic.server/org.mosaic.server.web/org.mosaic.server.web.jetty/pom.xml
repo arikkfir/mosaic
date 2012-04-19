@@ -25,6 +25,15 @@
                         <Provide-Capability>org.mosaic.server.web</Provide-Capability>
                         <Embed-Dependency>jetty*</Embed-Dependency>
                         <Embed-Transitive>true</Embed-Transitive>
+
+                        <!-- no need to import jetty since we're embedding it -->
+                        <Import-Package>
+                            !org.eclipse.jetty*,
+                            !org.mortbay*,
+                            javax.servlet*;version="2.6",
+                            org.mosaic.web;version="[1.0,1.1)",
+                            *
+                        </Import-Package>
                     </instructions>
                 </configuration>
             </plugin>
