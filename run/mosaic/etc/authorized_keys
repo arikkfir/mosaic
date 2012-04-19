@@ -3,3 +3,4 @@
 # to the Mosaic server. The format of this file is exactly the same as the standard, OpenSSH
 # 'authorized_keys' file (usually found in a server's "~/.ssh/authorized_keys" path).
 #
+ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAyKO5mepjeVmovMog71vKWaA6xth33Wuj/Ufrt7DfVwgHZlhUEnhYNCn0gDQbz9h03wcLZ4SkV7GJF7vbM1TaNI+h732vlp6Umu0G/T5H8L8ho3QlElAmBAl96W5u1hGgh771buS3ZWAiPClVOTTKN2Kl+JXEYR1IBnX6820vAlTgblOibrPsH8IZl1B1+6LyNVq2ZxNyT1Qsdp4DPLtmPK68oczvi1y3Ta6FOGwAM+crXLAcEpvEcDioTGvoONWw/IwXW5U0IvnP7fYMHgtxZC4XuY2CzjDVkjYILSa9OrLcM30JjasEcsZhKm1c991dHlZYlT9CLs/RnBXERkefow== user of arikk
