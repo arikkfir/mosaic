@@ -18,6 +18,8 @@ public abstract class AbstractTrackerRequirement extends AbstractMethodRequireme
 
     private final Class<?> serviceType;
 
+    private final String additionalFilter;
+
     public AbstractTrackerRequirement( BundleTracker tracker,
                                        Class<?> serviceType,
                                        String additionalFilter,
@@ -25,6 +27,7 @@ public abstract class AbstractTrackerRequirement extends AbstractMethodRequireme
                                        Method targetMethod ) {
         super( tracker, beanName, targetMethod );
         this.serviceType = serviceType;
+        this.additionalFilter = additionalFilter;
 
         Filter filter = createFilter( this.serviceType, additionalFilter );
         this.tracker = new ServiceTracker<>( getBundleContext(), filter, this );
@@ -64,6 +67,10 @@ public abstract class AbstractTrackerRequirement extends AbstractMethodRequireme
 
     protected Class<?> getServiceType() {
         return serviceType;
+    }
+
+    protected String getAdditionalFilter() {
+        return additionalFilter;
     }
 
     private Filter createFilter( Class<?> serviceType, String additionalFilter ) {

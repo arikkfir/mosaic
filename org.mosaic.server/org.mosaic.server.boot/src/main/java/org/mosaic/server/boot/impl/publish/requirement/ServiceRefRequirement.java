@@ -32,7 +32,12 @@ public class ServiceRefRequirement extends AbstractTrackerRequirement {
 
     @Override
     public String toString() {
-        return "ServiceRef[type=" + getServiceType().getSimpleName() + ", target-method=" + getTargetMethod().getName() + ", target-bean=" + getBeanName() + "]";
+        return "ServiceRef[" +
+               "type=" + getServiceType().getSimpleName() + ", " +
+               "target-method=" + getTargetMethod().getName() + ", " +
+               "target-bean=" + getBeanName() + ", " +
+               "filter=" + getAdditionalFilter() +
+               "]";
     }
 
     @Override
