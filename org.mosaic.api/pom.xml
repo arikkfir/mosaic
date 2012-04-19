@@ -40,6 +40,13 @@
             <scope>runtime</scope>
         </dependency>
         <!-- ============================================================ -->
+        <!-- Spring Framework                                             -->
+        <!-- ============================================================ -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>org.springframework.core</artifactId>
+        </dependency>
+        <!-- ============================================================ -->
         <!-- OSGi API                                                     -->
         <!-- ============================================================ -->
         <dependency>
