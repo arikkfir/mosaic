@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.*;
+import org.mosaic.collection.TypedDict;
+import org.mosaic.collection.WrappingTypedDict;
 import org.mosaic.config.Configuration;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
@@ -32,16 +34,18 @@ public class ConfigurationImpl implements Configuration {
 
     private ServiceRegistration<Configuration> registration;
 
-    private Map<String, String> data = Collections.emptyMap();
+    private TypedDict<String> data;
 
     private long modificationTime;
 
     public ConfigurationImpl( BundleContext bundleContext, Path path, ConversionService conversionService ) {
         this.bundleContext = bundleContext;
         this.path = path;
+        this.conversionService = conversionService;
+        this.data = createEmptyMap();
+
         String fileName = this.path.getFileName().toString();
         this.name = fileName.substring( 0, fileName.indexOf( '.' ) );
-        this.conversionService = conversionService;
         this.logger = LoggerFactory.getLogger(
                 getBundleLogger( ConfigurationManager.class ).getName() + "." + this.name );
     }
@@ -78,7 +82,7 @@ public class ConfigurationImpl implements Configuration {
             if( this.modificationTime > 0 ) {
 
                 logger.warn( "Configuration '{}' no longer exists/readable at: {}", this.name, this.path );
-                this.data = Collections.emptyMap();
+                this.data = createEmptyMap();
                 this.modificationTime = 0;
                 unregister();
 
@@ -93,7 +97,7 @@ public class ConfigurationImpl implements Configuration {
                     this.modificationTime = modificationTime;
 
                     logger.info( "Refreshing configuration '{}' from: {}", this.name, this.path );
-                    Map<String, String> data = new HashMap<>();
+                    TypedDict<String> data = createEmptyMap();
                     try( InputStream inputStream = newInputStream( this.path, READ ) ) {
 
                         Properties properties = new Properties();
@@ -104,7 +108,7 @@ public class ConfigurationImpl implements Configuration {
 
                     }
 
-                    this.data = Collections.unmodifiableMap( data );
+                    this.data = data;
                     register();
                 }
 
@@ -115,40 +119,6 @@ public class ConfigurationImpl implements Configuration {
         }
     }
 
-    public <T> T get( String key, Class<T> type ) {
-        return get( key, type, null );
-    }
-
-    @Override
-    public <T> T get( String key, Class<T> type, T defaultValue ) {
-        String stringValue = get( key );
-        if( stringValue == null ) {
-            return defaultValue;
-        } else {
-            return this.conversionService.convert( stringValue, type );
-        }
-    }
-
-    @Override
-    public <T> T require( String key, Class<T> type ) {
-        T value = get( key, type );
-        if( value == null ) {
-            throw new IllegalStateException( "Value is missing for key '" + key + "'" );
-        } else {
-            return value;
-        }
-    }
-
-    @Override
-    public <T> T require( String key, Class<T> type, T defaultValue ) {
-        T value = get( key, type, defaultValue );
-        if( value == null ) {
-            throw new IllegalStateException( "Value is missing for key '" + key + "'" );
-        } else {
-            return value;
-        }
-    }
-
     @Override
     public String getName() {
         return this.name;
@@ -156,61 +126,129 @@ public class ConfigurationImpl implements Configuration {
 
     @Override
     public int size() {
-        return data.size();
+        return this.data.size();
     }
 
     @Override
     public boolean isEmpty() {
-        return data.isEmpty();
+        return this.data.isEmpty();
     }
 
     @Override
     public boolean containsKey( Object key ) {
-        return data.containsKey( key );
+        return this.data.containsKey( key );
     }
 
     @Override
     public boolean containsValue( Object value ) {
-        return data.containsValue( value );
+        return this.data.containsValue( value );
     }
 
     @Override
-    public String get( Object key ) {
-        return data.get( key );
+    public List<String> get( Object key ) {
+        return this.data.get( key );
     }
 
     @Override
-    public String put( String key, String value ) {
-        throw new UnsupportedOperationException();
+    public List<String> put( String key, List<String> value ) {
+        throw new UnsupportedOperationException( "Configurations cannot be modified" );
     }
 
     @Override
-    public String remove( Object key ) {
-        throw new UnsupportedOperationException();
+    public List<String> remove( Object key ) {
+        throw new UnsupportedOperationException( "Configurations cannot be modified" );
     }
 
     @Override
-    public void putAll( Map<? extends String, ? extends String> m ) {
-        throw new UnsupportedOperationException();
+    public void putAll( Map<? extends String, ? extends List<String>> m ) {
+        throw new UnsupportedOperationException( "Configurations cannot be modified" );
     }
 
     @Override
     public void clear() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException( "Configurations cannot be modified" );
     }
 
     @Override
     public Set<String> keySet() {
-        return data.keySet();
+        return Collections.unmodifiableSet( this.data.keySet() );
     }
 
     @Override
-    public Collection<String> values() {
-        return data.values();
+    public Collection<List<String>> values() {
+        return Collections.unmodifiableCollection( this.data.values() );
     }
 
     @Override
-    public Set<Entry<String, String>> entrySet() {
-        return data.entrySet();
+    public Set<Entry<String, List<String>>> entrySet() {
+        return Collections.unmodifiableSet( this.data.entrySet() );
+    }
+
+    @Override
+    public String getValue( String key ) {
+        return this.data.getValue( key );
+    }
+
+    @Override
+    public String getValue( String key, String defaultValue ) {
+        return this.data.getValue( key, defaultValue );
+    }
+
+    @Override
+    public String requireValue( String key ) {
+        return this.data.requireValue( key );
+    }
+
+    @Override
+    public void add( String key, String value ) {
+        throw new UnsupportedOperationException( "Configurations cannot be modified" );
+    }
+
+    @Override
+    public void put( String key, String value ) {
+        throw new UnsupportedOperationException( "Configurations cannot be modified" );
+    }
+
+    @Override
+    public Map<String, String> toMap() {
+        return Collections.unmodifiableMap( this.data.toMap() );
+    }
+
+    @Override
+    public <T> T getValueAs( String key, Class<T> type ) {
+        return this.data.getValueAs( key, type );
+    }
+
+    @Override
+    public <T> T getValueAs( String key, Class<T> type, T defaultValue ) {
+        return this.data.getValueAs( key, type, defaultValue );
+    }
+
+    @Override
+    public <T> T requireValueAs( String key, Class<T> type ) {
+        return this.data.requireValueAs( key, type );
+    }
+
+    @Override
+    public <T> void addAs( String key, T value ) {
+        throw new UnsupportedOperationException( "Configurations cannot be modified" );
+    }
+
+    @Override
+    public <T> void putAs( String key, T value ) {
+        throw new UnsupportedOperationException( "Configurations cannot be modified" );
+    }
+
+    @Override
+    public <T> Map<String, T> toMapAs( Class<T> type ) {
+        return Collections.unmodifiableMap( this.data.toMapAs( type ) );
+    }
+
+    private WrappingTypedDict<String> createEmptyMap() {
+        return createMap( new HashMap<String, List<String>>() );
+    }
+
+    private WrappingTypedDict<String> createMap( Map<String, List<String>> data ) {
+        return new WrappingTypedDict<>( data, this.conversionService, String.class );
     }
 }

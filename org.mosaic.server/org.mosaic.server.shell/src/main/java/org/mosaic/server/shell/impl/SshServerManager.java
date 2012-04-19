@@ -86,7 +86,7 @@ public class SshServerManager {
 
         // create a new SSH daemon server and configure it
         this.sshServer = SshServer.setUpDefaultServer();
-        this.sshServer.setPort( this.configuration.require( "port", Integer.class, 9080 ) );
+        this.sshServer.setPort( this.configuration.getValueAs( "port", Integer.class, 9080 ) );
         this.sshServer.setShellFactory( new MosaicSshShellFactory() );
         this.sshServer.setPasswordAuthenticator( this.passwordAuthenticator );
         this.sshServer.setUserAuthFactories( createUserAuthFactories() );

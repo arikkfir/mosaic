@@ -49,39 +49,39 @@ public class BoneCPDataSourceWrapper implements DataSource, Closeable {
 
     public void init( Configuration cfg ) {
         BoneCPConfig bcpConfig = new BoneCPConfig();
-        bcpConfig.setAcquireIncrement( ri( cfg, "acquireIncrement", 1 ) );
-        bcpConfig.setAcquireRetryAttempts( ri( cfg, "acquireRetryAttempts", 0 ) );
-        bcpConfig.setAcquireRetryDelay( rl( cfg, "acquireRetryDelay", 1000 ), MILLISECONDS );
+        bcpConfig.setAcquireIncrement( gi( cfg, "acquireIncrement", 1 ) );
+        bcpConfig.setAcquireRetryAttempts( gi( cfg, "acquireRetryAttempts", 0 ) );
+        bcpConfig.setAcquireRetryDelay( gl( cfg, "acquireRetryDelay", 1000 ), MILLISECONDS );
         bcpConfig.setClassLoader( getClass().getClassLoader() );
-        bcpConfig.setCloseConnectionWatch( rb( cfg, "closeConnectionWatch", false ) );
-        bcpConfig.setCloseConnectionWatchTimeout( rl( cfg, "closeConnectionWatchTimeout", 1000 * 60 ), MILLISECONDS );
+        bcpConfig.setCloseConnectionWatch( gb( cfg, "closeConnectionWatch", false ) );
+        bcpConfig.setCloseConnectionWatchTimeout( gl( cfg, "closeConnectionWatchTimeout", 1000 * 60 ), MILLISECONDS );
         bcpConfig.setConnectionTestStatement( gs( cfg, "connectionTestStatement" ) );
-        bcpConfig.setConnectionTimeout( rl( cfg, "connectionTimeout", 1000 * 10 ), MILLISECONDS );
-        bcpConfig.setDefaultAutoCommit( rb( cfg, "defaultAutoCommit", false ) );
+        bcpConfig.setConnectionTimeout( gl( cfg, "connectionTimeout", 1000 * 10 ), MILLISECONDS );
+        bcpConfig.setDefaultAutoCommit( gb( cfg, "defaultAutoCommit", false ) );
         bcpConfig.setDefaultCatalog( gs( cfg, "defaultCatalog" ) );
-        bcpConfig.setDefaultReadOnly( rb( cfg, "defaultReadOnly", false ) );
-        bcpConfig.setDefaultTransactionIsolation( re( cfg, "defaultTransactionIsolation", TransactionIsolation.class, TransactionIsolation.SERIALIZABLE ).name() );
-        bcpConfig.setDisableConnectionTracking( rb( cfg, "disableConnectionTracking", false ) );
-        bcpConfig.setDisableJMX( rb( cfg, "disableJmx", true ) );
-        bcpConfig.setIdleConnectionTestPeriod( rl( cfg, "idleConnectionTestPeriod", 1000 * 10 ), MILLISECONDS );
-        bcpConfig.setIdleMaxAge( rl( cfg, "idleMaxAge", 1000 * 60 * 5 ), MILLISECONDS );
+        bcpConfig.setDefaultReadOnly( gb( cfg, "defaultReadOnly", false ) );
+        bcpConfig.setDefaultTransactionIsolation( ge( cfg, "defaultTransactionIsolation", TransactionIsolation.class, TransactionIsolation.SERIALIZABLE ).name() );
+        bcpConfig.setDisableConnectionTracking( gb( cfg, "disableConnectionTracking", false ) );
+        bcpConfig.setDisableJMX( gb( cfg, "disableJmx", true ) );
+        bcpConfig.setIdleConnectionTestPeriod( gl( cfg, "idleConnectionTestPeriod", 1000 * 10 ), MILLISECONDS );
+        bcpConfig.setIdleMaxAge( gl( cfg, "idleMaxAge", 1000 * 60 * 5 ), MILLISECONDS );
         bcpConfig.setInitSQL( gs( cfg, "initSql" ) );
         bcpConfig.setJdbcUrl( rs( cfg, "url" ) );
         bcpConfig.setLazyInit( true );
-        bcpConfig.setLogStatementsEnabled( rb( cfg, "logStatements", false ) );
-        bcpConfig.setMaxConnectionsPerPartition( ri( cfg, "maxConnectionsPerPartition", 5 ) );
-        bcpConfig.setMinConnectionsPerPartition( ri( cfg, "minConnectionsPerPartition", 0 ) );
-        bcpConfig.setPartitionCount( ri( cfg, "partitionCount", 1 ) );
+        bcpConfig.setLogStatementsEnabled( gb( cfg, "logStatements", false ) );
+        bcpConfig.setMaxConnectionsPerPartition( gi( cfg, "maxConnectionsPerPartition", 5 ) );
+        bcpConfig.setMinConnectionsPerPartition( gi( cfg, "minConnectionsPerPartition", 0 ) );
+        bcpConfig.setPartitionCount( gi( cfg, "partitionCount", 1 ) );
         bcpConfig.setPassword( gs( cfg, "password" ) );
-        bcpConfig.setPoolAvailabilityThreshold( ri( cfg, "poolAvailabilityThreshold", 0 ) );
+        bcpConfig.setPoolAvailabilityThreshold( gi( cfg, "poolAvailabilityThreshold", 0 ) );
         bcpConfig.setPoolName( cfg.getName() );
-        bcpConfig.setQueryExecuteTimeLimit( rl( cfg, "queryExecuteTimeLimit", 1000 * 60 ), MILLISECONDS );
-        bcpConfig.setReleaseHelperThreads( ri( cfg, "releaseHelperThreads", 0 ) );
-        bcpConfig.setServiceOrder( rs( cfg, "serviceOrder", "FIFO" ) );
-        bcpConfig.setStatementReleaseHelperThreads( ri( cfg, "statementReleaseHelperThreads", 0 ) );
-        bcpConfig.setStatementsCacheSize( ri( cfg, "statementsCacheSize", 10 ) );
-        bcpConfig.setStatisticsEnabled( rb( cfg, "statisticsEnabled", true ) );
-        bcpConfig.setTransactionRecoveryEnabled( rb( cfg, "transactionRecoveryEnabled", false ) );
+        bcpConfig.setQueryExecuteTimeLimit( gl( cfg, "queryExecuteTimeLimit", 1000 * 60 ), MILLISECONDS );
+        bcpConfig.setReleaseHelperThreads( gi( cfg, "releaseHelperThreads", 0 ) );
+        bcpConfig.setServiceOrder( gs( cfg, "serviceOrder", "FIFO" ) );
+        bcpConfig.setStatementReleaseHelperThreads( gi( cfg, "statementReleaseHelperThreads", 0 ) );
+        bcpConfig.setStatementsCacheSize( gi( cfg, "statementsCacheSize", 10 ) );
+        bcpConfig.setStatisticsEnabled( gb( cfg, "statisticsEnabled", true ) );
+        bcpConfig.setTransactionRecoveryEnabled( gb( cfg, "transactionRecoveryEnabled", false ) );
         bcpConfig.setUsername( gs( cfg, "username" ) );
 
         // attempt to open a new pool
@@ -172,32 +172,32 @@ public class BoneCPDataSourceWrapper implements DataSource, Closeable {
         }
     }
 
-    private int ri( Configuration cfg, String key, int defaultValue ) {
-        return cfg.require( key, Integer.class, defaultValue );
+    private int gi( Configuration cfg, String key, int defaultValue ) {
+        return cfg.getValueAs( key, Integer.class, defaultValue );
     }
 
-    private long rl( Configuration cfg, String key, long defaultValue ) {
-        return cfg.require( key, Long.class, defaultValue );
+    private long gl( Configuration cfg, String key, long defaultValue ) {
+        return cfg.getValueAs( key, Long.class, defaultValue );
     }
 
-    private boolean rb( Configuration cfg, String key, boolean defaultValue ) {
-        return cfg.require( key, Boolean.class, defaultValue );
+    private boolean gb( Configuration cfg, String key, boolean defaultValue ) {
+        return cfg.getValueAs( key, Boolean.class, defaultValue );
     }
 
     private String rs( Configuration cfg, String key ) {
-        return cfg.require( key, String.class, null );
+        return cfg.requireValueAs( key, String.class );
     }
 
-    private String rs( Configuration cfg, String key, String defaultValue ) {
-        return cfg.require( key, String.class, defaultValue );
+    private String gs( Configuration cfg, String key, String defaultValue ) {
+        return cfg.getValueAs( key, String.class, defaultValue );
     }
 
     private String gs( Configuration cfg, String key ) {
-        return cfg.get( key, String.class );
+        return cfg.getValueAs( key, String.class );
     }
 
-    private <T extends Enum> T re( Configuration cfg, String key, Class<T> type, T defaultValue ) {
-        return cfg.require( key, type, defaultValue );
+    private <T extends Enum> T ge( Configuration cfg, String key, Class<T> type, T defaultValue ) {
+        return cfg.getValueAs( key, type, defaultValue );
     }
 
     private class OsgiBoneCP extends BoneCP {

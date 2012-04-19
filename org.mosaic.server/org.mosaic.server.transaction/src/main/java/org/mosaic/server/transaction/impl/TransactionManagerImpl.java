@@ -53,8 +53,8 @@ public class TransactionManagerImpl implements TransactionManager, DataSource {
         this.rawDataSource.init( configuration );
 
         // create a transaction manager for the *RAW* data source (NEVER TO THE TX DATA SOURCE! THE TX-MGR MUST WORK AGAINST THE ACTUAL DATA SOURCE!)
-        this.springTxMgr.setNestedTransactionAllowed( configuration.get( "nestedTransactionsAllowed", Boolean.class, false ) );
-        this.springTxMgr.setRollbackOnCommitFailure( configuration.get( "rollbackOnCommitFailure", Boolean.class, false ) );
+        this.springTxMgr.setNestedTransactionAllowed( configuration.getValueAs( "nestedTransactionsAllowed", Boolean.class, false ) );
+        this.springTxMgr.setRollbackOnCommitFailure( configuration.getValueAs( "rollbackOnCommitFailure", Boolean.class, false ) );
 
         // register as a data source and transaction manager
         Dictionary<String, Object> dsDict = new Hashtable<>();

@@ -1,20 +1,12 @@
 package org.mosaic.config;
 
-import java.util.Map;
+import org.mosaic.collection.TypedDict;
 
 /**
  * @author arik
  */
-public interface Configuration extends Map<String, String> {
+public interface Configuration extends TypedDict<String> {
 
     String getName();
-
-    <T> T get( String key, Class<T> type );
-
-    <T> T get( String key, Class<T> type, T defaultValue );
-
-    <T> T require( String key, Class<T> type );
-
-    <T> T require( String key, Class<T> type, T defaultValue );
 
 }
