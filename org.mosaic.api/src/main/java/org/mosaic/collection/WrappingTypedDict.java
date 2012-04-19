@@ -14,6 +14,11 @@ public class WrappingTypedDict<V> extends WrappingDict<V> implements TypedDict<V
 
     private final Class<V> valueType;
 
+    public WrappingTypedDict( ConversionService conversionService, Class<V> valueType ) {
+        this.conversionService = conversionService;
+        this.valueType = valueType;
+    }
+
     public WrappingTypedDict( Map<String, List<V>> map, ConversionService conversionService, Class<V> valueType ) {
         super( map );
         this.conversionService = conversionService;

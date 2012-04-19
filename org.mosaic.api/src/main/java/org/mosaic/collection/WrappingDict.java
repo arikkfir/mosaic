@@ -29,6 +29,10 @@ public class WrappingDict<V> implements Dict<V> {
 
     private final Map<String, List<V>> map;
 
+    public WrappingDict() {
+        this( new HashMap<String, List<V>>(), new ArrayListFactory<V>() );
+    }
+
     public WrappingDict( Map<String, List<V>> map ) {
         this( map, new ArrayListFactory<V>() );
     }
@@ -36,6 +40,10 @@ public class WrappingDict<V> implements Dict<V> {
     public WrappingDict( Map<String, List<V>> map, ListFactory<V> listFactory ) {
         this.listFactory = listFactory;
         this.map = map;
+    }
+
+    public Map<String, List<V>> getMap() {
+        return map;
     }
 
     @Override
