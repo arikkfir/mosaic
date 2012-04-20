@@ -23,7 +23,7 @@ import static org.eclipse.jetty.servlet.ServletContextHandler.SESSIONS;
  * @author arik
  */
 @Component
-public class HttpApplicationHandler extends ContextHandlerCollection {
+public class HttpApplicationJettyHandler extends ContextHandlerCollection {
 
     private Map<HttpApplication, ServletContextHandler> applications = new ConcurrentHashMap<>( 10 );
 
