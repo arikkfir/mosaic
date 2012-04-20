@@ -5,6 +5,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.mosaic.web.Http;
 import org.mosaic.web.HttpApplication;
 
 /**
@@ -21,8 +22,15 @@ public class HttpApplicationServlet extends HttpServlet {
     @Override
     public void service( HttpServletRequest request, HttpServletResponse response )
             throws IOException, ServletException {
-        System.out.println( "Hello3!" );
-        super.service( request, response );
+
+        Http.setApplication( this.httpApplication );
+        try {
+            System.out.println( Http.application().getName() + ": handling" );
+            super.service( request, response );
+
+        } finally {
+            Http.setApplication( null );
+        }
     }
 
 }
