@@ -5,6 +5,7 @@ import java.net.URI;
 import java.util.Collection;
 import org.mosaic.collection.TypedDict;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 
 /**
  * @author arik
@@ -38,6 +39,10 @@ public interface HttpRequest extends TypedDict<Object> {
 
     Collection<HttpPart> getParts();
 
+    HttpStatus getResponseStatus();
+
+    void setResponseStatus( HttpStatus status, String text );
+
     HttpResponseHeaders getResponseHeaders();
 
     OutputStream getResponseOutputStream() throws IOException;
@@ -45,5 +50,4 @@ public interface HttpRequest extends TypedDict<Object> {
     Writer getResponseWriter() throws IOException;
 
     boolean isCommitted();
-
 }

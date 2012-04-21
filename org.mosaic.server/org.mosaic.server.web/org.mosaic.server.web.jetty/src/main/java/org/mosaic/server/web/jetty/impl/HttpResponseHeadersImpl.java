@@ -1,16 +1,21 @@
 package org.mosaic.server.web.jetty.impl;
 
+import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.*;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.joda.time.DateTime;
 import org.mosaic.collection.MissingRequiredValueException;
 import org.mosaic.web.HttpCookie;
 import org.mosaic.web.HttpResponseHeaders;
+import org.mosaic.web.util.HttpTime;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 
+import static java.lang.System.currentTimeMillis;
 import static org.springframework.util.StringUtils.collectionToCommaDelimitedString;
 
 /**
@@ -85,6 +90,16 @@ public class HttpResponseHeadersImpl implements HttpResponseHeaders {
     }
 
     @Override
+    public Charset getContentCharset() {
+        return Charset.forName( this.response.getCharacterEncoding() );
+    }
+
+    @Override
+    public void setContentCharset( Charset charset ) {
+        this.response.setCharacterEncoding( charset.name() );
+    }
+
+    @Override
     public void addCookie( HttpCookie newCookie ) {
         Cookie cookie = new Cookie( newCookie.getName(), newCookie.getValue() );
 
@@ -127,6 +142,30 @@ public class HttpResponseHeadersImpl implements HttpResponseHeaders {
     }
 
     @Override
+    public void setExpires( Long secondsFromNow ) {
+        if( secondsFromNow == null ) {
+
+            // null value means that we don't want to send back any cache headers - let the user agent decide for itself
+            this.response.setHeader( "Expires", null );
+            this.response.setHeader( "Pragma", null );
+            this.response.setHeader( "Cache-Control", null );
+
+        } else if( secondsFromNow <= 0 ) {
+
+            // zero or negative means that we want to completely prevent any user agent/proxy from caching our response
+            this.response.setHeader( "Pragma", "no-cache" );
+            this.response.setHeader( "Expires", HttpTime.format( new DateTime() ) );
+            this.response.setHeader( "Cache-Control", "no-cache, no-store" );
+
+        } else {
+
+            // any other number means we want to allow caching of this response, but only for the next specified seconds
+            this.response.setHeader( "Expires", HttpTime.format( new DateTime( currentTimeMillis() + secondsFromNow * 1000l ) ) );
+            this.response.setHeader( "Cache-Control", "max-age=" + secondsFromNow + ", must-revalidate" );
+        }
+    }
+
+    @Override
     public DateTime getLastModified() {
         return getValueAs( "Last-Modified", DateTime.class );
     }
@@ -143,7 +182,11 @@ public class HttpResponseHeadersImpl implements HttpResponseHeaders {
 
     @Override
     public void setLocation( String location ) {
-        put( "Location", location );
+        try {
+            this.response.sendRedirect( location );
+        } catch( IOException e ) {
+            throw new RuntimeIOException( "Error redirecting to '" + location + "': " + e.getMessage(), e );
+        }
     }
 
     @Override
@@ -184,6 +227,11 @@ public class HttpResponseHeadersImpl implements HttpResponseHeaders {
     @Override
     public void setWwwAuthenticate( String wwwAuthenticate ) {
         put( "WWW-Authenticate", wwwAuthenticate );
+    }
+
+    @Override
+    public void disableCache() {
+        setExpires( 0l );
     }
 
     @Override

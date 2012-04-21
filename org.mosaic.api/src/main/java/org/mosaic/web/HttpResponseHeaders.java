@@ -1,5 +1,6 @@
 package org.mosaic.web;
 
+import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Set;
@@ -33,6 +34,10 @@ public interface HttpResponseHeaders extends TypedDict<String> {
 
     void setContentType( MediaType contentType );
 
+    Charset getContentCharset();
+
+    void setContentCharset( Charset charset );
+
     void addCookie( HttpCookie cookie );
 
     String getETag();
@@ -40,6 +45,8 @@ public interface HttpResponseHeaders extends TypedDict<String> {
     void setETag( String eTag );
 
     DateTime getExpires();
+
+    void setExpires( Long seconds );
 
     void setExpires( DateTime expires );
 
@@ -67,4 +74,5 @@ public interface HttpResponseHeaders extends TypedDict<String> {
 
     void setWwwAuthenticate( String wwwAuthenticate );
 
+    void disableCache();
 }

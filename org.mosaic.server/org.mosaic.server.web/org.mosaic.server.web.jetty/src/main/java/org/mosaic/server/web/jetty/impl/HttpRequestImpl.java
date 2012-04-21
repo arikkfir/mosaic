@@ -16,8 +16,11 @@ import org.mosaic.logging.LoggerFactory;
 import org.mosaic.web.*;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 
 import static java.util.Collections.unmodifiableCollection;
+import static org.springframework.http.HttpStatus.Series.CLIENT_ERROR;
+import static org.springframework.http.HttpStatus.Series.SERVER_ERROR;
 
 /**
  * @author arik
@@ -173,6 +176,20 @@ public class HttpRequestImpl extends WrappingTypedDict<Object> implements HttpRe
     @Override
     public Collection<HttpPart> getParts() {
         return unmodifiableCollection( this.parts.values() );
+    }
+
+    @Override
+    public HttpStatus getResponseStatus() {
+        return HttpStatus.valueOf( this.response.getStatus() );
+    }
+
+    @SuppressWarnings( "deprecation" )
+    @Override
+    public void setResponseStatus( HttpStatus status, String text ) {
+        this.response.setStatus( status.value(), text );
+        if( status.series() == CLIENT_ERROR || status.series() == SERVER_ERROR ) {
+            this.responseHeaders.disableCache();
+        }
     }
 
     @Override
