@@ -2,3 +2,4 @@
 # The testing bundle for transactions
 #
 ${project.home}/org.mosaic.test/org.mosaic.test.tx/target:*.jar
+${project.home}/org.mosaic.admin/target:*.jar
