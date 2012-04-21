@@ -72,7 +72,9 @@ public class LogWeaver implements WeavingHook {
 
     public void close() {
         try {
-            this.registration.unregister();
+            if( this.registration != null ) {
+                this.registration.unregister();
+            }
         } catch( IllegalStateException ignore ) {
         } finally {
             this.registration = null;
