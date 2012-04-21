@@ -36,7 +36,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class SshServerManager {
 
-    private static final Logger LOG = LoggerFactory.getBundleLogger( SshServerManager.class );
+    private static final Logger LOG = LoggerFactory.getLogger( SshServerManager.class );
 
     private MosaicSessionFactory sessionFactory = new MosaicSessionFactory();
 

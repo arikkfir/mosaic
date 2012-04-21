@@ -41,7 +41,7 @@ import org.springframework.stereotype.Component;
 @Scope( "prototype" )
 public class Session implements Command, Runnable, SessionAware {
 
-    private static final Logger LOG = LoggerFactory.getBundleLogger( Session.class );
+    private static final Logger LOG = LoggerFactory.getLogger( Session.class );
 
     private BundleContext bundleContext;
 

@@ -14,7 +14,7 @@ import static java.lang.Thread.currentThread;
  */
 public class Pipe implements Runnable {
 
-    private static final Logger LOG = LoggerFactory.getBundleLogger( Pipe.class );
+    private static final Logger LOG = LoggerFactory.getLogger( Pipe.class );
 
     private final InputStream in;
 
