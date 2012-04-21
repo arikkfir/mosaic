@@ -34,7 +34,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class AuthorizedPublicKeyAuthenticator implements PublickeyAuthenticator {
 
-    private static final Logger LOG = LoggerFactory.getBundleLogger( AuthorizedPublicKeyAuthenticator.class );
+    private static final Logger LOG = LoggerFactory.getLogger( AuthorizedPublicKeyAuthenticator.class );
 
     private Home home;
 

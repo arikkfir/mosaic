@@ -32,7 +32,7 @@ import static java.util.Arrays.asList;
  */
 public class MethodEndpointShellCommand implements ShellCommand {
 
-    private static final Logger LOG = LoggerFactory.getBundleLogger( MethodEndpointShellCommand.class );
+    private static final Logger LOG = LoggerFactory.getLogger( MethodEndpointShellCommand.class );
 
     private final String name;
 

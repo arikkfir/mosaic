@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class MosaicPasswordAuthenticator implements PasswordAuthenticator {
 
-    private static final Logger LOG = LoggerFactory.getBundleLogger( MosaicPasswordAuthenticator.class );
+    private static final Logger LOG = LoggerFactory.getLogger( MosaicPasswordAuthenticator.class );
 
     private Home home;
 

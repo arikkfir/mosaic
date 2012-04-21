@@ -14,7 +14,7 @@ import org.mosaic.server.shell.console.Console;
  */
 public class CommandHelpFormatter implements HelpFormatter {
 
-    private static final Logger LOG = LoggerFactory.getBundleLogger( CommandHelpFormatter.class );
+    private static final Logger LOG = LoggerFactory.getLogger( CommandHelpFormatter.class );
 
     private static ThreadLocal<Console> CONSOLE = new ThreadLocal<>();
 
