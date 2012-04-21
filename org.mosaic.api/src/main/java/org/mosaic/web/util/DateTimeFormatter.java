@@ -1,9 +1,8 @@
-package org.mosaic.web;
+package org.mosaic.web.util;
 
 import java.text.ParseException;
 import java.util.Locale;
 import org.joda.time.DateTime;
-import org.mosaic.web.util.HttpTime;
 import org.springframework.format.Formatter;
 
 /**
