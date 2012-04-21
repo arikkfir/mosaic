@@ -18,7 +18,7 @@ import org.springframework.context.ApplicationContext;
  */
 public class ServiceBindRequirement extends AbstractTrackerRequirement {
 
-    private static final Logger LOG = LoggerFactory.getBundleLogger( ServiceBindRequirement.class );
+    private static final Logger LOG = LoggerFactory.getLogger( ServiceBindRequirement.class );
 
     public ServiceBindRequirement( BundleTracker tracker,
                                    Class<?> serviceType,

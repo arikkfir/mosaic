@@ -13,7 +13,7 @@ import org.springframework.context.ApplicationContext;
  */
 public class ServiceExportRequirement extends AbstractBeanRequirement {
 
-    private static final Logger LOG = LoggerFactory.getBundleLogger( ServiceExportRequirement.class );
+    private static final Logger LOG = LoggerFactory.getLogger( ServiceExportRequirement.class );
 
     private final Class<?> apiType;
 

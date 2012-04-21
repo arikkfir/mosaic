@@ -77,7 +77,10 @@ public abstract class AbstractTrackerRequirement extends AbstractMethodRequireme
         String classFilter = "(" + OBJECTCLASS + "=" + serviceType.getName() + ")";
         String filterString;
         if( additionalFilter != null && additionalFilter.trim().length() > 0 ) {
-            filterString = "(&" + classFilter + "(" + additionalFilter + "))";
+            if( !additionalFilter.startsWith( "(" ) ) {
+                additionalFilter = "(" + additionalFilter + ")";
+            }
+            filterString = "(&" + classFilter + additionalFilter + ")";
         } else {
             filterString = classFilter;
         }

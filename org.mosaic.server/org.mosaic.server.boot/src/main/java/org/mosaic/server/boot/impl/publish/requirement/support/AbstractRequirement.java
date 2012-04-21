@@ -13,7 +13,7 @@ import org.springframework.context.ApplicationContext;
  */
 public abstract class AbstractRequirement implements Requirement {
 
-    private static final Logger LOG = LoggerFactory.getBundleLogger( AbstractRequirement.class );
+    private final Logger logger = LoggerFactory.getLogger( getClass() );
 
     private final BundleContext bundleContext;
 
@@ -33,7 +33,7 @@ public abstract class AbstractRequirement implements Requirement {
 
     @Override
     public final boolean track() throws Exception {
-        LOG.debug( "Tracking requirement '{}' of bundle '{}'", this, this.bundleName );
+        logger.debug( "Tracking requirement '{}' of bundle '{}'", this, this.bundleName );
         return trackInternal();
     }
 
@@ -43,11 +43,11 @@ public abstract class AbstractRequirement implements Requirement {
 
     @Override
     public final void untrack() {
-        LOG.debug( "Untracking requirement '{}' of bundle '{}'", this, this.bundleName );
+        logger.debug( "Untracking requirement '{}' of bundle '{}'", this, this.bundleName );
         try {
             untrackInternal();
         } catch( Exception e ) {
-            LOG.error( "Error while untracking requirement '{}' of bundle '{}': {}", this, this.bundleName, e.getMessage(), e );
+            logger.error( "Error while untracking requirement '{}' of bundle '{}': {}", this, this.bundleName, e.getMessage(), e );
         }
     }
 
@@ -57,7 +57,7 @@ public abstract class AbstractRequirement implements Requirement {
 
     @Override
     public final void publish( ApplicationContext applicationContext ) throws Exception {
-        LOG.debug( "Publishing requirement '{}' of bundle '{}'", this, this.bundleName );
+        logger.debug( "Publishing requirement '{}' of bundle '{}'", this, this.bundleName );
         publishInternal( applicationContext );
     }
 
@@ -67,11 +67,11 @@ public abstract class AbstractRequirement implements Requirement {
 
     @Override
     public final void unpublish() {
-        LOG.debug( "Unpublishing requirement '{}' of bundle '{}'", this, this.bundleName );
+        logger.debug( "Unpublishing requirement '{}' of bundle '{}'", this, this.bundleName );
         try {
             unpublishInternal();
         } catch( Exception e ) {
-            LOG.error( "Error while unpublishing requirement '{}' of bundle '{}': {}", this, this.bundleName, e.getMessage(), e );
+            logger.error( "Error while unpublishing requirement '{}' of bundle '{}': {}", this, this.bundleName, e.getMessage(), e );
         }
     }
 
@@ -86,7 +86,7 @@ public abstract class AbstractRequirement implements Requirement {
 
     @Override
     public final void publishBean( Object bean, String beanName ) throws Exception {
-        LOG.debug( "Requirement '{}' in bundle '{}' is initializing bean '{}'", this, this.bundleName, beanName );
+        logger.debug( "Requirement '{}' in bundle '{}' is initializing bean '{}'", this, this.bundleName, beanName );
         publishBeanInternal( bean, beanName );
     }
 
@@ -99,7 +99,7 @@ public abstract class AbstractRequirement implements Requirement {
         try {
             onSatisfyInternal( applicationContext, state );
         } catch( Exception e ) {
-            LOG.error( "Requirement '{}' could not be satisfied: {}", this, e.getMessage(), e );
+            logger.error( "Requirement '{}' could not be satisfied: {}", this, e.getMessage(), e );
         }
     }
 
@@ -113,14 +113,14 @@ public abstract class AbstractRequirement implements Requirement {
 
     protected void markAsSatisfied( Object... state ) {
         if( !this.tracker.isSatisfied( this ) ) {
-            LOG.debug( "Requirement '{}' of bundle '{}' is now satisfied", this, this.bundleName );
+            logger.debug( "Requirement '{}' of bundle '{}' is now satisfied", this, this.bundleName );
         }
         this.tracker.markAsSatisfied( this, state );
     }
 
     protected void markAsUnsatisfied() {
         if( this.tracker.isSatisfied( this ) ) {
-            LOG.debug( "Requirement '{}' of bundle '{}' is now un-satisfied", this, this.bundleName );
+            logger.debug( "Requirement '{}' of bundle '{}' is now un-satisfied", this, this.bundleName );
         }
         this.tracker.markAsUnsatisfied( this );
     }

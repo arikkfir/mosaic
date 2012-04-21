@@ -20,7 +20,7 @@ import org.springframework.context.ApplicationContext;
  */
 public class MethodEndpointRequirement extends AbstractMethodRequirement implements MethodEndpointInfo {
 
-    private static final Logger LOG = LoggerFactory.getBundleLogger( MethodEndpointRequirement.class );
+    private static final Logger LOG = LoggerFactory.getLogger( MethodEndpointRequirement.class );
 
     private final Annotation type;
 
