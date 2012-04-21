@@ -1,4 +1,4 @@
-package org.mosaic.server.web.jetty.impl.util;
+package org.mosaic.web.util;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -21,6 +21,8 @@ public abstract class HttpTime {
 
     public static final DateTimeFormatter RFC_1123_DATE_TIME_FORMATTER = formatter( "EEE, dd MMM yyyy HH:mm:ss" );
 
+    public static final DateTimeFormatter RFC_1123_DATE_TIME_ZONE_FORMATTER = formatter( "EEE, dd MMM yyyy HH:mm:ss zzz" );
+
     public static DateTime parse( String httpTime ) {
         if( httpTime.contains( ";" ) ) {
             httpTime = httpTime.substring( 0, httpTime.indexOf( ';' ) );
@@ -41,6 +43,10 @@ public abstract class HttpTime {
         } catch( Exception e ) {
             throw new IllegalArgumentException( "Could not parse HTTP date/time value '" + httpTime + "' - unrecognizable format" );
         }
+    }
+
+    public static String format( DateTime dateTime ) {
+        return RFC_1123_DATE_TIME_ZONE_FORMATTER.print( dateTime );
     }
 
     private static DateTimeFormatter formatter( String pattern ) {

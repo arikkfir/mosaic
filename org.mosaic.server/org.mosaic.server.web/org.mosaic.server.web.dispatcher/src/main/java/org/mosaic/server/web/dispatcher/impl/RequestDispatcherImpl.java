@@ -2,7 +2,7 @@ package org.mosaic.server.web.dispatcher.impl;
 
 import org.mosaic.lifecycle.ServiceExport;
 import org.mosaic.server.web.dispatcher.RequestDispatcher;
-import org.mosaic.web.Http;
+import org.mosaic.web.util.Http;
 import org.springframework.stereotype.Component;
 
 /**

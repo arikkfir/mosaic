@@ -14,4 +14,16 @@
     <context:component-scan base-package="org.mosaic.server.web.dispatcher.impl"/>
 
 
+    <!-- =========================================================================================================== -->
+    <!-- Register a conversion service for configurations                                                            -->
+    <!-- =========================================================================================================== -->
+    <bean class="org.springframework.format.support.FormattingConversionServiceFactoryBean">
+        <property name="formatters">
+            <set>
+                <bean class="org.mosaic.web.DateTimeFormatter"/>
+            </set>
+        </property>
+    </bean>
+
+
 </beans>

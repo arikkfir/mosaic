@@ -1,6 +1,8 @@
-package org.mosaic.web;
+package org.mosaic.web.util;
 
 import org.mosaic.collection.TypedDict;
+import org.mosaic.web.HttpApplication;
+import org.mosaic.web.HttpRequest;
 
 /**
  * @author arik
