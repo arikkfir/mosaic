@@ -43,10 +43,10 @@ public class HttpServerImpl implements HttpServer {
 
     private Configuration cfg;
 
-    private HttpApplicationJettyHandler handler;
+    private HttpRequestHandler handler;
 
     @Autowired
-    public void setHandler( HttpApplicationJettyHandler handler ) {
+    public void setHandler( HttpRequestHandler handler ) {
         this.handler = handler;
     }
 

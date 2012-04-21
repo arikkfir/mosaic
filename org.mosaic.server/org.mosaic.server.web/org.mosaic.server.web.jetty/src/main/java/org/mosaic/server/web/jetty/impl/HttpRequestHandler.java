@@ -35,9 +35,9 @@ import static org.eclipse.jetty.servlet.ServletContextHandler.SESSIONS;
  * @author arik
  */
 @Component
-public class HttpApplicationJettyHandler extends ContextHandlerCollection {
+public class HttpRequestHandler extends ContextHandlerCollection {
 
-    private static final Logger LOG = LoggerFactory.getLogger( HttpApplicationJettyHandler.class );
+    private static final Logger LOG = LoggerFactory.getLogger( HttpRequestHandler.class );
 
     private Map<HttpApplication, ServletContextHandler> applications = new ConcurrentHashMap<>( 10 );
 
@@ -149,7 +149,7 @@ public class HttpApplicationJettyHandler extends ContextHandlerCollection {
                 Http.setRequest( new HttpRequestImpl( conversionService, request, response ) );
 
                 // if no dispatcher, send 404; otherwise, pass the torch to the dispatcher
-                RequestDispatcher dispatcher = HttpApplicationJettyHandler.this.dispatcher;
+                RequestDispatcher dispatcher = HttpRequestHandler.this.dispatcher;
                 if( dispatcher == null ) {
                     response.sendError( HttpServletResponse.SC_NOT_FOUND );
                 } else {
