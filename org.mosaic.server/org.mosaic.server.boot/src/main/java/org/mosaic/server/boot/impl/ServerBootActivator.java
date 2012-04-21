@@ -3,6 +3,7 @@ package org.mosaic.server.boot.impl;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.mosaic.Home;
+import org.mosaic.server.boot.impl.logging.LogWeaver;
 import org.mosaic.server.boot.impl.publish.spring.OsgiSpringNamespacePlugin;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -16,6 +17,8 @@ public class ServerBootActivator implements BundleActivator {
 
     private OsgiSpringNamespacePlugin springNamespacePlugin;
 
+    private LogWeaver logWeaver;
+
     private BundleBootstrapper bundleBootstrapper;
 
     @Override
@@ -28,6 +31,9 @@ public class ServerBootActivator implements BundleActivator {
         this.springNamespacePlugin = new OsgiSpringNamespacePlugin( bundleContext );
         this.springNamespacePlugin.open();
 
+        this.logWeaver = new LogWeaver();
+        this.logWeaver.open( bundleContext );
+
         this.bundleBootstrapper = new BundleBootstrapper( bundleContext, this.springNamespacePlugin );
         this.bundleBootstrapper.open();
     }
@@ -36,6 +42,9 @@ public class ServerBootActivator implements BundleActivator {
     public void stop( BundleContext bundleContext ) throws Exception {
         this.bundleBootstrapper.close();
         this.bundleBootstrapper = null;
+
+        this.logWeaver.close();
+        this.logWeaver = null;
 
         this.springNamespacePlugin.close();
         this.springNamespacePlugin = null;
