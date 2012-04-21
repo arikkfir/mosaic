@@ -24,7 +24,7 @@ public class BundleBootstrapper implements SynchronousBundleListener, BundleStat
 
     public static final Logger ACTIVATION_LOG = LoggerFactory.getLogger( LoggerFactory.getBundleLogger( BundleBootstrapper.class ).getName() + ".activation" );
 
-    private static final Logger LOG = LoggerFactory.getBundleLogger( BundleBootstrapper.class );
+    private static final Logger LOG = LoggerFactory.getLogger( BundleBootstrapper.class );
 
     private final BundleContext bundleContext;
 

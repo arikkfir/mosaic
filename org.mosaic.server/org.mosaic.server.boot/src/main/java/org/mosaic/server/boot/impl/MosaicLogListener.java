@@ -16,7 +16,7 @@ import org.osgi.util.tracker.ServiceTrackerCustomizer;
  */
 public class MosaicLogListener implements LogListener, ServiceTrackerCustomizer<LogReaderService, LogReaderService> {
 
-    private static final Logger LOG = LoggerFactory.getBundleLogger( MosaicLogListener.class );
+    private static final Logger LOG = LoggerFactory.getLogger( MosaicLogListener.class );
 
     private static final Logger OSGI_LOG = LoggerFactory.getLogger( "org.mosaic.osgi.log" );
 

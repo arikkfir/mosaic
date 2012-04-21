@@ -28,7 +28,7 @@ import static org.springframework.core.io.support.PropertiesLoaderUtils.loadProp
  */
 public class OsgiSpringNamespacePlugin implements EntityResolver, NamespaceHandlerResolver, SynchronousBundleListener {
 
-    private static final Logger LOG = LoggerFactory.getBundleLogger( OsgiSpringNamespacePlugin.class );
+    private static final Logger LOG = LoggerFactory.getLogger( OsgiSpringNamespacePlugin.class );
 
     private final BundleContext bundleContext;
 
