@@ -51,7 +51,7 @@ public class JavassistTxWeavingHook implements WeavingHook {
             "   };\n" +
             "}\n";
 
-    private static final Logger LOG = LoggerFactory.getBundleLogger( JavassistTxWeavingHook.class );
+    private static final Logger LOG = LoggerFactory.getLogger( JavassistTxWeavingHook.class );
 
     private static final Set<String> IGNORED_BUNDLES = new HashSet<>( Arrays.asList(
             "org.mosaic.api", "org.mosaic.server.api"

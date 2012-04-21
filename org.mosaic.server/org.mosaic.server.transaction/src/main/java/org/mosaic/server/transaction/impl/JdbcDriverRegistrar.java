@@ -36,7 +36,7 @@ import static java.lang.reflect.Modifier.isAbstract;
 @Component
 public class JdbcDriverRegistrar implements BundleListener {
 
-    private static final Logger LOG = LoggerFactory.getBundleLogger( JdbcDriverRegistrar.class );
+    private static final Logger LOG = LoggerFactory.getLogger( JdbcDriverRegistrar.class );
 
     private BundleContext bundleContext;
 
