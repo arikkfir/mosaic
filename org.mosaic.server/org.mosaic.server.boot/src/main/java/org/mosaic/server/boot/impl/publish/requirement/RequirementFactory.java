@@ -47,6 +47,13 @@ public class RequirementFactory {
                     requirements.add( new ServiceExportRequirement( this.tracker, beanDefinitionName, exportAnn.value() ) );
                 }
 
+                // detect class endpoints
+                Annotation metaAnnotation = findAnnotationWithMeta( beanClass, ClassEndpointMarker.class );
+                if( metaAnnotation != null ) {
+                    requirements.add(
+                            new ClassEndpointRequirement( this.tracker, beanDefinitionName, metaAnnotation, beanClass ) );
+                }
+
                 // detect method requirements
                 for( Method method : ReflectionUtils.getUniqueDeclaredMethods( beanClass ) ) {
                     detectBundleContextRef( beanDefinitionName, method, requirements );
@@ -209,6 +216,21 @@ public class RequirementFactory {
             }
             return null;
         }
+    }
+
+    private static <T extends Annotation> Annotation findAnnotationWithMeta( Class<?> clazz,
+                                                                             Class<T> metaAnnotationType ) {
+        if( clazz.isAnnotationPresent( metaAnnotationType ) ) {
+            return clazz.getAnnotation( metaAnnotationType );
+        } else {
+            for( Annotation annotation : clazz.getAnnotations() ) {
+                Annotation foundAnnotation = findAnnotationWithMeta( annotation, metaAnnotationType );
+                if( foundAnnotation != null ) {
+                    return foundAnnotation;
+                }
+            }
+        }
+        return null;
     }
 
     private static <T extends Annotation> Annotation findAnnotationWithMeta( Method method,
