@@ -5,7 +5,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.server.Request;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
 import org.mosaic.web.Http;
@@ -36,7 +35,7 @@ public class HttpApplicationServlet extends HttpServlet {
 
             // associate app and request on the thread
             Http.setApplication( this.httpApplication );
-            Http.setRequest( new HttpRequestImpl( this.conversionService, ( Request ) request, response ) );
+            Http.setRequest( new HttpRequestImpl( this.conversionService, request, response ) );
 
             // handle request
             super.service( request, response );

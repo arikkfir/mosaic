@@ -9,9 +9,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
-import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.mosaic.collection.TypedDict;
 import org.mosaic.collection.WrappingTypedDict;
 import org.mosaic.logging.Logger;
@@ -44,9 +41,9 @@ public class HttpRequestImpl extends WrappingTypedDict<Object> implements HttpRe
         return dest;
     }
 
-    private final Request request;
+    private final HttpServletRequest request;
 
-    private final Response response;
+    private final HttpServletResponse response;
 
     private final URI uri;
 
@@ -58,7 +55,9 @@ public class HttpRequestImpl extends WrappingTypedDict<Object> implements HttpRe
 
     private final HttpResponseHeadersImpl responseHeaders;
 
-    public HttpRequestImpl( ConversionService conversionService, Request request, Response response )
+    public HttpRequestImpl( ConversionService conversionService,
+                            HttpServletRequest request,
+                            HttpServletResponse response )
             throws IOException, ServletException {
 
         super( new HashMap<String, List<Object>>(), conversionService, Object.class );
@@ -66,11 +65,9 @@ public class HttpRequestImpl extends WrappingTypedDict<Object> implements HttpRe
         // delegates
         this.request = request;
         this.response = response;
+        this.uri = parseRequestUri();
         put( REQUEST_ATTR, this.request );
         put( RESPONSE_ATTR, this.response );
-
-        // uri(must be encoded!!!!)
-        this.uri = parseRequestUri();
 
         // headers
         this.requestHeaders = new HttpRequestHeadersImpl( this.request, this.conversionService );
@@ -199,23 +196,18 @@ public class HttpRequestImpl extends WrappingTypedDict<Object> implements HttpRe
     }
 
     private URI parseRequestUri() throws UnsupportedEncodingException {
-        HttpURI uri = this.request.getUri();
-        String scheme = this.request.getScheme();
-        String authority = this.request.getServerName() + ":" + this.request.getServerPort();
-        String pathAndParam = uri.getPathAndParam();
-        if( pathAndParam != null ) {
-            pathAndParam = URLDecoder.decode( pathAndParam, "UTF-8" );
-        }
-        String query = uri.getQuery();
-        if( query != null ) {
-            query = URLDecoder.decode( query, "UTF-8" );
-        }
-        String fragment = uri.getFragment();
-        if( fragment != null ) {
-            fragment = URLDecoder.decode( fragment, "UTF-8" );
-        }
         try {
-            return new URI( scheme, authority, pathAndParam, query, fragment );
+            String queryString = this.request.getQueryString();
+            if( queryString != null ) {
+                queryString = URLDecoder.decode( queryString, "UTF-8" );
+            }
+            return new URI( this.request.getScheme(),
+                            null,
+                            this.request.getServerName(),
+                            this.request.getServerPort(),
+                            this.request.getPathInfo(),
+                            queryString,
+                            null );
         } catch( URISyntaxException e ) {
             throw new IllegalArgumentException( "Cannot parse URI '" + this.request.getRequestURL() + "': " + e.getMessage(), e );
         }
