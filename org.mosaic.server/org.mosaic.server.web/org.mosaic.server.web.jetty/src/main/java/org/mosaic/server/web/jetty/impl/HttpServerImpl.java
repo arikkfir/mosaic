@@ -100,7 +100,7 @@ public class HttpServerImpl implements HttpServer {
     private Server createServer() throws IOException {
         Server server = new Server();
         server.setConnectors( createConnectors() );
-        server.setGracefulShutdown( duration( "gracefulShutdownTimeout", standardSeconds( 30 ) ) );
+        server.setGracefulShutdown( duration( "gracefulShutdownTimeout", standardSeconds( 5 ) ) );
         server.setHandler( this.handler );
         server.setSendDateHeader( b( "sendDateHeader", true ) );
         server.setSendServerVersion( false );

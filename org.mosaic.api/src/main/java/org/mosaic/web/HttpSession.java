@@ -19,8 +19,6 @@ public interface HttpSession extends TypedDict<Object> {
 
     boolean isNew();
 
-    boolean isValid();
-
     void invalidate();
 
 }

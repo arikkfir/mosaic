@@ -1,5 +1,7 @@
 package org.mosaic.web;
 
+import org.mosaic.collection.TypedDict;
+
 /**
  * @author arik
  */
@@ -8,6 +10,16 @@ public abstract class Http {
     private static final ThreadLocal<HttpApplication> APPLICATION = new ThreadLocal<>();
 
     private static final ThreadLocal<HttpRequest> REQUEST = new ThreadLocal<>();
+
+    private static final ThreadLocal<TypedDict<String>> URI_PARAMS = new ThreadLocal<>();
+
+    public static HttpRequest uriParams() {
+        return REQUEST.get();
+    }
+
+    public static void setUriParams( TypedDict<String> uriParams ) {
+        URI_PARAMS.set( uriParams );
+    }
 
     public static HttpRequest request() {
         return REQUEST.get();

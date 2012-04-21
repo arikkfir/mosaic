@@ -15,6 +15,8 @@ import org.eclipse.jetty.util.log.Slf4jLog;
 import org.mosaic.lifecycle.ServiceBind;
 import org.mosaic.lifecycle.ServiceUnbind;
 import org.mosaic.web.HttpApplication;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Component;
 
 import static org.eclipse.jetty.servlet.ServletContextHandler.SESSIONS;
@@ -26,6 +28,13 @@ import static org.eclipse.jetty.servlet.ServletContextHandler.SESSIONS;
 public class HttpApplicationJettyHandler extends ContextHandlerCollection {
 
     private Map<HttpApplication, ServletContextHandler> applications = new ConcurrentHashMap<>( 10 );
+
+    private ConversionService conversionService;
+
+    @Autowired
+    public void setConversionService( ConversionService conversionService ) {
+        this.conversionService = conversionService;
+    }
 
     @ServiceBind
     public void addApplication( HttpApplication application ) {
@@ -40,10 +49,13 @@ public class HttpApplicationJettyHandler extends ContextHandlerCollection {
             context.setLogger( new Slf4jLog( ServletContextHandler.class.getName() ) );
             context.setErrorHandler( new ErrorHandler() );
 
-            // add application filters and servlet
+            // add filters
             context.setDisplayName( application.getName() );
             context.addFilter( new FilterHolder( new GzipFilter() ), "/*", EnumSet.of( DispatcherType.REQUEST ) );
-            context.addServlet( new ServletHolder( "MosaicServlet", new HttpApplicationServlet( application ) ), "/*" );
+
+            // add application filters and servlet
+            HttpApplicationServlet servlet = new HttpApplicationServlet( application, this.conversionService );
+            context.addServlet( new ServletHolder( "MosaicServlet", servlet ), "/*" );
 
             // update virtual hosts
             Set<String> virtualHosts = application.getVirtualHosts();

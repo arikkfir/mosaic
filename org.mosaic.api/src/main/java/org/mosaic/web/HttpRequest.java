@@ -1,14 +1,10 @@
 package org.mosaic.web;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.Reader;
-import java.io.Writer;
-import java.net.URL;
-import org.mosaic.collection.Dict;
+import java.io.*;
+import java.net.URI;
+import java.util.Collection;
 import org.mosaic.collection.TypedDict;
 import org.springframework.http.HttpMethod;
-import org.springframework.web.multipart.MultipartFile;
 
 /**
  * @author arik
@@ -16,33 +12,37 @@ import org.springframework.web.multipart.MultipartFile;
  */
 public interface HttpRequest extends TypedDict<Object> {
 
-    HttpSession getSession();
+    Object getSession();
 
-    HttpSession requireSession();
+    HttpSession getOrCreateSession();
 
     boolean isSecure();
 
     String getClientAddress();
 
+    String getProtocol();
+
     HttpMethod getMethod();
 
-    URL getUrl();
+    URI getUrl();
 
     TypedDict<String> getQueryParameters();
 
     HttpRequestHeaders getRequestHeaders();
 
-    InputStream getRequestInputStream();
+    InputStream getRequestInputStream() throws IOException;
 
-    Reader getRequestReader();
+    Reader getRequestReader() throws IOException;
 
-    Dict<MultipartFile> getFileUploads();
+    HttpPart getPart( String name );
+
+    Collection<HttpPart> getParts();
 
     HttpResponseHeaders getResponseHeaders();
 
-    OutputStream getResponseOutputStream();
+    OutputStream getResponseOutputStream() throws IOException;
 
-    Writer getResponseWriter();
+    Writer getResponseWriter() throws IOException;
 
     boolean isCommitted();
 
