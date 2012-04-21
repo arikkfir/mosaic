@@ -27,7 +27,7 @@ import static java.nio.file.Files.newDirectoryStream;
 @Component
 public class ConfigurationManager {
 
-    private static final Logger LOG = LoggerFactory.getBundleLogger( ConfigurationManager.class );
+    private static final Logger LOG = LoggerFactory.getLogger( ConfigurationManager.class );
 
     private static final long SCAN_INTERVAL = 1000;
 
