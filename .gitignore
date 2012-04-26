@@ -12,5 +12,5 @@
 build
 **/target
 target
-run/mosaic/logs/**
-run/mosaic/work/**
+run/home/logs/**
+run/home/work/**

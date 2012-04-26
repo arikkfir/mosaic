@@ -15,9 +15,9 @@
     <!-- =========================================================================================================== -->
     <!--  Framework events appender - logs OSGi framework events                                                     -->
     <!-- =========================================================================================================== -->
-    <appender name="framework" class="ch.qos.logback.core.FileAppender">
+    <appender name="osgi" class="ch.qos.logback.core.FileAppender">
         <append>false</append>
-        <file>${mosaic.home}/logs/framework.log</file>
+        <file>${mosaic.home}/logs/osgi.log</file>
         <encoder>
             <charset>UTF-8</charset>
             <pattern>%date{HH:mm:ss.SSS} | %-5level | %-30.30logger{30} | %message%n%ex{full}</pattern>
@@ -28,27 +28,16 @@
     <!--  Loggers configuration                                                                                      -->
     <!-- =========================================================================================================== -->
 
-    <!-- mosaic loggers (uncomment to enable) -->
-    <!--<logger name="org.mosaic.server.transaction" level="TRACE"/>-->
-    <logger name="org.mosaic.server.boot.install" level="WARN"/>
-    <logger name="org.mosaic.server.boot.resolve" level="WARN"/>
-    <logger name="org.mosaic.server.boot.activation" level="WARN"/>
-
-    <!-- suppress spring logs -->
     <logger name="org.springframework" level="WARN"/>
     <logger name="org.mosaic.server.boot.impl.publish.spring.BundleApplicationContext" level="WARN"/>
-
-    <!-- suppress sshd logs -->
     <logger name="org.apache.sshd" level="WARN"/>
     <logger name="org.mosaic.server.shell.impl.session.MosaicServerSession" level="WARN"/>
+    <logger name="org.mosaic.osgi" level="WARN"/>
 
     <!-- redirect felix OSGi logs to a different file -->
-    <logger name="org.apache.felix" additivity="false">
-        <appender-ref ref="framework"/>
-    </logger>
-    <logger name="org.mosaic.osgi.log" additivity="false">
-        <appender-ref ref="framework"/>
-    </logger>
+    <!--<logger name="org.mosaic.osgi" additivity="false">-->
+    <!--<appender-ref ref="osgi"/>-->
+    <!--</logger>-->
 
     <!-- =========================================================================================================== -->
     <!--  Root logger configuration - applies to all non-configured loggers                                          -->

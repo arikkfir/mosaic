@@ -1,71 +1,61 @@
 package org.mosaic.runner.logging;
 
 import org.apache.felix.framework.Logger;
+import org.mosaic.runner.util.BundleUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceReference;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 /**
  * @author arik
  */
 public class FelixLogger extends Logger {
 
-    private static final ThreadLocal<StringBuilder> BUFFERS = new ThreadLocal<StringBuilder>() {
-        @Override
-        protected StringBuilder initialValue() {
-            return new StringBuilder( 1000 );
-        }
-    };
+    private static final String OSGI_LOG_NAME = "org.mosaic.osgi.framework";
+
+    private static final String MDC_SR_KEY = "logging-osgi-service-ref";
+
+    private static final String MDC_BUNDLE_KEY = "logging-osgi-bundle";
 
     @Override
     protected void doLog( Bundle bundle, ServiceReference sr, int level, String msg, Throwable throwable ) {
-        StringBuilder buf = BUFFERS.get();
-        buf.delete( 0, buf.length() );
-        String loggerName = "org.apache.felix";
-
-        if( sr != null ) {
-            buf.append( "ServiceReference: " ).append( sr ).append( " " );
-            loggerName = sr.getBundle().getSymbolicName();
-
-        } else if( bundle != null ) {
-            buf.append( "Bundle: " ).append( bundle ).append( " " );
-            loggerName = bundle.getSymbolicName();
-        }
-        buf.append( msg );
-        if( throwable != null ) {
-            buf.append( "(" ).append( throwable ).append( ")" );
-        }
-
-        org.slf4j.Logger logger = LoggerFactory.getLogger( loggerName );
-        switch( level ) {
-            case LOG_DEBUG:
-                if( throwable != null ) {
-                    logger.debug( buf.toString(), throwable );
-                } else {
-                    logger.debug( buf.toString() );
-                }
-                break;
-            case LOG_ERROR:
-                if( throwable != null ) {
-                    logger.error( buf.toString(), throwable );
-                } else {
-                    logger.error( buf.toString() );
-                }
-                break;
-            case LOG_INFO:
-                if( throwable != null ) {
-                    logger.info( buf.toString(), throwable );
-                } else {
-                    logger.info( buf.toString() );
-                }
-                break;
-            case LOG_WARNING:
-            default:
-                if( throwable != null ) {
-                    logger.warn( buf.toString(), throwable );
-                } else {
-                    logger.warn( buf.toString() );
-                }
+        MDC.put( MDC_SR_KEY, sr == null ? null : sr.toString() );
+        MDC.put( MDC_BUNDLE_KEY, bundle == null ? null : BundleUtils.toString( bundle ) );
+        try {
+            switch( level ) {
+                case LOG_DEBUG:
+                    if( throwable != null ) {
+                        LoggerFactory.getLogger( OSGI_LOG_NAME ).debug( msg, throwable );
+                    } else {
+                        LoggerFactory.getLogger( OSGI_LOG_NAME ).debug( msg );
+                    }
+                    break;
+                case LOG_ERROR:
+                    if( throwable != null ) {
+                        LoggerFactory.getLogger( OSGI_LOG_NAME ).error( msg, throwable );
+                    } else {
+                        LoggerFactory.getLogger( OSGI_LOG_NAME ).error( msg );
+                    }
+                    break;
+                case LOG_INFO:
+                    if( throwable != null ) {
+                        LoggerFactory.getLogger( OSGI_LOG_NAME ).info( msg, throwable );
+                    } else {
+                        LoggerFactory.getLogger( OSGI_LOG_NAME ).info( msg );
+                    }
+                    break;
+                case LOG_WARNING:
+                default:
+                    if( throwable != null ) {
+                        LoggerFactory.getLogger( OSGI_LOG_NAME ).warn( msg, throwable );
+                    } else {
+                        LoggerFactory.getLogger( OSGI_LOG_NAME ).warn( msg );
+                    }
+            }
+        } finally {
+            MDC.remove( MDC_SR_KEY );
+            MDC.remove( MDC_BUNDLE_KEY );
         }
     }
 }

@@ -10,22 +10,22 @@ package org.mosaic.runner;
 public enum ExitCode {
 
     /**
-     * Indicates that the Mosaic server was successfully stopped under normal circumstances (user-initiated).
+     * Indicates that the server was successfully stopped under normal circumstances (user-initiated).
      */
     SUCCESS( 0 ),
 
     /**
-     * Indicates that the Mosaic server failed to start due to a configuration problem.
+     * Indicates that the server failed to start due to a configuration problem.
      */
     CONFIG_ERROR( 1 ),
 
     /**
-     * Indicates that the Mosaic server failed to start due to an error while actually starting the server.
+     * Indicates that the server failed to start due to an error while actually starting the server.
      */
     START_ERROR( 2 ),
 
     /**
-     * Indicates to the Mosaic shell wrapper that the JVM needs to be re-started.
+     * Indicates to the shell wrapper that the JVM needs to be re-started.
      */
     RESTART( 3 ),
 
@@ -35,13 +35,13 @@ public enum ExitCode {
     RUNTIME_ERROR( 4 ),
 
     /**
-     * Indicates that the Mosaic server was terminated with a kill signal (either to the JVM process or to the main
+     * Indicates that the server was terminated with a kill signal (either to the JVM process or to the main
      * loop thread).
      */
     INTERRUPTED( 5 ),
 
     /**
-     * Indicates that the Mosaic server terminated due to an unknown error.
+     * Indicates that the server terminated due to an unknown error.
      */
     UNKNOWN_ERROR( 6 );
 

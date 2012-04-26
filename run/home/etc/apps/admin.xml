@@ -3,7 +3,7 @@
 <application>
 
     <virtual-hosts>
-        <virtual-host>admin.localhost.local</virtual-host>
+        <virtual-host>admin.localhost.infolinks.local</virtual-host>
     </virtual-hosts>
 
     <!-- Parameters available in runtime (tag-name is the parameter name, its content is the parameter value) -->

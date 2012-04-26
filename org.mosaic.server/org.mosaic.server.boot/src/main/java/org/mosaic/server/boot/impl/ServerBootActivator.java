@@ -13,8 +13,6 @@ import org.osgi.framework.BundleContext;
  */
 public class ServerBootActivator implements BundleActivator {
 
-    private MosaicLogListener logListener;
-
     private OsgiSpringNamespacePlugin springNamespacePlugin;
 
     private LogWeaver logWeaver;
@@ -24,9 +22,6 @@ public class ServerBootActivator implements BundleActivator {
     @Override
     public void start( BundleContext bundleContext ) throws Exception {
         bundleContext.registerService( Home.class, new HomeService(), null );
-
-        this.logListener = new MosaicLogListener( bundleContext );
-        this.logListener.open();
 
         this.springNamespacePlugin = new OsgiSpringNamespacePlugin( bundleContext );
         this.springNamespacePlugin.open();
@@ -48,9 +43,6 @@ public class ServerBootActivator implements BundleActivator {
 
         this.springNamespacePlugin.close();
         this.springNamespacePlugin = null;
-
-        this.logListener.close();
-        this.logListener = null;
     }
 
     private class HomeService implements Home {
@@ -59,20 +51,14 @@ public class ServerBootActivator implements BundleActivator {
 
         private final Path boot;
 
-        private final Path deploy;
-
         private final Path etc;
-
-        private final Path server;
 
         private final Path work;
 
         private HomeService() {
             this.home = Paths.get( System.getProperty( "mosaic.home" ) );
             this.boot = Paths.get( System.getProperty( "mosaic.home.boot" ) );
-            this.deploy = Paths.get( System.getProperty( "mosaic.home.deploy" ) );
             this.etc = Paths.get( System.getProperty( "mosaic.home.etc" ) );
-            this.server = Paths.get( System.getProperty( "mosaic.home.server" ) );
             this.work = Paths.get( System.getProperty( "mosaic.home.work" ) );
         }
 
@@ -87,18 +73,8 @@ public class ServerBootActivator implements BundleActivator {
         }
 
         @Override
-        public Path getDeploy() {
-            return this.deploy;
-        }
-
-        @Override
         public Path getEtc() {
             return this.etc;
-        }
-
-        @Override
-        public Path getServer() {
-            return this.server;
         }
 
         @Override

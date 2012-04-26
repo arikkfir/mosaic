@@ -4,10 +4,7 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
 import ch.qos.logback.core.util.StatusPrinter;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-import static java.nio.file.Files.exists;
+import java.io.File;
 
 /**
  * @author arik
@@ -18,11 +15,10 @@ public class Main {
         try {
 
             // setup Mosaic home directory and structure
-            MosaicHomeInternal home = new MosaicHomeInternal();
-            System.setProperty( "mosaic.home", home.getHome().toAbsolutePath().toString() );
+            ServerHome home = new ServerHome();
 
             // first thing we want to do is setup the logging framework
-            setupLogging( home );
+            setupLogging( home.getEtc() );
 
             // now we can start the server
             ExitCode ExitStatus = new Runner( home ).run();
@@ -42,19 +38,20 @@ public class Main {
         }
     }
 
-    private static void setupLogging( MosaicHomeInternal home ) throws SystemExitException {
-        Path logbackFile = home.getEtc().resolve( Paths.get( "logback.xml" ) );
-        if( exists( logbackFile ) ) {
+    private static void setupLogging( File etcDir ) throws SystemExitException {
+        File logbackConfigFile = new File( etcDir, "logback.xml" );
+        if( logbackConfigFile.exists() ) {
             LoggerContext lc = ( LoggerContext ) org.slf4j.LoggerFactory.getILoggerFactory();
             try {
                 JoranConfigurator configurator = new JoranConfigurator();
                 configurator.setContext( lc );
                 lc.reset();
-                configurator.doConfigure( logbackFile.toFile() );
+                configurator.doConfigure( logbackConfigFile );
                 StatusPrinter.printInCaseOfErrorsOrWarnings( lc );
             } catch( JoranException e ) {
                 throw new SystemExitException( "logging configuration error: " + e.getMessage(), e, ExitCode.CONFIG_ERROR );
             }
         }
     }
+
 }

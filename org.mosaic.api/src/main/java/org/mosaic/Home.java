@@ -7,15 +7,13 @@ import java.nio.file.Path;
  */
 public interface Home {
 
+    @SuppressWarnings( "UnusedDeclaration" )
     Path getHome();
 
+    @SuppressWarnings( "UnusedDeclaration" )
     Path getBoot();
 
-    Path getDeploy();
-
     Path getEtc();
-
-    Path getServer();
 
     Path getWork();
 
