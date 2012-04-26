@@ -10,6 +10,8 @@ import org.mosaic.server.shell.console.Console;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
+import org.osgi.framework.wiring.FrameworkWiring;
+import org.springframework.stereotype.Component;
 
 import static org.mosaic.osgi.util.BundleUtils.filterBundlesByState;
 import static org.mosaic.osgi.util.BundleUtils.findMatchingBundles;
@@ -18,6 +20,7 @@ import static org.osgi.framework.Bundle.*;
 /**
  * @author arik
  */
+@Component
 public class StartStopCommands extends AbstractCommand {
 
     @Description( "Starts the given bundle(s)" )
@@ -68,6 +71,49 @@ public class StartStopCommands extends AbstractCommand {
                     }
                 }
             }
+        }
+    }
+
+    @Description( "Resolves the given bundle(s)" )
+    @ShellCommand( "resolve" )
+    public void resolveBundles( Console console,
+
+                                @Option( alias = "e" )
+                                @Description( "exact matching (filter arguments will not be treated as wildcards)" )
+                                boolean exact,
+
+                                @Option( alias = "s" )
+                                @Description( "show full stack-traces when errors occur" )
+                                boolean stackTraces,
+
+                                @Args
+                                String... filters ) throws IOException {
+
+        List<Bundle> matchingBundles = findMatchingBundles( getBundleContext(), exact, filters );
+        if( matchingBundles.isEmpty() ) {
+            console.println( "No bundles match requested filters." );
+            return;
+        }
+
+        List<Bundle> matches = filterBundlesByState( matchingBundles, INSTALLED );
+        if( matches.isEmpty() ) {
+            console.println( "None of the matching bundles is in a resolvable state" );
+            return;
+        }
+
+        Console.TablePrinter table = createBundlesTable( console );
+        for( Bundle bundle : matches ) {
+            table.print( bundle.getBundleId(),
+                         capitalize( getBundleStatus( bundle ).getState().name() ),
+                         bundle.getHeaders().get( Constants.BUNDLE_NAME ),
+                         bundle.getSymbolicName() );
+        }
+        table.done();
+
+        if( console.ask( "Resolve these bundles? [Y/n]", 'y', 'n' ) == 'y' ) {
+            Bundle systemBundle = getBundleContext().getBundle( 0 );
+            FrameworkWiring frameworkWiring = systemBundle.adapt( FrameworkWiring.class );
+            frameworkWiring.resolveBundles( matches );
         }
     }
 
