@@ -2,12 +2,14 @@ package org.mosaic.server.boot.impl;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import org.mosaic.Home;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
 import org.mosaic.osgi.BundleState;
 import org.mosaic.osgi.BundleStatus;
 import org.mosaic.osgi.BundleStatusHelper;
 import org.mosaic.osgi.util.BundleUtils;
+import org.mosaic.server.boot.impl.logging.LogWeaver;
 import org.mosaic.server.boot.impl.publish.BundleTracker;
 import org.mosaic.server.boot.impl.publish.requirement.Requirement;
 import org.mosaic.server.boot.impl.publish.spring.OsgiSpringNamespacePlugin;
@@ -16,15 +18,17 @@ import org.osgi.framework.*;
 /**
  * @author arik
  */
-public class BundleBootstrapper implements SynchronousBundleListener, BundleStatusHelper {
+public class BundleBootstrapper implements BundleActivator, SynchronousBundleListener, BundleStatusHelper {
 
     private static final Logger LOG = LoggerFactory.getLogger( BundleBootstrapper.class );
 
-    private final BundleContext bundleContext;
+    private BundleContext bundleContext;
 
-    private final OsgiSpringNamespacePlugin springNamespacePlugin;
+    private OsgiSpringNamespacePlugin springNamespacePlugin;
 
-    private final Map<Long, BundleTracker> trackers = new ConcurrentHashMap<>( 100 );
+    private LogWeaver logWeaver;
+
+    private Map<Long, BundleTracker> trackers = new ConcurrentHashMap<>( 100 );
 
     private ServiceRegistration<BundleStatusHelper> helperReg;
 
@@ -34,16 +38,15 @@ public class BundleBootstrapper implements SynchronousBundleListener, BundleStat
     }
 
     @Override
-    public BundleStatus getBundleStatus( long bundleId ) {
-        Bundle bundle = this.bundleContext.getBundle( bundleId );
-        if( bundle == null ) {
-            return null;
-        } else {
-            return new BundleStatusImpl( bundle );
-        }
-    }
+    public void start( BundleContext context ) throws Exception {
+        bundleContext.registerService( Home.class, new HomeService(), null );
 
-    public void open() {
+        this.springNamespacePlugin = new OsgiSpringNamespacePlugin( bundleContext );
+        this.springNamespacePlugin.open();
+
+        this.logWeaver = new LogWeaver();
+        this.logWeaver.open( bundleContext );
+
         this.helperReg = this.bundleContext.registerService( BundleStatusHelper.class, this, null );
         this.bundleContext.addBundleListener( this );
 
@@ -54,7 +57,8 @@ public class BundleBootstrapper implements SynchronousBundleListener, BundleStat
         }
     }
 
-    public void close() {
+    @Override
+    public void stop( BundleContext context ) throws Exception {
         for( BundleTracker tracker : this.trackers.values() ) {
             tracker.untrack();
         }
@@ -65,6 +69,22 @@ public class BundleBootstrapper implements SynchronousBundleListener, BundleStat
             }
         }
         this.bundleContext.removeBundleListener( this );
+
+        this.logWeaver.close();
+        this.logWeaver = null;
+
+        this.springNamespacePlugin.close();
+        this.springNamespacePlugin = null;
+    }
+
+    @Override
+    public BundleStatus getBundleStatus( long bundleId ) {
+        Bundle bundle = this.bundleContext.getBundle( bundleId );
+        if( bundle == null ) {
+            return null;
+        } else {
+            return new BundleStatusImpl( bundle );
+        }
     }
 
     @Override
