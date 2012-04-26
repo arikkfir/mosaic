@@ -95,7 +95,9 @@ public class JdbcDriverRegistrar implements BundleListener {
         Bundle[] bundles = this.bundleContext.getBundles();
         if( bundles != null ) {
             for( Bundle bundle : bundles ) {
-                scanForJdbcDrivers( bundle );
+                if( bundle.getState() == Bundle.ACTIVE || bundle.getState() == Bundle.RESOLVED ) {
+                    scanForJdbcDrivers( bundle );
+                }
             }
         }
     }
