@@ -1,10 +1,7 @@
 package org.mosaic.server.shell.commands.impl;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import org.mosaic.describe.Description;
 import org.mosaic.osgi.BundleStatus;
 import org.mosaic.osgi.util.BundleUtils;
@@ -36,6 +33,10 @@ public class InspectBundleCommand extends AbstractCommand {
                                @Description( "exact matching (filter arguments will not be treated as wildcards)" )
                                boolean exact,
 
+                               @Option( alias = "h" )
+                               @Description( "show bundle headers" )
+                               boolean headers,
+
                                @Option( alias = "s" )
                                @Description( "show registered and used services" )
                                boolean services,
@@ -65,24 +66,25 @@ public class InspectBundleCommand extends AbstractCommand {
         } else {
 
             for( Bundle bundle : matches ) {
-                showBundle( console, bundle, services, capabilities, requirements, wires );
+                showBundle( console, bundle, headers, services, capabilities, requirements, wires );
             }
 
         }
     }
 
     private void showBundle( Console console,
-                             Bundle bundle, boolean services,
+                             Bundle bundle,
+                             boolean headers,
+                             boolean services,
                              boolean capabilities,
                              boolean requirements,
                              boolean wires )
             throws IOException {
-        //FEATURE: headers (only latest revision - highlight that!)
         BundleStatus status = getBundleStatus( bundle );
 
         console.println();
         console.println();
-        showGeneralInfo( console, bundle, status );
+        showGeneralInfo( console, bundle, headers, status );
 
         console.println();
         showRevisions( console, bundle, capabilities, requirements, wires );
@@ -95,7 +97,8 @@ public class InspectBundleCommand extends AbstractCommand {
         console.println();
     }
 
-    private void showGeneralInfo( Console console, Bundle bundle, BundleStatus status ) throws IOException {
+    private void showGeneralInfo( Console console, Bundle bundle, boolean headers, BundleStatus status )
+            throws IOException {
         console.println( "General information:" );
         console.println( "====================" );
         console.print( "Bundle ID:     " ).println( bundle.getBundleId() );
@@ -104,6 +107,19 @@ public class InspectBundleCommand extends AbstractCommand {
         console.print( "State:         " ).println( status.getState() );
         console.print( "Last modified: " ).println( new Date( bundle.getLastModified() ) );
         console.print( "Location:      " ).println( bundle.getLocation() );
+
+        if( headers ) {
+            console.println();
+            console.println( "Headers:" );
+            console.println( "---------------------" );
+            Dictionary<String, String> bundleHeaders = bundle.getHeaders();
+            Enumeration<String> keys = bundleHeaders.keys();
+            while( keys.hasMoreElements() ) {
+                String header = keys.nextElement();
+                String value = bundleHeaders.get( header );
+                console.print( header ).print( ": " ).println( value );
+            }
+        }
 
         Collection<String> unsatisfiedRequirements = status.getUnsatisfiedRequirements();
         if( unsatisfiedRequirements != null && !unsatisfiedRequirements.isEmpty() ) {
