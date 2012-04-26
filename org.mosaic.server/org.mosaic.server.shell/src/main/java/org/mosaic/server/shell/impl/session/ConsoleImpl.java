@@ -103,7 +103,9 @@ public class ConsoleImpl implements Console {
         }
         this.consoleReader.print( "] " );
         this.consoleReader.flush();
-        return readCharacter( allowed );
+        int i = readCharacter( allowed );
+        println();
+        return i;
     }
 
     @Override
