@@ -28,16 +28,17 @@
     <!--  Loggers configuration                                                                                      -->
     <!-- =========================================================================================================== -->
 
+    <!-- 3rd party logs we probably don't want to see by default -->
+    <logger name="com.jolbox" level="WARN"/>
+    <logger name="org.apache.sshd" level="WARN"/>
     <logger name="org.springframework" level="WARN"/>
     <logger name="org.mosaic.server.boot.impl.publish.spring.BundleApplicationContext" level="WARN"/>
-    <logger name="org.apache.sshd" level="WARN"/>
     <logger name="org.mosaic.server.shell.impl.session.MosaicServerSession" level="WARN"/>
-    <logger name="org.mosaic.osgi" level="WARN"/>
 
-    <!-- redirect felix OSGi logs to a different file -->
-    <!--<logger name="org.mosaic.osgi" additivity="false">-->
-    <!--<appender-ref ref="osgi"/>-->
-    <!--</logger>-->
+    <!-- redirect OSGi logs to a different file -->
+    <logger name="org.mosaic.osgi" additivity="false">
+        <appender-ref ref="osgi"/>
+    </logger>
 
     <!-- =========================================================================================================== -->
     <!--  Root logger configuration - applies to all non-configured loggers                                          -->
