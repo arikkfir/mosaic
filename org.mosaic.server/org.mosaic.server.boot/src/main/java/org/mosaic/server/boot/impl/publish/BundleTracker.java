@@ -175,6 +175,7 @@ public class BundleTracker {
                 }
 
                 this.applicationContext = applicationContext;
+                LOG.info( "Published bundle '{}'", BundleUtils.toString( this.bundle ) );
 
             } catch( Exception e ) {
 
