@@ -4,3 +4,5 @@ WISH: Missing requirements can be implemented using OSGi "Find Listeners" (see O
 TODO: user loaders should be implemented using method endpoints, not a UserLoader interface
 TODO: start a 'server' framework instance, and another 'deploy' instance whose system bundle export all packages from the 'server' instance
 TODO: create an XML SCHEMA file (XSD) for HTTP application files
+TODO: support "start <bundle-id>*" and not only by names
+TODO: add install/uninstall shell commands
