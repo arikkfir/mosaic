@@ -2,9 +2,7 @@ package org.mosaic.server.boot.impl.logging;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 import javassist.*;
 import org.mosaic.logging.Logger;
@@ -13,6 +11,7 @@ import org.mosaic.logging.Trace;
 import org.mosaic.osgi.util.BundleUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.hooks.weaving.WeavingException;
 import org.osgi.framework.hooks.weaving.WeavingHook;
@@ -45,7 +44,7 @@ public class LogWeaver implements WeavingHook {
             "{\n" +
             "   String $mosaicMethodName = \"___METHOD_NAME___\";\n" +
             "   org.mosaic.logging.LoggerFactory.getLogger( this.getClass() ).trace( \n" +
-            "       \"Exiting '{}'\", new Object[]{$mosaicMethodName,$e.getMessage(),$e} \n" +
+            "       \"Exiting '{}' with error: {}\", new Object[]{$mosaicMethodName,$e.getMessage(),$e} \n" +
             "   );\n" +
             "   throw $e;\n" +
             "}\n";
@@ -78,7 +77,10 @@ public class LogWeaver implements WeavingHook {
 
     public void open( BundleContext bundleContext ) {
         this.bundleContext = bundleContext;
-        this.bundleContext.registerService( WeavingHook.class, this, null );
+
+        Dictionary<String, Object> props = new Hashtable<>();
+        props.put( Constants.SERVICE_RANKING, -200 );
+        this.bundleContext.registerService( WeavingHook.class, this, props );
     }
 
     public void close() {

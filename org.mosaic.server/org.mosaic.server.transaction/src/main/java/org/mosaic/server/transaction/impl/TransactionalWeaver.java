@@ -31,7 +31,7 @@ import static org.osgi.framework.FrameworkUtil.getBundle;
  */
 @SuppressWarnings( "NullableProblems" )
 @Component
-@ServiceExport( WeavingHook.class )
+@ServiceExport( value = WeavingHook.class, ranking = -100 )
 public class TransactionalWeaver implements WeavingHook {
 
     private static final String BEGIN_TX_CODE =
