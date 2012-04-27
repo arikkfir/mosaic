@@ -31,7 +31,7 @@ import static org.osgi.framework.FrameworkUtil.getBundle;
 @SuppressWarnings( "NullableProblems" )
 @Component
 @ServiceExport( WeavingHook.class )
-public class JavassistTxWeavingHook implements WeavingHook {
+public class TransactionalWeaver implements WeavingHook {
 
     private static final String BEGIN_TX_CODE =
             "{\n" +
@@ -51,7 +51,7 @@ public class JavassistTxWeavingHook implements WeavingHook {
             "   };\n" +
             "}\n";
 
-    private static final Logger LOG = LoggerFactory.getLogger( JavassistTxWeavingHook.class );
+    private static final Logger LOG = LoggerFactory.getLogger( TransactionalWeaver.class );
 
     private static final Set<String> IGNORED_BUNDLES = new HashSet<>( Arrays.asList(
             "org.mosaic.api", "org.mosaic.server.api"
@@ -63,7 +63,7 @@ public class JavassistTxWeavingHook implements WeavingHook {
 
     private BundleContext bundleContext;
 
-    public JavassistTxWeavingHook() {
+    public TransactionalWeaver() {
         this.orgSpringframeworkTransactionPackageVersion = getBundle( TransactionStatus.class ).getVersion().toString();
         this.orgMosaicServerTransactionPackageVersion = getBundle( Transactions.class ).getVersion().toString();
     }
