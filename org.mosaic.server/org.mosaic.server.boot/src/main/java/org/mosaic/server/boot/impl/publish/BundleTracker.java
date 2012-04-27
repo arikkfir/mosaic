@@ -48,7 +48,7 @@ public class BundleTracker {
     }
 
     public void track() throws Exception {
-        LOG.info( "Tracking bundle '{}'", BundleUtils.toString( this.bundle ) );
+        LOG.debug( "Tracking bundle '{}'", BundleUtils.toString( this.bundle ) );
 
         // initialize data structures
         this.requirements = new LinkedHashSet<>();
