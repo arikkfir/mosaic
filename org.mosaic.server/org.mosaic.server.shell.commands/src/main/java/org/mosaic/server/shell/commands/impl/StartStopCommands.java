@@ -136,13 +136,13 @@ public class StartStopCommands extends AbstractCommand {
 
                                 @Option( alias = "t" )
                                 @Description( "how long to wait (in seconds) for the refresh operation to finish" )
-                                int timeout,
+                                Integer timeout,
 
                                 @Option( alias = "s" )
                                 @Description( "show full stack-traces when errors occur" )
                                 boolean stackTraces ) throws IOException {
 
-        if( timeout == 0 ) {
+        if( timeout == null ) {
             timeout = 30;
         }
 
