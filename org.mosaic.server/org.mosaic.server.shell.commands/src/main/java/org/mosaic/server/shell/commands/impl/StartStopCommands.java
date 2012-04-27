@@ -2,15 +2,14 @@ package org.mosaic.server.shell.commands.impl;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.mosaic.describe.Description;
 import org.mosaic.osgi.util.BundleUtils;
 import org.mosaic.server.shell.Args;
 import org.mosaic.server.shell.Option;
 import org.mosaic.server.shell.ShellCommand;
 import org.mosaic.server.shell.console.Console;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleException;
-import org.osgi.framework.Constants;
+import org.osgi.framework.*;
 import org.osgi.framework.wiring.FrameworkWiring;
 import org.springframework.stereotype.Component;
 
@@ -124,6 +123,53 @@ public class StartStopCommands extends AbstractCommand {
                     }
                 }
             }
+        }
+    }
+
+    @Description( "Refresh all bundles in the OSGi container" )
+    @ShellCommand( "refresh" )
+    public void refreshBundles( Console console,
+
+                                @Option( alias = "e" )
+                                @Description( "exact matching (filter arguments will not be treated as wildcards)" )
+                                boolean exact,
+
+                                @Option( alias = "t" )
+                                @Description( "how long to wait (in seconds) for the refresh operation to finish" )
+                                int timeout,
+
+                                @Option( alias = "s" )
+                                @Description( "show full stack-traces when errors occur" )
+                                boolean stackTraces ) throws IOException {
+
+        if( timeout == 0 ) {
+            timeout = 30;
+        }
+
+        final AtomicBoolean finish = new AtomicBoolean( false );
+
+        Bundle systemBundle = getBundleContext().getBundle( 0 );
+        FrameworkWiring frameworkWiring = systemBundle.adapt( FrameworkWiring.class );
+        frameworkWiring.refreshBundles( null, new FrameworkListener() {
+            @Override
+            public void frameworkEvent( FrameworkEvent event ) {
+                finish.set( true );
+            }
+        } );
+
+        long start = System.currentTimeMillis();
+        while( !finish.get() && System.currentTimeMillis() - start < timeout * 30 ) {
+            try {
+                Thread.sleep( 1000 );
+            } catch( InterruptedException e ) {
+                break;
+            }
+        }
+
+        if( finish.get() ) {
+            console.println( "Done. Please check the server logs to ensure there were no errors." );
+        } else {
+            console.println( "Timed-out. Please check the server logs to ensure there were no errors." );
         }
     }
 
