@@ -44,7 +44,7 @@ public class RequirementFactory {
                 // detect service classes for registration
                 ServiceExport exportAnn = beanClass.getAnnotation( ServiceExport.class );
                 if( exportAnn != null ) {
-                    requirements.add( new ServiceExportRequirement( this.tracker, beanDefinitionName, exportAnn.value() ) );
+                    requirements.add( new ServiceExportRequirement( this.tracker, beanDefinitionName, exportAnn.value(), exportAnn.ranking() ) );
                 }
 
                 // detect class endpoints

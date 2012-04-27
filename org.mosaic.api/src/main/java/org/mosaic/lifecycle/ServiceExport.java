@@ -14,4 +14,6 @@ public @interface ServiceExport {
 
     Class<?> value();
 
+    int ranking() default 0;
+
 }

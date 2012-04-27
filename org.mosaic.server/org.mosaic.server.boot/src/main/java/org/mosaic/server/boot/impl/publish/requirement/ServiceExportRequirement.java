@@ -1,10 +1,13 @@
 package org.mosaic.server.boot.impl.publish.requirement;
 
+import java.util.Dictionary;
+import java.util.Hashtable;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
 import org.mosaic.server.boot.impl.publish.BundleTracker;
 import org.mosaic.server.boot.impl.publish.requirement.support.AbstractBeanRequirement;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceRegistration;
 import org.springframework.context.ApplicationContext;
 
@@ -17,11 +20,14 @@ public class ServiceExportRequirement extends AbstractBeanRequirement {
 
     private final Class<?> apiType;
 
+    private final int ranking;
+
     private ServiceRegistration registration;
 
-    public ServiceExportRequirement( BundleTracker tracker, String beanName, Class<?> apiType ) {
+    public ServiceExportRequirement( BundleTracker tracker, String beanName, Class<?> apiType, int ranking ) {
         super( tracker, beanName );
         this.apiType = apiType;
+        this.ranking = ranking;
     }
 
     @Override
@@ -51,7 +57,9 @@ public class ServiceExportRequirement extends AbstractBeanRequirement {
         if( bundleContext == null ) {
             LOG.warn( "Publishing non-active bundle?? For bundle: {}", getBundleName() );
         } else {
-            this.registration = bundleContext.registerService( this.apiType.getName(), getBean( applicationContext ), null );
+            Dictionary<String, Object> props = new Hashtable<>();
+            props.put( Constants.SERVICE_RANKING, this.ranking );
+            this.registration = bundleContext.registerService( this.apiType.getName(), getBean( applicationContext ), props );
         }
     }
 
