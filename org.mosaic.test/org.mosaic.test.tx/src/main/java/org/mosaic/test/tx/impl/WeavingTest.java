@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import javax.sql.DataSource;
 import org.intellij.lang.annotations.Language;
 import org.mosaic.lifecycle.ServiceRef;
+import org.mosaic.logging.Trace;
 import org.mosaic.server.shell.ShellCommand;
 import org.mosaic.transaction.Transactional;
 import org.springframework.stereotype.Component;
@@ -32,6 +33,7 @@ public class WeavingTest {
 
     @Transactional
     @ShellCommand( "test-good" )
+    @Trace
     public void testWithTx() throws SQLException {
         try( Connection connection = this.dataSource.getConnection() ) {
             try( PreparedStatement stmt = connection.prepareStatement( UPDATE_SQL ) ) {
@@ -43,6 +45,7 @@ public class WeavingTest {
     }
 
     @Transactional
+    @Trace
     private void testParticipate() throws SQLException {
         try( Connection connection = this.dataSource.getConnection() ) {
             System.out.println( "Connection is: " + System.identityHashCode( connection ) );
