@@ -65,7 +65,7 @@ public class ShellCommandsManager {
                 Console.TablePrinter table = console.createTable()
                                                     .addHeader( "Command", 10 )
                                                     .addHeader( "Description", 50 )
-                                                    .addHeader( "Origin", 40 )
+                                                    .addHeader( "Origin", 60 )
                                                     .start();
                 for( ShellCommand command : getCommands() ) {
                     table.print( command.getName(), command.getDescription(), command.getOrigin() );
