@@ -2,14 +2,11 @@ package org.mosaic.server.transaction.impl;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 import javassist.*;
 import org.mosaic.lifecycle.ContextRef;
 import org.mosaic.lifecycle.ServiceExport;
-import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
 import org.mosaic.osgi.util.BundleUtils;
 import org.mosaic.server.transaction.Transactions;
@@ -27,7 +24,6 @@ import static org.osgi.framework.FrameworkUtil.getBundle;
 /**
  * @author arik
  * @WISH 4/17/12 the 'addCatch' works only if adding '-XX:-UseSplitVerifier' to the JVM options (see https://play.lighthouseapp.com/projects/57987/tickets/1234-javalangverifyerror-inconsistent-stackmap-frames-when-i-try-to-use-play-124-rc2-and-java-7)
- * @WISH 4/17/12 reuse ClassPool instances to improve performance
  */
 @SuppressWarnings( "NullableProblems" )
 @Component
@@ -55,8 +51,6 @@ public class TransactionalWeaver implements WeavingHook {
             "   };\n" +
             "}\n";
 
-    private static final Logger LOG = LoggerFactory.getLogger( TransactionalWeaver.class );
-
     private static final Set<Pattern> IGNORED_BUNDLES = new HashSet<>( Arrays.asList(
             Pattern.compile( "com\\.google\\.guava" ),
             Pattern.compile( "commons\\-.*" ),
@@ -76,6 +70,8 @@ public class TransactionalWeaver implements WeavingHook {
     private final String orgMosaicLoggingPackageVersion;
 
     private final String orgMosaicServerTransactionPackageVersion;
+
+    private final Map<Bundle, ClassPool> pools = new WeakHashMap<>();
 
     private BundleContext bundleContext;
 
@@ -110,36 +106,46 @@ public class TransactionalWeaver implements WeavingHook {
 
         }
 
-        // javassist uses thread context class-loader - set it to weaved bundle's class loader
-        ClassLoader previousTCCL = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader( wovenClass.getBundleWiring().getClassLoader() );
-        try {
+        // prevent concurrent use of class pools
+        synchronized( this.pools ) {
 
-            // instrument the class if it has @Transactional methods; if so, it will be returned to OSGi container
-            CtClass ctClass = instrument( createClassPool( wovenClass ), wovenClass );
-            if( ctClass != null ) {
-                wovenClass.getDynamicImports().addAll( Arrays.asList(
-                        "org.mosaic.logging;version:=\"" + this.orgMosaicLoggingPackageVersion + "\",",
-                        "org.mosaic.server.transaction;version:=\"" + this.orgSpringframeworkTransactionPackageVersion + "\",",
-                        "org.springframework.transaction;version:=\"" + this.orgMosaicServerTransactionPackageVersion + "\""
-                ) );
-                wovenClass.setBytes( ctClass.toBytecode() );
+            // javassist uses thread context class-loader - set it to weaved bundle's class loader
+            ClassLoader previousTCCL = Thread.currentThread().getContextClassLoader();
+            Thread.currentThread().setContextClassLoader( wovenClass.getBundleWiring().getClassLoader() );
+            try {
+
+                // instrument the class if it has @Transactional methods; if so, it will be returned to OSGi container
+                CtClass ctClass = instrument( createClassPool( wovenClass ), wovenClass );
+                if( ctClass != null ) {
+                    wovenClass.getDynamicImports().addAll( Arrays.asList(
+                            "org.mosaic.logging;version:=\"" + this.orgMosaicLoggingPackageVersion + "\",",
+                            "org.mosaic.server.transaction;version:=\"" + this.orgSpringframeworkTransactionPackageVersion + "\",",
+                            "org.springframework.transaction;version:=\"" + this.orgMosaicServerTransactionPackageVersion + "\""
+                    ) );
+                    wovenClass.setBytes( ctClass.toBytecode() );
+                }
+
+            } catch( Exception e ) {
+                LoggerFactory.getLogger( wovenClass.getClassName() ).error( "Weaving error occurred: {}", e.getMessage(), e );
+                throw new WeavingException( "Error weaving class '" + wovenClass.getClassName() + "': " + e.getMessage(), e );
+
+            } finally {
+                Thread.currentThread().setContextClassLoader( previousTCCL );
             }
 
-        } catch( Exception e ) {
-            LOG.warn( "Weaving error occurred: {}", e.getMessage(), e );
-            throw new WeavingException( "Error weaving class '" + wovenClass.getClassName() + "': " + e.getMessage(), e );
-
-        } finally {
-            Thread.currentThread().setContextClassLoader( previousTCCL );
         }
     }
 
     private ClassPool createClassPool( WovenClass wovenClass ) {
-        ClassPool classPool = new ClassPool( false );
-        classPool.appendClassPath( new LoaderClassPath( wovenClass.getBundleWiring().getClassLoader() ) );
-        classPool.appendClassPath( new LoaderClassPath( getClass().getClassLoader() ) );
-        return classPool;
+        Bundle bundle = wovenClass.getBundleWiring().getBundle();
+        ClassPool pool = this.pools.get( bundle );
+        if( pool == null ) {
+            pool = new ClassPool( false );
+            pool.appendClassPath( new LoaderClassPath( wovenClass.getBundleWiring().getClassLoader() ) );
+            pool.appendClassPath( new LoaderClassPath( getClass().getClassLoader() ) );
+            this.pools.put( bundle, pool );
+        }
+        return pool;
     }
 
     private CtClass instrument( ClassPool classPool, WovenClass wovenClass ) throws IOException,
@@ -157,7 +163,7 @@ public class TransactionalWeaver implements WeavingHook {
 
                 Object annotation = method.getAnnotation( Transactional.class );
                 if( annotation != null ) {
-                    LOG.trace( "Weaving method '{}' in class '{}' of bundle '{}'", methodName, wovenClassName, BundleUtils.toString( wovenBundle ) );
+                    LoggerFactory.getLogger( wovenClass.getClassName() ).trace( "Weaving method '{}' in class '{}' of bundle '{}'", methodName, wovenClassName, BundleUtils.toString( wovenBundle ) );
 
                     // add code that will run before actual source code and start/join transactions
                     String txName = wovenClassName + "." + methodName;
