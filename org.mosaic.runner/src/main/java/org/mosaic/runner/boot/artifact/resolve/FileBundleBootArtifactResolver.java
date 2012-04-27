@@ -1,9 +1,14 @@
-package org.mosaic.runner.boot;
+package org.mosaic.runner.boot.artifact.resolve;
 
 import java.io.File;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.mosaic.runner.ServerHome;
+import org.mosaic.runner.boot.artifact.BootArtifact;
+import org.mosaic.runner.boot.artifact.CannotInstallBootArtifactException;
 import org.mosaic.runner.util.FileMatcher;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
 /**
@@ -16,7 +21,7 @@ public class FileBundleBootArtifactResolver extends AbstractBootArtifactResolver
     }
 
     @Override
-    public void resolve( ServerHome home, BootArtifact artifact )
+    public Set<Bundle> resolve( ServerHome home, BootArtifact artifact )
             throws CannotInstallBootArtifactException {
 
         File file = new File( artifact.getCoordinates() );
@@ -24,10 +29,15 @@ public class FileBundleBootArtifactResolver extends AbstractBootArtifactResolver
             file = new File( home.getHome(), artifact.getCoordinates() );
         }
 
+        Set<Bundle> bundles = new HashSet<>();
         List<File> matches = FileMatcher.find( file.getAbsolutePath() );
         for( File match : matches ) {
-            installOrUpdateBundle( artifact, match );
+            Set<Bundle> resolvedBundles = installOrUpdateBundle( artifact, match );
+            if( resolvedBundles != null ) {
+                bundles.addAll( resolvedBundles );
+            }
         }
+        return bundles;
     }
 
 }

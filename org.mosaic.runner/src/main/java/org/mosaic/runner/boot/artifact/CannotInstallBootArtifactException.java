@@ -1,4 +1,4 @@
-package org.mosaic.runner.boot;
+package org.mosaic.runner.boot.artifact;
 
 
 import org.mosaic.runner.ExitCode;

@@ -1,7 +1,11 @@
-package org.mosaic.runner.boot;
+package org.mosaic.runner.boot.artifact.resolve;
 
 import java.io.File;
+import java.util.Set;
 import org.mosaic.runner.ServerHome;
+import org.mosaic.runner.boot.artifact.BootArtifact;
+import org.mosaic.runner.boot.artifact.CannotInstallBootArtifactException;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
 /**
@@ -17,7 +21,7 @@ public class MavenBundleBootArtifactResolver extends AbstractBootArtifactResolve
     }
 
     @Override
-    public void resolve( ServerHome home, BootArtifact artifact )
+    public Set<Bundle> resolve( ServerHome home, BootArtifact artifact )
             throws CannotInstallBootArtifactException {
 
         if( !this.localMavenRepository.exists() || !this.localMavenRepository.isDirectory() ) {
@@ -49,6 +53,6 @@ public class MavenBundleBootArtifactResolver extends AbstractBootArtifactResolve
             throw new CannotInstallBootArtifactException( artifact, "artifact file does not exist, not a file, or cannot be read" );
         }
 
-        installOrUpdateBundle( artifact, artifactFile );
+        return installOrUpdateBundle( artifact, artifactFile );
     }
 }

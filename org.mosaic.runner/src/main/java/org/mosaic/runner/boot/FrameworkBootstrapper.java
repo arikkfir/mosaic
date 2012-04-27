@@ -3,7 +3,9 @@ package org.mosaic.runner.boot;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
@@ -13,10 +15,15 @@ import org.apache.felix.framework.util.FelixConstants;
 import org.mosaic.runner.ExitCode;
 import org.mosaic.runner.ServerHome;
 import org.mosaic.runner.SystemExitException;
+import org.mosaic.runner.boot.artifact.BootArtifact;
+import org.mosaic.runner.boot.artifact.resolve.BootArtifactResolver;
+import org.mosaic.runner.boot.artifact.resolve.FileBundleBootArtifactResolver;
+import org.mosaic.runner.boot.artifact.resolve.MavenBundleBootArtifactResolver;
 import org.mosaic.runner.logging.FelixLogger;
 import org.mosaic.runner.logging.LoggingBundleListener;
 import org.mosaic.runner.logging.LoggingFrameworkListener;
 import org.mosaic.runner.logging.LoggingServiceListener;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
 
 /**
@@ -43,12 +50,14 @@ public class FrameworkBootstrapper {
             resolvers.put( "file", new FileBundleBootArtifactResolver( felix.getBundleContext() ) );
 
             // install all boot jars and links
+            Set<String> watchedLocations = new HashSet<>();
             File[] bootJars = this.home.getBoot().listFiles();
             if( bootJars != null ) {
                 for( File file : bootJars ) {
-                    installBootArtifact( resolvers, file );
+                    watchedLocations.addAll( installBootArtifact( resolvers, file ) );
                 }
             }
+            felix.getBundleContext().addBundleListener( new BundleWatcher( felix.getBundleContext(), watchedLocations ) );
 
             // start and return the framework instance
             felix.start();
@@ -106,36 +115,51 @@ public class FrameworkBootstrapper {
         }
     }
 
-    private void installBootArtifact( Map<String, BootArtifactResolver> resolvers, File file )
+    private Set<String> installBootArtifact( Map<String, BootArtifactResolver> resolvers, File file )
             throws SystemExitException {
+
+        Set<String> watchedLocations = new HashSet<>();
 
         String extension = FilenameUtils.getExtension( file.getName() );
         if( extension.equalsIgnoreCase( "jars" ) ) {
 
-            processBootLinks( resolvers, file );
+            Set<Bundle> bundles = processBootLinks( resolvers, file );
+            for( Bundle bundle : bundles ) {
+                if( bundle.getVersion().getQualifier().equalsIgnoreCase( "SNAPSHOT" ) ) {
+                    watchedLocations.add( bundle.getLocation() );
+                }
+            }
 
         } else if( extension.equalsIgnoreCase( "jar" ) ) {
 
-            resolvers.get( "file" ).resolve( this.home, new BootArtifact( "file", file.getAbsolutePath() ) );
-
-        }
-    }
-
-    private void processBootLinks( Map<String, BootArtifactResolver> resolvers, File file ) throws SystemExitException {
-        try {
-
-            for( String line : FileUtils.readLines( file ) ) {
-                if( !StringUtils.isBlank( line ) && !line.startsWith( "#" ) ) {
-                    processBootLink( resolvers, file, line );
+            BootArtifact artifact = new BootArtifact( "file", file.getAbsolutePath() );
+            for( Bundle bundle : resolvers.get( "file" ).resolve( this.home, artifact ) ) {
+                if( bundle.getVersion().getQualifier().equalsIgnoreCase( "SNAPSHOT" ) ) {
+                    watchedLocations.add( bundle.getLocation() );
                 }
             }
+
+        }
+        return watchedLocations;
+    }
+
+    private Set<Bundle> processBootLinks( Map<String, BootArtifactResolver> resolvers, File file )
+            throws SystemExitException {
+        try {
+            Set<Bundle> bundles = new HashSet<>();
+            for( String line : FileUtils.readLines( file ) ) {
+                if( !StringUtils.isBlank( line ) && !line.startsWith( "#" ) ) {
+                    bundles.addAll( processBootLink( resolvers, file, line ) );
+                }
+            }
+            return bundles;
 
         } catch( IOException e ) {
             throw new SystemExitException( "Cannot read '" + file + "': " + e.getMessage(), e, ExitCode.START_ERROR );
         }
     }
 
-    private void processBootLink( Map<String, BootArtifactResolver> resolvers, File file, String line )
+    private Set<Bundle> processBootLink( Map<String, BootArtifactResolver> resolvers, File file, String line )
             throws SystemExitException {
 
         BootArtifact artifact = new BootArtifact( line );
@@ -143,7 +167,7 @@ public class FrameworkBootstrapper {
         if( resolver == null ) {
             throw new SystemExitException( "Unknown boot artifact type '" + artifact.getType() + "' in file '" + file + "'", ExitCode.CONFIG_ERROR );
         } else {
-            resolver.resolve( this.home, artifact );
+            return resolver.resolve( this.home, artifact );
         }
     }
 }

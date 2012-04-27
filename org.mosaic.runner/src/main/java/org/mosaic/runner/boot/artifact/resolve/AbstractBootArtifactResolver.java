@@ -1,14 +1,15 @@
-package org.mosaic.runner.boot;
+package org.mosaic.runner.boot.artifact.resolve;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.LinkedList;
+import java.util.*;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
+import org.mosaic.runner.boot.artifact.BootArtifact;
+import org.mosaic.runner.boot.artifact.CannotInstallBootArtifactException;
 import org.mosaic.runner.util.BundleUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -37,7 +38,7 @@ public abstract class AbstractBootArtifactResolver implements BootArtifactResolv
         return this.bundleContext;
     }
 
-    protected final void installOrUpdateBundle( BootArtifact artifact, File bundleFile )
+    protected final Set<Bundle> installOrUpdateBundle( BootArtifact artifact, File bundleFile )
             throws CannotInstallBootArtifactException {
 
         String fileSymbolicName;
@@ -47,17 +48,17 @@ public abstract class AbstractBootArtifactResolver implements BootArtifactResolv
             JarFile jarFile = new JarFile( bundleFile, true, JarFile.OPEN_READ );
             Manifest manifest = jarFile.getManifest();
             if( manifest == null ) {
-                return;
+                return null;
             }
 
             Attributes mainAttributes = manifest.getMainAttributes();
             if( mainAttributes == null ) {
-                return;
+                return null;
             }
 
             fileSymbolicName = mainAttributes.getValue( "Bundle-SymbolicName" );
             if( isBlank( fileSymbolicName ) ) {
-                return;
+                return null;
             }
 
             try {
@@ -79,7 +80,7 @@ public abstract class AbstractBootArtifactResolver implements BootArtifactResolv
                 if( comparison < 0 ) {
 
                     LOG.debug( "Newer version of '{}' is already installed, skipping file '{}'", fileSymbolicName, bundleFile );
-                    return;
+                    return null;
 
                 } else if( comparison == 0 && !snapshot ) {
 
@@ -91,7 +92,7 @@ public abstract class AbstractBootArtifactResolver implements BootArtifactResolv
                     } else {
 
                         LOG.debug( "Boot bundle '{}' is already installed", BundleUtils.toString( bundle ) );
-                        return;
+                        return null;
 
                     }
 
@@ -110,7 +111,7 @@ public abstract class AbstractBootArtifactResolver implements BootArtifactResolv
                 bundle.update( new FileInputStream( bundleFile ) );
                 BundleStartLevel startLevel = bundle.adapt( BundleStartLevel.class );
                 startLevel.setStartLevel( 2 );
-                return;
+                return new HashSet<>( Arrays.asList( bundle ) );
 
             } else if( !bundles.isEmpty() ) {
 
@@ -127,6 +128,7 @@ public abstract class AbstractBootArtifactResolver implements BootArtifactResolv
             bundle.start();
             BundleStartLevel startLevel = bundle.adapt( BundleStartLevel.class );
             startLevel.setStartLevel( 2 );
+            return new HashSet<>( Arrays.asList( bundle ) );
 
         } catch( BundleException | FileNotFoundException e ) {
             throw new CannotInstallBootArtifactException( artifact, e );

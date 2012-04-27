@@ -1,4 +1,4 @@
-package org.mosaic.runner.boot;
+package org.mosaic.runner.boot.artifact;
 
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.mosaic.runner.util.SystemPropertyUtils;
