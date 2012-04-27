@@ -37,10 +37,19 @@ public abstract class BundleUtils {
             boolean match = true;
             if( filters != null && filters.length > 0 ) {
 
+                long bundleId = bundle.getBundleId();
                 String bundleName = bundle.getHeaders().get( Constants.BUNDLE_NAME );
                 String symbolicName = bundle.getSymbolicName();
                 match = false;
                 for( String arg : filters ) {
+                    try {
+                        if( Integer.parseInt( arg ) == bundleId ) {
+                            match = true;
+                            break;
+                        }
+                    } catch( NumberFormatException ignore ) {
+                    }
+
                     if( exact && ( bundleName.equalsIgnoreCase( arg ) || symbolicName.equalsIgnoreCase( arg ) ) ) {
                         match = true;
                         break;
