@@ -118,12 +118,12 @@ public class DataSourceManager {
         @Override
         public void run() {
             while( !this.stop ) {
+                scan();
                 try {
                     Thread.sleep( SCAN_INTERVAL );
                 } catch( InterruptedException e ) {
                     break;
                 }
-                scan();
             }
         }
     }
