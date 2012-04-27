@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Pattern;
 import javassist.*;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
@@ -51,8 +52,18 @@ public class LogWeaver implements WeavingHook {
 
     private static final Logger LOG = LoggerFactory.getLogger( LogWeaver.class );
 
-    private static final Set<String> IGNORED_BUNDLES = new HashSet<>( Arrays.asList(
-            "org.mosaic.api", "org.mosaic.server.api"
+    private static final Set<Pattern> IGNORED_BUNDLES = new HashSet<>( Arrays.asList(
+            Pattern.compile( "com\\.google\\.guava" ),
+            Pattern.compile( "commons\\-.*" ),
+            Pattern.compile( "joda\\.*" ),
+            Pattern.compile( "com\\.springsource\\..*" ),
+            Pattern.compile( "org\\.apache\\..*" ),
+            Pattern.compile( "org\\.eclipse\\..*" ),
+            Pattern.compile( "org\\.mosaic\\.api" ),
+            Pattern.compile( "org\\.mosaic\\.server\\.api" ),
+            Pattern.compile( "org\\.mosaic\\.server\\.boot" ),
+            Pattern.compile( "org\\.mosaic\\.server\\.transaction" ),
+            Pattern.compile( "org\\.springframework\\..*" )
     ) );
 
     private final String orgMosaicLoggingPackageVersion;
@@ -94,10 +105,15 @@ public class LogWeaver implements WeavingHook {
             // we mustn't weave classes from our bundle - will cause a circular class load
             return;
 
-        } else if( IGNORED_BUNDLES.contains( wovenClass.getBundleWiring().getBundle().getSymbolicName() ) ) {
+        } else {
 
-            // also never weave classes in the API bundles (causes many head-aches...)
-            return;
+            for( Pattern pattern : IGNORED_BUNDLES ) {
+                if( pattern.matcher( wovenClass.getBundleWiring().getRevision().getSymbolicName() ).matches() ) {
+
+                    // never weave classes from one of the ignores bundles
+                    return;
+                }
+            }
 
         }
 

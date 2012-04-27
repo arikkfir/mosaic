@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Pattern;
 import javassist.*;
 import org.mosaic.lifecycle.ContextRef;
 import org.mosaic.lifecycle.ServiceExport;
@@ -35,17 +36,20 @@ public class TransactionalWeaver implements WeavingHook {
 
     private static final String BEGIN_TX_CODE =
             "{\n" +
-            "   String $mosaicTxName = \"___TX_NAME___\";\n" +
-            "   org.mosaic.server.transaction.Transactions.begin( $mosaicTxName, this );\n" +
+            "   org.mosaic.logging.LoggerFactory.getLogger( this.getClass() ).debug( \"Starting transaction: ___TX_NAME___\", null );\n" +
+            "   org.mosaic.server.transaction.Transactions.begin( \"___TX_NAME___\", this );\n" +
             "}\n";
 
-    private static final String COMMIT_TX_CODE = "org.mosaic.server.transaction.Transactions.finish();";
+    private static final String COMMIT_TX_CODE =
+            "org.mosaic.logging.LoggerFactory.getLogger( this.getClass() ).debug( \"Committing transaction: ___TX_NAME___\", null );\n" +
+            "org.mosaic.server.transaction.Transactions.finish();";
 
     private static final String ROLLBACK_TX_CODE =
             "{\n" +
             "   if( $e instanceof org.springframework.transaction.CannotCreateTransactionException ) {\n" +
             "       throw $e;" +
             "   } else {\n" +
+            "       org.mosaic.logging.LoggerFactory.getLogger( this.getClass() ).debug( \"Rolling-back transaction: ___TX_NAME___\", null );\n;\n" +
             "       org.mosaic.server.transaction.Transactions.rollback();\n" +
             "       throw $e;\n" +
             "   };\n" +
@@ -53,11 +57,23 @@ public class TransactionalWeaver implements WeavingHook {
 
     private static final Logger LOG = LoggerFactory.getLogger( TransactionalWeaver.class );
 
-    private static final Set<String> IGNORED_BUNDLES = new HashSet<>( Arrays.asList(
-            "org.mosaic.api", "org.mosaic.server.api"
+    private static final Set<Pattern> IGNORED_BUNDLES = new HashSet<>( Arrays.asList(
+            Pattern.compile( "com\\.google\\.guava" ),
+            Pattern.compile( "commons\\-.*" ),
+            Pattern.compile( "joda\\.*" ),
+            Pattern.compile( "com\\.springsource\\..*" ),
+            Pattern.compile( "org\\.apache\\..*" ),
+            Pattern.compile( "org\\.eclipse\\..*" ),
+            Pattern.compile( "org\\.mosaic\\.api" ),
+            Pattern.compile( "org\\.mosaic\\.server\\.api" ),
+            Pattern.compile( "org\\.mosaic\\.server\\.boot" ),
+            Pattern.compile( "org\\.mosaic\\.server\\.transaction" ),
+            Pattern.compile( "org\\.springframework\\..*" )
     ) );
 
     private final String orgSpringframeworkTransactionPackageVersion;
+
+    private final String orgMosaicLoggingPackageVersion;
 
     private final String orgMosaicServerTransactionPackageVersion;
 
@@ -66,6 +82,7 @@ public class TransactionalWeaver implements WeavingHook {
     public TransactionalWeaver() {
         this.orgSpringframeworkTransactionPackageVersion = getBundle( TransactionStatus.class ).getVersion().toString();
         this.orgMosaicServerTransactionPackageVersion = getBundle( Transactions.class ).getVersion().toString();
+        this.orgMosaicLoggingPackageVersion = getBundle( LoggerFactory.class ).getVersion().toString();
     }
 
     @ContextRef
@@ -81,10 +98,15 @@ public class TransactionalWeaver implements WeavingHook {
             // we mustn't weave classes from our bundle - will cause a circular class load
             return;
 
-        } else if( IGNORED_BUNDLES.contains( wovenClass.getBundleWiring().getBundle().getSymbolicName() ) ) {
+        } else {
 
-            // also never weave classes in the API bundles (causes many head-aches...)
-            return;
+            for( Pattern pattern : IGNORED_BUNDLES ) {
+                if( pattern.matcher( wovenClass.getBundleWiring().getRevision().getSymbolicName() ).matches() ) {
+
+                    // never weave classes from one of the ignores bundles
+                    return;
+                }
+            }
 
         }
 
@@ -97,6 +119,7 @@ public class TransactionalWeaver implements WeavingHook {
             CtClass ctClass = instrument( createClassPool( wovenClass ), wovenClass );
             if( ctClass != null ) {
                 wovenClass.getDynamicImports().addAll( Arrays.asList(
+                        "org.mosaic.logging;version:=\"" + this.orgMosaicLoggingPackageVersion + "\",",
                         "org.mosaic.server.transaction;version:=\"" + this.orgSpringframeworkTransactionPackageVersion + "\",",
                         "org.springframework.transaction;version:=\"" + this.orgMosaicServerTransactionPackageVersion + "\""
                 ) );
@@ -104,6 +127,7 @@ public class TransactionalWeaver implements WeavingHook {
             }
 
         } catch( Exception e ) {
+            LOG.warn( "Weaving error occurred: {}", e.getMessage(), e );
             throw new WeavingException( "Error weaving class '" + wovenClass.getClassName() + "': " + e.getMessage(), e );
 
         } finally {
@@ -141,11 +165,11 @@ public class TransactionalWeaver implements WeavingHook {
 
                     // add code to commit transaction. this code runs after the actual method's source code, and
                     // assumes that everything went well (no exceptions). if exceptions occur, this code won't run
-                    method.insertAfter( COMMIT_TX_CODE );
+                    method.insertAfter( COMMIT_TX_CODE.replace( "___TX_NAME___", txName ) );
 
                     // add code that catches any exception, and rolls back the transaction, unless it hasn't started
                     // yet (checks for CannotCreateTransactionException)
-                    method.addCatch( ROLLBACK_TX_CODE, classPool.get( "java.lang.Exception" ), "$e" );
+                    method.addCatch( ROLLBACK_TX_CODE.replace( "___TX_NAME___", txName ), classPool.get( "java.lang.Exception" ), "$e" );
 
                     // remember that at-least one method was modified, so byte code will be returned to OSGi container
                     modified = true;
