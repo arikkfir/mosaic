@@ -32,20 +32,16 @@ public class BundleBootstrapper implements BundleActivator, SynchronousBundleLis
 
     private ServiceRegistration<BundleStatusHelper> helperReg;
 
-    public BundleBootstrapper( BundleContext bundleContext, OsgiSpringNamespacePlugin springNamespacePlugin ) {
-        this.bundleContext = bundleContext;
-        this.springNamespacePlugin = springNamespacePlugin;
-    }
-
     @Override
     public void start( BundleContext context ) throws Exception {
-        bundleContext.registerService( Home.class, new HomeService(), null );
+        this.bundleContext = context;
+        this.bundleContext.registerService( Home.class, new HomeService(), null );
 
-        this.springNamespacePlugin = new OsgiSpringNamespacePlugin( bundleContext );
+        this.springNamespacePlugin = new OsgiSpringNamespacePlugin( this.bundleContext );
         this.springNamespacePlugin.open();
 
         this.logWeaver = new LogWeaver();
-        this.logWeaver.open( bundleContext );
+        this.logWeaver.open( this.bundleContext );
 
         this.helperReg = this.bundleContext.registerService( BundleStatusHelper.class, this, null );
         this.bundleContext.addBundleListener( this );
@@ -75,6 +71,8 @@ public class BundleBootstrapper implements BundleActivator, SynchronousBundleLis
 
         this.springNamespacePlugin.close();
         this.springNamespacePlugin = null;
+
+        this.bundleContext = null;
     }
 
     @Override
