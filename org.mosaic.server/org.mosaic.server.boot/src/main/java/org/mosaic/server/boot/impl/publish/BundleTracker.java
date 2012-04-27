@@ -48,6 +48,7 @@ public class BundleTracker {
     }
 
     public void track() throws Exception {
+        LOG.info( "Tracking bundle '{}'", BundleUtils.toString( this.bundle ) );
 
         // initialize data structures
         this.requirements = new LinkedHashSet<>();
@@ -166,6 +167,7 @@ public class BundleTracker {
         if( !this.publishing ) {
             this.publishing = true;
             try {
+                LOG.info( "Publishing bundle '{}'", BundleUtils.toString( this.bundle ) );
                 BundleApplicationContext applicationContext = new BundleApplicationContext( this.bundle, this.osgiSpringNamespacePlugin );
                 applicationContext.getBeanFactory().addBeanPostProcessor( new RequirementTargetsBeanPostProcessor() );
                 applicationContext.refresh();
@@ -175,7 +177,6 @@ public class BundleTracker {
                 }
 
                 this.applicationContext = applicationContext;
-                LOG.info( "Published bundle '{}'", BundleUtils.toString( this.bundle ) );
 
             } catch( Exception e ) {
 
