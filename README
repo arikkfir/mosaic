@@ -1,6 +1,29 @@
 [ Tasks ]
 
 WISH: Missing requirements can be implemented using OSGi "Find Listeners" (see OSGi Core specification chapter 55)
-TODO: user loaders should be implemented using method endpoints, not a UserLoader interface
-TODO: start a 'server' framework instance, and another 'deploy' instance whose system bundle export all packages from the 'server' instance
 TODO: create an XML SCHEMA file (XSD) for HTTP application files
+
+[ Web support ]
+
+- Handlers implemented with @Service, @Controller or Handler services
+- Security:
+    - authentication should be implemented with @UserRepository methods
+        - @UserRepository has @Filter to only support certain apps (e.g. "app.params['global.users'] == true")
+    - Handlers can throw AccessDeniedException
+- @Service handlers are wrapped in ServiceHandler
+    - passes ServiceResponse return values on without modifications
+        - except binding errors which ARE added to the response
+    - wraps return values from successful invocations into ServiceResponse objects
+    - translates AccessDeniedException into a ServiceResponse with "access denied" message
+    - translates any other Exception into a ServiceResponse with "internal error" message
+- @Controller handlers are wrapped in a ControllerHandler
+    - currently has no real function
+- @Marshaller handlers will translate return values from other handlers
+    - each @Marshaller needs to declare the java types it supports
+    - support for one or more content types ("Accept" header)
+- @ExceptionHandlers
+    - one that translates AccessDeniedException into HTTP 401/403 errors
+    - one that translates any other exception into HTTP 500 error
+    - other HTTP exceptions? (method not allowed?)
+- @Interceptors will intercept URLs
+    - before and after the actual handler wrapper (so AccessDeniedException from @Service will not be seen in an interceptor for instance)
