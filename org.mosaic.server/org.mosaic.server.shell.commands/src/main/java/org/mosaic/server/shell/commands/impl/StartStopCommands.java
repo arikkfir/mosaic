@@ -3,6 +3,7 @@ package org.mosaic.server.shell.commands.impl;
 import java.io.IOException;
 import java.util.List;
 import org.mosaic.describe.Description;
+import org.mosaic.osgi.util.BundleUtils;
 import org.mosaic.server.shell.Args;
 import org.mosaic.server.shell.Option;
 import org.mosaic.server.shell.ShellCommand;
@@ -113,7 +114,16 @@ public class StartStopCommands extends AbstractCommand {
         if( console.ask( "Resolve these bundles? [Y/n]", 'y', 'n' ) == 'y' ) {
             Bundle systemBundle = getBundleContext().getBundle( 0 );
             FrameworkWiring frameworkWiring = systemBundle.adapt( FrameworkWiring.class );
-            frameworkWiring.resolveBundles( matches );
+            boolean result = frameworkWiring.resolveBundles( matches );
+            if( result ) {
+                console.println( "Done!" );
+            } else {
+                for( Bundle bundle : matches ) {
+                    if( bundle.getState() != RESOLVED && bundle.getState() != ACTIVE ) {
+                        console.print( "Bundle '" ).print( BundleUtils.toString( bundle ) ).println( "' could not be resolved." );
+                    }
+                }
+            }
         }
     }
 
