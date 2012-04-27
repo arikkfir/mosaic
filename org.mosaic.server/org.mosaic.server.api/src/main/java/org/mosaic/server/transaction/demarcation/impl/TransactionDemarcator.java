@@ -91,24 +91,20 @@ public class TransactionDemarcator {
         }
 
         private void bind() {
-            LoggerFactory.getLogger( "org.mosaic.server.transaction" ).debug( "Starting transaction: {}", this.transactionName );
             this.transaction = this.transactionManager.begin( this.transactionName );
             this.oldTransactionInfo = transactionInfoHolder.get();
             transactionInfoHolder.set( this );
         }
 
         private void rollback() {
-            LoggerFactory.getLogger( "org.mosaic.server.transaction" ).debug( "Rolling back transaction: {}", this.transactionName );
             this.transactionManager.rollback( this.transaction );
         }
 
         private void commit() {
-            LoggerFactory.getLogger( "org.mosaic.server.transaction" ).debug( "Committing transaction: {}", this.transactionName );
             this.transactionManager.commit( this.transaction );
         }
 
         private void restore() {
-            LoggerFactory.getLogger( "org.mosaic.server.transaction" ).debug( "Closing transaction: {}", this.transactionName );
             transactionInfoHolder.set( this.oldTransactionInfo );
             this.bundleContext.ungetService( this.transactionManagerRef );
         }
