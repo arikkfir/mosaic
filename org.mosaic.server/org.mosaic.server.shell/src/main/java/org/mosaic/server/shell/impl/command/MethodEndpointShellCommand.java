@@ -90,15 +90,11 @@ public class MethodEndpointShellCommand implements ShellCommand {
 
         } catch( InvocationTargetException e ) {
             Throwable cause = e.getCause();
-            Exception ex = e;
             if( cause instanceof ExitSessionException ) {
                 throw ( ExitSessionException ) cause;
             }
-            if( cause instanceof Exception ) {
-                ex = ( Exception ) cause;
-            }
-            LOG.error( "Error executing command '{}': {} ({})", this.name, e.getMessage(), this.endpoint, ex );
-            throw ex;
+            LOG.error( "Error executing command '{}': {} ({})", this.name, e.getMessage(), this.endpoint, e );
+            throw e;
 
         } catch( Exception e ) {
             LOG.error( "Error executing command '{}': {} ({})", this.name, e.getMessage(), this.endpoint, e );
