@@ -31,6 +31,7 @@
     <!-- 3rd party logs we probably don't want to see by default -->
     <logger name="com.jolbox" level="WARN"/>
     <logger name="org.apache.sshd" level="WARN"/>
+    <logger name="org.eclipse" level="WARN"/>
     <logger name="org.springframework" level="WARN"/>
     <logger name="org.mosaic.server.boot.impl.publish.spring.BundleApplicationContext" level="WARN"/>
     <logger name="org.mosaic.server.shell.impl.session.MosaicServerSession" level="WARN"/>
