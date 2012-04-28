@@ -11,19 +11,29 @@ import org.mosaic.server.shell.ShellCommand;
 import org.mosaic.server.shell.console.Console;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceReference;
-import org.osgi.framework.wiring.BundleCapability;
-import org.osgi.framework.wiring.BundleRequirement;
-import org.osgi.framework.wiring.BundleRevision;
-import org.osgi.framework.wiring.BundleRevisions;
+import org.osgi.framework.Version;
+import org.osgi.framework.wiring.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import static org.apache.commons.lang.StringUtils.repeat;
 import static org.mosaic.osgi.util.BundleUtils.findMatchingBundles;
+import static org.osgi.framework.Constants.FILTER_DIRECTIVE;
+import static org.osgi.framework.Constants.VERSION_ATTRIBUTE;
+import static org.osgi.framework.wiring.BundleRevision.PACKAGE_NAMESPACE;
 
 /**
  * @author arik
  */
 @Component
 public class InspectBundleCommand extends AbstractCommand {
+
+    private InspectionListenerHook listenerHook;
+
+    @Autowired
+    public void setListenerHook( InspectionListenerHook listenerHook ) {
+        this.listenerHook = listenerHook;
+    }
 
     @Description( "Inspect given bundle" )
     @ShellCommand( "inspect" )
@@ -41,17 +51,13 @@ public class InspectBundleCommand extends AbstractCommand {
                                @Description( "show registered and used services" )
                                boolean services,
 
-                               @Option( alias = "c" )
-                               @Description( "show bundle capabilities" )
-                               boolean capabilities,
-
-                               @Option( alias = "r" )
-                               @Description( "show bundle requirements" )
-                               boolean requirements,
-
                                @Option( alias = "w" )
                                @Description( "show bundle wires" )
                                boolean wires,
+
+                               @Option( alias = "p" )
+                               @Description( "show package imports/exports" )
+                               boolean packages,
 
                                @Args
                                String... filters
@@ -65,182 +71,241 @@ public class InspectBundleCommand extends AbstractCommand {
 
         } else {
 
+            boolean first = true;
             for( Bundle bundle : matches ) {
-                showBundle( console, bundle, headers, services, capabilities, requirements, wires );
-            }
+                BundleStatus bundleStatus = getBundleStatus( bundle );
 
-        }
-    }
-
-    private void showBundle( Console console,
-                             Bundle bundle,
-                             boolean headers,
-                             boolean services,
-                             boolean capabilities,
-                             boolean requirements,
-                             boolean wires )
-            throws IOException {
-        BundleStatus status = getBundleStatus( bundle );
-
-        console.println();
-        console.println();
-        showGeneralInfo( console, bundle, headers, status );
-
-        console.println();
-        showRevisions( console, bundle, capabilities, requirements, wires );
-
-        if( services ) {
-            showServices( console, bundle );
-        }
-
-        console.println();
-        console.println();
-    }
-
-    private void showGeneralInfo( Console console, Bundle bundle, boolean headers, BundleStatus status )
-            throws IOException {
-        console.println( "General information:" );
-        console.println( "====================" );
-        console.print( "Bundle ID:     " ).println( bundle.getBundleId() );
-        console.print( "Symbolic name: " ).println( bundle.getSymbolicName() );
-        console.print( "Version:       " ).println( bundle.getVersion() );
-        console.print( "State:         " ).println( status.getState() );
-        console.print( "Last modified: " ).println( new Date( bundle.getLastModified() ) );
-        console.print( "Location:      " ).println( bundle.getLocation() );
-
-        if( headers ) {
-            console.println();
-            console.println( "Headers:" );
-            console.println( "---------------------" );
-            Dictionary<String, String> bundleHeaders = bundle.getHeaders();
-            Enumeration<String> keys = bundleHeaders.keys();
-            while( keys.hasMoreElements() ) {
-                String header = keys.nextElement();
-                String value = bundleHeaders.get( header );
-                console.print( header ).print( ": " ).println( value );
-            }
-        }
-
-        Collection<String> unsatisfiedRequirements = status.getUnsatisfiedRequirements();
-        if( unsatisfiedRequirements != null && !unsatisfiedRequirements.isEmpty() ) {
-            console.println();
-            console.println( "Missing requirements:" );
-            console.println( "---------------------" );
-            for( String requirement : unsatisfiedRequirements ) {
-                console.print( "  " ).println( requirement );
-            }
-        }
-    }
-
-    private void showRevisions( Console console,
-                                Bundle bundle,
-                                boolean capabilities,
-                                boolean requirements,
-                                boolean wires ) throws IOException {
-        console.println( "Bundle revisions (first is latest):" );
-        console.println( "-----------------------------------" );
-        boolean first = true;
-        for( BundleRevision revision : bundle.adapt( BundleRevisions.class ).getRevisions() ) {
-            if( !first ) {
-                console.println( "-------------------------------------------------" );
-            } else {
-                first = false;
-            }
-            showRevision( console, capabilities, requirements, wires, revision );
-        }
-    }
-
-    private void showRevision( Console console,
-                               boolean capabilities,
-                               boolean requirements,
-                               boolean wires,
-                               BundleRevision revision ) throws IOException {
-        console.print( "Symbolic name: " ).println( revision.getSymbolicName() );
-        console.print( "Version:       " ).println( revision.getVersion() );
-        if( capabilities ) {
-            console.println( "Capabilities:  " );
-            for( BundleCapability capability : revision.getDeclaredCapabilities( null ) ) {
-                console.print( "  " ).println( capability );
-            }
-        }
-        if( requirements ) {
-            console.println( "Requirements:  " );
-            for( BundleRequirement requirement : revision.getDeclaredRequirements( null ) ) {
-                console.print( "  " ).println( requirement );
-            }
-        }
-/*
-        if( wires ) {
-            BundleWiring wiring = revision.getWiring();
-            if( wiring.isInUse() ) {
-                console.println( "Wires:         " );
-                List<BundleWire> providedWires = wiring.getProvidedWires( null );
-                if( providedWires != null ) {
-                    for( BundleWire wire : providedWires ) {
-                        //FEATURE 4/14/12: show wire
-                    }
+                if( !first ) {
+                    console.println( repeat( "*", console.getWidth() - 1 ) );
+                } else {
+                    console.println();
+                    first = false;
                 }
-                List<BundleWire> requiredWires = wiring.getRequiredWires( null );
-                if( requiredWires != null ) {
-                    for( BundleWire wire : requiredWires ) {
-                        //FEATURE 4/14/12: show wire
-                    }
+
+                showGeneralInfo( console, bundle, bundleStatus );
+
+                if( headers ) {
+                    showHeaders( console, bundle );
                 }
+
+                if( services ) {
+                    showServices( console, bundle );
+                }
+
+                if( wires ) {
+                    showRequirements( console, bundle );
+                    showCapabilities( console, bundle );
+                }
+
+                if( packages ) {
+                    showImportedPackages( console, bundle );
+                    showProvidedPackages( console, bundle );
+                }
+
+                showMissingRequirements( console, bundleStatus );
             }
+
         }
-*/
+    }
+
+    private void showGeneralInfo( Console console, Bundle bundle, BundleStatus status ) throws IOException {
+        console.println( "GENERAL INFORMATION" );
+        console.print( "        Bundle ID:     " ).println( bundle.getBundleId() );
+        console.print( "        Symbolic name: " ).println( bundle.getSymbolicName() );
+        console.print( "        Version:       " ).println( bundle.getVersion() );
+        console.print( "        State:         " ).println( status.getState() );
+        console.print( "        Last modified: " ).println( new Date( bundle.getLastModified() ) );
+        console.print( "        Location:      " ).println( bundle.getLocation() );
+    }
+
+    private void showHeaders( Console console, Bundle bundle ) throws IOException {
+        console.println( "HEADERS" );
+        Dictionary<String, String> bundleHeaders = bundle.getHeaders();
+        Enumeration<String> keys = bundleHeaders.keys();
+        while( keys.hasMoreElements() ) {
+            String header = keys.nextElement();
+            String value = bundleHeaders.get( header );
+            console.print( "        " ).print( header ).print( ": " ).println( value );
+        }
     }
 
     private void showServices( Console console, Bundle bundle ) throws IOException {
         ServiceReference<?>[] providedServices = bundle.getRegisteredServices();
         if( providedServices != null ) {
-            console.println();
-            console.println( "Provided services:" );
-            console.println( "------------------" );
+            console.println( "REGISTERED SERVICES" );
+            boolean first = true;
             for( ServiceReference<?> reference : providedServices ) {
+                if( first ) {
+                    first = false;
+                } else {
+                    console.println( "        ---------------------------------------------------------------------------------" );
+                }
                 for( String propertyKey : reference.getPropertyKeys() ) {
                     Object value = reference.getProperty( propertyKey );
                     if( value instanceof String[] ) {
                         value = Arrays.asList( ( String[] ) value );
                     }
-                    console.print( "  " ).print( propertyKey ).print( ": " ).println( value );
+                    console.print( "        " ).print( propertyKey ).print( ": " ).println( value );
                 }
-                console.println( "  -----------------------------" );
                 Bundle[] usingBundles = reference.getUsingBundles();
                 if( usingBundles != null ) {
                     for( Bundle usingBundle : usingBundles ) {
-                        console.print( "  Used by: " ).println( BundleUtils.toString( usingBundle ) );
+                        console.print( "        Used by: " ).println( BundleUtils.toString( usingBundle ) );
                     }
                 } else {
-                    console.println( "  Not used by any bundle." );
+                    console.println( "        Not used by any bundle." );
                 }
-                console.println();
             }
         }
 
         ServiceReference<?>[] servicesInUse = bundle.getServicesInUse();
         if( servicesInUse != null ) {
-            console.println();
-            console.println( "Used services:" );
-            console.println( "--------------" );
+            console.println( "IMPORTED SERVICES" );
             for( ServiceReference<?> reference : servicesInUse ) {
                 for( String propertyKey : reference.getPropertyKeys() ) {
                     Object value = reference.getProperty( propertyKey );
                     if( value instanceof String[] ) {
                         value = Arrays.asList( ( String[] ) value );
                     }
-                    console.print( "  " ).print( propertyKey ).print( ": " ).println( value );
+                    console.print( "        " ).print( propertyKey ).print( ": " ).println( value );
                 }
-                console.println( "  -----------------------------" );
                 Bundle providingBundle = reference.getBundle();
                 if( providingBundle != null ) {
-                    console.print( "  Provided by: " ).println( BundleUtils.toString( providingBundle ) );
+                    console.print( "        Provided by: " ).println( BundleUtils.toString( providingBundle ) );
                 } else {
-                    console.println( "  Service already unregistered." );
+                    console.println( "        Service already unregistered." );
                 }
-                console.println();
+            }
+        }
+
+        List<String> requirements = this.listenerHook.getServiceRequirements( bundle );
+        if( requirements != null ) {
+            console.println( "LISTENS FOR SERVICES" );
+            for( String requirement : requirements ) {
+                console.print( "        " ).println( requirement );
             }
         }
     }
 
+    private void showProvidedPackages( Console console, Bundle bundle ) throws IOException {
+        BundleRevision revision = bundle.adapt( BundleRevision.class );
+        BundleWiring wiring = bundle.adapt( BundleWiring.class );
+
+        Map<BundleCapability, Collection<BundleWire>> allPackageWires = new HashMap<>( 30 );
+
+        List<BundleCapability> packageCapabilities = revision.getDeclaredCapabilities( PACKAGE_NAMESPACE );
+        if( packageCapabilities != null ) {
+            for( BundleCapability capability : packageCapabilities ) {
+                allPackageWires.put( capability, new LinkedList<BundleWire>() );
+            }
+        }
+
+        List<BundleWire> providedPackageWires = wiring.getProvidedWires( PACKAGE_NAMESPACE );
+        for( BundleWire wire : providedPackageWires ) {
+            BundleCapability capability = wire.getCapability();
+            allPackageWires.get( capability ).add( wire );
+        }
+
+        if( allPackageWires.isEmpty() ) {
+            console.println( "NO PACKAGE EXPORTS" );
+        } else {
+            console.println( "PACKAGE EXPORTS" );
+            for( Map.Entry<BundleCapability, Collection<BundleWire>> entry : allPackageWires.entrySet() ) {
+                BundleCapability capability = entry.getKey();
+                Object packageName = capability.getAttributes().get( PACKAGE_NAMESPACE );
+                Object version = capability.getAttributes().get( VERSION_ATTRIBUTE );
+                console.print( "        " ).print( packageName ).print( " [" ).print( version ).println( "]" );
+
+                Collection<BundleWire> importers = entry.getValue();
+                if( importers.isEmpty() ) {
+                    console.println( "            Not imported by any other bundle." );
+                } else {
+                    for( BundleWire wire : importers ) {
+                        Bundle importer = wire.getRequirerWiring().getBundle();
+                        console.print( "            Imported by '" ).print( BundleUtils.toString( importer ) ).println( "'" );
+                    }
+                }
+            }
+        }
+    }
+
+    private void showImportedPackages( Console console, Bundle bundle ) throws IOException {
+        BundleRevision revision = bundle.adapt( BundleRevision.class );
+        BundleWiring wiring = bundle.adapt( BundleWiring.class );
+
+        Map<BundleRequirement, BundleWire> allPackageWires = new HashMap<>( 30 );
+
+        List<BundleRequirement> packageRequirements = revision.getDeclaredRequirements( PACKAGE_NAMESPACE );
+        if( packageRequirements != null ) {
+            for( BundleRequirement requirement : packageRequirements ) {
+                allPackageWires.put( requirement, null );
+            }
+        }
+
+        List<BundleWire> requiredWires = wiring.getRequiredWires( PACKAGE_NAMESPACE );
+        for( BundleWire wire : requiredWires ) {
+            allPackageWires.put( wire.getRequirement(), wire );
+        }
+
+        if( allPackageWires.isEmpty() ) {
+            console.println( "NO PACKAGE IMPORTS" );
+        } else {
+            console.println( "PACKAGE IMPORTS" );
+            for( Map.Entry<BundleRequirement, BundleWire> entry : allPackageWires.entrySet() ) {
+                BundleRequirement requirement = entry.getKey();
+
+                console.print( "        " ).print( requirement.getDirectives().get( FILTER_DIRECTIVE ) );
+
+                Object resolution = requirement.getDirectives().get( "resolution" );
+                if( resolution != null && resolution.toString().equalsIgnoreCase( "optional" ) ) {
+                    console.print( " (optional)" );
+                }
+                console.println().print( "            -> " );
+
+                BundleWire wire = entry.getValue();
+                if( wire == null ) {
+
+                    console.println( "*** UNRESOLVED ***" );
+
+                } else {
+                    BundleWiring providerWiring = wire.getProviderWiring();
+                    String providerSymbolicName = providerWiring.getRevision().getSymbolicName();
+                    Version providerVersion = providerWiring.getRevision().getVersion();
+                    Object providedPackageName = wire.getCapability().getAttributes().get( PACKAGE_NAMESPACE );
+                    Object providedPackageVersion = wire.getCapability().getAttributes().get( VERSION_ATTRIBUTE );
+                    console.print( providedPackageName )
+                           .print( " [" ).print( providedPackageVersion ).print( "] " )
+                           .print( " in " ).print( providerSymbolicName ).print( "@" ).print( providerVersion )
+                           .println();
+                }
+            }
+        }
+    }
+
+    private void showRequirements( Console console, Bundle bundle ) throws IOException {
+        BundleRevision revision = bundle.adapt( BundleRevision.class );
+
+        console.println( "DECLARED REQUIREMENTS" );
+        for( BundleRequirement requirement : revision.getDeclaredRequirements( null ) ) {
+            console.print( "        " ).println( requirement );
+        }
+    }
+
+    private void showCapabilities( Console console, Bundle bundle ) throws IOException {
+        BundleRevision revision = bundle.adapt( BundleRevision.class );
+        console.println( "DECLARED CAPABILITIES" );
+        for( BundleCapability capability : revision.getDeclaredCapabilities( null ) ) {
+            console.print( "        " ).println( capability );
+        }
+    }
+
+    private void showMissingRequirements( Console console, BundleStatus status ) throws IOException {
+        Collection<String> unsatisfiedRequirements = status.getUnsatisfiedRequirements();
+        if( unsatisfiedRequirements != null && !unsatisfiedRequirements.isEmpty() ) {
+            console.println( "MISSING REQUIREMENTS" );
+            for( String requirement : unsatisfiedRequirements ) {
+                console.print( "        " ).println( requirement );
+            }
+        }
+    }
 }

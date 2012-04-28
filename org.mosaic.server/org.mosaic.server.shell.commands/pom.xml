@@ -56,6 +56,13 @@
             <groupId>org.springframework</groupId>
             <artifactId>org.springframework.context</artifactId>
         </dependency>
+        <!-- ============================================================ -->
+        <!-- Commons lang                                                 -->
+        <!-- ============================================================ -->
+        <dependency>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+        </dependency>
     </dependencies>
 
     <dependencyManagement>
