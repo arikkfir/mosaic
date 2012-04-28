@@ -28,10 +28,10 @@
 
                         <!-- no need to import jetty since we're embedding it -->
                         <Import-Package>
+                            org.mosaic.web;version="[1.0,1.1)",
+                            javax.servlet*;version="2.6",
                             !org.eclipse.jetty*,
                             !org.mortbay*,
-                            javax.servlet*;version="2.6",
-                            org.mosaic.web;version="[1.0,1.1)",
                             *
                         </Import-Package>
                     </instructions>
