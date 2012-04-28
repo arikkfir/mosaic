@@ -2,7 +2,9 @@ package org.mosaic.server.transaction.impl;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.regex.Pattern;
 import javassist.*;
 import org.mosaic.lifecycle.ContextRef;
@@ -71,8 +73,6 @@ public class TransactionalWeaver implements WeavingHook {
 
     private final String orgMosaicServerTransactionPackageVersion;
 
-    private final Map<Bundle, ClassPool> pools = new WeakHashMap<>();
-
     private BundleContext bundleContext;
 
     public TransactionalWeaver() {
@@ -106,45 +106,35 @@ public class TransactionalWeaver implements WeavingHook {
 
         }
 
-        // prevent concurrent use of class pools
-        synchronized( this.pools ) {
+        // javassist uses thread context class-loader - set it to weaved bundle's class loader
+        ClassLoader previousTCCL = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader( wovenClass.getBundleWiring().getClassLoader() );
+        try {
 
-            // javassist uses thread context class-loader - set it to weaved bundle's class loader
-            ClassLoader previousTCCL = Thread.currentThread().getContextClassLoader();
-            Thread.currentThread().setContextClassLoader( wovenClass.getBundleWiring().getClassLoader() );
-            try {
-
-                // instrument the class if it has @Transactional methods; if so, it will be returned to OSGi container
-                CtClass ctClass = instrument( createClassPool( wovenClass ), wovenClass );
-                if( ctClass != null ) {
-                    wovenClass.getDynamicImports().addAll( Arrays.asList(
-                            "org.mosaic.logging;version:=\"" + this.orgMosaicLoggingPackageVersion + "\",",
-                            "org.mosaic.server.transaction;version:=\"" + this.orgSpringframeworkTransactionPackageVersion + "\",",
-                            "org.springframework.transaction;version:=\"" + this.orgMosaicServerTransactionPackageVersion + "\""
-                    ) );
-                    wovenClass.setBytes( ctClass.toBytecode() );
-                }
-
-            } catch( Exception e ) {
-                LoggerFactory.getLogger( wovenClass.getClassName() ).error( "Weaving error occurred: {}", e.getMessage(), e );
-                throw new WeavingException( "Error weaving class '" + wovenClass.getClassName() + "': " + e.getMessage(), e );
-
-            } finally {
-                Thread.currentThread().setContextClassLoader( previousTCCL );
+            // instrument the class if it has @Transactional methods; if so, it will be returned to OSGi container
+            CtClass ctClass = instrument( createClassPool( wovenClass ), wovenClass );
+            if( ctClass != null ) {
+                wovenClass.getDynamicImports().addAll( Arrays.asList(
+                        "org.mosaic.logging;version:=\"" + this.orgMosaicLoggingPackageVersion + "\",",
+                        "org.mosaic.server.transaction;version:=\"" + this.orgSpringframeworkTransactionPackageVersion + "\",",
+                        "org.springframework.transaction;version:=\"" + this.orgMosaicServerTransactionPackageVersion + "\""
+                ) );
+                wovenClass.setBytes( ctClass.toBytecode() );
             }
 
+        } catch( Exception e ) {
+            LoggerFactory.getLogger( wovenClass.getClassName() ).error( "Weaving error occurred: {}", e.getMessage(), e );
+            throw new WeavingException( "Error weaving class '" + wovenClass.getClassName() + "': " + e.getMessage(), e );
+
+        } finally {
+            Thread.currentThread().setContextClassLoader( previousTCCL );
         }
     }
 
     private ClassPool createClassPool( WovenClass wovenClass ) {
-        Bundle bundle = wovenClass.getBundleWiring().getBundle();
-        ClassPool pool = this.pools.get( bundle );
-        if( pool == null ) {
-            pool = new ClassPool( false );
-            pool.appendClassPath( new LoaderClassPath( wovenClass.getBundleWiring().getClassLoader() ) );
-            pool.appendClassPath( new LoaderClassPath( getClass().getClassLoader() ) );
-            this.pools.put( bundle, pool );
-        }
+        ClassPool pool = new ClassPool( false );
+        pool.appendClassPath( new LoaderClassPath( wovenClass.getBundleWiring().getClassLoader() ) );
+        pool.appendClassPath( new LoaderClassPath( getClass().getClassLoader() ) );
         return pool;
     }
 
