@@ -237,7 +237,7 @@ public class HttpServerImpl implements HttpServer {
         threadPool.setMaxStopTimeMs( i( "jetty.thread.pool.max.stop.time.millis", 0 ) );
         threadPool.setMaxThreads( i( "jetty.thread.pool.max.threads", 500 ) );
         threadPool.setMinThreads( i( "jetty.thread.pool.min.threads", 1 ) );
-        threadPool.setName( "com.infolinks.rinku.server.jetty" );
+        threadPool.setName( "org.mosaic.server.jetty" );
         return threadPool;
     }
 
