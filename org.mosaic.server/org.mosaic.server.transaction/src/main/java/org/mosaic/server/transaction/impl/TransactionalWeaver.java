@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 import javassist.*;
+import org.mosaic.describe.Rank;
 import org.mosaic.lifecycle.ContextRef;
 import org.mosaic.lifecycle.ServiceExport;
 import org.mosaic.logging.LoggerFactory;
@@ -29,7 +30,8 @@ import static org.osgi.framework.FrameworkUtil.getBundle;
  */
 @SuppressWarnings( "NullableProblems" )
 @Component
-@ServiceExport( value = WeavingHook.class, ranking = -100 )
+@Rank( -100 )
+@ServiceExport( WeavingHook.class )
 public class TransactionalWeaver implements WeavingHook {
 
     private static final String BEGIN_TX_CODE =

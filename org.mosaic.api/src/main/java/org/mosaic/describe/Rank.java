@@ -1,4 +1,4 @@
-package org.mosaic.lifecycle;
+package org.mosaic.describe;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -9,9 +9,9 @@ import java.lang.annotation.Target;
  * @author arik
  */
 @Retention( RetentionPolicy.RUNTIME )
-@Target( ElementType.TYPE )
-public @interface ServiceExport {
+@Target( { ElementType.TYPE, ElementType.METHOD } )
+public @interface Rank {
 
-    Class<?> value();
+    int value() default 0;
 
 }

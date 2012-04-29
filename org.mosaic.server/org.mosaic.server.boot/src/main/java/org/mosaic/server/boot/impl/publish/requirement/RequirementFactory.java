@@ -3,6 +3,7 @@ package org.mosaic.server.boot.impl.publish.requirement;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.*;
+import org.mosaic.describe.Rank;
 import org.mosaic.lifecycle.*;
 import org.mosaic.server.boot.impl.publish.BundleTracker;
 import org.mosaic.server.boot.impl.publish.spring.BundleBeanFactory;
@@ -10,6 +11,7 @@ import org.mosaic.server.boot.impl.publish.spring.OsgiSpringNamespacePlugin;
 import org.mosaic.server.boot.impl.publish.spring.SpringUtils;
 import org.osgi.framework.Bundle;
 import org.springframework.core.MethodParameter;
+import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.ReflectionUtils;
 
 import static org.springframework.core.GenericCollectionTypeResolver.getCollectionParameterType;
@@ -44,7 +46,12 @@ public class RequirementFactory {
                 // detect service classes for registration
                 ServiceExport exportAnn = beanClass.getAnnotation( ServiceExport.class );
                 if( exportAnn != null ) {
-                    requirements.add( new ServiceExportRequirement( this.tracker, beanDefinitionName, exportAnn.value(), exportAnn.ranking() ) );
+                    int rank = 0;
+                    Rank rankAnn = AnnotationUtils.findAnnotation( beanClass, Rank.class );
+                    if( rankAnn != null ) {
+                        rank = rankAnn.value();
+                    }
+                    requirements.add( new ServiceExportRequirement( this.tracker, beanDefinitionName, exportAnn.value(), rank ) );
                 }
 
                 // detect class endpoints
