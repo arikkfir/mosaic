@@ -1,6 +1,7 @@
 #
 # Mosaic bundles
 #
+file:${project.home}/org.mosaic.admin/target/*.jar
 file:${project.home}/org.mosaic.api/target/*.jar
 file:${project.home}/org.mosaic.server/org.mosaic.server.api/target/*.jar
 file:${project.home}/org.mosaic.server/org.mosaic.server.boot/target/*.jar
@@ -8,18 +9,10 @@ file:${project.home}/org.mosaic.server/org.mosaic.server.config/target/*.jar
 file:${project.home}/org.mosaic.server/org.mosaic.server.shell/target/*.jar
 file:${project.home}/org.mosaic.server/org.mosaic.server.shell.commands/target/*.jar
 file:${project.home}/org.mosaic.server/org.mosaic.server.transaction/target/*.jar
-#${project.home}/org.mosaic.test/org.mosaic.test.tx/target:*.jar
-#${project.home}/org.mosaic.admin/target:*.jar
-#${project.home}/org.mosaic.server/org.mosaic.server.web/org.mosaic.server.web.application/target:*.jar
-#${project.home}/org.mosaic.server/org.mosaic.server.web/org.mosaic.server.web.dispatcher/target:*.jar
-#${project.home}/org.mosaic.server/org.mosaic.server.web/org.mosaic.server.web.jetty/target:*.jar
-
-#
-# Felix
-#
-#mvn:org.apache.felix:org.apache.felix.gogo.command:0.12.0
-#mvn:org.apache.felix:org.apache.felix.gogo.runtime:0.10.0
-#mvn:org.apache.felix:org.apache.felix.gogo.shell:0.10.0
+file:${project.home}/org.mosaic.server/org.mosaic.server.web/org.mosaic.server.web.application/target/*.jar
+file:${project.home}/org.mosaic.server/org.mosaic.server.web/org.mosaic.server.web.dispatcher/target/*.jar
+file:${project.home}/org.mosaic.server/org.mosaic.server.web/org.mosaic.server.web.jetty/target/*.jar
+file:${project.home}/org.mosaic.test/org.mosaic.test.tx/target/*.jar
 
 #
 # Spring Framework bundles required by the mosaic boot bundle (the rest are in the 'server' directory)
@@ -38,10 +31,11 @@ mvn:org.springframework:org.springframework.web:3.1.1.RELEASE
 #
 # Utilities
 #
-mvn:joda-time:joda-time:2.1
-mvn:org.aopalliance:com.springsource.org.aopalliance:1.0.0
-mvn:org.slf4j:jcl-over-slf4j:1.6.4
-mvn:commons-codec:commons-codec:1.6
-mvn:mysql:mysql-connector-java:5.1.19
-mvn:org.eclipse.jetty.orbit:javax.servlet:3.0.0.v201112011016
 mvn:com.googlecode.guava-osgi:guava-osgi:11.0.1
+mvn:commons-codec:commons-codec:1.6
+mvn:commons-lang:commons-lang:2.6
+mvn:joda-time:joda-time:2.1
+mvn:mysql:mysql-connector-java:5.1.19
+mvn:org.aopalliance:com.springsource.org.aopalliance:1.0.0
+mvn:org.eclipse.jetty.orbit:javax.servlet:3.0.0.v201112011016
+mvn:org.slf4j:jcl-over-slf4j:1.6.4
