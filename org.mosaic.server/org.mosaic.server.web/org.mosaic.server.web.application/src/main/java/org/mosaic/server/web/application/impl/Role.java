@@ -1,7 +1,6 @@
 package org.mosaic.server.web.application.impl;
 
 import java.util.*;
-import java.util.regex.Pattern;
 import org.w3c.dom.Element;
 
 /**
@@ -13,7 +12,7 @@ public class Role {
 
     private final Collection<Role> childRoles = new LinkedList<>();
 
-    private final Set<Pattern> permissions = new HashSet<>();
+    private final Set<String> permissions = new HashSet<>();
 
     public Role( Element element ) {
         this.name = element.getLocalName();
@@ -21,7 +20,7 @@ public class Role {
         // parse our permissions
         List<Element> permissionElts = DomUtils.getChildElements( element, "permission" );
         for( Element permissionElt : permissionElts ) {
-            this.permissions.add( Pattern.compile( permissionElt.getTextContent().trim() ) );
+            this.permissions.add( permissionElt.getTextContent().trim() );
         }
 
         // parse all other nodes - every element which is not in the permission elements list is a sub-role element
@@ -33,20 +32,16 @@ public class Role {
         }
     }
 
-    public boolean hasPermission( String permission ) {
-        for( Pattern pattern : this.permissions ) {
-            if( pattern.matcher( permission ).matches() ) {
-                return true;
-            }
-        }
+    public String getName() {
+        return name;
+    }
 
+    public Set<String> getPermissionPatterns() {
+        Set<String> patterns = new HashSet<>( this.permissions );
         for( Role childRole : this.childRoles ) {
-            if( childRole.hasPermission( permission ) ) {
-                return true;
-            }
+            patterns.addAll( childRole.getPermissionPatterns() );
         }
-
-        return false;
+        return patterns;
     }
 
     public void populateRoles( Map<String, Role> roles ) {

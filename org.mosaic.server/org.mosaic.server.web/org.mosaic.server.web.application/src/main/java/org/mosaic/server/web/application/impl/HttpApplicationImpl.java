@@ -6,10 +6,11 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import javax.xml.parsers.ParserConfigurationException;
-import org.mosaic.collection.TypedDict;
-import org.mosaic.collection.WrappingTypedDict;
 import org.mosaic.logging.Logger;
 import org.mosaic.logging.LoggerFactory;
+import org.mosaic.security.PermissionPolicy;
+import org.mosaic.util.collection.TypedDict;
+import org.mosaic.util.collection.WrappingTypedDict;
 import org.mosaic.web.HttpApplication;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
@@ -43,7 +44,7 @@ public class HttpApplicationImpl extends WrappingTypedDict<Object> implements Ht
 
     private Set<Pattern> restrictedClientAddresses;
 
-    private Map<String, Role> rolesMap;
+    private PermissionPolicy permissionPolicy;
 
     private ServiceRegistration<HttpApplication> registration;
 
@@ -148,11 +149,6 @@ public class HttpApplicationImpl extends WrappingTypedDict<Object> implements Ht
     }
 
     @Override
-    public Set<String> getAvailableRoles() {
-        return this.rolesMap.keySet();
-    }
-
-    @Override
     public boolean isAddressAllowed( String address ) {
         for( Pattern pattern : this.restrictedClientAddresses ) {
             if( pattern.matcher( address ).matches() ) {
@@ -179,14 +175,8 @@ public class HttpApplicationImpl extends WrappingTypedDict<Object> implements Ht
     }
 
     @Override
-    public boolean isPermissionIncluded( String permission, String... roles ) {
-        for( String roleName : roles ) {
-            Role role = this.rolesMap.get( roleName );
-            if( role != null && role.hasPermission( permission ) ) {
-                return true;
-            }
-        }
-        return false;
+    public PermissionPolicy getPermissionPolicy() {
+        return this.permissionPolicy;
     }
 
     private void parse() throws IOException, SAXException, ParserConfigurationException {
@@ -206,6 +196,7 @@ public class HttpApplicationImpl extends WrappingTypedDict<Object> implements Ht
         this.virtualHosts = Collections.unmodifiableSet( virtualHosts );
 
         // parse security
+        RulePermissionPolicy permissionPolicy = new RulePermissionPolicy();
         Element securityElt = getFirstChildElement( appElt, "security" );
         if( securityElt != null ) {
 
@@ -231,20 +222,23 @@ public class HttpApplicationImpl extends WrappingTypedDict<Object> implements Ht
 
             // parse role permissions
             Element rolesElt = getFirstChildElement( securityElt, "roles" );
-            Set<Role> rootRoles = new HashSet<>();
             if( rolesElt != null ) {
-                for( Element roleElt : getChildElements( rolesElt ) ) {
-                    rootRoles.add( new Role( roleElt ) );
+                for( Role role : parseRoles( rolesElt ) ) {
+                    permissionPolicy.addRolePermissionsRule( role.getName(), role.getPermissionPatterns() );
                 }
             }
 
-            // populate roles map
-            Map<String, Role> rolesMap = new LinkedCaseInsensitiveMap<>();
-            for( Role rootRole : rootRoles ) {
-                rootRole.populateRoles( rolesMap );
+            // parse permission policy rules
+            Element permissionPolicyElt = getFirstChildElement( securityElt, "permission-policy" );
+            if( permissionPolicyElt != null ) {
+                for( Element ruleElt : getChildElements( permissionPolicyElt, "rule" ) ) {
+                    permissionPolicy.addCredentialTypeExpressionRule(
+                            ruleElt.getAttribute( "type" ), ruleElt.getAttribute( "expression" ) );
+                }
             }
-            this.rolesMap = unmodifiableMap( rolesMap );
+
         }
+        this.permissionPolicy = permissionPolicy;
 
         // parse parameters
         Element paramsElt = getFirstChildElement( appElt, "parameters" );
@@ -255,6 +249,18 @@ public class HttpApplicationImpl extends WrappingTypedDict<Object> implements Ht
             }
         }
         this.parameters = new WrappingTypedDict<>( unmodifiableMap( params.getMap() ), this.conversionService, String.class );
+    }
+
+    private static Collection<Role> parseRoles( Element rolesElt ) {
+        Map<String, Role> rolesMap = new LinkedCaseInsensitiveMap<>();
+        Set<Role> rootRoles = new HashSet<>();
+        for( Element roleElt : getChildElements( rolesElt ) ) {
+            rootRoles.add( new Role( roleElt ) );
+        }
+        for( Role rootRole : rootRoles ) {
+            rootRole.populateRoles( rolesMap );
+        }
+        return rolesMap.values();
     }
 
 }
