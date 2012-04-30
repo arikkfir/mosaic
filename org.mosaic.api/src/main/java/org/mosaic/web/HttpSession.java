@@ -2,7 +2,7 @@ package org.mosaic.web;
 
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
-import org.mosaic.collection.TypedDict;
+import org.mosaic.util.collection.TypedDict;
 
 /**
  * @author arik

@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import org.joda.time.DateTime;
-import org.mosaic.collection.TypedDict;
+import org.mosaic.util.collection.TypedDict;
 import org.springframework.http.MediaType;
 
 /**

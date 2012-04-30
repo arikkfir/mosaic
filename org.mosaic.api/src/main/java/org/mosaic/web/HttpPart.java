@@ -3,7 +3,7 @@ package org.mosaic.web;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
-import org.mosaic.collection.TypedDict;
+import org.mosaic.util.collection.TypedDict;
 import org.springframework.http.MediaType;
 
 /**

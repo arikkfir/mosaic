@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
-import org.mosaic.collection.WrappingTypedDict;
+import org.mosaic.util.collection.WrappingTypedDict;
 import org.mosaic.web.HttpSession;
 import org.springframework.core.convert.ConversionService;
 

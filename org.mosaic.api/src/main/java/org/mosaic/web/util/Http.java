@@ -1,6 +1,6 @@
 package org.mosaic.web.util;
 
-import org.mosaic.collection.TypedDict;
+import org.mosaic.util.collection.TypedDict;
 import org.mosaic.web.HttpApplication;
 import org.mosaic.web.HttpRequest;
 
@@ -15,8 +15,8 @@ public abstract class Http {
 
     private static final ThreadLocal<TypedDict<String>> URI_PARAMS = new ThreadLocal<>();
 
-    public static HttpRequest uriParams() {
-        return REQUEST.get();
+    public static TypedDict<String> uriParams() {
+        return URI_PARAMS.get();
     }
 
     public static void setUriParams( TypedDict<String> uriParams ) {

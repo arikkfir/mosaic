@@ -3,7 +3,7 @@ package org.mosaic.web;
 import java.io.*;
 import java.net.URI;
 import java.util.Collection;
-import org.mosaic.collection.TypedDict;
+import org.mosaic.util.collection.TypedDict;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 

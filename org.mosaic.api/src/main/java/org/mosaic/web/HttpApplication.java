@@ -1,7 +1,8 @@
 package org.mosaic.web;
 
 import java.util.Set;
-import org.mosaic.collection.TypedDict;
+import org.mosaic.security.PermissionPolicy;
+import org.mosaic.util.collection.TypedDict;
 
 /**
  * @author arik
@@ -18,8 +19,6 @@ public interface HttpApplication extends TypedDict<Object> {
 
     boolean isAddressAllowed( String address );
 
-    Set<String> getAvailableRoles();
-
-    boolean isPermissionIncluded( String permission, String... roles );
+    PermissionPolicy getPermissionPolicy();
 
 }
