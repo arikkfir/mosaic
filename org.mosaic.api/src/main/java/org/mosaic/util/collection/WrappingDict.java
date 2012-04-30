@@ -1,4 +1,4 @@
-package org.mosaic.collection;
+package org.mosaic.util.collection;
 
 import java.util.*;
 

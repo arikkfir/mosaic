@@ -1,6 +1,6 @@
 package org.mosaic.config;
 
-import org.mosaic.collection.TypedDict;
+import org.mosaic.util.collection.TypedDict;
 
 /**
  * @author arik
