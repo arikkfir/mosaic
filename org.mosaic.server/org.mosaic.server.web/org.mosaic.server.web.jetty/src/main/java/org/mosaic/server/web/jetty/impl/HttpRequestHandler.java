@@ -145,8 +145,7 @@ public class HttpRequestHandler extends ContextHandlerCollection {
             try {
 
                 // associate app and request on the thread
-                Http.setApplication( this.httpApplication );
-                Http.setRequest( new HttpRequestImpl( conversionService, request, response ) );
+                Http.setRequest( new HttpRequestImpl( conversionService, this.httpApplication, request, response ) );
 
                 // if no dispatcher, send 404; otherwise, pass the torch to the dispatcher
                 RequestDispatcher dispatcher = HttpRequestHandler.this.dispatcher;
@@ -169,7 +168,6 @@ public class HttpRequestHandler extends ContextHandlerCollection {
 
             } finally {
                 Http.setRequest( null );
-                Http.setApplication( null );
             }
         }
 

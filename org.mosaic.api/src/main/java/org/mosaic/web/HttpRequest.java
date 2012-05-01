@@ -13,6 +13,8 @@ import org.springframework.http.HttpStatus;
  */
 public interface HttpRequest extends TypedDict<Object> {
 
+    HttpApplication getApplication();
+
     Object getSession();
 
     HttpSession getOrCreateSession();

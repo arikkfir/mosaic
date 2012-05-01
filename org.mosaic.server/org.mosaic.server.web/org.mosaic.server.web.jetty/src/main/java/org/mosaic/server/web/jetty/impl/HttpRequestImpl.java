@@ -48,6 +48,8 @@ public class HttpRequestImpl extends WrappingTypedDict<Object> implements HttpRe
 
     private final HttpServletResponse response;
 
+    private final HttpApplication application;
+
     private final URI uri;
 
     private final TypedDict<String> queryParameters;
@@ -59,11 +61,13 @@ public class HttpRequestImpl extends WrappingTypedDict<Object> implements HttpRe
     private final HttpResponseHeadersImpl responseHeaders;
 
     public HttpRequestImpl( ConversionService conversionService,
+                            HttpApplication application,
                             HttpServletRequest request,
                             HttpServletResponse response )
             throws IOException, ServletException {
 
         super( new HashMap<String, List<Object>>(), conversionService, Object.class );
+        this.application = application;
 
         // delegates
         this.request = request;
@@ -84,6 +88,11 @@ public class HttpRequestImpl extends WrappingTypedDict<Object> implements HttpRe
         for( Part part : this.request.getParts() ) {
             this.parts.put( part.getName(), new HttpPartImpl( part, this.conversionService ) );
         }
+    }
+
+    @Override
+    public HttpApplication getApplication() {
+        return this.application;
     }
 
     @Override

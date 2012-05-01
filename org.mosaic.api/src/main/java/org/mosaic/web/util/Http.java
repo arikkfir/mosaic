@@ -1,15 +1,12 @@
 package org.mosaic.web.util;
 
 import org.mosaic.util.collection.TypedDict;
-import org.mosaic.web.HttpApplication;
 import org.mosaic.web.HttpRequest;
 
 /**
  * @author arik
  */
 public abstract class Http {
-
-    private static final ThreadLocal<HttpApplication> APPLICATION = new ThreadLocal<>();
 
     private static final ThreadLocal<HttpRequest> REQUEST = new ThreadLocal<>();
 
@@ -39,23 +36,5 @@ public abstract class Http {
 
     public static void setRequest( HttpRequest request ) {
         REQUEST.set( request );
-    }
-
-    public static HttpApplication application() {
-        return APPLICATION.get();
-    }
-
-    public static HttpApplication requireApplication() {
-        HttpApplication application = application();
-        if( application == null ) {
-            Thread thread = Thread.currentThread();
-            throw new IllegalStateException( "HTTP application not bound to current thread (" + thread.getName() + "[" + thread.getId() + "])" );
-        } else {
-            return application;
-        }
-    }
-
-    public static void setApplication( HttpApplication application ) {
-        APPLICATION.set( application );
     }
 }
