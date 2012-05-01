@@ -10,10 +10,10 @@ import javassist.*;
 import org.mosaic.describe.Rank;
 import org.mosaic.lifecycle.ContextRef;
 import org.mosaic.lifecycle.ServiceExport;
-import org.mosaic.logging.LoggerFactory;
-import org.mosaic.osgi.util.BundleUtils;
+import org.mosaic.server.osgi.util.BundleUtils;
 import org.mosaic.server.transaction.Transactions;
 import org.mosaic.transaction.Transactional;
+import org.mosaic.util.logging.LoggerFactory;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.hooks.weaving.WeavingException;
@@ -36,12 +36,12 @@ public class TransactionalWeaver implements WeavingHook {
 
     private static final String BEGIN_TX_CODE =
             "{\n" +
-            "   org.mosaic.logging.LoggerFactory.getLogger( this.getClass() ).debug( \"Starting transaction: ___TX_NAME___\", null );\n" +
+            "   org.mosaic.util.logging.LoggerFactory.getLogger( this.getClass() ).debug( \"Starting transaction: ___TX_NAME___\", null );\n" +
             "   org.mosaic.server.transaction.Transactions.begin( \"___TX_NAME___\", this );\n" +
             "}\n";
 
     private static final String COMMIT_TX_CODE =
-            "org.mosaic.logging.LoggerFactory.getLogger( this.getClass() ).debug( \"Committing transaction: ___TX_NAME___\", null );\n" +
+            "org.mosaic.util.logging.LoggerFactory.getLogger( this.getClass() ).debug( \"Committing transaction: ___TX_NAME___\", null );\n" +
             "org.mosaic.server.transaction.Transactions.finish();";
 
     private static final String ROLLBACK_TX_CODE =
@@ -49,7 +49,7 @@ public class TransactionalWeaver implements WeavingHook {
             "   if( $e instanceof org.springframework.transaction.CannotCreateTransactionException ) {\n" +
             "       throw $e;" +
             "   } else {\n" +
-            "       org.mosaic.logging.LoggerFactory.getLogger( this.getClass() ).debug( \"Rolling-back transaction: ___TX_NAME___\", null );\n;\n" +
+            "       org.mosaic.util.logging.LoggerFactory.getLogger( this.getClass() ).debug( \"Rolling-back transaction: ___TX_NAME___\", null );\n;\n" +
             "       org.mosaic.server.transaction.Transactions.rollback();\n" +
             "       throw $e;\n" +
             "   };\n" +
@@ -117,7 +117,7 @@ public class TransactionalWeaver implements WeavingHook {
             CtClass ctClass = instrument( createClassPool( wovenClass ), wovenClass );
             if( ctClass != null ) {
                 wovenClass.getDynamicImports().addAll( Arrays.asList(
-                        "org.mosaic.logging;version:=\"" + this.orgMosaicLoggingPackageVersion + "\",",
+                        "org.mosaic.util.logging;version:=\"" + this.orgMosaicLoggingPackageVersion + "\",",
                         "org.mosaic.server.transaction;version:=\"" + this.orgSpringframeworkTransactionPackageVersion + "\",",
                         "org.springframework.transaction;version:=\"" + this.orgMosaicServerTransactionPackageVersion + "\""
                 ) );

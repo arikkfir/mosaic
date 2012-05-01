@@ -38,7 +38,7 @@
                         <Import-Package>
                             org.mosaic;version="[1.0,1.1)",
                             org.mosaic.lifecycle;version="[1.0,1.1)",
-                            org.mosaic.osgi;version="[1.0,1.1)",
+                            org.mosaic.server.osgi;version="[1.0,1.1)",
                             !com.sun*,
                             *
                         </Import-Package>

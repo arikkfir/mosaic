@@ -1,6 +1,6 @@
 package org.mosaic.server.transaction.demarcation.impl;
 
-import org.mosaic.osgi.util.BundleUtils;
+import org.mosaic.server.osgi.util.BundleUtils;
 import org.osgi.framework.BundleContext;
 import org.springframework.transaction.CannotCreateTransactionException;
 

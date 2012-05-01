@@ -11,7 +11,7 @@ import org.slf4j.MDC;
  */
 public class LoggingServiceListener implements ServiceListener {
 
-    private static final String OSGI_LOG_NAME = "org.mosaic.osgi.services";
+    private static final String OSGI_LOG_NAME = "org.mosaic.server.osgi.services";
 
     private static final String MDC_SR_KEY = "logging-osgi-service-ref";
 

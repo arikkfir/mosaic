@@ -7,9 +7,9 @@ import java.sql.SQLException;
 import javax.sql.DataSource;
 import org.intellij.lang.annotations.Language;
 import org.mosaic.lifecycle.ServiceRef;
-import org.mosaic.logging.Trace;
 import org.mosaic.server.shell.ShellCommand;
 import org.mosaic.transaction.Transactional;
+import org.mosaic.util.logging.Trace;
 import org.springframework.stereotype.Component;
 
 /**

@@ -8,9 +8,9 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import javax.sql.DataSource;
-import org.mosaic.logging.Logger;
-import org.mosaic.logging.LoggerFactory;
 import org.mosaic.util.collection.TypedDict;
+import org.mosaic.util.logging.Logger;
+import org.mosaic.util.logging.LoggerFactory;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 

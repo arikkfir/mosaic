@@ -24,7 +24,7 @@ public class LoggingFrameworkListener implements FrameworkListener {
             Throwable throwable = event.getThrowable();
             String throwableMsg = throwable != null ? throwable.getMessage() : "";
 
-            Logger logger = LoggerFactory.getLogger( "org.mosaic.osgi.framework" );
+            Logger logger = LoggerFactory.getLogger( "org.mosaic.server.osgi.framework" );
             switch( event.getType() ) {
                 case FrameworkEvent.STARTED:
                     synchronized( Runner.class ) {

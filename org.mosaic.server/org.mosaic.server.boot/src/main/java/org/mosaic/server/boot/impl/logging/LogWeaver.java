@@ -5,10 +5,10 @@ import java.io.IOException;
 import java.util.*;
 import java.util.regex.Pattern;
 import javassist.*;
-import org.mosaic.logging.Logger;
-import org.mosaic.logging.LoggerFactory;
-import org.mosaic.logging.Trace;
-import org.mosaic.osgi.util.BundleUtils;
+import org.mosaic.server.osgi.util.BundleUtils;
+import org.mosaic.util.logging.Logger;
+import org.mosaic.util.logging.LoggerFactory;
+import org.mosaic.util.logging.Trace;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
@@ -27,7 +27,7 @@ public class LogWeaver implements WeavingHook {
     private static final String ENTER_CODE =
             "{\n" +
             "   String $mosaicMethodName = \"___METHOD_NAME___\";\n" +
-            "   org.mosaic.logging.LoggerFactory.getLogger( this.getClass() ).trace( \n" +
+            "   org.mosaic.util.logging.LoggerFactory.getLogger( this.getClass() ).trace( \n" +
             "       \"Entering '{}'\", new Object[]{$mosaicMethodName} \n" +
             "   );\n" +
             "}\n";
@@ -35,7 +35,7 @@ public class LogWeaver implements WeavingHook {
     private static final String EXIT_CODE =
             "{\n" +
             "   String $mosaicMethodName = \"___METHOD_NAME___\";\n" +
-            "   org.mosaic.logging.LoggerFactory.getLogger( this.getClass() ).trace( \n" +
+            "   org.mosaic.util.logging.LoggerFactory.getLogger( this.getClass() ).trace( \n" +
             "       \"Exiting '{}'\", new Object[]{$mosaicMethodName} \n" +
             "   );\n" +
             "}\n";
@@ -43,7 +43,7 @@ public class LogWeaver implements WeavingHook {
     private static final String EXCEPTION_CODE =
             "{\n" +
             "   String $mosaicMethodName = \"___METHOD_NAME___\";\n" +
-            "   org.mosaic.logging.LoggerFactory.getLogger( this.getClass() ).trace( \n" +
+            "   org.mosaic.util.logging.LoggerFactory.getLogger( this.getClass() ).trace( \n" +
             "       \"Exiting '{}' with error: {}\", new Object[]{$mosaicMethodName,$e.getMessage(),$e} \n" +
             "   );\n" +
             "   throw $e;\n" +
@@ -128,7 +128,7 @@ public class LogWeaver implements WeavingHook {
             CtClass ctClass = instrument( createClassPool( wovenClass ), wovenClass );
             if( ctClass != null ) {
                 wovenClass.getDynamicImports().addAll( Arrays.asList(
-                        "org.mosaic.logging;version:=\"" + this.orgMosaicLoggingPackageVersion + "\","
+                        "org.mosaic.util.logging;version:=\"" + this.orgMosaicLoggingPackageVersion + "\","
                 ) );
                 wovenClass.setBytes( ctClass.toBytecode() );
             }

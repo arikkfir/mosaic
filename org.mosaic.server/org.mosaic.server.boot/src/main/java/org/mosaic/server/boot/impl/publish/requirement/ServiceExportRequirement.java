@@ -2,10 +2,10 @@ package org.mosaic.server.boot.impl.publish.requirement;
 
 import java.util.Dictionary;
 import java.util.Hashtable;
-import org.mosaic.logging.Logger;
-import org.mosaic.logging.LoggerFactory;
 import org.mosaic.server.boot.impl.publish.BundleTracker;
 import org.mosaic.server.boot.impl.publish.requirement.support.AbstractBeanRequirement;
+import org.mosaic.util.logging.Logger;
+import org.mosaic.util.logging.LoggerFactory;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceRegistration;

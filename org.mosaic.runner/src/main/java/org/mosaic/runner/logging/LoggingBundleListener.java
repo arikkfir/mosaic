@@ -13,7 +13,7 @@ import org.slf4j.MDC;
  */
 public class LoggingBundleListener implements SynchronousBundleListener {
 
-    private static final String OSGI_LOG_NAME = "org.mosaic.osgi.bundles";
+    private static final String OSGI_LOG_NAME = "org.mosaic.server.osgi.bundles";
 
     private static final String MDC_BUNDLE_KEY = "logging-osgi-bundle";
 

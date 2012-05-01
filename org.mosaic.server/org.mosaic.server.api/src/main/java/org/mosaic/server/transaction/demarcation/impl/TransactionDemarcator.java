@@ -1,8 +1,8 @@
 package org.mosaic.server.transaction.demarcation.impl;
 
-import org.mosaic.logging.Logger;
-import org.mosaic.logging.LoggerFactory;
 import org.mosaic.server.transaction.TransactionManager;
+import org.mosaic.util.logging.Logger;
+import org.mosaic.util.logging.LoggerFactory;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceReference;

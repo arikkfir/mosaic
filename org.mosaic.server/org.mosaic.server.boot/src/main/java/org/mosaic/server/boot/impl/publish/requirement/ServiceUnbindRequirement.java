@@ -4,9 +4,9 @@ import java.lang.reflect.Method;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import org.mosaic.osgi.util.ServiceUtils;
 import org.mosaic.server.boot.impl.publish.BundleTracker;
 import org.mosaic.server.boot.impl.publish.requirement.support.AbstractTrackerRequirement;
+import org.mosaic.server.osgi.util.ServiceUtils;
 import org.osgi.framework.ServiceReference;
 import org.springframework.context.ApplicationContext;
 

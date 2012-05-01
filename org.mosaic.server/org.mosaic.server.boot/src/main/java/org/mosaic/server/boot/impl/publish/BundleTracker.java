@@ -1,13 +1,13 @@
 package org.mosaic.server.boot.impl.publish;
 
 import java.util.*;
-import org.mosaic.logging.Logger;
-import org.mosaic.logging.LoggerFactory;
-import org.mosaic.osgi.util.BundleUtils;
 import org.mosaic.server.boot.impl.publish.requirement.Requirement;
 import org.mosaic.server.boot.impl.publish.requirement.RequirementFactory;
 import org.mosaic.server.boot.impl.publish.spring.BundleApplicationContext;
 import org.mosaic.server.boot.impl.publish.spring.OsgiSpringNamespacePlugin;
+import org.mosaic.server.osgi.util.BundleUtils;
+import org.mosaic.util.logging.Logger;
+import org.mosaic.util.logging.LoggerFactory;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.springframework.beans.BeansException;

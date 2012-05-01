@@ -12,7 +12,7 @@ import org.slf4j.MDC;
  */
 public class FelixLogger extends Logger {
 
-    private static final String OSGI_LOG_NAME = "org.mosaic.osgi.framework";
+    private static final String OSGI_LOG_NAME = "org.mosaic.server.osgi.framework";
 
     private static final String MDC_SR_KEY = "logging-osgi-service-ref";
 

@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import org.mosaic.osgi.util.BundleUtils;
+import org.mosaic.server.osgi.util.BundleUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 

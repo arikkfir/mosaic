@@ -1,4 +1,4 @@
-package org.mosaic.logging;
+package org.mosaic.util.logging;
 
 import java.lang.ref.SoftReference;
 import java.util.Map;

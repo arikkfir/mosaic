@@ -37,7 +37,7 @@
     <logger name="org.mosaic.server.shell.impl.session.MosaicServerSession" level="WARN"/>
 
     <!-- redirect OSGi logs to a different file -->
-    <logger name="org.mosaic.osgi" additivity="false" level="TRACE">
+    <logger name="org.mosaic.server.osgi" additivity="false" level="TRACE">
         <appender-ref ref="osgi"/>
     </logger>
 

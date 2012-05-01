@@ -1,4 +1,4 @@
-package org.mosaic.osgi;
+package org.mosaic.server.osgi;
 
 /**
  * @author arik

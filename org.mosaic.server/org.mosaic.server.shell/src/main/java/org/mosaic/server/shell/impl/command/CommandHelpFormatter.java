@@ -5,9 +5,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import joptsimple.HelpFormatter;
 import joptsimple.OptionDescriptor;
-import org.mosaic.logging.Logger;
-import org.mosaic.logging.LoggerFactory;
 import org.mosaic.server.shell.console.Console;
+import org.mosaic.util.logging.Logger;
+import org.mosaic.util.logging.LoggerFactory;
 
 /**
  * @author arik

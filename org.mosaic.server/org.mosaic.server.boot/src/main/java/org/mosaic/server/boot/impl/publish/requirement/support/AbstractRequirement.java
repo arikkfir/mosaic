@@ -1,10 +1,10 @@
 package org.mosaic.server.boot.impl.publish.requirement.support;
 
-import org.mosaic.logging.Logger;
-import org.mosaic.logging.LoggerFactory;
-import org.mosaic.osgi.util.BundleUtils;
 import org.mosaic.server.boot.impl.publish.BundleTracker;
 import org.mosaic.server.boot.impl.publish.requirement.Requirement;
+import org.mosaic.server.osgi.util.BundleUtils;
+import org.mosaic.util.logging.Logger;
+import org.mosaic.util.logging.LoggerFactory;
 import org.osgi.framework.BundleContext;
 import org.springframework.context.ApplicationContext;
 

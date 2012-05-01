@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.mosaic.describe.Description;
-import org.mosaic.osgi.util.BundleUtils;
+import org.mosaic.server.osgi.util.BundleUtils;
 import org.mosaic.server.shell.Args;
 import org.mosaic.server.shell.Option;
 import org.mosaic.server.shell.ShellCommand;
@@ -13,8 +13,8 @@ import org.osgi.framework.*;
 import org.osgi.framework.wiring.FrameworkWiring;
 import org.springframework.stereotype.Component;
 
-import static org.mosaic.osgi.util.BundleUtils.filterBundlesByState;
-import static org.mosaic.osgi.util.BundleUtils.findMatchingBundles;
+import static org.mosaic.server.osgi.util.BundleUtils.filterBundlesByState;
+import static org.mosaic.server.osgi.util.BundleUtils.findMatchingBundles;
 import static org.osgi.framework.Bundle.*;
 
 /**

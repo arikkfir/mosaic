@@ -3,7 +3,7 @@ package org.mosaic.server.shell.commands.impl;
 import java.io.IOException;
 import java.util.List;
 import org.mosaic.describe.Description;
-import org.mosaic.osgi.BundleStatus;
+import org.mosaic.server.osgi.BundleStatus;
 import org.mosaic.server.shell.Args;
 import org.mosaic.server.shell.Option;
 import org.mosaic.server.shell.ShellCommand;
@@ -12,7 +12,7 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
 import org.springframework.stereotype.Component;
 
-import static org.mosaic.osgi.util.BundleUtils.findMatchingBundles;
+import static org.mosaic.server.osgi.util.BundleUtils.findMatchingBundles;
 
 /**
  * @author arik

@@ -3,16 +3,16 @@ package org.mosaic.server.boot.impl;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import org.mosaic.Home;
-import org.mosaic.logging.Logger;
-import org.mosaic.logging.LoggerFactory;
-import org.mosaic.osgi.BundleState;
-import org.mosaic.osgi.BundleStatus;
-import org.mosaic.osgi.BundleStatusHelper;
-import org.mosaic.osgi.util.BundleUtils;
 import org.mosaic.server.boot.impl.logging.LogWeaver;
 import org.mosaic.server.boot.impl.publish.BundleTracker;
 import org.mosaic.server.boot.impl.publish.requirement.Requirement;
 import org.mosaic.server.boot.impl.publish.spring.OsgiSpringNamespacePlugin;
+import org.mosaic.server.osgi.BundleState;
+import org.mosaic.server.osgi.BundleStatus;
+import org.mosaic.server.osgi.BundleStatusHelper;
+import org.mosaic.server.osgi.util.BundleUtils;
+import org.mosaic.util.logging.Logger;
+import org.mosaic.util.logging.LoggerFactory;
 import org.osgi.framework.*;
 
 /**

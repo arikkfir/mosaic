@@ -9,11 +9,11 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.*;
 import javax.sql.DataSource;
-import org.mosaic.logging.Logger;
-import org.mosaic.logging.LoggerFactory;
 import org.mosaic.server.transaction.TransactionManager;
 import org.mosaic.util.collection.TypedDict;
 import org.mosaic.util.collection.WrappingTypedDict;
+import org.mosaic.util.logging.Logger;
+import org.mosaic.util.logging.LoggerFactory;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
@@ -26,7 +26,7 @@ import org.springframework.transaction.support.DefaultTransactionDefinition;
 
 import static java.nio.file.Files.*;
 import static java.nio.file.StandardOpenOption.READ;
-import static org.mosaic.logging.LoggerFactory.getBundleLogger;
+import static org.mosaic.util.logging.LoggerFactory.getBundleLogger;
 
 /**
  * @author arik

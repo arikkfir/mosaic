@@ -1,4 +1,4 @@
-package org.mosaic.osgi;
+package org.mosaic.server.osgi;
 
 import org.osgi.framework.Bundle;
 

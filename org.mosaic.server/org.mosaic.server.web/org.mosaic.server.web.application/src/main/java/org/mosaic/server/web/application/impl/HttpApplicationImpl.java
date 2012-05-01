@@ -6,11 +6,11 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import javax.xml.parsers.ParserConfigurationException;
-import org.mosaic.logging.Logger;
-import org.mosaic.logging.LoggerFactory;
 import org.mosaic.security.PermissionPolicy;
 import org.mosaic.util.collection.TypedDict;
 import org.mosaic.util.collection.WrappingTypedDict;
+import org.mosaic.util.logging.Logger;
+import org.mosaic.util.logging.LoggerFactory;
 import org.mosaic.web.HttpApplication;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
@@ -22,8 +22,8 @@ import org.xml.sax.SAXException;
 
 import static java.nio.file.Files.*;
 import static java.util.Collections.unmodifiableMap;
-import static org.mosaic.logging.LoggerFactory.getBundleLogger;
 import static org.mosaic.server.web.application.impl.DomUtils.*;
+import static org.mosaic.util.logging.LoggerFactory.getBundleLogger;
 
 /**
  * @author arik

@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.util.concurrent.BlockingQueue;
-import org.mosaic.logging.Logger;
-import org.mosaic.logging.LoggerFactory;
+import org.mosaic.util.logging.Logger;
+import org.mosaic.util.logging.LoggerFactory;
 
 import static java.lang.Thread.currentThread;
 

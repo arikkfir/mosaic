@@ -21,8 +21,8 @@ import org.apache.sshd.server.PublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 import org.mosaic.Home;
 import org.mosaic.lifecycle.ServiceRef;
-import org.mosaic.logging.Logger;
-import org.mosaic.logging.LoggerFactory;
+import org.mosaic.util.logging.Logger;
+import org.mosaic.util.logging.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**

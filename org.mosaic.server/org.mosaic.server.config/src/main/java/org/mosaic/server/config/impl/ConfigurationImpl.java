@@ -5,17 +5,17 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.*;
 import org.mosaic.config.Configuration;
-import org.mosaic.logging.Logger;
-import org.mosaic.logging.LoggerFactory;
 import org.mosaic.util.collection.TypedDict;
 import org.mosaic.util.collection.WrappingTypedDict;
+import org.mosaic.util.logging.Logger;
+import org.mosaic.util.logging.LoggerFactory;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 import org.springframework.core.convert.ConversionService;
 
 import static java.nio.file.Files.*;
 import static java.nio.file.StandardOpenOption.READ;
-import static org.mosaic.logging.LoggerFactory.getBundleLogger;
+import static org.mosaic.util.logging.LoggerFactory.getBundleLogger;
 
 /**
  * @author arik

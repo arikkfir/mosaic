@@ -4,9 +4,9 @@ import java.util.Collection;
 import java.util.Collections;
 import org.mosaic.lifecycle.ContextRef;
 import org.mosaic.lifecycle.ServiceRef;
-import org.mosaic.osgi.BundleState;
-import org.mosaic.osgi.BundleStatus;
-import org.mosaic.osgi.BundleStatusHelper;
+import org.mosaic.server.osgi.BundleState;
+import org.mosaic.server.osgi.BundleStatus;
+import org.mosaic.server.osgi.BundleStatusHelper;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
