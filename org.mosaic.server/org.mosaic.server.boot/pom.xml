@@ -58,6 +58,11 @@
             <artifactId>org.mosaic.api</artifactId>
             <version>[1.0.0-SNAPSHOT,2)</version>
         </dependency>
+        <dependency>
+            <groupId>org.mosaic.server</groupId>
+            <artifactId>org.mosaic.server.api</artifactId>
+            <version>[1.0.0-SNAPSHOT,2)</version>
+        </dependency>
         <!-- ============================================================ -->
         <!-- OSGi APIs                                                    -->
         <!-- ============================================================ -->
