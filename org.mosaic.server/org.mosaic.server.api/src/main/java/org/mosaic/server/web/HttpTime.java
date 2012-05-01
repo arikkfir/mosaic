@@ -1,4 +1,4 @@
-package org.mosaic.web.util;
+package org.mosaic.server.web;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;

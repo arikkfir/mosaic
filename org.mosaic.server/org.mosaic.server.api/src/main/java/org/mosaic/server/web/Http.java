@@ -1,4 +1,4 @@
-package org.mosaic.web.util;
+package org.mosaic.server.web;
 
 import org.mosaic.util.collection.TypedDict;
 import org.mosaic.web.HttpRequest;

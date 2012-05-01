@@ -1,4 +1,4 @@
-package org.mosaic.web.util;
+package org.mosaic.server.web;
 
 import java.text.ParseException;
 import java.util.Locale;

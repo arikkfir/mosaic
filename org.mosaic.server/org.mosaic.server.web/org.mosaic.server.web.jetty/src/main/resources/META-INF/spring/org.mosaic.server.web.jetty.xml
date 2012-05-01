@@ -20,7 +20,7 @@
     <bean class="org.springframework.format.support.FormattingConversionServiceFactoryBean">
         <property name="formatters">
             <set>
-                <bean class="org.mosaic.web.util.DateTimeFormatter"/>
+                <bean class="org.mosaic.server.web.DateTimeFormatter"/>
             </set>
         </property>
     </bean>

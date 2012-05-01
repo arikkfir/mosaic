@@ -1,4 +1,4 @@
-package org.mosaic.security.util;
+package org.mosaic.server.security;
 
 import org.mosaic.security.User;
 
