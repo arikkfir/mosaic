@@ -9,7 +9,6 @@ import org.springframework.http.HttpStatus;
 
 /**
  * @author arik
- * @todo URI parameters should be supported as thread-bound thingy, updated before/after each handler
  */
 public interface HttpRequest extends TypedDict<Object> {
 
@@ -30,6 +29,8 @@ public interface HttpRequest extends TypedDict<Object> {
     URI getUrl();
 
     TypedDict<String> getQueryParameters();
+
+    TypedDict<String> getPathParameters();
 
     HttpRequestHeaders getRequestHeaders();
 

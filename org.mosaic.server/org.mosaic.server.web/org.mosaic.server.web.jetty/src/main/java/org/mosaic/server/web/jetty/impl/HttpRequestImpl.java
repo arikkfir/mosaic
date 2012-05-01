@@ -9,6 +9,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
+import org.mosaic.server.web.PathParamsAware;
 import org.mosaic.util.collection.TypedDict;
 import org.mosaic.util.collection.WrappingTypedDict;
 import org.mosaic.util.logging.Logger;
@@ -25,7 +26,7 @@ import static org.springframework.http.HttpStatus.Series.SERVER_ERROR;
 /**
  * @author arik
  */
-public class HttpRequestImpl extends WrappingTypedDict<Object> implements HttpRequest {
+public class HttpRequestImpl extends WrappingTypedDict<Object> implements HttpRequest, PathParamsAware {
 
     private static final Logger LOG = LoggerFactory.getLogger( HttpRequestImpl.class );
 
@@ -53,6 +54,8 @@ public class HttpRequestImpl extends WrappingTypedDict<Object> implements HttpRe
     private final URI uri;
 
     private final TypedDict<String> queryParameters;
+
+    private TypedDict<String> pathParameters;
 
     private final HttpRequestHeadersImpl requestHeaders;
 
@@ -82,6 +85,7 @@ public class HttpRequestImpl extends WrappingTypedDict<Object> implements HttpRe
 
         // query parameters
         this.queryParameters = new WrappingTypedDict<>( convert( this.request.getParameterMap() ), this.conversionService, String.class );
+        this.pathParameters = new WrappingTypedDict<>( this.conversionService, String.class );
 
         // multipart
         this.parts = new HashMap<>();
@@ -160,6 +164,16 @@ public class HttpRequestImpl extends WrappingTypedDict<Object> implements HttpRe
     @Override
     public TypedDict<String> getQueryParameters() {
         return this.queryParameters;
+    }
+
+    @Override
+    public TypedDict<String> getPathParameters() {
+        return this.pathParameters;
+    }
+
+    @Override
+    public void setPathParams( TypedDict<String> params ) {
+        this.pathParameters = params;
     }
 
     @Override
