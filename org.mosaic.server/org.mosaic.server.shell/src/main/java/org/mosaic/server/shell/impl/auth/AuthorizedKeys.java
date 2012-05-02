@@ -34,15 +34,19 @@ import org.apache.mina.util.Base64;
  *
  * @author Gunnar Wagenknecht
  */
-public class AuthorizedKeys {
+public class AuthorizedKeys
+{
 
-    public static enum KeyType {
+    public static enum KeyType
+    {
         RSA, DSA
     }
 
-    public static class ParseKeyException extends IOException {
+    public static class ParseKeyException extends IOException
+    {
 
-        public ParseKeyException( final String message, final Throwable cause ) {
+        public ParseKeyException( final String message, final Throwable cause )
+        {
             super( message, cause );
         }
 
@@ -56,50 +60,65 @@ public class AuthorizedKeys {
 
     private static final String NEWLINE = "\n";
 
-    private static byte[] asBytes( final String string ) {
-        try {
+    private static byte[] asBytes( final String string )
+    {
+        try
+        {
             return string.getBytes( "UTF-8" );
-        } catch( final UnsupportedEncodingException e ) {
-            return string.getBytes();
+        }
+        catch( final UnsupportedEncodingException e )
+        {
+            return string.getBytes( );
         }
     }
 
-    private static String asString( final byte[] bytes ) {
-        try {
+    private static String asString( final byte[] bytes )
+    {
+        try
+        {
             return new String( bytes, "UTF-8" );
-        } catch( final UnsupportedEncodingException e ) {
+        }
+        catch( final UnsupportedEncodingException e )
+        {
             return new String( bytes );
         }
     }
 
     private final List<PublicKey> keys;
 
-    public AuthorizedKeys( Path authorizedKeysFile ) throws IOException {
+    public AuthorizedKeys( Path authorizedKeysFile ) throws IOException
+    {
 
-        List<PublicKey> keys = new ArrayList<>();
-        try( Scanner scanner = new Scanner( authorizedKeysFile ) ) {
+        List<PublicKey> keys = new ArrayList<>( );
+        try( Scanner scanner = new Scanner( authorizedKeysFile ) )
+        {
 
             // configure to read line by line
             scanner.useDelimiter( NEWLINE );
 
             // read each line, corresponding to a key
             int lineNumber = 0;
-            while( scanner.hasNext() ) {
+            while( scanner.hasNext( ) )
+            {
                 lineNumber++;
 
                 // get line (without leading and trailing blanks)
-                String line = scanner.next().trim();
+                String line = scanner.next( ).trim( );
 
                 // ignore blank line and comments
-                if( ( line.length() == 0 ) || ( line.charAt( 0 ) == '#' ) ) {
+                if( ( line.length( ) == 0 ) || ( line.charAt( 0 ) == '#' ) )
+                {
                     continue;
                 }
 
                 // read key
-                try {
+                try
+                {
                     keys.add( readPublicKey( line ) );
-                } catch( final Exception e ) {
-                    throw new ParseKeyException( "Line " + lineNumber + ": " + e.getMessage(), e );
+                }
+                catch( final Exception e )
+                {
+                    throw new ParseKeyException( "Line " + lineNumber + ": " + e.getMessage( ), e );
                 }
             }
 
@@ -107,47 +126,59 @@ public class AuthorizedKeys {
         this.keys = Collections.unmodifiableList( keys );
     }
 
-    public List<PublicKey> getKeys() {
+    public List<PublicKey> getKeys( )
+    {
         return keys;
     }
 
-    private BigInteger readBigInteger( ByteBuffer buffer ) {
-        byte[] bytes = new byte[ buffer.getInt() ];
+    private BigInteger readBigInteger( ByteBuffer buffer )
+    {
+        byte[] bytes = new byte[ buffer.getInt( ) ];
         buffer.get( bytes );
         return new BigInteger( bytes );
     }
 
-    private PublicKey readPublicKey( String line )
-            throws IOException, InvalidKeySpecException, NoSuchAlgorithmException {
+    private PublicKey readPublicKey( String line ) throws IOException, InvalidKeySpecException, NoSuchAlgorithmException
+    {
         // [options] <type> <base64> <comment>
         KeyType type;
         byte[] key;
 
         // skip options (if any)
-        if( !line.startsWith( PREFIX_KEY_TYPE ) ) {
+        if( !line.startsWith( PREFIX_KEY_TYPE ) )
+        {
             final int keyTypeStart = line.indexOf( PREFIX_KEY_TYPE );
-            if( keyTypeStart == -1 ) {
+            if( keyTypeStart == -1 )
+            {
                 throw new IOException( "missing key type" );
             }
             line = line.substring( keyTypeStart );
         }
 
         // key type
-        if( line.startsWith( PREFIX_KEY_TYPE_DSA ) ) {
-            line = line.substring( PREFIX_KEY_TYPE_DSA.length() );
+        if( line.startsWith( PREFIX_KEY_TYPE_DSA ) )
+        {
+            line = line.substring( PREFIX_KEY_TYPE_DSA.length( ) );
             type = KeyType.DSA;
-        } else if( line.startsWith( PREFIX_KEY_TYPE_RSA ) ) {
-            line = line.substring( PREFIX_KEY_TYPE_RSA.length() );
+        }
+        else if( line.startsWith( PREFIX_KEY_TYPE_RSA ) )
+        {
+            line = line.substring( PREFIX_KEY_TYPE_RSA.length( ) );
             type = KeyType.RSA;
-        } else {
+        }
+        else
+        {
             throw new IOException( "unsupported key type" );
         }
 
         // key
         int keyEndIdx = line.indexOf( ' ' );
-        if( keyEndIdx != -1 ) {
+        if( keyEndIdx != -1 )
+        {
             key = Base64.decodeBase64( asBytes( line.substring( 0, keyEndIdx ) ) );
-        } else {
+        }
+        else
+        {
             key = Base64.decodeBase64( asBytes( line ) );
         }
 
@@ -158,26 +189,28 @@ public class AuthorizedKeys {
         readString( buffer );
 
         // parse key
-        switch( type ) {
+        switch( type )
+        {
             case RSA:
                 // exponent + modulus
                 BigInteger pubExp = readBigInteger( buffer );
                 BigInteger mod = readBigInteger( buffer );
-                return KeyFactory.getInstance( KeyType.RSA.name() ).generatePublic( new RSAPublicKeySpec( mod, pubExp ) );
+                return KeyFactory.getInstance( KeyType.RSA.name( ) ).generatePublic( new RSAPublicKeySpec( mod, pubExp ) );
             case DSA:
                 // p + q+ g + y
                 BigInteger p = readBigInteger( buffer );
                 BigInteger q = readBigInteger( buffer );
                 BigInteger g = readBigInteger( buffer );
                 BigInteger y = readBigInteger( buffer );
-                return KeyFactory.getInstance( KeyType.DSA.name() ).generatePublic( new DSAPublicKeySpec( y, p, q, g ) );
+                return KeyFactory.getInstance( KeyType.DSA.name( ) ).generatePublic( new DSAPublicKeySpec( y, p, q, g ) );
             default:
                 throw new IOException( "not implemented: " + type );
         }
     }
 
-    private String readString( ByteBuffer buffer ) {
-        final int len = buffer.getInt();
+    private String readString( ByteBuffer buffer )
+    {
+        final int len = buffer.getInt( );
         final byte[] bytes = new byte[ len ];
         buffer.get( bytes );
         return asString( bytes );

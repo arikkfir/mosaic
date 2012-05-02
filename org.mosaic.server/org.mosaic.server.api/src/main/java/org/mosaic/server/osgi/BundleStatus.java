@@ -5,10 +5,11 @@ import java.util.Collection;
 /**
  * @author arik
  */
-public interface BundleStatus {
+public interface BundleStatus
+{
 
-    BundleState getState();
+    BundleState getState( );
 
-    Collection<String> getUnsatisfiedRequirements();
+    Collection<String> getUnsatisfiedRequirements( );
 
 }

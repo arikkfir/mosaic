@@ -7,20 +7,26 @@ import java.io.OutputStream;
 /**
  * @author arik
  */
-public class LfToCrLfFilterOutputStream extends FilterOutputStream {
+public class LfToCrLfFilterOutputStream extends FilterOutputStream
+{
 
     private boolean lastWasCr;
 
-    public LfToCrLfFilterOutputStream( OutputStream out ) {
+    public LfToCrLfFilterOutputStream( OutputStream out )
+    {
         super( out );
     }
 
     @Override
-    public void write( int b ) throws IOException {
-        if( !lastWasCr && b == '\n' ) {
+    public void write( int b ) throws IOException
+    {
+        if( !lastWasCr && b == '\n' )
+        {
             out.write( '\r' );
             out.write( '\n' );
-        } else {
+        }
+        else
+        {
             out.write( b );
         }
         lastWasCr = b == '\r';

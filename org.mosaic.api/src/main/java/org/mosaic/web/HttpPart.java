@@ -9,7 +9,8 @@ import org.springframework.http.MediaType;
 /**
  * @author arik
  */
-public interface HttpPart {
+public interface HttpPart
+{
 
     String getName( );
 

@@ -3,15 +3,18 @@ package org.mosaic.security;
 /**
  * @author arik
  */
-public class AdminCredential implements User.Credential {
+public class AdminCredential implements User.Credential
+{
 
     @Override
-    public String getName( ) {
+    public String getName( )
+    {
         return "admin";
     }
 
     @Override
-    public String getType( ) {
+    public String getType( )
+    {
         return "admin";
     }
 }

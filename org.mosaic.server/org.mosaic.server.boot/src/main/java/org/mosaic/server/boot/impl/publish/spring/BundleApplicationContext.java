@@ -11,24 +11,27 @@ import static org.mosaic.server.boot.impl.publish.spring.SpringUtils.registerBun
 /**
  * @author arik
  */
-public class BundleApplicationContext extends GenericApplicationContext {
+public class BundleApplicationContext extends GenericApplicationContext
+{
 
-    public BundleApplicationContext( Bundle bundle, OsgiSpringNamespacePlugin springNamespacePlugin ) {
+    public BundleApplicationContext( Bundle bundle, OsgiSpringNamespacePlugin springNamespacePlugin )
+    {
 
         // can't create an application context for a bundle that has no wiring
         BundleWiring wiring = bundle.adapt( BundleWiring.class );
-        if( wiring == null ) {
-            throw new IllegalStateException( "Bundle '" + bundle.getSymbolicName() + "' is uninstalled!" );
+        if( wiring == null )
+        {
+            throw new IllegalStateException( "Bundle '" + bundle.getSymbolicName( ) + "' is uninstalled!" );
         }
 
         // configure application context for an OSGi environment
         setAllowBeanDefinitionOverriding( false );
         setAllowCircularReferences( false );
-        setClassLoader( wiring.getClassLoader() );
+        setClassLoader( wiring.getClassLoader( ) );
         setDisplayName( "ApplicationContext[" + BundleUtils.toString( bundle ) + "]" );
         setEnvironment( createBundleSpringEnvironment( bundle ) );
         setId( BundleUtils.toString( bundle ) );
-        setResourceLoader( new OsgiResourcePatternResolver( bundle, getClassLoader() ) );
+        setResourceLoader( new OsgiResourcePatternResolver( bundle, getClassLoader( ) ) );
 
         // add bundle beans
         registerBundleBeans( bundle, this, springNamespacePlugin );

@@ -22,29 +22,35 @@ import org.xml.sax.SAXParseException;
 /**
  * @author arik
  */
-public abstract class DomUtils {
+public abstract class DomUtils
+{
 
-    private static final StrictErrorHandler STRICT_ERROR_HANDLER = new StrictErrorHandler();
+    private static final StrictErrorHandler STRICT_ERROR_HANDLER = new StrictErrorHandler( );
 
-    public static Document parseDocument( Path path ) throws ParserConfigurationException, IOException, SAXException {
-        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+    public static Document parseDocument( Path path ) throws ParserConfigurationException, IOException, SAXException
+    {
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance( );
         dbf.setNamespaceAware( true );
 
-        DocumentBuilder db = dbf.newDocumentBuilder();
+        DocumentBuilder db = dbf.newDocumentBuilder( );
         db.setErrorHandler( STRICT_ERROR_HANDLER );
 
-        try( InputStream in = Files.newInputStream( path ) ) {
-            return db.parse( in, path.toAbsolutePath().toString() );
+        try( InputStream in = Files.newInputStream( path ) )
+        {
+            return db.parse( in, path.toAbsolutePath( ).toString( ) );
         }
     }
 
-    public static List<Element> getChildElements( Element parent ) {
-        List<Element> elements = new ArrayList<Element>();
+    public static List<Element> getChildElements( Element parent )
+    {
+        List<Element> elements = new ArrayList<Element>( );
 
-        NodeList childNodes = parent.getChildNodes();
-        for( int i = 0; i < childNodes.getLength(); i++ ) {
+        NodeList childNodes = parent.getChildNodes( );
+        for( int i = 0; i < childNodes.getLength( ); i++ )
+        {
             Node childNode = childNodes.item( i );
-            if( childNode.getNodeType() == Node.ELEMENT_NODE ) {
+            if( childNode.getNodeType( ) == Node.ELEMENT_NODE )
+            {
                 Element childElement = ( Element ) childNode;
                 elements.add( childElement );
             }
@@ -53,26 +59,34 @@ public abstract class DomUtils {
         return elements;
     }
 
-    public static List<Element> getChildElements( Element parent, String... localChildrenName ) {
+    public static List<Element> getChildElements( Element parent, String... localChildrenName )
+    {
         List<Element> elements = getChildElements( parent );
         List<String> elementNamesFilter = new ArrayList<String>( Arrays.asList( localChildrenName ) );
 
-        Iterator<Element> iterator = elements.iterator();
-        while( iterator.hasNext() ) {
-            Element element = iterator.next();
-            if( !elementNamesFilter.contains( element.getTagName() ) && !elementNamesFilter.contains( element.getLocalName() ) ) {
-                iterator.remove();
+        Iterator<Element> iterator = elements.iterator( );
+        while( iterator.hasNext( ) )
+        {
+            Element element = iterator.next( );
+            if( !elementNamesFilter.contains( element.getTagName( ) ) &&
+                !elementNamesFilter.contains( element.getLocalName( ) ) )
+            {
+                iterator.remove( );
             }
         }
 
         return elements;
     }
 
-    public static Element getFirstChildElement( Element parent, String localChildName ) {
+    public static Element getFirstChildElement( Element parent, String localChildName )
+    {
         List<Element> elements = getChildElements( parent );
 
-        for( Element childElement : elements ) {
-            if( localChildName.equals( childElement.getTagName() ) || localChildName.equals( childElement.getLocalName() ) ) {
+        for( Element childElement : elements )
+        {
+            if( localChildName.equals( childElement.getTagName( ) ) ||
+                localChildName.equals( childElement.getLocalName( ) ) )
+            {
                 return childElement;
             }
         }
@@ -80,22 +94,27 @@ public abstract class DomUtils {
         return null;
     }
 
-    public static String getFirstChildElementTextContent( Element parent, String localChildName ) {
+    public static String getFirstChildElementTextContent( Element parent, String localChildName )
+    {
         Element child = getFirstChildElement( parent, localChildName );
-        return child == null ? null : child.getTextContent();
+        return child == null ? null : child.getTextContent( );
     }
 
-    private static class StrictErrorHandler implements ErrorHandler {
+    private static class StrictErrorHandler implements ErrorHandler
+    {
 
-        public void warning( SAXParseException exception ) throws SAXException {
+        public void warning( SAXParseException exception ) throws SAXException
+        {
             throw exception;
         }
 
-        public void error( SAXParseException exception ) throws SAXException {
+        public void error( SAXParseException exception ) throws SAXException
+        {
             throw exception;
         }
 
-        public void fatalError( SAXParseException exception ) throws SAXException {
+        public void fatalError( SAXParseException exception ) throws SAXException
+        {
             throw exception;
         }
     }

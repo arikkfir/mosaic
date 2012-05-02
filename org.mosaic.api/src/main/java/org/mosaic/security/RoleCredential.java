@@ -3,26 +3,31 @@ package org.mosaic.security;
 /**
  * @author arik
  */
-public class RoleCredential implements User.Credential {
+public class RoleCredential implements User.Credential
+{
 
     private final String roleName;
 
-    public RoleCredential( String roleName ) {
+    public RoleCredential( String roleName )
+    {
         this.roleName = roleName;
     }
 
     @Override
-    public String getName( ) {
+    public String getName( )
+    {
         return this.roleName;
     }
 
     @Override
-    public String getType( ) {
+    public String getType( )
+    {
         return "role";
     }
 
     @Override
-    public String toString( ) {
+    public String toString( )
+    {
         return "Role[" + this.roleName + "]";
     }
 }

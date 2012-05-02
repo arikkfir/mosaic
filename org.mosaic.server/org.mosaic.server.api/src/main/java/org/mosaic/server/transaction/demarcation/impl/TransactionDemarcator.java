@@ -12,50 +12,71 @@ import org.springframework.transaction.TransactionException;
 /**
  * @author arik
  */
-public class TransactionDemarcator {
+public class TransactionDemarcator
+{
 
-    private static final ThreadLocal<TransactionInfo> transactionInfoHolder = new InheritableThreadLocal<>();
+    private static final ThreadLocal<TransactionInfo> transactionInfoHolder = new InheritableThreadLocal<>( );
 
     @SuppressWarnings( "UnusedDeclaration" )
-    public void begin( String transactionName, Object transactional ) {
-        try {
-            new TransactionInfo( transactionName, transactional ).bind();
-        } catch( CannotCreateTransactionException e ) {
+    public void begin( String transactionName, Object transactional )
+    {
+        try
+        {
+            new TransactionInfo( transactionName, transactional ).bind( );
+        }
+        catch( CannotCreateTransactionException e )
+        {
             throw e;
-        } catch( Exception e ) {
-            throw new CannotCreateTransactionException( e.getMessage(), e );
+        }
+        catch( Exception e )
+        {
+            throw new CannotCreateTransactionException( e.getMessage( ), e );
         }
     }
 
     @SuppressWarnings( "UnusedDeclaration" )
-    public void rollback() {
-        TransactionInfo tx = transactionInfoHolder.get();
-        try {
-            tx.rollback();
-        } catch( TransactionException e ) {
+    public void rollback( )
+    {
+        TransactionInfo tx = transactionInfoHolder.get( );
+        try
+        {
+            tx.rollback( );
+        }
+        catch( TransactionException e )
+        {
             Logger logger = LoggerFactory.getLogger( tx.transactionName );
-            logger.error( "Could not rollback transaction '{}': {}", tx.transactionName, e.getMessage(), e );
-        } finally {
-            try {
-                tx.restore();
-            } catch( Exception e ) {
+            logger.error( "Could not rollback transaction '{}': {}", tx.transactionName, e.getMessage( ), e );
+        }
+        finally
+        {
+            try
+            {
+                tx.restore( );
+            }
+            catch( Exception e )
+            {
                 Logger logger = LoggerFactory.getLogger( tx.transactionName );
-                logger.error( "Could not unbind from transaction '{}': {}", tx.transactionName, e.getMessage(), e );
+                logger.error( "Could not unbind from transaction '{}': {}", tx.transactionName, e.getMessage( ), e );
             }
         }
     }
 
     @SuppressWarnings( "UnusedDeclaration" )
-    public void finish() {
-        TransactionInfo tx = transactionInfoHolder.get();
-        try {
-            tx.commit();
-        } finally {
-            tx.restore();
+    public void finish( )
+    {
+        TransactionInfo tx = transactionInfoHolder.get( );
+        try
+        {
+            tx.commit( );
+        }
+        finally
+        {
+            tx.restore( );
         }
     }
 
-    private static class TransactionInfo {
+    private static class TransactionInfo
+    {
 
         private final BundleContext bundleContext;
 
@@ -69,20 +90,26 @@ public class TransactionDemarcator {
 
         private TransactionInfo oldTransactionInfo;
 
-        public TransactionInfo( String transactionName, Object transactional ) {
-            this.bundleContext = FrameworkUtil.getBundle( transactional.getClass() ).getBundleContext();
-            if( bundleContext == null ) {
-                throw new CannotCreateTransactionException( "Class '" + transactional.getClass() + "' is not part of any bundle" );
+        public TransactionInfo( String transactionName, Object transactional )
+        {
+            this.bundleContext = FrameworkUtil.getBundle( transactional.getClass( ) ).getBundleContext( );
+            if( bundleContext == null )
+            {
+                throw new CannotCreateTransactionException( "Class '" +
+                                                            transactional.getClass( ) +
+                                                            "' is not part of any bundle" );
             }
 
             //TODO 4/17/12: fetch appropriate TransactionManager based on the given txSourceName parameter
             this.transactionManagerRef = bundleContext.getServiceReference( TransactionManager.class );
-            if( this.transactionManagerRef == null ) {
+            if( this.transactionManagerRef == null )
+            {
                 throw new TransactionServiceNotAvailableException( bundleContext );
             }
 
             this.transactionManager = bundleContext.getService( this.transactionManagerRef );
-            if( this.transactionManager == null ) {
+            if( this.transactionManager == null )
+            {
                 bundleContext.ungetService( this.transactionManagerRef );
                 throw new TransactionServiceNotAvailableException( bundleContext );
             }
@@ -90,27 +117,32 @@ public class TransactionDemarcator {
             this.transactionName = transactionName;
         }
 
-        private void bind() {
+        private void bind( )
+        {
             this.transaction = this.transactionManager.begin( this.transactionName );
-            this.oldTransactionInfo = transactionInfoHolder.get();
+            this.oldTransactionInfo = transactionInfoHolder.get( );
             transactionInfoHolder.set( this );
         }
 
-        private void rollback() {
+        private void rollback( )
+        {
             this.transactionManager.rollback( this.transaction );
         }
 
-        private void commit() {
+        private void commit( )
+        {
             this.transactionManager.commit( this.transaction );
         }
 
-        private void restore() {
+        private void restore( )
+        {
             transactionInfoHolder.set( this.oldTransactionInfo );
             this.bundleContext.ungetService( this.transactionManagerRef );
         }
 
         @Override
-        public String toString() {
+        public String toString( )
+        {
             return "Transaction[name=" + this.transactionName + "]";
         }
     }

@@ -7,7 +7,8 @@ import org.mosaic.Home;
 /**
  * @author arik
  */
-public class HomeService implements Home {
+public class HomeService implements Home
+{
 
     private final Path home;
 
@@ -17,7 +18,8 @@ public class HomeService implements Home {
 
     private final Path work;
 
-    public HomeService() {
+    public HomeService( )
+    {
         this.home = Paths.get( System.getProperty( "mosaic.home" ) );
         this.boot = Paths.get( System.getProperty( "mosaic.home.boot" ) );
         this.etc = Paths.get( System.getProperty( "mosaic.home.etc" ) );
@@ -25,22 +27,26 @@ public class HomeService implements Home {
     }
 
     @Override
-    public Path getHome() {
+    public Path getHome( )
+    {
         return this.home;
     }
 
     @Override
-    public Path getBoot() {
+    public Path getBoot( )
+    {
         return this.boot;
     }
 
     @Override
-    public Path getEtc() {
+    public Path getEtc( )
+    {
         return this.etc;
     }
 
     @Override
-    public Path getWork() {
+    public Path getWork( )
+    {
         return this.work;
     }
 }

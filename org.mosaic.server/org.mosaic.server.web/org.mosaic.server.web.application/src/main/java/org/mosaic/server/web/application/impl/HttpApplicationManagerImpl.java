@@ -25,13 +25,14 @@ import static java.nio.file.Files.newDirectoryStream;
  * @author arik
  */
 @Component
-public class HttpApplicationManagerImpl {
+public class HttpApplicationManagerImpl
+{
 
     private static final Logger LOG = LoggerFactory.getLogger( HttpApplicationManagerImpl.class );
 
     private static final long SCAN_INTERVAL = 1000;
 
-    private final Map<Path, HttpApplicationImpl> applications = new HashMap<>();
+    private final Map<Path, HttpApplicationImpl> applications = new HashMap<>( );
 
     private ConversionService conversionService;
 
@@ -40,78 +41,98 @@ public class HttpApplicationManagerImpl {
     private Scanner scanner;
 
     @Autowired
-    public void setConversionService( ConversionService conversionService ) {
+    public void setConversionService( ConversionService conversionService )
+    {
         this.conversionService = conversionService;
     }
 
     @ServiceRef
-    public void setHome( Home home ) {
+    public void setHome( Home home )
+    {
         this.home = home;
     }
 
     @PostConstruct
-    public synchronized void init() {
-        scan();
+    public synchronized void init( )
+    {
+        scan( );
 
-        this.scanner = new Scanner();
+        this.scanner = new Scanner( );
         Thread t = new Thread( scanner, "ApplicationsWatcher" );
         t.setDaemon( true );
-        t.start();
+        t.start( );
     }
 
     @PreDestroy
-    public synchronized void destroy() throws SQLException {
-        if( this.scanner != null ) {
+    public synchronized void destroy( ) throws SQLException
+    {
+        if( this.scanner != null )
+        {
             this.scanner.stop = true;
         }
-        this.applications.clear();
+        this.applications.clear( );
     }
 
-    private synchronized void scan() {
+    private synchronized void scan( )
+    {
 
-        Path dir = this.home.getEtc().resolve( "apps" );
-        if( Files.exists( dir ) && Files.isDirectory( dir ) ) {
+        Path dir = this.home.getEtc( ).resolve( "apps" );
+        if( Files.exists( dir ) && Files.isDirectory( dir ) )
+        {
 
-            try( DirectoryStream<Path> stream = newDirectoryStream( dir, "*.xml" ) ) {
+            try( DirectoryStream<Path> stream = newDirectoryStream( dir, "*.xml" ) )
+            {
 
-                for( Path appFile : stream ) {
+                for( Path appFile : stream )
+                {
                     HttpApplicationImpl application = this.applications.get( appFile );
-                    if( application == null ) {
+                    if( application == null )
+                    {
                         application = new HttpApplicationImpl( appFile, this.conversionService );
                         this.applications.put( appFile, application );
                     }
-                    application.refresh();
+                    application.refresh( );
                 }
 
-            } catch( IOException e ) {
-                LOG.error( "Could not search for applications in '{}': {}", dir, e.getMessage(), e );
+            }
+            catch( IOException e )
+            {
+                LOG.error( "Could not search for applications in '{}': {}", dir, e.getMessage( ), e );
             }
 
         }
 
-        this.applications.values().iterator();
-        Iterator<HttpApplicationImpl> iterator = this.applications.values().iterator();
-        while( iterator.hasNext() ) {
-            HttpApplicationImpl application = iterator.next();
-            if( !exists( application.getPath() ) ) {
-                iterator.remove();
+        this.applications.values( ).iterator( );
+        Iterator<HttpApplicationImpl> iterator = this.applications.values( ).iterator( );
+        while( iterator.hasNext( ) )
+        {
+            HttpApplicationImpl application = iterator.next( );
+            if( !exists( application.getPath( ) ) )
+            {
+                iterator.remove( );
             }
         }
     }
 
-    private class Scanner implements Runnable {
+    private class Scanner implements Runnable
+    {
 
         private boolean stop;
 
         @Override
-        public void run() {
-            while( !this.stop ) {
-                try {
+        public void run( )
+        {
+            while( !this.stop )
+            {
+                try
+                {
                     Thread.sleep( SCAN_INTERVAL );
-                } catch( InterruptedException e ) {
+                }
+                catch( InterruptedException e )
+                {
                     break;
                 }
-                scan();
+                scan( );
             }
         }
     }

@@ -12,7 +12,8 @@ import org.mosaic.lifecycle.MethodEndpointMarker;
 @Retention( RetentionPolicy.RUNTIME )
 @Target( ElementType.METHOD )
 @MethodEndpointMarker
-public @interface Controller {
+public @interface Controller
+{
 
     String[] value( );
 

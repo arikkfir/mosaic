@@ -5,7 +5,8 @@ import java.util.Map;
 /**
  * @author arik
  */
-public interface TypedDict<V> extends Dict<V> {
+public interface TypedDict<V> extends Dict<V>
+{
 
     <T> T getValueAs( String key, Class<T> type );
 

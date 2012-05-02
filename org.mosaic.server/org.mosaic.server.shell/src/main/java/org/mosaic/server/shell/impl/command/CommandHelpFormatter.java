@@ -12,107 +12,124 @@ import org.mosaic.util.logging.LoggerFactory;
 /**
  * @author arik
  */
-public class CommandHelpFormatter implements HelpFormatter {
+public class CommandHelpFormatter implements HelpFormatter
+{
 
     private static final Logger LOG = LoggerFactory.getLogger( CommandHelpFormatter.class );
 
-    private static ThreadLocal<Console> CONSOLE = new ThreadLocal<>();
+    private static ThreadLocal<Console> CONSOLE = new ThreadLocal<>( );
 
-    private static ThreadLocal<ShellCommand> COMMAND = new ThreadLocal<>();
+    private static ThreadLocal<ShellCommand> COMMAND = new ThreadLocal<>( );
 
-    public static void reset() {
+    public static void reset( )
+    {
         CONSOLE.set( null );
         COMMAND.set( null );
     }
 
-    public static void set( ShellCommand command, Console console ) {
+    public static void set( ShellCommand command, Console console )
+    {
         COMMAND.set( command );
         CONSOLE.set( console );
     }
 
     @Override
-    public String format( Map<String, ? extends OptionDescriptor> optionDescriptors ) {
-        ShellCommand command = COMMAND.get();
-        Console console = CONSOLE.get();
-        try {
-            console.println()
-                   .println( "NAME" )
-                   .print( "        " ).print( command.getName() ).print( " - " ).println( command.getDescription() )
-                   .println()
-                   .println( "ORIGIN" )
-                   .print( "        " ).println( command.getOrigin() )
-                   .println()
-                   .println( "SYNOPSIS" )
-                   .print( "        " ).print( command.getName() ).print( " " );
+    public String format( Map<String, ? extends OptionDescriptor> optionDescriptors )
+    {
+        ShellCommand command = COMMAND.get( );
+        Console console = CONSOLE.get( );
+        try
+        {
+            console.println( ).println( "NAME" ).print( "        " ).print( command.getName( ) ).print( " - " ).println( command.getDescription( ) ).println( ).println( "ORIGIN" ).print( "        " ).println( command.getOrigin( ) ).println( ).println( "SYNOPSIS" ).print( "        " ).print( command.getName( ) ).print( " " );
 
-            Map<String, OptionDescriptor> options = new LinkedHashMap<>();
-            for( OptionDescriptor descriptor : optionDescriptors.values() ) {
+            Map<String, OptionDescriptor> options = new LinkedHashMap<>( );
+            for( OptionDescriptor descriptor : optionDescriptors.values( ) )
+            {
                 String shortOption = getShortOption( descriptor );
-                if( !options.containsKey( shortOption ) ) {
+                if( !options.containsKey( shortOption ) )
+                {
                     options.put( shortOption, descriptor );
                 }
             }
             StringBuilder optionBuf = new StringBuilder( 50 );
-            for( OptionDescriptor descriptor : options.values() ) {
+            for( OptionDescriptor descriptor : options.values( ) )
+            {
                 optionBuf.delete( 0, Integer.MAX_VALUE );
 
                 optionBuf.append( '-' ).append( getShortOption( descriptor ) );
-                if( descriptor.requiresArgument() ) {
-                    optionBuf.append( " <" ).append( descriptor.argumentDescription() ).append( "> " );
-                } else if( descriptor.acceptsArguments() ) {
-                    optionBuf.append( " [" ).append( descriptor.argumentDescription() ).append( "] " );
+                if( descriptor.requiresArgument( ) )
+                {
+                    optionBuf.append( " <" ).append( descriptor.argumentDescription( ) ).append( "> " );
+                }
+                else if( descriptor.acceptsArguments( ) )
+                {
+                    optionBuf.append( " [" ).append( descriptor.argumentDescription( ) ).append( "] " );
                 }
 
-                if( descriptor.isRequired() ) {
+                if( descriptor.isRequired( ) )
+                {
                     console.print( "< " ).print( optionBuf ).print( " > " );
-                } else {
+                }
+                else
+                {
                     console.print( "[ " ).print( optionBuf ).print( " ] " );
                 }
             }
 
-            String additionalArgumentsDescription = command.getAdditionalArgumentsDescription();
-            if( additionalArgumentsDescription != null ) {
+            String additionalArgumentsDescription = command.getAdditionalArgumentsDescription( );
+            if( additionalArgumentsDescription != null )
+            {
                 console.print( "[" ).print( additionalArgumentsDescription ).print( "]" );
             }
-            console.println()
-                   .println()
-                   .println( "OPTIONS" );
+            console.println( ).println( ).println( "OPTIONS" );
 
             Console.TablePrinter table =
-                    console.createTable( 8 )
-                           .addHeader( "Options", 20 )
-                           .addHeader( "Description", 50 )
-                           .start();
-            for( Map.Entry<String, OptionDescriptor> entry : options.entrySet() ) {
-                OptionDescriptor descriptor = entry.getValue();
+                    console.createTable( 8 ).addHeader( "Options", 20 ).addHeader( "Description", 50 ).start( );
+            for( Map.Entry<String, OptionDescriptor> entry : options.entrySet( ) )
+            {
+                OptionDescriptor descriptor = entry.getValue( );
 
                 StringBuilder optionNames = new StringBuilder( 100 );
-                for( String opt : descriptor.options() ) {
-                    if( opt.equals( entry.getKey() ) ) {
+                for( String opt : descriptor.options( ) )
+                {
+                    if( opt.equals( entry.getKey( ) ) )
+                    {
                         optionNames.append( "-" ).append( opt );
-                    } else {
+                    }
+                    else
+                    {
                         optionNames.append( "--" ).append( opt );
                     }
 
-                    if( descriptor.requiresArgument() ) {
-                        optionNames.append( " <" ).append( descriptor.argumentDescription() ).append( "> " );
-                    } else if( descriptor.acceptsArguments() ) {
-                        optionNames.append( " [" ).append( descriptor.argumentDescription() ).append( "] " );
-                    } else {
+                    if( descriptor.requiresArgument( ) )
+                    {
+                        optionNames.append( " <" ).append( descriptor.argumentDescription( ) ).append( "> " );
+                    }
+                    else if( descriptor.acceptsArguments( ) )
+                    {
+                        optionNames.append( " [" ).append( descriptor.argumentDescription( ) ).append( "] " );
+                    }
+                    else
+                    {
                         optionNames.append( " " );
                     }
                 }
 
-                table.print( optionNames, descriptor.description() );
+                table.print( optionNames, descriptor.description( ) );
                 table.print( "", "" );
             }
-            table.done();
+            table.done( );
 
-        } catch( IOException e ) {
-            try {
+        }
+        catch( IOException e )
+        {
+            try
+            {
                 console.printStackTrace( e );
-            } catch( IOException e1 ) {
-                LOG.error( "Error printing exception: {}", e.getMessage(), e );
+            }
+            catch( IOException e1 )
+            {
+                LOG.error( "Error printing exception: {}", e.getMessage( ), e );
             }
         }
 
@@ -121,10 +138,13 @@ public class CommandHelpFormatter implements HelpFormatter {
         return "";
     }
 
-    private static String getShortOption( OptionDescriptor desc ) {
+    private static String getShortOption( OptionDescriptor desc )
+    {
         String shortest = null;
-        for( String option : desc.options() ) {
-            if( shortest == null || option.length() < shortest.length() ) {
+        for( String option : desc.options( ) )
+        {
+            if( shortest == null || option.length( ) < shortest.length( ) )
+            {
                 shortest = option;
             }
         }

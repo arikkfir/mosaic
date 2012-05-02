@@ -7,11 +7,14 @@ import org.osgi.framework.ServiceReference;
 /**
  * @author arik
  */
-public abstract class ServiceUtils {
+public abstract class ServiceUtils
+{
 
-    public static Map<String, Object> getServiceProperties( ServiceReference<?> serviceReference ) {
-        Map<String, Object> properties = new HashMap<>();
-        for( String property : serviceReference.getPropertyKeys() ) {
+    public static Map<String, Object> getServiceProperties( ServiceReference<?> serviceReference )
+    {
+        Map<String, Object> properties = new HashMap<>( );
+        for( String property : serviceReference.getPropertyKeys( ) )
+        {
             properties.put( property, serviceReference.getProperty( property ) );
         }
         return properties;

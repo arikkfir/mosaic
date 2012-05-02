@@ -7,7 +7,8 @@ import java.lang.annotation.RetentionPolicy;
  * @author arik
  */
 @Retention( RetentionPolicy.RUNTIME )
-public @interface Label {
+public @interface Label
+{
 
     String value( );
 

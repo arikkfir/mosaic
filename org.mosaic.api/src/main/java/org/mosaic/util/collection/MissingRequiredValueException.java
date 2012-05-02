@@ -3,16 +3,19 @@ package org.mosaic.util.collection;
 /**
  * @author arik
  */
-public class MissingRequiredValueException extends RuntimeException {
+public class MissingRequiredValueException extends RuntimeException
+{
 
     private final String key;
 
-    public MissingRequiredValueException( String key ) {
+    public MissingRequiredValueException( String key )
+    {
         super( "Key '" + key + "' has no value" );
         this.key = key;
     }
 
-    public String getKey( ) {
+    public String getKey( )
+    {
         return key;
     }
 }

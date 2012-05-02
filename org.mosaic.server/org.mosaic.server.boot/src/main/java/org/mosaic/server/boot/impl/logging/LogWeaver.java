@@ -22,48 +22,35 @@ import static org.osgi.framework.FrameworkUtil.getBundle;
 /**
  * @author arik
  */
-public class LogWeaver implements WeavingHook {
+public class LogWeaver implements WeavingHook
+{
 
-    private static final String ENTER_CODE =
-            "{\n" +
-            "   String $mosaicMethodName = \"___METHOD_NAME___\";\n" +
-            "   org.mosaic.util.logging.LoggerFactory.getLogger( this.getClass() ).trace( \n" +
-            "       \"Entering '{}'\", new Object[]{$mosaicMethodName} \n" +
-            "   );\n" +
-            "}\n";
+    private static final String ENTER_CODE = "{\n" +
+                                             "   String $mosaicMethodName = \"___METHOD_NAME___\";\n" +
+                                             "   org.mosaic.util.logging.LoggerFactory.getLogger( this.getClass() ).trace( \n" +
+                                             "       \"Entering '{}'\", new Object[]{$mosaicMethodName} \n" +
+                                             "   );\n" +
+                                             "}\n";
 
-    private static final String EXIT_CODE =
-            "{\n" +
-            "   String $mosaicMethodName = \"___METHOD_NAME___\";\n" +
-            "   org.mosaic.util.logging.LoggerFactory.getLogger( this.getClass() ).trace( \n" +
-            "       \"Exiting '{}'\", new Object[]{$mosaicMethodName} \n" +
-            "   );\n" +
-            "}\n";
+    private static final String EXIT_CODE = "{\n" +
+                                            "   String $mosaicMethodName = \"___METHOD_NAME___\";\n" +
+                                            "   org.mosaic.util.logging.LoggerFactory.getLogger( this.getClass() ).trace( \n" +
+                                            "       \"Exiting '{}'\", new Object[]{$mosaicMethodName} \n" +
+                                            "   );\n" +
+                                            "}\n";
 
-    private static final String EXCEPTION_CODE =
-            "{\n" +
-            "   String $mosaicMethodName = \"___METHOD_NAME___\";\n" +
-            "   org.mosaic.util.logging.LoggerFactory.getLogger( this.getClass() ).trace( \n" +
-            "       \"Exiting '{}' with error: {}\", new Object[]{$mosaicMethodName,$e.getMessage(),$e} \n" +
-            "   );\n" +
-            "   throw $e;\n" +
-            "}\n";
+    private static final String EXCEPTION_CODE = "{\n" +
+                                                 "   String $mosaicMethodName = \"___METHOD_NAME___\";\n" +
+                                                 "   org.mosaic.util.logging.LoggerFactory.getLogger( this.getClass() ).trace( \n" +
+                                                 "       \"Exiting '{}' with error: {}\", new Object[]{$mosaicMethodName,$e.getMessage(),$e} \n" +
+                                                 "   );\n" +
+                                                 "   throw $e;\n" +
+                                                 "}\n";
 
     private static final Logger LOG = LoggerFactory.getLogger( LogWeaver.class );
 
-    private static final Set<Pattern> IGNORED_BUNDLES = new HashSet<>( Arrays.asList(
-            Pattern.compile( "com\\.google\\.guava" ),
-            Pattern.compile( "commons\\-.*" ),
-            Pattern.compile( "joda\\.*" ),
-            Pattern.compile( "com\\.springsource\\..*" ),
-            Pattern.compile( "org\\.apache\\..*" ),
-            Pattern.compile( "org\\.eclipse\\..*" ),
-            Pattern.compile( "org\\.mosaic\\.api" ),
-            Pattern.compile( "org\\.mosaic\\.server\\.api" ),
-            Pattern.compile( "org\\.mosaic\\.server\\.boot" ),
-            Pattern.compile( "org\\.mosaic\\.server\\.transaction" ),
-            Pattern.compile( "org\\.springframework\\..*" )
-    ) );
+    private static final Set<Pattern> IGNORED_BUNDLES =
+            new HashSet<>( Arrays.asList( Pattern.compile( "com\\.google\\.guava" ), Pattern.compile( "commons\\-.*" ), Pattern.compile( "joda\\.*" ), Pattern.compile( "com\\.springsource\\..*" ), Pattern.compile( "org\\.apache\\..*" ), Pattern.compile( "org\\.eclipse\\..*" ), Pattern.compile( "org\\.mosaic\\.api" ), Pattern.compile( "org\\.mosaic\\.server\\.api" ), Pattern.compile( "org\\.mosaic\\.server\\.boot" ), Pattern.compile( "org\\.mosaic\\.server\\.transaction" ), Pattern.compile( "org\\.springframework\\..*" ) ) );
 
     private final String orgMosaicLoggingPackageVersion;
 
@@ -71,46 +58,64 @@ public class LogWeaver implements WeavingHook {
 
     private ServiceRegistration<WeavingHook> registration;
 
-    public LogWeaver() {
-        this.orgMosaicLoggingPackageVersion = getBundle( LoggerFactory.class ).getVersion().toString();
+    public LogWeaver( )
+    {
+        this.orgMosaicLoggingPackageVersion = getBundle( LoggerFactory.class ).getVersion( ).toString( );
     }
 
-    public void open( BundleContext bundleContext ) {
+    public void open( BundleContext bundleContext )
+    {
         this.bundleContext = bundleContext;
 
-        Dictionary<String, Object> props = new Hashtable<>();
+        Dictionary<String, Object> props = new Hashtable<>( );
         props.put( Constants.SERVICE_RANKING, -200 );
         this.bundleContext.registerService( WeavingHook.class, this, props );
     }
 
-    public void close() {
-        try {
-            if( this.registration != null ) {
-                this.registration.unregister();
+    public void close( )
+    {
+        try
+        {
+            if( this.registration != null )
+            {
+                this.registration.unregister( );
             }
-        } catch( IllegalStateException ignore ) {
-        } finally {
+        }
+        catch( IllegalStateException ignore )
+        {
+        }
+        finally
+        {
             this.registration = null;
             this.bundleContext = null;
         }
     }
 
     @Override
-    public void weave( WovenClass wovenClass ) {
-        if( this.bundleContext == null ) {
+    public void weave( WovenClass wovenClass )
+    {
+        if( this.bundleContext == null )
+        {
 
             // not initialized yet or already closed - ignore call
             return;
 
-        } else if( wovenClass.getBundleWiring().getBundle().getBundleId() == this.bundleContext.getBundle().getBundleId() ) {
+        }
+        else if( wovenClass.getBundleWiring( ).getBundle( ).getBundleId( ) ==
+                 this.bundleContext.getBundle( ).getBundleId( ) )
+        {
 
             // we mustn't weave classes from our bundle - will cause a circular class load
             return;
 
-        } else {
+        }
+        else
+        {
 
-            for( Pattern pattern : IGNORED_BUNDLES ) {
-                if( pattern.matcher( wovenClass.getBundleWiring().getRevision().getSymbolicName() ).matches() ) {
+            for( Pattern pattern : IGNORED_BUNDLES )
+            {
+                if( pattern.matcher( wovenClass.getBundleWiring( ).getRevision( ).getSymbolicName( ) ).matches( ) )
+                {
 
                     // never weave classes from one of the ignores bundles
                     return;
@@ -120,49 +125,63 @@ public class LogWeaver implements WeavingHook {
         }
 
         // javassist uses thread context class-loader - set it to weaved bundle's class loader
-        ClassLoader previousTCCL = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader( wovenClass.getBundleWiring().getClassLoader() );
-        try {
+        ClassLoader previousTCCL = Thread.currentThread( ).getContextClassLoader( );
+        Thread.currentThread( ).setContextClassLoader( wovenClass.getBundleWiring( ).getClassLoader( ) );
+        try
+        {
 
             // instrument the class if it has @Transactional methods; if so, it will be returned to OSGi container
             CtClass ctClass = instrument( createClassPool( wovenClass ), wovenClass );
-            if( ctClass != null ) {
-                wovenClass.getDynamicImports().addAll( Arrays.asList(
-                        "org.mosaic.util.logging;version:=\"" + this.orgMosaicLoggingPackageVersion + "\","
-                ) );
-                wovenClass.setBytes( ctClass.toBytecode() );
+            if( ctClass != null )
+            {
+                wovenClass.getDynamicImports( ).addAll( Arrays.asList( "org.mosaic.util.logging;version:=\"" +
+                                                                       this.orgMosaicLoggingPackageVersion +
+                                                                       "\"," ) );
+                wovenClass.setBytes( ctClass.toBytecode( ) );
             }
 
-        } catch( Exception e ) {
-            throw new WeavingException( "Error weaving class '" + wovenClass.getClassName() + "': " + e.getMessage(), e );
+        }
+        catch( Exception e )
+        {
+            throw new WeavingException( "Error weaving class '" +
+                                        wovenClass.getClassName( ) +
+                                        "': " +
+                                        e.getMessage( ), e );
 
-        } finally {
-            Thread.currentThread().setContextClassLoader( previousTCCL );
+        }
+        finally
+        {
+            Thread.currentThread( ).setContextClassLoader( previousTCCL );
         }
     }
 
-    private ClassPool createClassPool( WovenClass wovenClass ) {
+    private ClassPool createClassPool( WovenClass wovenClass )
+    {
         ClassPool classPool = new ClassPool( false );
-        classPool.appendClassPath( new LoaderClassPath( wovenClass.getBundleWiring().getClassLoader() ) );
-        classPool.appendClassPath( new LoaderClassPath( getClass().getClassLoader() ) );
+        classPool.appendClassPath( new LoaderClassPath( wovenClass.getBundleWiring( ).getClassLoader( ) ) );
+        classPool.appendClassPath( new LoaderClassPath( getClass( ).getClassLoader( ) ) );
         return classPool;
     }
 
-    private CtClass instrument( ClassPool classPool, WovenClass wovenClass ) throws IOException,
-            ClassNotFoundException, CannotCompileException, NotFoundException {
+    private CtClass instrument( ClassPool classPool, WovenClass wovenClass )
+    throws IOException, ClassNotFoundException, CannotCompileException, NotFoundException
+    {
 
-        Bundle wovenBundle = wovenClass.getBundleWiring().getBundle();
-        String wovenClassName = wovenClass.getClassName();
+        Bundle wovenBundle = wovenClass.getBundleWiring( ).getBundle( );
+        String wovenClassName = wovenClass.getClassName( );
         boolean modified = false;
 
-        CtClass ctClass = classPool.makeClass( new ByteArrayInputStream( wovenClass.getBytes() ) );
+        CtClass ctClass = classPool.makeClass( new ByteArrayInputStream( wovenClass.getBytes( ) ) );
         CtClass currentClass = ctClass;
-        while( currentClass != null ) {
-            for( CtMethod method : currentClass.getDeclaredMethods() ) {
-                String methodName = method.getName();
+        while( currentClass != null )
+        {
+            for( CtMethod method : currentClass.getDeclaredMethods( ) )
+            {
+                String methodName = method.getName( );
 
                 Object annotation = method.getAnnotation( Trace.class );
-                if( annotation != null ) {
+                if( annotation != null )
+                {
                     LOG.trace( "Weaving method '{}' in class '{}' of bundle '{}'", methodName, wovenClassName, BundleUtils.toString( wovenBundle ) );
 
                     // add code that will run before actual source code and start/join transactions
@@ -180,15 +199,19 @@ public class LogWeaver implements WeavingHook {
                     modified = true;
                 }
             }
-            currentClass = currentClass.getSuperclass();
+            currentClass = currentClass.getSuperclass( );
         }
 
         // if at least one method was modified, return this modified class; otherwise, discard this CtClass
-        if( modified ) {
+        if( modified )
+        {
             return ctClass;
-        } else {
-            if( ctClass != null ) {
-                ctClass.detach();
+        }
+        else
+        {
+            if( ctClass != null )
+            {
+                ctClass.detach( );
             }
             return null;
         }

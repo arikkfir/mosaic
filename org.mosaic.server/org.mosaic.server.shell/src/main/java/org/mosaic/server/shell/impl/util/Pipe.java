@@ -12,7 +12,8 @@ import static java.lang.Thread.currentThread;
 /**
  * @author arik
  */
-public class Pipe implements Runnable {
+public class Pipe implements Runnable
+{
 
     private static final Logger LOG = LoggerFactory.getLogger( Pipe.class );
 
@@ -20,29 +21,38 @@ public class Pipe implements Runnable {
 
     private final BlockingQueue<Integer> inputQueue;
 
-    public Pipe( InputStream in, BlockingQueue<Integer> inputQueue ) {
+    public Pipe( InputStream in, BlockingQueue<Integer> inputQueue )
+    {
         this.in = in;
         this.inputQueue = inputQueue;
     }
 
     @Override
-    public void run() {
-        while( !currentThread().isInterrupted() ) {
+    public void run( )
+    {
+        while( !currentThread( ).isInterrupted( ) )
+        {
 
-            try {
-                int i = in.read();
+            try
+            {
+                int i = in.read( );
                 inputQueue.put( i );
 
-                if( i == -1 ) {
+                if( i == -1 )
+                {
                     LOG.debug( "EOF received in pipe - closing pipe thread" );
                     break;
                 }
 
-            } catch( InterruptedException | InterruptedIOException e ) {
+            }
+            catch( InterruptedException | InterruptedIOException e )
+            {
                 LOG.debug( "Pipe thread interrupted" );
                 break;
-            } catch( IOException e ) {
-                LOG.error( "I/O error on pipe thread: {}", e.getMessage(), e );
+            }
+            catch( IOException e )
+            {
+                LOG.error( "I/O error on pipe thread: {}", e.getMessage( ), e );
                 break;
             }
 

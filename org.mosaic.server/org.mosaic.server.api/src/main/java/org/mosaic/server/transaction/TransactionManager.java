@@ -3,7 +3,8 @@ package org.mosaic.server.transaction;
 /**
  * @author arik
  */
-public interface TransactionManager {
+public interface TransactionManager
+{
 
     Object begin( String name );
 

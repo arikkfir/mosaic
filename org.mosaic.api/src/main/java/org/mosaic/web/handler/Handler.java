@@ -5,9 +5,11 @@ import org.mosaic.web.HttpRequest;
 /**
  * @author arik
  */
-public interface Handler {
+public interface Handler
+{
 
-    interface HandlerMatch {
+    interface HandlerMatch
+    {
 
     }
 

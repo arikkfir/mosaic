@@ -5,7 +5,8 @@ import java.lang.annotation.Annotation;
 /**
  * @author arik
  */
-public interface ClassEndpointInfo {
+public interface ClassEndpointInfo
+{
 
     String TYPE = "classEndpointType";
 

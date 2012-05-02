@@ -5,9 +5,11 @@ import org.mosaic.util.collection.TypedDict;
 /**
  * @author arik
  */
-public interface User extends TypedDict<Object> {
+public interface User extends TypedDict<Object>
+{
 
-    interface Credential {
+    interface Credential
+    {
 
         String getName( );
 

@@ -12,8 +12,9 @@ import org.mosaic.lifecycle.MethodEndpointMarker;
 @Retention( RetentionPolicy.RUNTIME )
 @Target( ElementType.METHOD )
 @MethodEndpointMarker
-public @interface ShellCommand {
+public @interface ShellCommand
+{
 
-    String value() default "";
+    String value( ) default "";
 
 }

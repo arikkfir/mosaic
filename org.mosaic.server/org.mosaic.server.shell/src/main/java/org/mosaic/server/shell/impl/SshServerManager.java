@@ -34,11 +34,12 @@ import org.springframework.stereotype.Component;
  * @author arik
  */
 @Component
-public class SshServerManager {
+public class SshServerManager
+{
 
     private static final Logger LOG = LoggerFactory.getLogger( SshServerManager.class );
 
-    private MosaicSessionFactory sessionFactory = new MosaicSessionFactory();
+    private MosaicSessionFactory sessionFactory = new MosaicSessionFactory( );
 
     private Home home;
 
@@ -53,83 +54,100 @@ public class SshServerManager {
     private ApplicationContext applicationContext;
 
     @Autowired
-    public void setPasswordAuthenticator( PasswordAuthenticator passwordAuthenticator ) {
+    public void setPasswordAuthenticator( PasswordAuthenticator passwordAuthenticator )
+    {
         this.passwordAuthenticator = passwordAuthenticator;
     }
 
     @Autowired
-    public void setPublicKeyAuthenticator( PublickeyAuthenticator publicKeyAuthenticator ) {
+    public void setPublicKeyAuthenticator( PublickeyAuthenticator publicKeyAuthenticator )
+    {
         this.publicKeyAuthenticator = publicKeyAuthenticator;
     }
 
     @Autowired
-    public void setApplicationContext( ApplicationContext applicationContext ) {
+    public void setApplicationContext( ApplicationContext applicationContext )
+    {
         this.applicationContext = applicationContext;
     }
 
     @ServiceRef( filter = "name=ssh" )
-    public void setConfiguration( Configuration configuration ) throws InterruptedException {
+    public void setConfiguration( Configuration configuration ) throws InterruptedException
+    {
         this.configuration = configuration;
-        if( this.sshServer != null ) {
-            stop();
-            init();
+        if( this.sshServer != null )
+        {
+            stop( );
+            init( );
         }
     }
 
     @ServiceRef
-    public void setHome( Home home ) {
+    public void setHome( Home home )
+    {
         this.home = home;
     }
 
     @PostConstruct
-    public synchronized void init() throws InterruptedException {
+    public synchronized void init( ) throws InterruptedException
+    {
 
         // create a new SSH daemon server and configure it
-        this.sshServer = SshServer.setUpDefaultServer();
+        this.sshServer = SshServer.setUpDefaultServer( );
         this.sshServer.setPort( this.configuration.getValueAs( "port", Integer.class, 9080 ) );
-        this.sshServer.setShellFactory( new MosaicSshShellFactory() );
+        this.sshServer.setShellFactory( new MosaicSshShellFactory( ) );
         this.sshServer.setPasswordAuthenticator( this.passwordAuthenticator );
-        this.sshServer.setUserAuthFactories( createUserAuthFactories() );
-        this.sshServer.setKeyPairProvider( new SimpleGeneratorHostKeyProvider( this.home.getWork().resolve( "host.ser" ).toString() ) );
+        this.sshServer.setUserAuthFactories( createUserAuthFactories( ) );
+        this.sshServer.setKeyPairProvider( new SimpleGeneratorHostKeyProvider( this.home.getWork( ).resolve( "host.ser" ).toString( ) ) );
         this.sshServer.setPublickeyAuthenticator( this.publicKeyAuthenticator );
         this.sshServer.setSessionFactory( this.sessionFactory );
 
         // start the new SSH daemon server
-        try {
-            this.sshServer.start();
-        } catch( IOException e ) {
-            LOG.warn( "Could not start Mosaic shell service: {}", e.getMessage(), e );
+        try
+        {
+            this.sshServer.start( );
+        }
+        catch( IOException e )
+        {
+            LOG.warn( "Could not start Mosaic shell service: {}", e.getMessage( ), e );
         }
 
     }
 
     @PreDestroy
-    public void stop() throws InterruptedException {
-        if( this.sshServer != null ) {
+    public void stop( ) throws InterruptedException
+    {
+        if( this.sshServer != null )
+        {
             this.sshServer.stop( false );
         }
     }
 
-    private List<NamedFactory<UserAuth>> createUserAuthFactories() {
-        List<NamedFactory<UserAuth>> factories = new ArrayList<>();
-        factories.add( new UserAuthLocalhostNone.Factory() );
-        factories.add( new UserAuthPassword.Factory() );
-        factories.add( new UserAuthPublicKey.Factory() );
+    private List<NamedFactory<UserAuth>> createUserAuthFactories( )
+    {
+        List<NamedFactory<UserAuth>> factories = new ArrayList<>( );
+        factories.add( new UserAuthLocalhostNone.Factory( ) );
+        factories.add( new UserAuthPassword.Factory( ) );
+        factories.add( new UserAuthPublicKey.Factory( ) );
         return factories;
     }
 
-    private static class MosaicSessionFactory extends SessionFactory {
+    private static class MosaicSessionFactory extends SessionFactory
+    {
 
         @Override
-        protected AbstractSession doCreateSession( IoSession ioSession ) throws Exception {
+        protected AbstractSession doCreateSession( IoSession ioSession ) throws Exception
+        {
             return new MosaicServerSession( this.server, ioSession );
         }
     }
 
-    private class MosaicSshShellFactory implements Factory<Command> {
+    private class MosaicSshShellFactory implements Factory<Command>
+    {
 
         @Override
-        public Command create() {
+        public Command create( )
+        {
             Session session = applicationContext.getBean( Session.class );
             session.setHome( home );
             return session;

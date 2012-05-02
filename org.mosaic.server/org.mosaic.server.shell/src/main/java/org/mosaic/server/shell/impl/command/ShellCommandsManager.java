@@ -13,29 +13,36 @@ import org.springframework.stereotype.Component;
  * @author arik
  */
 @Component
-public class ShellCommandsManager {
+public class ShellCommandsManager
+{
 
-    private final Map<MethodEndpointInfo, ShellCommand> commands = new ConcurrentHashMap<>();
+    private final Map<MethodEndpointInfo, ShellCommand> commands = new ConcurrentHashMap<>( );
 
-    private final HelpCommand helpCommand = new HelpCommand();
+    private final HelpCommand helpCommand = new HelpCommand( );
 
     @ServiceBind( filter = "methodEndpointShortType=ShellCommand" )
-    public synchronized void addListener( MethodEndpointInfo methodEndpointInfo ) {
+    public synchronized void addListener( MethodEndpointInfo methodEndpointInfo )
+    {
         this.commands.put( methodEndpointInfo, new MethodEndpointShellCommand( methodEndpointInfo ) );
     }
 
     @ServiceUnbind( filter = "methodEndpointShortType=ShellCommand" )
-    public synchronized void removeListener( MethodEndpointInfo methodEndpointInfo ) {
+    public synchronized void removeListener( MethodEndpointInfo methodEndpointInfo )
+    {
         this.commands.remove( methodEndpointInfo );
     }
 
-    public ShellCommand getCommand( String commandName ) {
-        if( "help".equalsIgnoreCase( commandName ) ) {
+    public ShellCommand getCommand( String commandName )
+    {
+        if( "help".equalsIgnoreCase( commandName ) )
+        {
             return this.helpCommand;
         }
 
-        for( ShellCommand shellCommandImpl : this.commands.values() ) {
-            if( shellCommandImpl.getName().equals( commandName ) ) {
+        for( ShellCommand shellCommandImpl : this.commands.values( ) )
+        {
+            if( shellCommandImpl.getName( ).equals( commandName ) )
+            {
                 return shellCommandImpl;
             }
         }
@@ -43,42 +50,51 @@ public class ShellCommandsManager {
         return null;
     }
 
-    public Collection<ShellCommand> getCommands() {
-        List<ShellCommand> commands = new ArrayList<>( this.commands.values() );
+    public Collection<ShellCommand> getCommands( )
+    {
+        List<ShellCommand> commands = new ArrayList<>( this.commands.values( ) );
         commands.add( this.helpCommand );
-        Collections.sort( commands, new CommandComparator() );
+        Collections.sort( commands, new CommandComparator( ) );
         return commands;
     }
 
-    private class HelpCommand implements ShellCommand {
+    private class HelpCommand implements ShellCommand
+    {
 
         @Override
-        public String getName() {
+        public String getName( )
+        {
             return "help";
         }
 
         @Override
-        public void execute( Console console, String... args ) throws Exception {
-            if( args.length == 0 ) {
+        public void execute( Console console, String... args ) throws Exception
+        {
+            if( args.length == 0 )
+            {
 
                 console.println( "Following commands are available:" );
-                Console.TablePrinter table = console.createTable()
-                                                    .addHeader( "Command", 10 )
-                                                    .addHeader( "Description", 50 )
-                                                    .addHeader( "Origin", 60 )
-                                                    .start();
-                for( ShellCommand command : getCommands() ) {
-                    table.print( command.getName(), command.getDescription(), command.getOrigin() );
+                Console.TablePrinter table =
+                        console.createTable( ).addHeader( "Command", 10 ).addHeader( "Description", 50 ).addHeader( "Origin", 60 ).start( );
+                for( ShellCommand command : getCommands( ) )
+                {
+                    table.print( command.getName( ), command.getDescription( ), command.getOrigin( ) );
                 }
-                table.done();
+                table.done( );
 
-            } else {
+            }
+            else
+            {
 
-                for( String commandName : args ) {
+                for( String commandName : args )
+                {
                     ShellCommand command = getCommand( commandName );
-                    if( command == null ) {
+                    if( command == null )
+                    {
                         console.println( "Command '" + commandName + "' could not be found" );
-                    } else {
+                    }
+                    else
+                    {
                         command.showHelp( console );
                     }
                 }
@@ -87,22 +103,26 @@ public class ShellCommandsManager {
         }
 
         @Override
-        public String getAdditionalArgumentsDescription() {
+        public String getAdditionalArgumentsDescription( )
+        {
             return "command-names";
         }
 
         @Override
-        public String getOrigin() {
+        public String getOrigin( )
+        {
             return "Built-in";
         }
 
         @Override
-        public String getDescription() {
+        public String getDescription( )
+        {
             return "Shows help about currently available commands";
         }
 
         @Override
-        public void showHelp( Console console ) throws IOException {
+        public void showHelp( Console console ) throws IOException
+        {
             console.println( "Shows currently available commands, or, when given command name(s)," );
             console.println( "prints specific help about these commands." );
             console.println( "Syntax: help [command-name]*" );
@@ -110,11 +130,13 @@ public class ShellCommandsManager {
 
     }
 
-    private static class CommandComparator implements Comparator<ShellCommand> {
+    private static class CommandComparator implements Comparator<ShellCommand>
+    {
 
         @Override
-        public int compare( ShellCommand o1, ShellCommand o2 ) {
-            return o1.getName().compareTo( o2.getName() );
+        public int compare( ShellCommand o1, ShellCommand o2 )
+        {
+            return o1.getName( ).compareTo( o2.getName( ) );
         }
     }
 }

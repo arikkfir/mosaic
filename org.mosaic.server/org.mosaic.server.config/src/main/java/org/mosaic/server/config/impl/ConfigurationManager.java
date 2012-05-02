@@ -25,13 +25,14 @@ import static java.nio.file.Files.newDirectoryStream;
  * @author arik
  */
 @Component
-public class ConfigurationManager {
+public class ConfigurationManager
+{
 
     private static final Logger LOG = LoggerFactory.getLogger( ConfigurationManager.class );
 
     private static final long SCAN_INTERVAL = 1000;
 
-    private final Map<Path, ConfigurationImpl> configurations = new ConcurrentHashMap<>();
+    private final Map<Path, ConfigurationImpl> configurations = new ConcurrentHashMap<>( );
 
     private ConversionService conversionService;
 
@@ -42,78 +43,98 @@ public class ConfigurationManager {
     private BundleContext bundleContext;
 
     @ContextRef
-    public void setBundleContext( BundleContext bundleContext ) {
+    public void setBundleContext( BundleContext bundleContext )
+    {
         this.bundleContext = bundleContext;
     }
 
     @Autowired
-    public void setConversionService( ConversionService conversionService ) {
+    public void setConversionService( ConversionService conversionService )
+    {
         this.conversionService = conversionService;
     }
 
     @ServiceRef
-    public void setHome( Home home ) {
+    public void setHome( Home home )
+    {
         this.home = home;
     }
 
     @PostConstruct
-    public void init() {
-        scan();
+    public void init( )
+    {
+        scan( );
 
-        this.scanner = new Scanner();
+        this.scanner = new Scanner( );
         Thread t = new Thread( scanner, "ConfigurationsWatcher" );
         t.setDaemon( true );
-        t.start();
+        t.start( );
     }
 
     @PreDestroy
-    public void destroy() {
-        if( this.scanner != null ) {
+    public void destroy( )
+    {
+        if( this.scanner != null )
+        {
             this.scanner.stop = true;
         }
     }
 
-    private synchronized void scan() {
+    private synchronized void scan( )
+    {
 
-        try( DirectoryStream<Path> stream = newDirectoryStream( this.home.getEtc(), "*.properties" ) ) {
+        try( DirectoryStream<Path> stream = newDirectoryStream( this.home.getEtc( ), "*.properties" ) )
+        {
 
-            for( Path configFile : stream ) {
+            for( Path configFile : stream )
+            {
                 ConfigurationImpl configuration = this.configurations.get( configFile );
-                if( configuration == null ) {
+                if( configuration == null )
+                {
                     configuration = new ConfigurationImpl( this.bundleContext, configFile, this.conversionService );
                     this.configurations.put( configFile, configuration );
                 }
-                configuration.refresh();
+                configuration.refresh( );
             }
 
-        } catch( IOException e ) {
-            LOG.error( "Could not search for configurations in '{}': {}", this.home.getEtc(), e.getMessage(), e );
+        }
+        catch( IOException e )
+        {
+            LOG.error( "Could not search for configurations in '{}': {}", this.home.getEtc( ), e.getMessage( ), e );
         }
 
-        this.configurations.values().iterator();
-        Iterator<ConfigurationImpl> iterator = this.configurations.values().iterator();
-        while( iterator.hasNext() ) {
-            ConfigurationImpl configuration = iterator.next();
-            if( !exists( configuration.getPath() ) ) {
-                configuration.unregister();
-                iterator.remove();
+        this.configurations.values( ).iterator( );
+        Iterator<ConfigurationImpl> iterator = this.configurations.values( ).iterator( );
+        while( iterator.hasNext( ) )
+        {
+            ConfigurationImpl configuration = iterator.next( );
+            if( !exists( configuration.getPath( ) ) )
+            {
+                configuration.unregister( );
+                iterator.remove( );
             }
         }
     }
 
-    private class Scanner implements Runnable {
+    private class Scanner implements Runnable
+    {
 
         private boolean stop;
 
         @Override
-        public void run() {
-            while( !this.stop ) {
-                try {
+        public void run( )
+        {
+            while( !this.stop )
+            {
+                try
+                {
                     Thread.sleep( SCAN_INTERVAL );
-                } catch( InterruptedException e ) {
+                }
+                catch( InterruptedException e )
+                {
                     break;
                 }
-                scan();
+                scan( );
             }
         }
     }

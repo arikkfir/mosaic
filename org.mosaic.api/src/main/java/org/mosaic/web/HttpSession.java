@@ -7,7 +7,8 @@ import org.mosaic.util.collection.TypedDict;
 /**
  * @author arik
  */
-public interface HttpSession extends TypedDict<Object> {
+public interface HttpSession extends TypedDict<Object>
+{
 
     DateTime getCreationTime( );
 

@@ -10,7 +10,8 @@ import org.springframework.http.HttpStatus;
 /**
  * @author arik
  */
-public interface HttpRequest extends TypedDict<Object> {
+public interface HttpRequest extends TypedDict<Object>
+{
 
     HttpApplication getApplication( );
 

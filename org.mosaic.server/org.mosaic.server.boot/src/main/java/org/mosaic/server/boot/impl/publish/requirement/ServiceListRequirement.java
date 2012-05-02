@@ -10,57 +10,77 @@ import org.osgi.framework.ServiceReference;
 /**
  * @author arik
  */
-public class ServiceListRequirement extends AbstractTrackerRequirement {
+public class ServiceListRequirement extends AbstractTrackerRequirement
+{
 
-    private final List<Object> cachedReferences = new CopyOnWriteArrayList<>();
+    private final List<Object> cachedReferences = new CopyOnWriteArrayList<>( );
 
     public ServiceListRequirement( BundleTracker tracker,
                                    Class<?> serviceType,
                                    String additionalFilter,
                                    String beanName,
-                                   Method targetMethod ) {
+                                   Method targetMethod )
+    {
         super( tracker, serviceType, additionalFilter, beanName, targetMethod );
-        Class<?>[] parameterTypes = targetMethod.getParameterTypes();
-        if( parameterTypes.length != 1 || !parameterTypes[ 0 ].isAssignableFrom( List.class ) ) {
-            throw new IllegalArgumentException( "Method '" + getTargetMethod().getName() + "' is bean '" + beanName + "' has an illegal signature: must be single List parameter" );
+        Class<?>[] parameterTypes = targetMethod.getParameterTypes( );
+        if( parameterTypes.length != 1 || !parameterTypes[ 0 ].isAssignableFrom( List.class ) )
+        {
+            throw new IllegalArgumentException( "Method '" +
+                                                getTargetMethod( ).getName( ) +
+                                                "' is bean '" +
+                                                beanName +
+                                                "' has an illegal signature: must be single List parameter" );
         }
     }
 
     @Override
-    public String toString() {
-        return "ServiceList[" + getServiceType().getSimpleName() + "/" + getTargetMethod().getName() + "/" + getBeanName() + "]";
+    public String toString( )
+    {
+        return "ServiceList[" +
+               getServiceType( ).getSimpleName( ) +
+               "/" +
+               getTargetMethod( ).getName( ) +
+               "/" +
+               getBeanName( ) +
+               "]";
     }
 
     @Override
-    public int getPriority() {
+    public int getPriority( )
+    {
         return SERVICE_LIST_PRIORITY;
     }
 
     @Override
-    public String toShortString() {
-        return "List<" + getServiceType().getSimpleName() + ">";
+    public String toShortString( )
+    {
+        return "List<" + getServiceType( ).getSimpleName( ) + ">";
     }
 
     @Override
-    public Object addingService( ServiceReference<Object> serviceReference ) {
+    public Object addingService( ServiceReference<Object> serviceReference )
+    {
         Object service = super.addingService( serviceReference );
         this.cachedReferences.add( service );
         return service;
     }
 
     @Override
-    public void removedService( ServiceReference<Object> serviceReference, Object service ) {
+    public void removedService( ServiceReference<Object> serviceReference, Object service )
+    {
         this.cachedReferences.remove( service );
     }
 
     @Override
-    protected boolean trackInternal() throws Exception {
-        super.trackInternal();
+    protected boolean trackInternal( ) throws Exception
+    {
+        super.trackInternal( );
         return true;
     }
 
     @Override
-    protected void onInitBeanInternal( Object bean ) throws Exception {
+    protected void onInitBeanInternal( Object bean ) throws Exception
+    {
         invoke( bean, this.cachedReferences );
     }
 }

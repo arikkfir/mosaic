@@ -16,7 +16,8 @@ import org.springframework.context.ApplicationContext;
 /**
  * @author arik
  */
-public class ClassEndpointRequirement extends AbstractBeanRequirement implements ClassEndpointInfo {
+public class ClassEndpointRequirement extends AbstractBeanRequirement implements ClassEndpointInfo
+{
 
     private static final Logger LOG = LoggerFactory.getLogger( ClassEndpointRequirement.class );
 
@@ -28,82 +29,107 @@ public class ClassEndpointRequirement extends AbstractBeanRequirement implements
 
     private ApplicationContext applicationContext;
 
-    public ClassEndpointRequirement( BundleTracker tracker, String beanName, Annotation type, Class<?> classType ) {
+    public ClassEndpointRequirement( BundleTracker tracker, String beanName, Annotation type, Class<?> classType )
+    {
         super( tracker, beanName );
         this.type = type;
         this.classType = classType;
     }
 
     @Override
-    public String toString() {
-        return "ClassEndpoint[" + this.classType.getSimpleName() + "@" + this.type.annotationType().getSimpleName() + "/" + getBeanName() + "]";
+    public String toString( )
+    {
+        return "ClassEndpoint[" +
+               this.classType.getSimpleName( ) +
+               "@" +
+               this.type.annotationType( ).getSimpleName( ) +
+               "/" +
+               getBeanName( ) +
+               "]";
     }
 
     @Override
-    public int getPriority() {
+    public int getPriority( )
+    {
         return SERVICE_EXPORT_PRIORITY;
     }
 
     @Override
-    public String toShortString() {
-        return "ClassEndpoint[" + getBeanName() + "]";
+    public String toShortString( )
+    {
+        return "ClassEndpoint[" + getBeanName( ) + "]";
     }
 
     @Override
-    protected boolean trackInternal() throws Exception {
-        super.trackInternal();
+    protected boolean trackInternal( ) throws Exception
+    {
+        super.trackInternal( );
         return true;
     }
 
     @Override
-    protected void publishInternal( ApplicationContext applicationContext ) throws Exception {
-        BundleContext bundleContext = getBundleContext();
-        if( bundleContext == null ) {
-            LOG.warn( "Bundle being published when not active?? For bundle: {}", getBundleName() );
-        } else {
+    protected void publishInternal( ApplicationContext applicationContext ) throws Exception
+    {
+        BundleContext bundleContext = getBundleContext( );
+        if( bundleContext == null )
+        {
+            LOG.warn( "Bundle being published when not active?? For bundle: {}", getBundleName( ) );
+        }
+        else
+        {
             this.applicationContext = applicationContext;
 
-            Dictionary<String, Object> properties = new Hashtable<>();
-            properties.put( TYPE, this.type.annotationType().getName() );
-            properties.put( SHORT_TYPE, this.type.annotationType().getSimpleName() );
-            properties.put( CLASS_NAME, this.classType.getName() );
+            Dictionary<String, Object> properties = new Hashtable<>( );
+            properties.put( TYPE, this.type.annotationType( ).getName( ) );
+            properties.put( SHORT_TYPE, this.type.annotationType( ).getSimpleName( ) );
+            properties.put( CLASS_NAME, this.classType.getName( ) );
             this.registration = bundleContext.registerService( ClassEndpointInfo.class, this, properties );
         }
     }
 
     @Override
-    protected void unpublishInternal() throws Exception {
-        if( this.registration != null ) {
-            try {
-                this.registration.unregister();
-            } catch( IllegalStateException ignore ) {
+    protected void unpublishInternal( ) throws Exception
+    {
+        if( this.registration != null )
+        {
+            try
+            {
+                this.registration.unregister( );
+            }
+            catch( IllegalStateException ignore )
+            {
             }
         }
         this.applicationContext = null;
     }
 
     @Override
-    public String getOrigin() {
-        return BundleUtils.toString( getBundleContext() );
+    public String getOrigin( )
+    {
+        return BundleUtils.toString( getBundleContext( ) );
     }
 
     @Override
-    public boolean isOfType( Class<? extends Annotation> annotationType ) {
-        return this.type.annotationType().equals( annotationType );
+    public boolean isOfType( Class<? extends Annotation> annotationType )
+    {
+        return this.type.annotationType( ).equals( annotationType );
     }
 
     @Override
-    public Annotation getType() {
+    public Annotation getType( )
+    {
         return this.type;
     }
 
     @Override
-    public Class<?> getClassType() {
+    public Class<?> getClassType( )
+    {
         return this.classType;
     }
 
     @Override
-    public Object getEndpoint() {
+    public Object getEndpoint( )
+    {
         return getBean( this.applicationContext );
     }
 }

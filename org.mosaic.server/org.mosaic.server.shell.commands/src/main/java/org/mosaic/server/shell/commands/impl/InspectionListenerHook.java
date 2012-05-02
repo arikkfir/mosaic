@@ -15,38 +15,47 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @ServiceExport( ListenerHook.class )
-public class InspectionListenerHook implements ListenerHook {
+public class InspectionListenerHook implements ListenerHook
+{
 
-    private final Map<Bundle, List<String>> requirements = new WeakHashMap<>();
+    private final Map<Bundle, List<String>> requirements = new WeakHashMap<>( );
 
-    public List<String> getServiceRequirements( Bundle bundle ) {
+    public List<String> getServiceRequirements( Bundle bundle )
+    {
         return this.requirements.get( bundle );
     }
 
     @Override
-    public synchronized void added( Collection<ListenerInfo> listeners ) {
-        for( ListenerInfo info : listeners ) {
-            Bundle bundle = info.getBundleContext().getBundle();
+    public synchronized void added( Collection<ListenerInfo> listeners )
+    {
+        for( ListenerInfo info : listeners )
+        {
+            Bundle bundle = info.getBundleContext( ).getBundle( );
 
             List<String> reqs = this.requirements.get( bundle );
-            if( reqs == null ) {
-                reqs = new CopyOnWriteArrayList<>();
+            if( reqs == null )
+            {
+                reqs = new CopyOnWriteArrayList<>( );
                 this.requirements.put( bundle, reqs );
             }
 
-            reqs.add( info.getFilter() );
+            reqs.add( info.getFilter( ) );
         }
     }
 
     @Override
-    public synchronized void removed( Collection<ListenerInfo> listeners ) {
-        for( ListenerInfo info : listeners ) {
-            Bundle bundle = info.getBundleContext().getBundle();
+    public synchronized void removed( Collection<ListenerInfo> listeners )
+    {
+        for( ListenerInfo info : listeners )
+        {
+            Bundle bundle = info.getBundleContext( ).getBundle( );
 
             List<String> reqs = this.requirements.get( bundle );
-            if( reqs != null ) {
-                reqs.remove( info.getFilter() );
-                if( reqs.isEmpty() ) {
+            if( reqs != null )
+            {
+                reqs.remove( info.getFilter( ) );
+                if( reqs.isEmpty( ) )
+                {
                     this.requirements.remove( bundle );
                 }
             }

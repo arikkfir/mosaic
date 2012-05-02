@@ -6,9 +6,11 @@ import java.util.Map;
 /**
  * @author arik
  */
-public interface Dict<V> extends Map<String, List<V>> {
+public interface Dict<V> extends Map<String, List<V>>
+{
 
-    interface ListFactory<V> {
+    interface ListFactory<V>
+    {
 
         List<V> createList( );
     }

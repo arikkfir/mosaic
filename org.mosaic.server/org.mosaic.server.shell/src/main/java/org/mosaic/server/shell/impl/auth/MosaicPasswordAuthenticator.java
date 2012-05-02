@@ -19,42 +19,50 @@ import org.springframework.stereotype.Component;
  * @author arik
  */
 @Component
-public class MosaicPasswordAuthenticator implements PasswordAuthenticator {
+public class MosaicPasswordAuthenticator implements PasswordAuthenticator
+{
 
     private static final Logger LOG = LoggerFactory.getLogger( MosaicPasswordAuthenticator.class );
 
     private Home home;
 
     @ServiceRef
-    public void setHome( Home home ) {
+    public void setHome( Home home )
+    {
         this.home = home;
     }
 
     @Override
-    public boolean authenticate( String username, String password, ServerSession session ) {
+    public boolean authenticate( String username, String password, ServerSession session )
+    {
 
-        Path passwordFile = this.home.getEtc().resolve( "passwd" );
-        if( !Files.exists( passwordFile ) || !Files.isReadable( passwordFile ) ) {
+        Path passwordFile = this.home.getEtc( ).resolve( "passwd" );
+        if( !Files.exists( passwordFile ) || !Files.isReadable( passwordFile ) )
+        {
             LOG.warn( "The '{}' file could not be found or read - no password authentication can occur", passwordFile );
             return false;
         }
 
-        try( Reader reader = Files.newBufferedReader( passwordFile, Charset.forName( "UTF-8" ) ) ) {
+        try( Reader reader = Files.newBufferedReader( passwordFile, Charset.forName( "UTF-8" ) ) )
+        {
 
-            Properties properties = new Properties();
+            Properties properties = new Properties( );
             properties.load( reader );
 
             String sentMd5Password = DigestUtils.md5Hex( password );
             String md5Password = properties.getProperty( username );
-            if( md5Password == null ) {
+            if( md5Password == null )
+            {
                 LOG.warn( "Unknown user: {}", username );
                 return false;
             }
 
             return md5Password.equalsIgnoreCase( sentMd5Password );
 
-        } catch( IOException e ) {
-            LOG.warn( "Error reading passwords from '{}': {}", passwordFile, e.getMessage(), e );
+        }
+        catch( IOException e )
+        {
+            LOG.warn( "Error reading passwords from '{}': {}", passwordFile, e.getMessage( ), e );
             return false;
         }
 

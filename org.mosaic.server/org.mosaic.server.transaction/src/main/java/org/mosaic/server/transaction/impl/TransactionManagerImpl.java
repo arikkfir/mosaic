@@ -31,11 +31,11 @@ import static org.mosaic.util.logging.LoggerFactory.getBundleLogger;
 /**
  * @author arik
  */
-public class TransactionManagerImpl implements TransactionManager, DataSource {
+public class TransactionManagerImpl implements TransactionManager, DataSource
+{
 
     public static final String[] TX_MGR_INTERFACES = new String[] {
-            TransactionManager.class.getName(),
-            DataSource.class.getName()
+            TransactionManager.class.getName( ), DataSource.class.getName( )
     };
 
     private final Logger logger;
@@ -58,15 +58,17 @@ public class TransactionManagerImpl implements TransactionManager, DataSource {
 
     public TransactionManagerImpl( Path dataSourceFile,
                                    JdbcDriverRegistrar jdbcDriverRegistrar,
-                                   ConversionService conversionService ) {
+                                   ConversionService conversionService )
+    {
         this.path = dataSourceFile;
 
         // discover name
-        String fileName = this.path.getFileName().toString();
-        this.name = fileName.substring( 0, fileName.length() - ".properties".length() );
+        String fileName = this.path.getFileName( ).toString( );
+        this.name = fileName.substring( 0, fileName.length( ) - ".properties".length( ) );
 
         // create logger
-        this.logger = LoggerFactory.getLogger( getBundleLogger( TransactionManagerImpl.class ).getName() + "." + this.name );
+        this.logger =
+                LoggerFactory.getLogger( getBundleLogger( TransactionManagerImpl.class ).getName( ) + "." + this.name );
         this.conversionService = conversionService;
 
         // create the actual BoneCP data source which will manage the connection pool
@@ -78,39 +80,49 @@ public class TransactionManagerImpl implements TransactionManager, DataSource {
         // create a transaction manager used by @Transactional classes
         this.springTxMgr = new DataSourceTransactionManager( this.rawDataSource );
         this.springTxMgr.setValidateExistingTransaction( true );
-        this.springTxMgr.afterPropertiesSet();
+        this.springTxMgr.afterPropertiesSet( );
     }
 
-    public Path getPath() {
+    public Path getPath( )
+    {
         return path;
     }
 
-    public void refresh() {
-        if( isDirectory( this.path ) || !exists( this.path ) || !isReadable( this.path ) ) {
+    public void refresh( )
+    {
+        if( isDirectory( this.path ) || !exists( this.path ) || !isReadable( this.path ) )
+        {
 
-            if( this.modificationTime > 0 ) {
+            if( this.modificationTime > 0 )
+            {
 
                 logger.warn( "Data source '{}' no longer exists/readable at: {}", this.name, this.path );
                 this.modificationTime = 0;
-                unregister();
+                unregister( );
 
             }
 
-        } else {
+        }
+        else
+        {
 
-            try {
+            try
+            {
 
-                long modificationTime = getLastModifiedTime( this.path ).toMillis();
-                if( modificationTime > this.modificationTime ) {
+                long modificationTime = getLastModifiedTime( this.path ).toMillis( );
+                if( modificationTime > this.modificationTime )
+                {
                     this.modificationTime = modificationTime;
 
                     logger.info( "Creating data source '{}' from: {}", this.name, this.path );
-                    TypedDict<String> data = createEmptyMap();
-                    try( InputStream inputStream = newInputStream( this.path, READ ) ) {
+                    TypedDict<String> data = createEmptyMap( );
+                    try( InputStream inputStream = newInputStream( this.path, READ ) )
+                    {
 
-                        Properties properties = new Properties();
+                        Properties properties = new Properties( );
                         properties.load( inputStream );
-                        for( String propertyName : properties.stringPropertyNames() ) {
+                        for( String propertyName : properties.stringPropertyNames( ) )
+                        {
                             data.put( propertyName, properties.getProperty( propertyName ) );
                         }
 
@@ -118,14 +130,17 @@ public class TransactionManagerImpl implements TransactionManager, DataSource {
                     register( data );
                 }
 
-            } catch( IOException e ) {
-                logger.error( "Could not refresh data source '{}': {}", this.path.getFileName().toString(), e.getMessage(), e );
+            }
+            catch( IOException e )
+            {
+                logger.error( "Could not refresh data source '{}': {}", this.path.getFileName( ).toString( ), e.getMessage( ), e );
             }
 
         }
     }
 
-    public void register( TypedDict<String> cfg ) {
+    public void register( TypedDict<String> cfg )
+    {
         this.rawDataSource.init( cfg );
 
         // create a transaction manager for the *RAW* data source (NEVER TO THE TX DATA SOURCE! THE TX-MGR MUST WORK AGAINST THE ACTUAL DATA SOURCE!)
@@ -133,105 +148,135 @@ public class TransactionManagerImpl implements TransactionManager, DataSource {
         this.springTxMgr.setRollbackOnCommitFailure( cfg.getValueAs( "rollbackOnCommitFailure", Boolean.class, false ) );
 
         // register as a data source and transaction manager
-        Dictionary<String, Object> dsDict = new Hashtable<>();
+        Dictionary<String, Object> dsDict = new Hashtable<>( );
         dsDict.put( "name", this.name );
-        if( this.registration != null ) {
+        if( this.registration != null )
+        {
             this.registration.setProperties( dsDict );
-        } else {
-            Bundle bundle = FrameworkUtil.getBundle( getClass() );
-            this.registration = bundle.getBundleContext().registerService( TX_MGR_INTERFACES, this, dsDict );
+        }
+        else
+        {
+            Bundle bundle = FrameworkUtil.getBundle( getClass( ) );
+            this.registration = bundle.getBundleContext( ).registerService( TX_MGR_INTERFACES, this, dsDict );
         }
     }
 
-    public void unregister() {
-        this.logger.info( "Shutting down connection pool '{}'", this.rawDataSource.getPoolName() );
-        try {
-            this.registration.unregister();
-        } catch( IllegalStateException ignore ) {
+    public void unregister( )
+    {
+        this.logger.info( "Shutting down connection pool '{}'", this.rawDataSource.getPoolName( ) );
+        try
+        {
+            this.registration.unregister( );
         }
-        try {
-            this.rawDataSource.close();
-        } catch( Exception e ) {
-            this.logger.error( "Could not close data source '{}': {}", this.rawDataSource.getPoolName(), e.getMessage(), e );
+        catch( IllegalStateException ignore )
+        {
+        }
+        try
+        {
+            this.rawDataSource.close( );
+        }
+        catch( Exception e )
+        {
+            this.logger.error( "Could not close data source '{}': {}", this.rawDataSource.getPoolName( ), e.getMessage( ), e );
         }
     }
 
     @Override
-    public Object begin( String name ) {
-        DefaultTransactionDefinition txDef = new DefaultTransactionDefinition();
+    public Object begin( String name )
+    {
+        DefaultTransactionDefinition txDef = new DefaultTransactionDefinition( );
         txDef.setName( name );
         txDef.setPropagationBehavior( TransactionDefinition.PROPAGATION_REQUIRED );
         return this.springTxMgr.getTransaction( txDef );
     }
 
     @Override
-    public void rollback( Object tx ) {
-        if( tx instanceof TransactionStatus ) {
+    public void rollback( Object tx )
+    {
+        if( tx instanceof TransactionStatus )
+        {
             this.springTxMgr.rollback( ( TransactionStatus ) tx );
-        } else {
+        }
+        else
+        {
             throw new IllegalArgumentException( tx + " is not a transaction object" );
         }
     }
 
     @Override
-    public void commit( Object tx ) {
-        if( tx instanceof TransactionStatus ) {
+    public void commit( Object tx )
+    {
+        if( tx instanceof TransactionStatus )
+        {
             this.springTxMgr.commit( ( TransactionStatus ) tx );
-        } else {
+        }
+        else
+        {
             throw new IllegalArgumentException( tx + " is not a transaction object" );
         }
     }
 
     @Override
-    public Connection getConnection() throws SQLException {
-        return this.txDataSource.getConnection();
+    public Connection getConnection( ) throws SQLException
+    {
+        return this.txDataSource.getConnection( );
     }
 
     @Override
-    public Connection getConnection( String username, String password ) throws SQLException {
+    public Connection getConnection( String username, String password ) throws SQLException
+    {
         return this.txDataSource.getConnection( username, password );
     }
 
     @Override
-    public PrintWriter getLogWriter() throws SQLException {
-        return this.txDataSource.getLogWriter();
+    public PrintWriter getLogWriter( ) throws SQLException
+    {
+        return this.txDataSource.getLogWriter( );
     }
 
     @Override
-    public void setLogWriter( PrintWriter out ) throws SQLException {
+    public void setLogWriter( PrintWriter out ) throws SQLException
+    {
         this.txDataSource.setLogWriter( out );
     }
 
     @Override
-    public void setLoginTimeout( int seconds ) throws SQLException {
+    public void setLoginTimeout( int seconds ) throws SQLException
+    {
         this.txDataSource.setLoginTimeout( seconds );
     }
 
     @Override
-    public int getLoginTimeout() throws SQLException {
-        return this.txDataSource.getLoginTimeout();
+    public int getLoginTimeout( ) throws SQLException
+    {
+        return this.txDataSource.getLoginTimeout( );
     }
 
     @Override
-    public java.util.logging.Logger getParentLogger() throws SQLFeatureNotSupportedException {
-        return this.txDataSource.getParentLogger();
+    public java.util.logging.Logger getParentLogger( ) throws SQLFeatureNotSupportedException
+    {
+        return this.txDataSource.getParentLogger( );
     }
 
     @Override
-    public <T> T unwrap( Class<T> type ) throws SQLException {
+    public <T> T unwrap( Class<T> type ) throws SQLException
+    {
         return this.txDataSource.unwrap( type );
     }
 
     @Override
-    public boolean isWrapperFor( Class<?> type ) throws SQLException {
+    public boolean isWrapperFor( Class<?> type ) throws SQLException
+    {
         return this.txDataSource.isWrapperFor( type );
     }
 
-    private WrappingTypedDict<String> createEmptyMap() {
-        return createMap( new HashMap<String, List<String>>() );
+    private WrappingTypedDict<String> createEmptyMap( )
+    {
+        return createMap( new HashMap<String, List<String>>( ) );
     }
 
-    private WrappingTypedDict<String> createMap( Map<String, List<String>> data ) {
+    private WrappingTypedDict<String> createMap( Map<String, List<String>> data )
+    {
         return new WrappingTypedDict<>( data, this.conversionService, String.class );
     }
 }

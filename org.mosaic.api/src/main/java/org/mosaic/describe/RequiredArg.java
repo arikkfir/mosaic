@@ -7,7 +7,8 @@ import java.lang.annotation.RetentionPolicy;
  * @author arik
  */
 @Retention( RetentionPolicy.RUNTIME )
-public @interface RequiredArg {
+public @interface RequiredArg
+{
 
     boolean value( ) default true;
 

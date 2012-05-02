@@ -7,7 +7,8 @@ import org.mosaic.util.collection.TypedDict;
 /**
  * @author arik
  */
-public interface HttpApplication extends TypedDict<Object> {
+public interface HttpApplication extends TypedDict<Object>
+{
 
     String getName( );
 

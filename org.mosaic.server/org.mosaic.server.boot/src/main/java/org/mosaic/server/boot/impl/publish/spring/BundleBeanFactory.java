@@ -9,20 +9,23 @@ import static org.mosaic.server.boot.impl.publish.spring.SpringUtils.registerBun
 /**
  * @author arik
  */
-public class BundleBeanFactory extends DefaultListableBeanFactory {
+public class BundleBeanFactory extends DefaultListableBeanFactory
+{
 
-    public BundleBeanFactory( Bundle bundle, OsgiSpringNamespacePlugin springNamespacePlugin ) {
+    public BundleBeanFactory( Bundle bundle, OsgiSpringNamespacePlugin springNamespacePlugin )
+    {
 
         // can't create a bean factory for a bundle that has no wiring
         BundleWiring wiring = bundle.adapt( BundleWiring.class );
-        if( wiring == null ) {
-            throw new IllegalStateException( "Bundle '" + bundle.getSymbolicName() + "' is uninstalled!" );
+        if( wiring == null )
+        {
+            throw new IllegalStateException( "Bundle '" + bundle.getSymbolicName( ) + "' is uninstalled!" );
         }
 
         // configure application context for an OSGi environment
         setAllowBeanDefinitionOverriding( false );
         setAllowCircularReferences( false );
-        setBeanClassLoader( wiring.getClassLoader() );
+        setBeanClassLoader( wiring.getClassLoader( ) );
         setCacheBeanMetadata( false );
 
         // add bundle beans

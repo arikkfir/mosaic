@@ -5,7 +5,8 @@ import org.osgi.framework.Bundle;
 /**
  * @author arik
  */
-public enum BundleState {
+public enum BundleState
+{
 
     INSTALLED,
     RESOLVED,
@@ -15,8 +16,10 @@ public enum BundleState {
     STOPPING,
     UNINSTALLED;
 
-    public static BundleState valueOfOsgiState( int state ) {
-        switch( state ) {
+    public static BundleState valueOfOsgiState( int state )
+    {
+        switch( state )
+        {
             case Bundle.INSTALLED:
                 return INSTALLED;
             case Bundle.RESOLVED:

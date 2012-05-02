@@ -3,7 +3,8 @@ package org.mosaic.web;
 /**
  * @author arik
  */
-public interface HttpCookie {
+public interface HttpCookie
+{
 
     String getName( );
 

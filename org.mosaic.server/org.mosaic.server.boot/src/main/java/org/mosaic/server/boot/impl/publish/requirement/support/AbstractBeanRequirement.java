@@ -6,34 +6,41 @@ import org.springframework.beans.factory.BeanFactory;
 /**
  * @author arik
  */
-public abstract class AbstractBeanRequirement extends AbstractRequirement {
+public abstract class AbstractBeanRequirement extends AbstractRequirement
+{
 
     private final String beanName;
 
-    protected AbstractBeanRequirement( BundleTracker tracker, String beanName ) {
+    protected AbstractBeanRequirement( BundleTracker tracker, String beanName )
+    {
         super( tracker );
         this.beanName = beanName;
     }
 
-    protected Object getBean( BeanFactory beanFactory ) {
+    protected Object getBean( BeanFactory beanFactory )
+    {
         return beanFactory.getBean( this.beanName );
     }
 
-    protected String getBeanName() {
+    protected String getBeanName( )
+    {
         return beanName;
     }
 
     @Override
-    public boolean isBeanPublishable( Object bean, String beanName ) {
+    public boolean isBeanPublishable( Object bean, String beanName )
+    {
         return this.beanName.equals( beanName );
     }
 
     @Override
-    protected final void publishBeanInternal( Object bean, String beanName ) throws Exception {
+    protected final void publishBeanInternal( Object bean, String beanName ) throws Exception
+    {
         onInitBeanInternal( bean );
     }
 
-    protected void onInitBeanInternal( Object bean ) throws Exception {
+    protected void onInitBeanInternal( Object bean ) throws Exception
+    {
         // no-op
     }
 }

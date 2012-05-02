@@ -7,7 +7,8 @@ import java.lang.reflect.Method;
 /**
  * @author arik
  */
-public interface MethodEndpointInfo {
+public interface MethodEndpointInfo
+{
 
     String TYPE = "methodEndpointType";
 

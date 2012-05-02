@@ -8,15 +8,18 @@ import org.springframework.format.Formatter;
 /**
  * @author arik
  */
-public class DateTimeFormatter implements Formatter<DateTime> {
+public class DateTimeFormatter implements Formatter<DateTime>
+{
 
     @Override
-    public DateTime parse( String text, Locale locale ) throws ParseException {
+    public DateTime parse( String text, Locale locale ) throws ParseException
+    {
         return HttpTime.parse( text );
     }
 
     @Override
-    public String print( DateTime object, Locale locale ) {
+    public String print( DateTime object, Locale locale )
+    {
         return HttpTime.format( object );
     }
 }

@@ -12,7 +12,8 @@ import org.springframework.http.MediaType;
 /**
  * @author arik
  */
-public interface HttpResponseHeaders extends TypedDict<String> {
+public interface HttpResponseHeaders extends TypedDict<String>
+{
 
     Set<HttpMethod> getAllow( );
 

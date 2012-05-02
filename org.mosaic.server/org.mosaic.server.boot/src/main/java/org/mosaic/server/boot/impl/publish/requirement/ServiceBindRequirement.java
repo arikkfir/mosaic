@@ -16,7 +16,8 @@ import org.springframework.context.ApplicationContext;
 /**
  * @author arik
  */
-public class ServiceBindRequirement extends AbstractTrackerRequirement {
+public class ServiceBindRequirement extends AbstractTrackerRequirement
+{
 
     private static final Logger LOG = LoggerFactory.getLogger( ServiceBindRequirement.class );
 
@@ -24,89 +25,127 @@ public class ServiceBindRequirement extends AbstractTrackerRequirement {
                                    Class<?> serviceType,
                                    String additionalFilter,
                                    String beanName,
-                                   Method targetMethod ) {
+                                   Method targetMethod )
+    {
         super( tracker, serviceType, additionalFilter, beanName, targetMethod );
     }
 
     @Override
-    public String toString() {
-        return "ServiceBind[" + getServiceType().getSimpleName() + "/" + getTargetMethod().getName() + "/" + getBeanName() + "]";
+    public String toString( )
+    {
+        return "ServiceBind[" +
+               getServiceType( ).getSimpleName( ) +
+               "/" +
+               getTargetMethod( ).getName( ) +
+               "/" +
+               getBeanName( ) +
+               "]";
     }
 
     @Override
-    public int getPriority() {
+    public int getPriority( )
+    {
         return SERVICE_BIND_PRIORITY;
     }
 
     @Override
-    public String toShortString() {
-        return "Bind '" + getServiceType().getSimpleName() + "'";
+    public String toShortString( )
+    {
+        return "Bind '" + getServiceType( ).getSimpleName( ) + "'";
     }
 
     @Override
-    public Object addingService( ServiceReference<Object> serviceReference ) {
+    public Object addingService( ServiceReference<Object> serviceReference )
+    {
         Object service = super.addingService( serviceReference );
-        if( service != null ) {
+        if( service != null )
+        {
             markAsSatisfied( serviceReference, service );
         }
         return service;
     }
 
     @Override
-    public void modifiedService( ServiceReference<Object> serviceReference, Object service ) {
-        if( service != null ) {
+    public void modifiedService( ServiceReference<Object> serviceReference, Object service )
+    {
+        if( service != null )
+        {
             markAsSatisfied( serviceReference, service );
         }
     }
 
     @Override
-    protected boolean trackInternal() throws Exception {
-        super.trackInternal();
+    protected boolean trackInternal( ) throws Exception
+    {
+        super.trackInternal( );
         return true;
     }
 
     @Override
-    protected void onSatisfyInternal( ApplicationContext applicationContext, Object... state ) throws Exception {
+    protected void onSatisfyInternal( ApplicationContext applicationContext, Object... state ) throws Exception
+    {
         Object bean = getBean( applicationContext );
         Object[] args = getServiceMethodArgs( ( ServiceReference<?> ) state[ 0 ], state[ 1 ] );
         invoke( bean, args );
     }
 
     @Override
-    protected void onInitBeanInternal( Object bean ) throws Exception {
-        ServiceReference<Object>[] serviceReferences = getTracker().getServiceReferences();
-        if( serviceReferences != null ) {
-            for( ServiceReference<Object> serviceReference : serviceReferences ) {
+    protected void onInitBeanInternal( Object bean ) throws Exception
+    {
+        ServiceReference<Object>[] serviceReferences = getTracker( ).getServiceReferences( );
+        if( serviceReferences != null )
+        {
+            for( ServiceReference<Object> serviceReference : serviceReferences )
+            {
                 Object[] args = getServiceMethodArgs( serviceReference );
-                if( args != null ) {
+                if( args != null )
+                {
                     invoke( bean, args );
-                } else {
-                    LOG.warn( "Initializing bean when bundle is not active?? For bundle: {}", getBundleName() );
+                }
+                else
+                {
+                    LOG.warn( "Initializing bean when bundle is not active?? For bundle: {}", getBundleName( ) );
                 }
             }
         }
     }
 
-    protected Object[] getServiceMethodArgs( ServiceReference<?> sr ) {
-        BundleContext bundleContext = getBundleContext();
+    protected Object[] getServiceMethodArgs( ServiceReference<?> sr )
+    {
+        BundleContext bundleContext = getBundleContext( );
         return bundleContext == null ? null : getServiceMethodArgs( sr, bundleContext.getService( sr ) );
     }
 
-    protected Object[] getServiceMethodArgs( ServiceReference<?> sr, Object service ) {
-        Method method = getTargetMethod();
+    protected Object[] getServiceMethodArgs( ServiceReference<?> sr, Object service )
+    {
+        Method method = getTargetMethod( );
 
-        List<Object> values = new LinkedList<>();
-        for( Class<?> type : method.getParameterTypes() ) {
-            if( type.isAssignableFrom( Map.class ) ) {
+        List<Object> values = new LinkedList<>( );
+        for( Class<?> type : method.getParameterTypes( ) )
+        {
+            if( type.isAssignableFrom( Map.class ) )
+            {
                 values.add( ServiceUtils.getServiceProperties( sr ) );
-            } else if( type.isAssignableFrom( ServiceReference.class ) ) {
+            }
+            else if( type.isAssignableFrom( ServiceReference.class ) )
+            {
                 values.add( sr );
-            } else if( type.isAssignableFrom( getServiceType() ) ) {
+            }
+            else if( type.isAssignableFrom( getServiceType( ) ) )
+            {
                 values.add( service );
-            } else {
-                throw new IllegalStateException( "Unsupported argument type ('" + type.getSimpleName() + "') in method '" + method.getName() + "' of bean '" + getBeanName() + "'" );
+            }
+            else
+            {
+                throw new IllegalStateException( "Unsupported argument type ('" +
+                                                 type.getSimpleName( ) +
+                                                 "') in method '" +
+                                                 method.getName( ) +
+                                                 "' of bean '" +
+                                                 getBeanName( ) +
+                                                 "'" );
             }
         }
-        return values.toArray();
+        return values.toArray( );
     }
 }

@@ -10,7 +10,8 @@ import static org.springframework.util.StringUtils.hasText;
 /**
  * @author arik
  */
-public class RegexPathMatcher {
+public class RegexPathMatcher
+{
 
     private static final String DOUBLE_STAR_PATTERN = ".*";
 
@@ -20,16 +21,17 @@ public class RegexPathMatcher {
 
     private final Pattern regex;
 
-    private final List<UriToken> pathTokens = new LinkedList<>();
+    private final List<UriToken> pathTokens = new LinkedList<>( );
 
-    private final Map<String, Integer> variableIndices = new LinkedHashMap<>();
+    private final Map<String, Integer> variableIndices = new LinkedHashMap<>( );
 
     private int groupCount = 0;
 
-    public RegexPathMatcher( String path ) {
+    public RegexPathMatcher( String path )
+    {
         this.pattern = path;
 
-        StringBuilder regex = new StringBuilder( this.pattern.length() * 2 );
+        StringBuilder regex = new StringBuilder( this.pattern.length( ) * 2 );
 
         //
         // the "\A" sequence means begining of input
@@ -41,38 +43,49 @@ public class RegexPathMatcher {
         //
         StringBuilder buf = new StringBuilder( 100 );
         int i = 0;
-        int pathLength = this.pattern.length();
+        int pathLength = this.pattern.length( );
         boolean collectingPattern = false;
         int patternCurlyNestCount = 0;
-        while( i < pathLength ) {
+        while( i < pathLength )
+        {
             char c = this.pattern.charAt( i );
-            switch( c ) {
+            switch( c )
+            {
                 case '{':
-                    if( collectingPattern ) {
+                    if( collectingPattern )
+                    {
                         patternCurlyNestCount++;
                         buf.append( c );
-                    } else {
-                        regex.append( Pattern.quote( buf.toString() ) );
-                        this.pathTokens.add( new UriTokenImpl( buf.toString(), false ) );
-                        buf.delete( 0, buf.length() );
+                    }
+                    else
+                    {
+                        regex.append( Pattern.quote( buf.toString( ) ) );
+                        this.pathTokens.add( new UriTokenImpl( buf.toString( ), false ) );
+                        buf.delete( 0, buf.length( ) );
                         collectingPattern = true;
                         patternCurlyNestCount = 0;
                     }
                     break;
 
                 case '}':
-                    if( collectingPattern ) {
-                        if( patternCurlyNestCount > 0 ) {
+                    if( collectingPattern )
+                    {
+                        if( patternCurlyNestCount > 0 )
+                        {
                             buf.append( c );
                             patternCurlyNestCount--;
-                        } else {
-                            regex.append( parseVariablePattern( buf.toString() ) );
-                            this.pathTokens.add( new UriTokenImpl( buf.toString(), true ) );
-                            buf.delete( 0, buf.length() );
+                        }
+                        else
+                        {
+                            regex.append( parseVariablePattern( buf.toString( ) ) );
+                            this.pathTokens.add( new UriTokenImpl( buf.toString( ), true ) );
+                            buf.delete( 0, buf.length( ) );
                             collectingPattern = false;
                             patternCurlyNestCount = 0;
                         }
-                    } else {
+                    }
+                    else
+                    {
                         buf.append( c );
                     }
                     break;
@@ -82,15 +95,19 @@ public class RegexPathMatcher {
                     // if we're not collecting a pattern ("{...}") add a star/double-star pattern.
                     // if WE ARE collecting a pattern, skip this and continue to the 'default' section (NO BREAK!)
                     //
-                    if( !collectingPattern ) {
-                        regex.append( Pattern.quote( buf.toString() ) );
-                        this.pathTokens.add( new UriTokenImpl( buf.toString(), false ) );
-                        buf.delete( 0, buf.length() );
-                        if( i + 1 < pathLength && this.pattern.charAt( i + 1 ) == '*' ) {
+                    if( !collectingPattern )
+                    {
+                        regex.append( Pattern.quote( buf.toString( ) ) );
+                        this.pathTokens.add( new UriTokenImpl( buf.toString( ), false ) );
+                        buf.delete( 0, buf.length( ) );
+                        if( i + 1 < pathLength && this.pattern.charAt( i + 1 ) == '*' )
+                        {
                             regex.append( DOUBLE_STAR_PATTERN );
                             this.pathTokens.add( new UriTokenImpl( "**", false ) );
                             i++;
-                        } else {
+                        }
+                        else
+                        {
                             regex.append( SINGLE_STAR_PATTERN );
                             this.pathTokens.add( new UriTokenImpl( "*", false ) );
                         }
@@ -106,11 +123,14 @@ public class RegexPathMatcher {
         //
         // if there's a "{" in the path without a closing "}" - invalid path
         //
-        if( collectingPattern ) {
+        if( collectingPattern )
+        {
             throw new IllegalArgumentException( "Illegal path expression: " + this.pattern );
-        } else if( buf.length() > 0 ) {
-            regex.append( Pattern.quote( buf.toString() ) );
-            this.pathTokens.add( new UriTokenImpl( buf.toString(), false ) );
+        }
+        else if( buf.length( ) > 0 )
+        {
+            regex.append( Pattern.quote( buf.toString( ) ) );
+            this.pathTokens.add( new UriTokenImpl( buf.toString( ), false ) );
         }
 
         //
@@ -118,43 +138,52 @@ public class RegexPathMatcher {
         //
         regex.append( "\\Z" );
 
-        this.regex = Pattern.compile( regex.toString() );
+        this.regex = Pattern.compile( regex.toString( ) );
     }
 
-    public List<UriToken> getPathTokens() {
+    public List<UriToken> getPathTokens( )
+    {
         return this.pathTokens;
     }
 
-    public String getPattern() {
+    public String getPattern( )
+    {
         return this.pattern;
     }
 
-    public String getRegex() {
-        return this.regex.pattern();
+    public String getRegex( )
+    {
+        return this.regex.pattern( );
     }
 
-    public Collection<String> getVariableNames() {
-        return this.variableIndices.keySet();
+    public Collection<String> getVariableNames( )
+    {
+        return this.variableIndices.keySet( );
     }
 
-    public MatchResult match( String uri ) {
+    public MatchResult match( String uri )
+    {
         return new MatchResult( uri );
     }
 
-    private String parseVariablePattern( String variablePattern ) {
+    private String parseVariablePattern( String variablePattern )
+    {
         String variableName, pattern;
 
         //
         // name[:pattern]
         //
         int firstColonIndex = variablePattern.indexOf( ':' );
-        if( firstColonIndex <= 0 ) {
+        if( firstColonIndex <= 0 )
+        {
             //
             // the variable pattern is "{myVar}" - capture everything for this variable name
             //
             variableName = variablePattern;
             pattern = SINGLE_STAR_PATTERN;
-        } else {
+        }
+        else
+        {
             //
             // the variable pattern is "{myVar:pattern}" - capture using given pattern for this variable name
             //
@@ -169,74 +198,92 @@ public class RegexPathMatcher {
         return "(" + pattern + ")";
     }
 
-    public class MatchResult {
+    public class MatchResult
+    {
 
         private final boolean matching;
 
         private final Map<String, String> variables;
 
-        private MatchResult( String uri ) {
-            if( !hasText( uri ) ) {
+        private MatchResult( String uri )
+        {
+            if( !hasText( uri ) )
+            {
                 this.matching = false;
-                this.variables = Collections.emptyMap();
-            } else {
+                this.variables = Collections.emptyMap( );
+            }
+            else
+            {
                 Matcher matcher = regex.matcher( uri );
-                if( matcher.matches() ) {
+                if( matcher.matches( ) )
+                {
                     this.matching = true;
-                    this.variables = new HashMap<>();
-                    for( Map.Entry<String, Integer> entry : variableIndices.entrySet() ) {
-                        this.variables.put( entry.getKey(), matcher.group( entry.getValue() ) );
+                    this.variables = new HashMap<>( );
+                    for( Map.Entry<String, Integer> entry : variableIndices.entrySet( ) )
+                    {
+                        this.variables.put( entry.getKey( ), matcher.group( entry.getValue( ) ) );
                     }
-                } else {
+                }
+                else
+                {
                     this.matching = false;
-                    this.variables = Collections.emptyMap();
+                    this.variables = Collections.emptyMap( );
                 }
             }
         }
 
-        public String getPattern() {
-            return RegexPathMatcher.this.getPattern();
+        public String getPattern( )
+        {
+            return RegexPathMatcher.this.getPattern( );
         }
 
-        public String getRegex() {
-            return RegexPathMatcher.this.getRegex();
+        public String getRegex( )
+        {
+            return RegexPathMatcher.this.getRegex( );
         }
 
-        public boolean isMatching() {
+        public boolean isMatching( )
+        {
             return this.matching;
         }
 
-        public Map<String, String> getVariables() {
+        public Map<String, String> getVariables( )
+        {
             return this.variables;
         }
     }
 
-    private static interface UriToken {
+    private static interface UriToken
+    {
 
-        String getPath();
+        String getPath( );
 
-        boolean isVariable();
+        boolean isVariable( );
 
     }
 
-    private static class UriTokenImpl implements UriToken {
+    private static class UriTokenImpl implements UriToken
+    {
 
         private final String path;
 
         private final boolean variable;
 
-        private UriTokenImpl( String path, boolean variable ) {
+        private UriTokenImpl( String path, boolean variable )
+        {
             this.path = path;
             this.variable = variable;
         }
 
         @Override
-        public String getPath() {
+        public String getPath( )
+        {
             return this.path;
         }
 
         @Override
-        public boolean isVariable() {
+        public boolean isVariable( )
+        {
             return this.variable;
         }
     }

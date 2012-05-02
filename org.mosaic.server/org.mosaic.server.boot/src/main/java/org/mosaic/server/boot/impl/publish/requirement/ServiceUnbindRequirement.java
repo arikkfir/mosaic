@@ -13,67 +13,96 @@ import org.springframework.context.ApplicationContext;
 /**
  * @author arik
  */
-public class ServiceUnbindRequirement extends AbstractTrackerRequirement {
+public class ServiceUnbindRequirement extends AbstractTrackerRequirement
+{
 
     public ServiceUnbindRequirement( BundleTracker tracker,
                                      Class<?> serviceType,
                                      String additionalFilter,
                                      String beanName,
-                                     Method targetMethod ) {
+                                     Method targetMethod )
+    {
         super( tracker, serviceType, additionalFilter, beanName, targetMethod );
     }
 
     @Override
-    public String toString() {
-        return "ServiceUnbind[" + getServiceType().getSimpleName() + "/" + getTargetMethod().getName() + "/" + getBeanName() + "]";
+    public String toString( )
+    {
+        return "ServiceUnbind[" +
+               getServiceType( ).getSimpleName( ) +
+               "/" +
+               getTargetMethod( ).getName( ) +
+               "/" +
+               getBeanName( ) +
+               "]";
     }
 
     @Override
-    public int getPriority() {
+    public int getPriority( )
+    {
         return SERVICE_UNBIND_PRIORITY;
     }
 
     @Override
-    public String toShortString() {
-        return "Unbind of '" + getServiceType().getSimpleName() + "'";
+    public String toShortString( )
+    {
+        return "Unbind of '" + getServiceType( ).getSimpleName( ) + "'";
     }
 
     @Override
-    public void removedService( ServiceReference<Object> serviceReference, Object service ) {
+    public void removedService( ServiceReference<Object> serviceReference, Object service )
+    {
         // yes it's weird that in 'removedService' we're calling 'markAsSatisfied' but if you think about it - that's
         // the true meaning: we are still satisfied, and want to inform the publisher about it so we can inject to our bean
         markAsSatisfied( serviceReference, service );
     }
 
     @Override
-    protected boolean trackInternal() throws Exception {
-        super.trackInternal();
+    protected boolean trackInternal( ) throws Exception
+    {
+        super.trackInternal( );
         return true;
     }
 
     @Override
-    protected void onSatisfyInternal( ApplicationContext applicationContext, Object... state ) throws Exception {
+    protected void onSatisfyInternal( ApplicationContext applicationContext, Object... state ) throws Exception
+    {
         Object bean = getBean( applicationContext );
         ServiceReference<?> serviceReference = ( ServiceReference<?> ) state[ 0 ];
         Object service = state[ 1 ];
         invoke( bean, getServiceMethodArgs( serviceReference, service ) );
     }
 
-    protected Object[] getServiceMethodArgs( ServiceReference<?> sr, Object service ) {
-        Method method = getTargetMethod();
+    protected Object[] getServiceMethodArgs( ServiceReference<?> sr, Object service )
+    {
+        Method method = getTargetMethod( );
 
-        List<Object> values = new LinkedList<>();
-        for( Class<?> type : method.getParameterTypes() ) {
-            if( type.isAssignableFrom( Map.class ) ) {
+        List<Object> values = new LinkedList<>( );
+        for( Class<?> type : method.getParameterTypes( ) )
+        {
+            if( type.isAssignableFrom( Map.class ) )
+            {
                 values.add( ServiceUtils.getServiceProperties( sr ) );
-            } else if( type.isAssignableFrom( ServiceReference.class ) ) {
+            }
+            else if( type.isAssignableFrom( ServiceReference.class ) )
+            {
                 values.add( sr );
-            } else if( type.isAssignableFrom( getServiceType() ) ) {
+            }
+            else if( type.isAssignableFrom( getServiceType( ) ) )
+            {
                 values.add( service );
-            } else {
-                throw new IllegalStateException( "Unsupported argument type ('" + type.getSimpleName() + "') in method '" + method.getName() + "' of bean '" + getBeanName() + "'" );
+            }
+            else
+            {
+                throw new IllegalStateException( "Unsupported argument type ('" +
+                                                 type.getSimpleName( ) +
+                                                 "') in method '" +
+                                                 method.getName( ) +
+                                                 "' of bean '" +
+                                                 getBeanName( ) +
+                                                 "'" );
             }
         }
-        return values.toArray();
+        return values.toArray( );
     }
 }

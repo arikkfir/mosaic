@@ -9,36 +9,45 @@ import org.slf4j.helpers.MessageFormatter;
 /**
  * @author arik
  */
-public class Slf4jLoggerWrapper implements Logger {
+public class Slf4jLoggerWrapper implements Logger
+{
 
     private final org.slf4j.Logger logger;
 
-    public Slf4jLoggerWrapper( org.slf4j.Logger logger ) {
-        if( logger == null ) {
+    public Slf4jLoggerWrapper( org.slf4j.Logger logger )
+    {
+        if( logger == null )
+        {
             throw new NullPointerException( "Logger must not be null" );
         }
         this.logger = logger;
     }
 
     @Override
-    public String getName( ) {
+    public String getName( )
+    {
         return this.logger.getName( );
     }
 
     @Override
-    public boolean isTraceEnabled( ) {
+    public boolean isTraceEnabled( )
+    {
         return logger.isTraceEnabled( );
     }
 
     @Override
-    public Logger trace( String msg, Object... args ) {
-        if( isTraceEnabled( ) ) {
-            if( msg == null ) {
+    public Logger trace( String msg, Object... args )
+    {
+        if( isTraceEnabled( ) )
+        {
+            if( msg == null )
+            {
                 msg = "";
             }
 
             Throwable throwable = null;
-            if( args != null && args.length > 0 && args[ args.length - 1 ] instanceof Throwable ) {
+            if( args != null && args.length > 0 && args[ args.length - 1 ] instanceof Throwable )
+            {
                 throwable = ( Throwable ) args[ args.length - 1 ];
                 Object[] newArgs = new Object[ args.length - 1 ];
                 System.arraycopy( args, 0, newArgs, 0, args.length - 1 );
@@ -46,9 +55,12 @@ public class Slf4jLoggerWrapper implements Logger {
             }
 
             FormattingTuple tuple = MessageFormatter.arrayFormat( msg, args );
-            if( throwable != null ) {
+            if( throwable != null )
+            {
                 this.logger.trace( tuple.getMessage( ), throwable );
-            } else {
+            }
+            else
+            {
                 this.logger.trace( tuple.getMessage( ) );
             }
         }
@@ -56,19 +68,24 @@ public class Slf4jLoggerWrapper implements Logger {
     }
 
     @Override
-    public boolean isDebugEnabled( ) {
+    public boolean isDebugEnabled( )
+    {
         return logger.isDebugEnabled( );
     }
 
     @Override
-    public Logger debug( String msg, Object... args ) {
-        if( isDebugEnabled( ) ) {
-            if( msg == null ) {
+    public Logger debug( String msg, Object... args )
+    {
+        if( isDebugEnabled( ) )
+        {
+            if( msg == null )
+            {
                 msg = "";
             }
 
             Throwable throwable = null;
-            if( args != null && args.length > 0 && args[ args.length - 1 ] instanceof Throwable ) {
+            if( args != null && args.length > 0 && args[ args.length - 1 ] instanceof Throwable )
+            {
                 throwable = ( Throwable ) args[ args.length - 1 ];
                 Object[] newArgs = new Object[ args.length - 1 ];
                 System.arraycopy( args, 0, newArgs, 0, args.length - 1 );
@@ -76,9 +93,12 @@ public class Slf4jLoggerWrapper implements Logger {
             }
 
             msg = MessageFormatter.arrayFormat( msg, args ).getMessage( );
-            if( throwable != null ) {
+            if( throwable != null )
+            {
                 this.logger.debug( msg, throwable );
-            } else {
+            }
+            else
+            {
                 this.logger.debug( msg );
             }
         }
@@ -86,19 +106,24 @@ public class Slf4jLoggerWrapper implements Logger {
     }
 
     @Override
-    public boolean isInfoEnabled( ) {
+    public boolean isInfoEnabled( )
+    {
         return logger.isInfoEnabled( );
     }
 
     @Override
-    public Logger info( String msg, Object... args ) {
-        if( isInfoEnabled( ) ) {
-            if( msg == null ) {
+    public Logger info( String msg, Object... args )
+    {
+        if( isInfoEnabled( ) )
+        {
+            if( msg == null )
+            {
                 msg = "";
             }
 
             Throwable throwable = null;
-            if( args != null && args.length > 0 && args[ args.length - 1 ] instanceof Throwable ) {
+            if( args != null && args.length > 0 && args[ args.length - 1 ] instanceof Throwable )
+            {
                 throwable = ( Throwable ) args[ args.length - 1 ];
                 Object[] newArgs = new Object[ args.length - 1 ];
                 System.arraycopy( args, 0, newArgs, 0, args.length - 1 );
@@ -106,9 +131,12 @@ public class Slf4jLoggerWrapper implements Logger {
             }
 
             msg = MessageFormatter.arrayFormat( msg, args ).getMessage( );
-            if( throwable != null ) {
+            if( throwable != null )
+            {
                 this.logger.info( msg, throwable );
-            } else {
+            }
+            else
+            {
                 this.logger.info( msg );
             }
         }
@@ -116,19 +144,24 @@ public class Slf4jLoggerWrapper implements Logger {
     }
 
     @Override
-    public boolean isWarnEnabled( ) {
+    public boolean isWarnEnabled( )
+    {
         return logger.isWarnEnabled( );
     }
 
     @Override
-    public Logger warn( String msg, Object... args ) {
-        if( isWarnEnabled( ) ) {
-            if( msg == null ) {
+    public Logger warn( String msg, Object... args )
+    {
+        if( isWarnEnabled( ) )
+        {
+            if( msg == null )
+            {
                 msg = "";
             }
 
             Throwable throwable = null;
-            if( args != null && args.length > 0 && args[ args.length - 1 ] instanceof Throwable ) {
+            if( args != null && args.length > 0 && args[ args.length - 1 ] instanceof Throwable )
+            {
                 throwable = ( Throwable ) args[ args.length - 1 ];
                 Object[] newArgs = new Object[ args.length - 1 ];
                 System.arraycopy( args, 0, newArgs, 0, args.length - 1 );
@@ -136,9 +169,12 @@ public class Slf4jLoggerWrapper implements Logger {
             }
 
             msg = MessageFormatter.arrayFormat( msg, args ).getMessage( );
-            if( throwable != null ) {
+            if( throwable != null )
+            {
                 this.logger.warn( msg, throwable );
-            } else {
+            }
+            else
+            {
                 this.logger.warn( msg );
             }
         }
@@ -146,19 +182,24 @@ public class Slf4jLoggerWrapper implements Logger {
     }
 
     @Override
-    public boolean isErrorEnabled( ) {
+    public boolean isErrorEnabled( )
+    {
         return logger.isErrorEnabled( );
     }
 
     @Override
-    public Logger error( String msg, Object... args ) {
-        if( isErrorEnabled( ) ) {
-            if( msg == null ) {
+    public Logger error( String msg, Object... args )
+    {
+        if( isErrorEnabled( ) )
+        {
+            if( msg == null )
+            {
                 msg = "";
             }
 
             Throwable throwable = null;
-            if( args != null && args.length > 0 && args[ args.length - 1 ] instanceof Throwable ) {
+            if( args != null && args.length > 0 && args[ args.length - 1 ] instanceof Throwable )
+            {
                 throwable = ( Throwable ) args[ args.length - 1 ];
                 Object[] newArgs = new Object[ args.length - 1 ];
                 System.arraycopy( args, 0, newArgs, 0, args.length - 1 );
@@ -166,9 +207,12 @@ public class Slf4jLoggerWrapper implements Logger {
             }
 
             msg = MessageFormatter.arrayFormat( msg, args ).getMessage( );
-            if( throwable != null ) {
+            if( throwable != null )
+            {
                 this.logger.error( msg, throwable );
-            } else {
+            }
+            else
+            {
                 this.logger.error( msg );
             }
         }
@@ -177,23 +221,31 @@ public class Slf4jLoggerWrapper implements Logger {
     }
 
     @Override
-    public PrintWriter getPrintWriter( ) {
+    public PrintWriter getPrintWriter( )
+    {
         return new PrintWriter( new LoggerWriter( ) );
     }
 
-    private class LoggerWriter extends Writer {
+    private class LoggerWriter extends Writer
+    {
 
         private final StringBuilder buffer = new StringBuilder( 4096 );
 
         @Override
-        public void write( char[] chars, int off, int len ) throws IOException {
-            synchronized( this ) {
-                for( int i = off; i < chars.length && i < off + len; i++ ) {
+        public void write( char[] chars, int off, int len ) throws IOException
+        {
+            synchronized( this )
+            {
+                for( int i = off; i < chars.length && i < off + len; i++ )
+                {
                     char c = chars[ i ];
-                    if( c == '\n' ) {
+                    if( c == '\n' )
+                    {
                         info( this.buffer.toString( ) );
                         this.buffer.delete( 0, Integer.MAX_VALUE );
-                    } else {
+                    }
+                    else
+                    {
                         this.buffer.append( c );
                     }
                 }
@@ -201,12 +253,14 @@ public class Slf4jLoggerWrapper implements Logger {
         }
 
         @Override
-        public void flush( ) throws IOException {
+        public void flush( ) throws IOException
+        {
             // no-op
         }
 
         @Override
-        public void close( ) throws IOException {
+        public void close( ) throws IOException
+        {
             // no-op
         }
     }

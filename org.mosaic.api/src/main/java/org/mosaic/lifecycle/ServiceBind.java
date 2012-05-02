@@ -10,7 +10,8 @@ import java.lang.annotation.Target;
  */
 @Retention( RetentionPolicy.RUNTIME )
 @Target( ElementType.METHOD )
-public @interface ServiceBind {
+public @interface ServiceBind
+{
 
     String filter( ) default "";
 }

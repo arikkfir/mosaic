@@ -35,7 +35,8 @@ import static org.springframework.util.StringUtils.tokenizeToStringArray;
  * @author arik
  */
 @Component
-public class HttpServerImpl implements HttpServer {
+public class HttpServerImpl implements HttpServer
+{
 
     private static final Logger LOG = LoggerFactory.getLogger( HttpServerImpl.class );
 
@@ -46,86 +47,106 @@ public class HttpServerImpl implements HttpServer {
     private HttpRequestHandler handler;
 
     @Autowired
-    public void setHandler( HttpRequestHandler handler ) {
+    public void setHandler( HttpRequestHandler handler )
+    {
         this.handler = handler;
     }
 
     @ServiceRef( filter = "name=jetty" )
-    public void configure( Configuration cfg ) {
+    public void configure( Configuration cfg )
+    {
 
         // if we've already started Jetty - first stop it
-        if( this.jetty != null ) {
-            try {
+        if( this.jetty != null )
+        {
+            try
+            {
 
                 LOG.debug( "Stopping Jetty HTTP server (configuration changed)" );
-                this.jetty.stop();
+                this.jetty.stop( );
                 LOG.info( "Stopped Jetty HTTP server (configuration changed)" );
 
-            } catch( Exception e ) {
-                LOG.error( "Could not stop Jetty HTTP server: {}", e.getMessage(), e );
+            }
+            catch( Exception e )
+            {
+                LOG.error( "Could not stop Jetty HTTP server: {}", e.getMessage( ), e );
                 return;
             }
         }
 
         // start the server
         LOG.debug( "Starting Jetty HTTP server" );
-        try {
+        try
+        {
 
             this.cfg = cfg;
-            Server server = createServer();
-            server.start();
+            Server server = createServer( );
+            server.start( );
             this.jetty = server;
             LOG.info( "Started Jetty HTTP server" );
 
-        } catch( Exception e ) {
-            LOG.error( "Could not start JettyHTTP server: {}", e.getMessage(), e );
+        }
+        catch( Exception e )
+        {
+            LOG.error( "Could not start JettyHTTP server: {}", e.getMessage( ), e );
         }
     }
 
     @PreDestroy
-    public void destroy() {
-        if( this.jetty != null ) {
-            try {
+    public void destroy( )
+    {
+        if( this.jetty != null )
+        {
+            try
+            {
 
                 LOG.debug( "Stopping Jetty HTTP server (configuration changed)" );
-                this.jetty.stop();
+                this.jetty.stop( );
                 LOG.info( "Stopped Jetty HTTP server (configuration changed)" );
 
-            } catch( Exception e ) {
-                LOG.error( "Could not stop Jetty HTTP server: {}", e.getMessage(), e );
+            }
+            catch( Exception e )
+            {
+                LOG.error( "Could not stop Jetty HTTP server: {}", e.getMessage( ), e );
             }
         }
     }
 
-    private Server createServer() throws IOException {
-        Server server = new Server();
-        server.setConnectors( createConnectors() );
+    private Server createServer( ) throws IOException
+    {
+        Server server = new Server( );
+        server.setConnectors( createConnectors( ) );
         server.setGracefulShutdown( duration( "gracefulShutdownTimeout", standardSeconds( 5 ) ) );
         server.setHandler( this.handler );
         server.setSendDateHeader( b( "sendDateHeader", true ) );
         server.setSendServerVersion( false );
         server.setStopAtShutdown( false );
-        server.setThreadPool( createThreadPool() );
+        server.setThreadPool( createThreadPool( ) );
         server.setUncheckedPrintWriter( b( "uncheckedPrintWriter", false ) );
         return server;
     }
 
-    private Connector[] createConnectors() throws IOException {
-        Collection<Connector> connectors = new LinkedList<>();
-        if( b( "http.enabled", true ) ) {
-            connectors.add( createHttpConnector() );
+    private Connector[] createConnectors( ) throws IOException
+    {
+        Collection<Connector> connectors = new LinkedList<>( );
+        if( b( "http.enabled", true ) )
+        {
+            connectors.add( createHttpConnector( ) );
         }
-        if( b( "ajp.enabled", false ) ) {
-            connectors.add( createAjpConnector() );
+        if( b( "ajp.enabled", false ) )
+        {
+            connectors.add( createAjpConnector( ) );
         }
-        if( b( "https.enabled", false ) ) {
-            connectors.add( createHttpsConnector() );
+        if( b( "https.enabled", false ) )
+        {
+            connectors.add( createHttpsConnector( ) );
         }
-        return connectors.toArray( new Connector[ connectors.size() ] );
+        return connectors.toArray( new Connector[ connectors.size( ) ] );
     }
 
-    private SelectChannelConnector createHttpConnector() {
-        SelectChannelConnector selectChannelConnector = new SelectChannelConnector();
+    private SelectChannelConnector createHttpConnector( )
+    {
+        SelectChannelConnector selectChannelConnector = new SelectChannelConnector( );
         selectChannelConnector.setAcceptorPriorityOffset( i( "http.acceptors.priority.offset", 0 ) );
         selectChannelConnector.setAcceptors( i( "http.acceptors.threads", 1 ) );
         selectChannelConnector.setAcceptQueueSize( i( "http.acceptors.queue.size", 1024 ) );
@@ -134,7 +155,8 @@ public class HttpServerImpl implements HttpServer {
         selectChannelConnector.setForwarded( b( "http.support.x-forwarded.headers", true ) );
         selectChannelConnector.setHost( s( "http.bind.host" ) );
         selectChannelConnector.setLowResourcesConnections( i( "http.low.resources.connections.threshold", 1000 ) );
-        selectChannelConnector.setLowResourcesMaxIdleTime( i( "http.low.resources.connections.max.idle.millis", 1000 * 5 ) );
+        selectChannelConnector.setLowResourcesMaxIdleTime( i( "http.low.resources.connections.max.idle.millis", 1000 *
+                                                                                                                5 ) );
         selectChannelConnector.setMaxIdleTime( i( "http.max.idle.millis", 1000 * 15 ) );
         selectChannelConnector.setName( "httpConnector" );
         selectChannelConnector.setPort( i( "http.port", 8080 ) );
@@ -150,8 +172,9 @@ public class HttpServerImpl implements HttpServer {
         return selectChannelConnector;
     }
 
-    private SslConnector createHttpsConnector() throws IOException {
-        SslContextFactory sslContextFactory = new SslContextFactory();
+    private SslConnector createHttpsConnector( ) throws IOException
+    {
+        SslContextFactory sslContextFactory = new SslContextFactory( );
         sslContextFactory.setAllowRenegotiate( true );
         sslContextFactory.setCertAlias( s( "https.certificate.alias" ) );
         sslContextFactory.setCrlPath( s( "https.crl.path" ) );
@@ -171,7 +194,8 @@ public class HttpServerImpl implements HttpServer {
         sslContextFactory.setTrustManagerFactoryAlgorithm( s( "https.trust.manager.factory.algorithm", DEFAULT_TRUSTMANAGERFACTORY_ALGORITHM ) );
 
         String trustStorePath = s( "https.trust.store.path" );
-        if( hasText( trustStorePath ) ) {
+        if( hasText( trustStorePath ) )
+        {
             sslContextFactory.setTrustStore( trustStorePath );
             sslContextFactory.setTrustStorePassword( fs( "https.trust.store.password" ) );
             sslContextFactory.setTrustStoreProvider( s( "https.trust.store.provider" ) );
@@ -205,8 +229,9 @@ public class HttpServerImpl implements HttpServer {
         return connector;
     }
 
-    private Ajp13SocketConnector createAjpConnector() {
-        Ajp13SocketConnector connector = new Ajp13SocketConnector();
+    private Ajp13SocketConnector createAjpConnector( )
+    {
+        Ajp13SocketConnector connector = new Ajp13SocketConnector( );
         connector.setAcceptorPriorityOffset( i( "ajp.acceptors.priority.offset", 0 ) );
         connector.setAcceptors( i( "ajp.acceptors.threads", 1 ) );
         connector.setAcceptQueueSize( i( "ajp.acceptors.queue.size", 1024 ) );
@@ -229,8 +254,9 @@ public class HttpServerImpl implements HttpServer {
         return connector;
     }
 
-    private ThreadPool createThreadPool() {
-        QueuedThreadPool threadPool = new QueuedThreadPool();
+    private ThreadPool createThreadPool( )
+    {
+        QueuedThreadPool threadPool = new QueuedThreadPool( );
         threadPool.setDaemon( true );
         threadPool.setMaxIdleTimeMs( i( "jetty.thread.pool.max.idle.time.millis", 1000 * 60 ) );
         threadPool.setMaxQueued( i( "jetty.thread.pool.max.queued", 1000 ) );
@@ -241,52 +267,65 @@ public class HttpServerImpl implements HttpServer {
         return threadPool;
     }
 
-    private Integer i( String key, int defaultValue ) {
+    private Integer i( String key, int defaultValue )
+    {
         return this.cfg.getValueAs( key, Integer.class, defaultValue );
     }
 
-    private Boolean b( String key, boolean defaultValue ) {
+    private Boolean b( String key, boolean defaultValue )
+    {
         return this.cfg.getValueAs( key, Boolean.class, defaultValue );
     }
 
-    private String s( String key ) {
+    private String s( String key )
+    {
         return this.cfg.getValue( key );
     }
 
-    private String s( String key, String defaultValue ) {
+    private String s( String key, String defaultValue )
+    {
         return this.cfg.getValue( key, defaultValue );
     }
 
-    private String fs( String key ) throws IOException {
+    private String fs( String key ) throws IOException
+    {
         return fs( key, null );
     }
 
-    private String fs( String key, String defaultValue ) throws IOException {
+    private String fs( String key, String defaultValue ) throws IOException
+    {
         String value = s( key );
-        if( !hasText( value ) ) {
+        if( !hasText( value ) )
+        {
             return defaultValue;
         }
 
         Path path = Paths.get( value );
-        if( !Files.exists( path ) ) {
+        if( !Files.exists( path ) )
+        {
             LOG.warn( "File '{}' (referenced by Jetty configuration key '{}') could not be found", path, key );
             return defaultValue;
 
-        } else if( Files.isDirectory( path ) ) {
+        }
+        else if( Files.isDirectory( path ) )
+        {
             LOG.warn( "File '{}' (referenced by Jetty configuration key '{}') points to a directory and not a file", path, key );
             return defaultValue;
 
-        } else if( !Files.isReadable( path ) ) {
+        }
+        else if( !Files.isReadable( path ) )
+        {
             LOG.warn( "File '{}' (referenced by Jetty configuration key '{}') could not be read", path, key );
             return defaultValue;
         }
 
-        String contents = new String( Files.readAllBytes( path ), "UTF-8" ).trim();
-        return contents.length() == 0 ? defaultValue : contents.trim();
+        String contents = new String( Files.readAllBytes( path ), "UTF-8" ).trim( );
+        return contents.length( ) == 0 ? defaultValue : contents.trim( );
     }
 
-    private int duration( String key, Duration defaultValue ) {
-        return ( int ) cfg.getValueAs( key, Duration.class, defaultValue ).getMillis();
+    private int duration( String key, Duration defaultValue )
+    {
+        return ( int ) cfg.getValueAs( key, Duration.class, defaultValue ).getMillis( );
     }
 
 }

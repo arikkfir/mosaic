@@ -5,7 +5,8 @@ import org.mosaic.util.collection.TypedDict;
 /**
  * @author arik
  */
-public interface PathParamsAware {
+public interface PathParamsAware
+{
 
     void setPathParams( TypedDict<String> params );
 

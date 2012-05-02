@@ -5,7 +5,8 @@ import org.mosaic.web.HttpRequest;
 /**
  * @author arik
  */
-public interface RequestDispatcher {
+public interface RequestDispatcher
+{
 
     void handle( HttpRequest request );
 

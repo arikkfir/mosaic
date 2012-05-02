@@ -9,27 +9,34 @@ import org.osgi.framework.FrameworkUtil;
 /**
  * @author arik
  */
-public class LoggerFactory {
+public class LoggerFactory
+{
 
     private final static Map<String, SoftReference<Logger>> LOGGERS = new ConcurrentHashMap<>( 1500, 0.75f, 32 );
 
-    public static Logger getBundleLogger( Class<?> clazz ) {
-        if( clazz == null ) {
+    public static Logger getBundleLogger( Class<?> clazz )
+    {
+        if( clazz == null )
+        {
             return getLogger( "unknown-logger" );
         }
         Bundle bundle = FrameworkUtil.getBundle( clazz );
         return bundle != null ? getLogger( bundle.getSymbolicName( ) ) : getLogger( clazz.getName( ) );
     }
 
-    public static Logger getLogger( Class<?> clazz ) {
+    public static Logger getLogger( Class<?> clazz )
+    {
         return getLogger( clazz == null ? "unknown-logger" : clazz.getName( ) );
     }
 
-    public static Logger getLogger( String name ) {
+    public static Logger getLogger( String name )
+    {
         SoftReference<Logger> loggerRef = LOGGERS.get( name );
-        if( loggerRef != null ) {
+        if( loggerRef != null )
+        {
             Logger wrapper = loggerRef.get( );
-            if( wrapper != null ) {
+            if( wrapper != null )
+            {
                 return wrapper;
             }
         }

@@ -7,13 +7,16 @@ import org.apache.sshd.server.session.ServerSession;
 /**
  * @author arik
  */
-public class MosaicServerSession extends ServerSession {
+public class MosaicServerSession extends ServerSession
+{
 
-    public MosaicServerSession( FactoryManager server, IoSession ioSession ) throws Exception {
+    public MosaicServerSession( FactoryManager server, IoSession ioSession ) throws Exception
+    {
         super( server, ioSession );
     }
 
-    public boolean isClosing() {
+    public boolean isClosing( )
+    {
         return this.closing;
     }
 }

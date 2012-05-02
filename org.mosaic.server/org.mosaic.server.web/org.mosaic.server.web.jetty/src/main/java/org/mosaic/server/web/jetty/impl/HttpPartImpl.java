@@ -16,50 +16,59 @@ import static java.util.Collections.unmodifiableMap;
 /**
  * @author arik
  */
-public class HttpPartImpl implements HttpPart {
+public class HttpPartImpl implements HttpPart
+{
 
     private final Part part;
 
     private final TypedDict<String> headers;
 
-    public HttpPartImpl( Part part, ConversionService conversionService ) {
+    public HttpPartImpl( Part part, ConversionService conversionService )
+    {
         this.part = part;
 
-        Collection<String> headerNames = this.part.getHeaderNames();
-        Map<String, List<String>> headers = new HashMap<>( headerNames.size() );
-        for( String headerName : headerNames ) {
+        Collection<String> headerNames = this.part.getHeaderNames( );
+        Map<String, List<String>> headers = new HashMap<>( headerNames.size( ) );
+        for( String headerName : headerNames )
+        {
             headers.put( headerName, new LinkedList<>( this.part.getHeaders( headerName ) ) );
         }
         this.headers = new WrappingTypedDict<>( unmodifiableMap( headers ), conversionService, String.class );
     }
 
     @Override
-    public String getName() {
-        return this.part.getName();
+    public String getName( )
+    {
+        return this.part.getName( );
     }
 
     @Override
-    public MediaType getContentType() {
-        return MediaType.parseMediaType( this.part.getContentType() );
+    public MediaType getContentType( )
+    {
+        return MediaType.parseMediaType( this.part.getContentType( ) );
     }
 
     @Override
-    public long getSize() {
-        return this.part.getSize();
+    public long getSize( )
+    {
+        return this.part.getSize( );
     }
 
     @Override
-    public InputStream getInputStream() throws IOException {
-        return this.part.getInputStream();
+    public InputStream getInputStream( ) throws IOException
+    {
+        return this.part.getInputStream( );
     }
 
     @Override
-    public void save( Path path ) throws IOException {
-        this.part.write( path.toString() );
+    public void save( Path path ) throws IOException
+    {
+        this.part.write( path.toString( ) );
     }
 
     @Override
-    public TypedDict<String> getHeaders() {
+    public TypedDict<String> getHeaders( )
+    {
         return this.headers;
     }
 }

@@ -11,42 +11,50 @@ import org.springframework.core.convert.ConversionService;
 /**
  * @author arik
  */
-public class HttpSessionImpl extends WrappingTypedDict<Object> implements HttpSession {
+public class HttpSessionImpl extends WrappingTypedDict<Object> implements HttpSession
+{
 
     private final javax.servlet.http.HttpSession session;
 
-    public HttpSessionImpl( ConversionService conversionService, javax.servlet.http.HttpSession session ) {
-        super( new ConcurrentHashMap<String, List<Object>>(), conversionService, Object.class );
+    public HttpSessionImpl( ConversionService conversionService, javax.servlet.http.HttpSession session )
+    {
+        super( new ConcurrentHashMap<String, List<Object>>( ), conversionService, Object.class );
         this.session = session;
     }
 
     @Override
-    public DateTime getCreationTime() {
-        return new DateTime( this.session.getCreationTime() );
+    public DateTime getCreationTime( )
+    {
+        return new DateTime( this.session.getCreationTime( ) );
     }
 
     @Override
-    public String getId() {
-        return this.session.getId();
+    public String getId( )
+    {
+        return this.session.getId( );
     }
 
     @Override
-    public DateTime getLastAccessTime() {
-        return new DateTime( this.session.getLastAccessedTime() );
+    public DateTime getLastAccessTime( )
+    {
+        return new DateTime( this.session.getLastAccessedTime( ) );
     }
 
     @Override
-    public Duration getMaxInactiveInterval() {
-        return Duration.standardSeconds( this.session.getMaxInactiveInterval() );
+    public Duration getMaxInactiveInterval( )
+    {
+        return Duration.standardSeconds( this.session.getMaxInactiveInterval( ) );
     }
 
     @Override
-    public boolean isNew() {
-        return this.session.isNew();
+    public boolean isNew( )
+    {
+        return this.session.isNew( );
     }
 
     @Override
-    public void invalidate() {
-        this.session.invalidate();
+    public void invalidate( )
+    {
+        this.session.invalidate( );
     }
 }

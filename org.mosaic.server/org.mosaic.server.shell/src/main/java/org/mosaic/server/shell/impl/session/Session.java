@@ -39,7 +39,8 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Scope( "prototype" )
-public class Session implements Command, Runnable, SessionAware {
+public class Session implements Command, Runnable, SessionAware
+{
 
     private static final Logger LOG = LoggerFactory.getLogger( Session.class );
 
@@ -72,7 +73,8 @@ public class Session implements Command, Runnable, SessionAware {
     private FileHistory history;
 
     @Autowired
-    public void setCommandsManager( ShellCommandsManager commandsManager ) {
+    public void setCommandsManager( ShellCommandsManager commandsManager )
+    {
         this.commandsManager = commandsManager;
     }
 
@@ -84,42 +86,50 @@ public class Session implements Command, Runnable, SessionAware {
      *
      * @param home the mosaic home directory
      */
-    public void setHome( Home home ) {
+    public void setHome( Home home )
+    {
         this.home = home;
     }
 
     @ContextRef
-    public void setBundleContext( BundleContext bundleContext ) {
+    public void setBundleContext( BundleContext bundleContext )
+    {
         this.bundleContext = bundleContext;
     }
 
     @Override
-    public void setSession( ServerSession session ) {
+    public void setSession( ServerSession session )
+    {
         this.session = ( MosaicServerSession ) session;
     }
 
     @Override
-    public void setInputStream( InputStream in ) {
+    public void setInputStream( InputStream in )
+    {
         this.in = in;
     }
 
     @Override
-    public void setOutputStream( OutputStream out ) {
+    public void setOutputStream( OutputStream out )
+    {
         this.out = new LfToCrLfFilterOutputStream( out );
     }
 
     @Override
-    public void setErrorStream( OutputStream err ) {
+    public void setErrorStream( OutputStream err )
+    {
         this.err = new LfToCrLfFilterOutputStream( err );
     }
 
     @Override
-    public void setExitCallback( ExitCallback callback ) {
+    public void setExitCallback( ExitCallback callback )
+    {
         this.exitCallback = callback;
     }
 
     @Override
-    public void start( Environment env ) throws IOException {
+    public void start( Environment env ) throws IOException
+    {
         // a queue populated by a thread which reads from the session's "in" into this queue
         // this way, if a command processing takes a long time, the session's input buffer won't be overloaded
         // because we will buffer it ourselves in this queue
@@ -128,64 +138,87 @@ public class Session implements Command, Runnable, SessionAware {
         // the thread which populates the input queue from the ssh session's input stream
         this.inputThread = new Thread( new Pipe( this.in, this.inputQueue ), "SSHD/input" );
         this.inputThread.setDaemon( true );
-        this.inputThread.start();
+        this.inputThread.start( );
 
         // create the console reader used for interacting with the user
-        try {
-            String username = this.session.getUsername();
-            Path historyFile = this.home.getWork().resolve( "history/" + username );
-            this.history = new FileHistory( historyFile.toFile() );
+        try
+        {
+            String username = this.session.getUsername( );
+            Path historyFile = this.home.getWork( ).resolve( "history/" + username );
+            this.history = new FileHistory( historyFile.toFile( ) );
 
-            this.consoleReader = new ConsoleReader( new PipeInputStream( this.inputQueue ), this.out, new SshTerminal( env ) );
+            this.consoleReader =
+                    new ConsoleReader( new PipeInputStream( this.inputQueue ), this.out, new SshTerminal( env ) );
             this.consoleReader.setHistory( history );
-            this.consoleReader.setPrompt( "[" + this.session.getUsername() + "@host.com]$ " );
-            this.consoleReader.addCompleter( new CommandCompleter() );
+            this.consoleReader.setPrompt( "[" + this.session.getUsername( ) + "@host.com]$ " );
+            this.consoleReader.addCompleter( new CommandCompleter( ) );
 
-        } catch( Exception e ) {
-            throw new IllegalStateException( "Cannot start SSH console session: " + e.getMessage(), e );
+        }
+        catch( Exception e )
+        {
+            throw new IllegalStateException( "Cannot start SSH console session: " + e.getMessage( ), e );
         }
 
         // start the console thread, using 'this' as the runnable
         this.consoleThread = new Thread( this, "SSHD/console" );
         this.consoleThread.setDaemon( true );
-        this.consoleThread.start();
+        this.consoleThread.start( );
     }
 
     @Override
-    public void run() {
+    public void run( )
+    {
         this.running = true;
 
         ConsoleImpl console = new ConsoleImpl( this.consoleReader );
-        try {
+        try
+        {
             WelcomeMessage.print( this.bundleContext, console );
             String line;
-            while( this.running && ( line = console.readLine() ) != null ) {
-                line = line.trim();
-                if( line.length() > 0 ) {
+            while( this.running && ( line = console.readLine( ) ) != null )
+            {
+                line = line.trim( );
+                if( line.length( ) > 0 )
+                {
                     String[] tokens = line.split( " " );
 
                     String[] args;
-                    if( tokens.length == 1 ) {
+                    if( tokens.length == 1 )
+                    {
                         args = new String[ 0 ];
-                    } else {
+                    }
+                    else
+                    {
                         args = new String[ tokens.length - 1 ];
                         System.arraycopy( tokens, 1, args, 0, args.length );
                     }
 
                     ShellCommand shellCommand = this.commandsManager.getCommand( tokens[ 0 ] );
-                    if( shellCommand == null ) {
+                    if( shellCommand == null )
+                    {
                         console.println( "Unknown command: " + tokens[ 0 ] );
-                    } else {
-                        try {
+                    }
+                    else
+                    {
+                        try
+                        {
                             shellCommand.execute( console, args );
-                        } catch( ExitSessionException e ) {
+                        }
+                        catch( ExitSessionException e )
+                        {
                             this.inputQueue.offer( -1 );
-                        } catch( OptionException e ) {
-                            if( this.running ) {
-                                console.println( e.getMessage() );
+                        }
+                        catch( OptionException e )
+                        {
+                            if( this.running )
+                            {
+                                console.println( e.getMessage( ) );
                             }
-                        } catch( Exception e ) {
-                            if( this.running ) {
+                        }
+                        catch( Exception e )
+                        {
+                            if( this.running )
+                            {
                                 console.printStackTrace( e );
                             }
                         }
@@ -194,22 +227,33 @@ public class Session implements Command, Runnable, SessionAware {
             }
 
             // persist history
-            try {
-                this.history.flush();
-            } catch( IOException ignore ) {
+            try
+            {
+                this.history.flush( );
+            }
+            catch( IOException ignore )
+            {
             }
 
-        } catch( IOException e ) {
-            LOG.error( "I/O error occurred in SSH session: {}", e.getMessage(), e );
-        } finally {
+        }
+        catch( IOException e )
+        {
+            LOG.error( "I/O error occurred in SSH session: {}", e.getMessage( ), e );
+        }
+        finally
+        {
             this.running = false;
-            if( !this.session.isClosing() ) {
-                try {
-                    console.println();
+            if( !this.session.isClosing( ) )
+            {
+                try
+                {
+                    console.println( );
                     console.println( "Goodbye!" );
-                    console.flush();
+                    console.flush( );
                     this.session.close( false );
-                } catch( IOException ignore ) {
+                }
+                catch( IOException ignore )
+                {
                 }
             }
         }
@@ -217,71 +261,92 @@ public class Session implements Command, Runnable, SessionAware {
     }
 
     @Override
-    public void destroy() {
+    public void destroy( )
+    {
 
         this.running = false;
-        this.consoleThread.interrupt();
-        this.inputThread.interrupt();
+        this.consoleThread.interrupt( );
+        this.inputThread.interrupt( );
 
         IoUtils.flush( out, err );
         IoUtils.close( in, out, err );
 
-        if( this.exitCallback != null ) {
+        if( this.exitCallback != null )
+        {
             this.exitCallback.onExit( 0 );
         }
 
         this.inputQueue = null;
     }
 
-    private class CommandCompleter implements Completer {
+    private class CommandCompleter implements Completer
+    {
 
         @Override
-        public int complete( String buffer, int cursor, List<CharSequence> candidates ) {
-            if( candidates == null ) {
+        public int complete( String buffer, int cursor, List<CharSequence> candidates )
+        {
+            if( candidates == null )
+            {
                 return -1;
             }
 
-            Collection<ShellCommand> commands = commandsManager.getCommands();
-            SortedSet<String> commandNames = new TreeSet<>();
-            for( ShellCommand command : commands ) {
-                commandNames.add( command.getName() );
+            Collection<ShellCommand> commands = commandsManager.getCommands( );
+            SortedSet<String> commandNames = new TreeSet<>( );
+            for( ShellCommand command : commands )
+            {
+                commandNames.add( command.getName( ) );
             }
 
-            if( buffer == null ) {
+            if( buffer == null )
+            {
                 candidates.addAll( commandNames );
-            } else {
-                for( String match : commandNames.tailSet( buffer ) ) {
-                    if( !match.startsWith( buffer ) ) {
+            }
+            else
+            {
+                for( String match : commandNames.tailSet( buffer ) )
+                {
+                    if( !match.startsWith( buffer ) )
+                    {
                         break;
                     }
                     candidates.add( match );
                 }
             }
-            if( candidates.size() == 1 ) {
+            if( candidates.size( ) == 1 )
+            {
                 candidates.set( 0, candidates.get( 0 ) + " " );
             }
-            return candidates.isEmpty() ? -1 : 0;
+            return candidates.isEmpty( ) ? -1 : 0;
         }
     }
 
-    private class PipeInputStream extends InputStream {
+    private class PipeInputStream extends InputStream
+    {
 
         private final BlockingQueue<Integer> inputQueue;
 
-        private PipeInputStream( BlockingQueue<Integer> inputQueue ) {
+        private PipeInputStream( BlockingQueue<Integer> inputQueue )
+        {
             this.inputQueue = inputQueue;
         }
 
         @Override
-        public int read() throws IOException {
-            try {
-                if( running ) {
-                    return inputQueue.take();
-                } else {
+        public int read( ) throws IOException
+        {
+            try
+            {
+                if( running )
+                {
+                    return inputQueue.take( );
+                }
+                else
+                {
                     return -1;
                 }
 
-            } catch( InterruptedException e ) {
+            }
+            catch( InterruptedException e )
+            {
                 return -1;
             }
         }

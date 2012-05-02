@@ -5,6 +5,9 @@ TODO: create an XML SCHEMA file (XSD) for HTTP application files
 [ Web support ]
 
 - Handlers implemented with @Service, @Controller or Handler services
+- Handlers can be versioned
+    - either by header, or by path prefix
+    - version can be inferred from bundle version (<major>.<minor>[.<micro>]) or hard-coded in @Versioned
 - Use @Filter to decide which HttpApp they contribute to
 - Security:
     - authentication should be implemented with @UserRepository methods

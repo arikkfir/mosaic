@@ -26,44 +26,54 @@ import static org.springframework.core.io.support.PropertiesLoaderUtils.loadProp
 /**
  * @author arik
  */
-public class OsgiSpringNamespacePlugin implements EntityResolver, NamespaceHandlerResolver, SynchronousBundleListener {
+public class OsgiSpringNamespacePlugin implements EntityResolver, NamespaceHandlerResolver, SynchronousBundleListener
+{
 
     private static final Logger LOG = LoggerFactory.getLogger( OsgiSpringNamespacePlugin.class );
 
     private final BundleContext bundleContext;
 
-    private final Map<Long, Properties> springSchemasCache = new ConcurrentHashMap<>();
+    private final Map<Long, Properties> springSchemasCache = new ConcurrentHashMap<>( );
 
-    private final Map<Long, Properties> springHandlersCache = new ConcurrentHashMap<>();
+    private final Map<Long, Properties> springHandlersCache = new ConcurrentHashMap<>( );
 
-    public OsgiSpringNamespacePlugin( BundleContext bundleContext ) {
+    public OsgiSpringNamespacePlugin( BundleContext bundleContext )
+    {
         this.bundleContext = bundleContext;
 
-        for( Bundle bundle : BundleUtils.getAllBundles( this.bundleContext ) ) {
-            if( bundle.getState() == Bundle.RESOLVED || bundle.getState() == Bundle.ACTIVE ) {
+        for( Bundle bundle : BundleUtils.getAllBundles( this.bundleContext ) )
+        {
+            if( bundle.getState( ) == Bundle.RESOLVED || bundle.getState( ) == Bundle.ACTIVE )
+            {
                 processResolvedBundle( bundle );
             }
         }
     }
 
-    public void open() {
+    public void open( )
+    {
         LOG.debug( "Adding Spring namespace handler and entity resolver bundle listener" );
         this.bundleContext.addBundleListener( this );
     }
 
-    public void close() {
+    public void close( )
+    {
         this.bundleContext.removeBundleListener( this );
         LOG.debug( "Removing Spring namespace handler and entity resolver bundle listener" );
     }
 
     @Override
-    public void bundleChanged( BundleEvent event ) {
-        Bundle bundle = event.getBundle();
-        if( event.getType() == BundleEvent.RESOLVED ) {
+    public void bundleChanged( BundleEvent event )
+    {
+        Bundle bundle = event.getBundle( );
+        if( event.getType( ) == BundleEvent.RESOLVED )
+        {
 
             processResolvedBundle( bundle );
 
-        } else if( event.getType() == BundleEvent.UNRESOLVED ) {
+        }
+        else if( event.getType( ) == BundleEvent.UNRESOLVED )
+        {
 
             processUnresolvedBundles( bundle );
 
@@ -71,27 +81,47 @@ public class OsgiSpringNamespacePlugin implements EntityResolver, NamespaceHandl
     }
 
     @Override
-    public NamespaceHandler resolve( String namespaceUri ) {
+    public NamespaceHandler resolve( String namespaceUri )
+    {
 
-        for( Map.Entry<Long, Properties> entry : this.springHandlersCache.entrySet() ) {
+        for( Map.Entry<Long, Properties> entry : this.springHandlersCache.entrySet( ) )
+        {
 
-            String handlerClassName = entry.getValue().getProperty( namespaceUri );
-            if( handlerClassName != null ) {
-                Bundle bundle = this.bundleContext.getBundle( entry.getKey() );
-                if( bundle != null ) {
+            String handlerClassName = entry.getValue( ).getProperty( namespaceUri );
+            if( handlerClassName != null )
+            {
+                Bundle bundle = this.bundleContext.getBundle( entry.getKey( ) );
+                if( bundle != null )
+                {
 
-                    try {
+                    try
+                    {
                         Class<?> handlerClass = bundle.loadClass( handlerClassName );
-                        if( !NamespaceHandler.class.isAssignableFrom( handlerClass ) ) {
-                            throw new FatalBeanException( "Class [" + handlerClassName + "] for namespace [" + namespaceUri + "] does not implement the [" + NamespaceHandler.class.getName() + "] interface" );
+                        if( !NamespaceHandler.class.isAssignableFrom( handlerClass ) )
+                        {
+                            throw new FatalBeanException( "Class [" +
+                                                          handlerClassName +
+                                                          "] for namespace [" +
+                                                          namespaceUri +
+                                                          "] does not implement the [" +
+                                                          NamespaceHandler.class.getName( ) +
+                                                          "] interface" );
                         }
 
-                        NamespaceHandler namespaceHandler = ( NamespaceHandler ) BeanUtils.instantiateClass( handlerClass );
-                        namespaceHandler.init();
+                        NamespaceHandler namespaceHandler =
+                                ( NamespaceHandler ) BeanUtils.instantiateClass( handlerClass );
+                        namespaceHandler.init( );
                         return namespaceHandler;
 
-                    } catch( ClassNotFoundException e ) {
-                        throw new FatalBeanException( "Could not load namespace handler '" + handlerClassName + "' from bundle '" + bundle + "': " + e.getMessage(), e );
+                    }
+                    catch( ClassNotFoundException e )
+                    {
+                        throw new FatalBeanException( "Could not load namespace handler '" +
+                                                      handlerClassName +
+                                                      "' from bundle '" +
+                                                      bundle +
+                                                      "': " +
+                                                      e.getMessage( ), e );
                     }
 
                 }
@@ -102,22 +132,28 @@ public class OsgiSpringNamespacePlugin implements EntityResolver, NamespaceHandl
     }
 
     @Override
-    public InputSource resolveEntity( String publicId, String systemId ) throws SAXException, IOException {
-        if( systemId != null ) {
+    public InputSource resolveEntity( String publicId, String systemId ) throws SAXException, IOException
+    {
+        if( systemId != null )
+        {
 
-            for( Map.Entry<Long, Properties> entry : this.springSchemasCache.entrySet() ) {
+            for( Map.Entry<Long, Properties> entry : this.springSchemasCache.entrySet( ) )
+            {
 
-                String schemaLocation = entry.getValue().getProperty( systemId );
-                if( schemaLocation != null ) {
-                    Bundle bundle = this.bundleContext.getBundle( entry.getKey() );
-                    if( bundle != null ) {
+                String schemaLocation = entry.getValue( ).getProperty( systemId );
+                if( schemaLocation != null )
+                {
+                    Bundle bundle = this.bundleContext.getBundle( entry.getKey( ) );
+                    if( bundle != null )
+                    {
 
                         // we use 'getResource' and not 'getEntry' here since this is the bundle that registered the
                         // schemas file - we don't care if it doesn't actually contain the schema itself, it has it in
                         // its package imports otherwise it wouldn't declare it (I think....?)
                         URL schemaUrl = bundle.getResource( schemaLocation );
-                        if( schemaUrl != null ) {
-                            InputSource source = new InputSource( schemaUrl.openStream() );
+                        if( schemaUrl != null )
+                        {
+                            InputSource source = new InputSource( schemaUrl.openStream( ) );
                             source.setPublicId( publicId );
                             source.setSystemId( systemId );
                             return source;
@@ -132,37 +168,47 @@ public class OsgiSpringNamespacePlugin implements EntityResolver, NamespaceHandl
         return null;
     }
 
-    private void processResolvedBundle( Bundle bundle ) {
+    private void processResolvedBundle( Bundle bundle )
+    {
         URL springSchemasFile = bundle.getEntry( "META-INF/spring.schemas" );
-        if( springSchemasFile != null ) {
-            try {
+        if( springSchemasFile != null )
+        {
+            try
+            {
 
-                this.springSchemasCache.put( bundle.getBundleId(), loadProperties( new UrlResource( springSchemasFile ) ) );
+                this.springSchemasCache.put( bundle.getBundleId( ), loadProperties( new UrlResource( springSchemasFile ) ) );
 
-            } catch( IOException e ) {
+            }
+            catch( IOException e )
+            {
 
-                LOG.warn( "Could not load 'spring.schemas' file from bundle '{}': {}", BundleUtils.toString( bundle ), e.getMessage(), e );
+                LOG.warn( "Could not load 'spring.schemas' file from bundle '{}': {}", BundleUtils.toString( bundle ), e.getMessage( ), e );
 
             }
         }
 
         URL springHandlersFile = bundle.getEntry( "META-INF/spring.handlers" );
-        if( springHandlersFile != null ) {
-            try {
+        if( springHandlersFile != null )
+        {
+            try
+            {
 
-                this.springHandlersCache.put( bundle.getBundleId(), loadProperties( new UrlResource( springHandlersFile ) ) );
+                this.springHandlersCache.put( bundle.getBundleId( ), loadProperties( new UrlResource( springHandlersFile ) ) );
 
-            } catch( IOException e ) {
+            }
+            catch( IOException e )
+            {
 
-                LOG.warn( "Could not load 'spring.handlers' file from bundle '{}': {}", BundleUtils.toString( bundle ), e.getMessage(), e );
+                LOG.warn( "Could not load 'spring.handlers' file from bundle '{}': {}", BundleUtils.toString( bundle ), e.getMessage( ), e );
 
             }
         }
     }
 
-    private void processUnresolvedBundles( Bundle bundle ) {
-        this.springSchemasCache.remove( bundle.getBundleId() );
-        this.springHandlersCache.remove( bundle.getBundleId() );
+    private void processUnresolvedBundles( Bundle bundle )
+    {
+        this.springSchemasCache.remove( bundle.getBundleId( ) );
+        this.springHandlersCache.remove( bundle.getBundleId( ) );
     }
 
 }

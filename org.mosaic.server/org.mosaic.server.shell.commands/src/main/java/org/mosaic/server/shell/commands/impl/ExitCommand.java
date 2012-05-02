@@ -11,12 +11,14 @@ import org.springframework.stereotype.Component;
  * @author arik
  */
 @Component
-public class ExitCommand extends AbstractCommand {
+public class ExitCommand extends AbstractCommand
+{
 
     @Description( "Exit current session" )
     @ShellCommand( "exit" )
-    public void exit( Console console ) throws IOException {
-        throw new ExitSessionException();
+    public void exit( Console console ) throws IOException
+    {
+        throw new ExitSessionException( );
     }
 
 }

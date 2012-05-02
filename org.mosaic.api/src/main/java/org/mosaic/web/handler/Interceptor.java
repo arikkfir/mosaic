@@ -5,9 +5,11 @@ import org.mosaic.web.HttpRequest;
 /**
  * @author arik
  */
-public interface Interceptor {
+public interface Interceptor
+{
 
-    interface InterceptorMatch {
+    interface InterceptorMatch
+    {
 
     }
 

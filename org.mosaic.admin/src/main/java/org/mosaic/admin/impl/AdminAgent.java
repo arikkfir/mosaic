@@ -13,20 +13,23 @@ import org.springframework.stereotype.Component;
  * @author arik
  */
 @Component
-public class AdminAgent {
+public class AdminAgent
+{
 
     private static final Logger LOG = LoggerFactory.getLogger( AdminAgent.class );
 
     @Get
     @Service( "/services/arik" )
     @Trace
-    public void myService( HttpRequest request ) {
+    public void myService( HttpRequest request )
+    {
     }
 
     @Get
     @Controller( "/controllers/arik" )
     @Trace
-    public void myController( HttpRequest request ) {
+    public void myController( HttpRequest request )
+    {
     }
 
 }

@@ -12,7 +12,8 @@ import org.mosaic.lifecycle.MethodEndpointMarker;
 @Retention( RetentionPolicy.RUNTIME )
 @Target( ElementType.METHOD )
 @MethodEndpointMarker
-public @interface Marshaller {
+public @interface Marshaller
+{
 
     String[] value( ) default "";
 

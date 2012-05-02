@@ -10,7 +10,8 @@ import java.lang.annotation.Target;
  */
 @Retention( RetentionPolicy.RUNTIME )
 @Target( { ElementType.TYPE, ElementType.METHOD } )
-public @interface Rank {
+public @interface Rank
+{
 
     int value( ) default 0;
 

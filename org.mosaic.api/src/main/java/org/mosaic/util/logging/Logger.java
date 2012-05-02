@@ -5,7 +5,8 @@ import java.io.PrintWriter;
 /**
  * @author arik
  */
-public interface Logger {
+public interface Logger
+{
 
     String getName( );
 

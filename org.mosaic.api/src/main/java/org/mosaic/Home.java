@@ -5,7 +5,8 @@ import java.nio.file.Path;
 /**
  * @author arik
  */
-public interface Home {
+public interface Home
+{
 
     @SuppressWarnings( "UnusedDeclaration" )
     Path getHome( );
