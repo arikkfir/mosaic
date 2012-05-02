@@ -53,8 +53,8 @@ public class BundleWatcher implements SynchronousBundleListener, Runnable
                     }
                     catch( BundleException e )
                     {
-                        LOG.warn( "Could not update bundle '{}' from '{}': {}", new Object[] {
-                                BundleUtils.toString( bundle ), location, e.getMessage( ), e
+                        LOG.warn( "Could not update bundle '{}' from '{}'", new Object[] {
+                                BundleUtils.toString( bundle ), location, e
                         } );
                     }
                 }
