@@ -8,6 +8,7 @@ import org.mosaic.lifecycle.ServiceBind;
 import org.mosaic.lifecycle.ServiceUnbind;
 import org.mosaic.security.AccessDeniedException;
 import org.mosaic.server.web.PathParamsAware;
+import org.mosaic.server.web.dispatcher.impl.handler.parameters.MethodParameterInfo;
 import org.mosaic.server.web.dispatcher.impl.handler.parameters.MethodParameterResolver;
 import org.mosaic.server.web.dispatcher.impl.util.HandlerUtils;
 import org.mosaic.server.web.dispatcher.impl.util.RegexPathMatcher;
@@ -38,7 +39,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class HandlersManager
 {
-
     protected final Logger LOG = LoggerFactory.getLogger( getClass( ) );
 
     private final HandlersManager.NotFoundHandler notFoundHandler = new NotFoundHandler( );
@@ -64,18 +64,23 @@ public class HandlersManager
     @ServiceBind
     public synchronized void addNativeHandler( ServiceReference<?> ref, Handler handler )
     {
-        this.handlers.add( new HandlerEntry( ref, handler ) );
+        List<HandlerEntry> newHandlers = new ArrayList<>( this.handlers );
+        newHandlers.add( new HandlerEntry( ref, handler ) );
+        Collections.sort( newHandlers );
+        this.handlers = newHandlers;
     }
 
     @ServiceUnbind
     public synchronized void removeNativeHandler( ServiceReference<?> ref )
     {
-        for( Iterator<HandlerEntry> iterator = this.handlers.iterator( ); iterator.hasNext( ); )
+        List<HandlerEntry> newHandlers = new ArrayList<>( this.handlers );
+        for( Iterator<HandlerEntry> iterator = newHandlers.iterator( ); iterator.hasNext( ); )
         {
             HandlerEntry entry = iterator.next( );
             if( entry.ref.equals( ref ) )
             {
                 iterator.remove( );
+                this.handlers = newHandlers;
                 return;
             }
         }
@@ -107,7 +112,7 @@ public class HandlersManager
 
     public void applyHandler( RequestExecutionPlan plan )
     {
-        for( int i = this.handlers.size( ) - 1; i >= 0; i++ )
+        for( int i = this.handlers.size( ) - 1; i >= 0; i-- )
         {
             HandlerEntry entry = this.handlers.get( i );
 
@@ -123,7 +128,6 @@ public class HandlersManager
 
     private class HandlerEntry implements Comparable<HandlerEntry>
     {
-
         private final ServiceReference<?> ref;
 
         private final Handler handler;
@@ -161,7 +165,6 @@ public class HandlersManager
 
     private class NotFoundHandler implements Handler, Handler.HandlerMatch
     {
-
         @Override
         public HandlerMatch matches( HttpRequest request )
         {
@@ -179,7 +182,6 @@ public class HandlersManager
 
     private class MethodEndpointHandlerMatch implements Handler.HandlerMatch
     {
-
         private final RegexPathMatcher.MatchResult matchResult;
 
         private final TypedDict<String> pathParams;
@@ -202,10 +204,11 @@ public class HandlersManager
 
     private class MethodEndpointHandler implements Handler
     {
-
         private final MethodEndpointInfo methodEndpointInfo;
 
         private final List<RegexPathMatcher> pathMatchers = new LinkedList<>( );
+
+        private final List<MethodParameterResolver.ResolvedParameter> parameters;
 
         private Expression filterExpression;
 
@@ -257,7 +260,22 @@ public class HandlersManager
                 }
             }
 
-            //TODO 5/1/12: resolve method parameters
+
+            List<MethodParameterResolver.ResolvedParameter> resolvedParameters = new LinkedList<>( );
+            for( int i = 0; i < method.getParameterTypes( ).length; i++ )
+            {
+                MethodParameterInfo parameter = new MethodParameterInfo( method, i );
+                for( MethodParameterResolver resolver : methodParameterResolvers )
+                {
+                    MethodParameterResolver.ResolvedParameter resolvedParameter = resolver.resolve( parameter );
+                    if( resolvedParameter != null )
+                    {
+                        resolvedParameters.add( resolvedParameter );
+                        break;
+                    }
+                }
+            }
+            this.parameters = resolvedParameters;
         }
 
         @Override
@@ -281,7 +299,7 @@ public class HandlersManager
                 RegexPathMatcher.MatchResult match = matcher.match( path );
                 if( match.isMatching( ) )
                 {
-                    return createHandlerMatch( request, match );
+                    return new MethodEndpointHandlerMatch( match );
                 }
             }
 
@@ -322,20 +340,25 @@ public class HandlersManager
                     }
                 }
 
-                //TODO 5/1/12: resolve method parameters
-                //TODO 5/1/12: invoke method endpoint and return value
-                return null;
-
+                // invoke the method
+                if( this.parameters.isEmpty( ) )
+                {
+                    return this.methodEndpointInfo.invoke( );
+                }
+                else
+                {
+                    Object[] arguments = new Object[ this.parameters.size( ) ];
+                    for( int i = 0; i < this.parameters.size( ); i++ )
+                    {
+                        arguments[ i ] = this.parameters.get( i ).resolve( request );
+                    }
+                    return this.methodEndpointInfo.invoke( arguments );
+                }
             }
             finally
             {
                 pathParamsAware.setPathParams( oldPathParams );
             }
-        }
-
-        protected HandlerMatch createHandlerMatch( HttpRequest request, RegexPathMatcher.MatchResult matchResult )
-        {
-            return new MethodEndpointHandlerMatch( matchResult );
         }
     }
 
