@@ -11,9 +11,12 @@ import java.util.Map;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import org.mosaic.Home;
+import org.mosaic.lifecycle.ServiceExport;
 import org.mosaic.lifecycle.ServiceRef;
+import org.mosaic.server.web.application.HttpApplicationManager;
 import org.mosaic.util.logging.Logger;
 import org.mosaic.util.logging.LoggerFactory;
+import org.mosaic.web.HttpApplication;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Component;
@@ -25,9 +28,9 @@ import static java.nio.file.Files.newDirectoryStream;
  * @author arik
  */
 @Component
-public class HttpApplicationManagerImpl
+@ServiceExport( HttpApplicationManager.class )
+public class HttpApplicationManagerImpl implements HttpApplicationManager
 {
-
     private static final Logger LOG = LoggerFactory.getLogger( HttpApplicationManagerImpl.class );
 
     private static final long SCAN_INTERVAL = 1000;
@@ -71,6 +74,19 @@ public class HttpApplicationManagerImpl
             this.scanner.stop = true;
         }
         this.applications.clear( );
+    }
+
+    @Override
+    public HttpApplication getApplication( String name )
+    {
+        for( HttpApplicationImpl application : this.applications.values( ) )
+        {
+            if( application.getName( ).equalsIgnoreCase( name ) )
+            {
+                return application;
+            }
+        }
+        return null;
     }
 
     private synchronized void scan( )
