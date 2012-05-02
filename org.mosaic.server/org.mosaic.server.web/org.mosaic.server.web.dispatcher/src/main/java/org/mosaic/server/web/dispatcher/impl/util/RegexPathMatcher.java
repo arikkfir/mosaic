@@ -12,7 +12,6 @@ import static org.springframework.util.StringUtils.hasText;
  */
 public class RegexPathMatcher
 {
-
     private static final String DOUBLE_STAR_PATTERN = ".*";
 
     private static final String SINGLE_STAR_PATTERN = "[^/]+";
