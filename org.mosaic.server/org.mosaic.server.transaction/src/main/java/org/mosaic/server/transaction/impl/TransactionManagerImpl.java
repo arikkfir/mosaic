@@ -7,23 +7,22 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import java.util.*;
+import java.util.Dictionary;
+import java.util.Hashtable;
+import java.util.Properties;
 import javax.sql.DataSource;
 import org.mosaic.server.transaction.TransactionManager;
-import org.mosaic.util.collection.TypedDict;
-import org.mosaic.util.collection.WrappingTypedDict;
 import org.mosaic.util.logging.Logger;
-import org.mosaic.util.logging.LoggerFactory;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
-import org.springframework.core.convert.ConversionService;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 
+import static java.lang.Boolean.parseBoolean;
 import static java.nio.file.Files.*;
 import static java.nio.file.StandardOpenOption.READ;
 import static org.mosaic.util.logging.LoggerFactory.getBundleLogger;
@@ -33,7 +32,6 @@ import static org.mosaic.util.logging.LoggerFactory.getBundleLogger;
  */
 public class TransactionManagerImpl implements TransactionManager, DataSource
 {
-
     public static final String[] TX_MGR_INTERFACES = new String[] {
             TransactionManager.class.getName( ), DataSource.class.getName( )
     };
@@ -43,8 +41,6 @@ public class TransactionManagerImpl implements TransactionManager, DataSource
     private final Path path;
 
     private final String name;
-
-    private final ConversionService conversionService;
 
     private final BoneCPDataSourceWrapper rawDataSource;
 
@@ -56,9 +52,7 @@ public class TransactionManagerImpl implements TransactionManager, DataSource
 
     private long modificationTime;
 
-    public TransactionManagerImpl( Path dataSourceFile,
-                                   JdbcDriverRegistrar jdbcDriverRegistrar,
-                                   ConversionService conversionService )
+    public TransactionManagerImpl( Path dataSourceFile, JdbcDriverRegistrar jdbcDriverRegistrar )
     {
         this.path = dataSourceFile;
 
@@ -67,9 +61,7 @@ public class TransactionManagerImpl implements TransactionManager, DataSource
         this.name = fileName.substring( 0, fileName.length( ) - ".properties".length( ) );
 
         // create logger
-        this.logger =
-                LoggerFactory.getLogger( getBundleLogger( TransactionManagerImpl.class ).getName( ) + "." + this.name );
-        this.conversionService = conversionService;
+        this.logger = getBundleLogger( TransactionManagerImpl.class, this.name );
 
         // create the actual BoneCP data source which will manage the connection pool
         this.rawDataSource = new BoneCPDataSourceWrapper( this.name, jdbcDriverRegistrar );
@@ -92,60 +84,45 @@ public class TransactionManagerImpl implements TransactionManager, DataSource
     {
         if( isDirectory( this.path ) || !exists( this.path ) || !isReadable( this.path ) )
         {
-
             if( this.modificationTime > 0 )
             {
-
                 logger.warn( "Data source '{}' no longer exists/readable at: {}", this.name, this.path );
                 this.modificationTime = 0;
                 unregister( );
-
             }
-
         }
         else
         {
-
             try
             {
-
                 long modificationTime = getLastModifiedTime( this.path ).toMillis( );
                 if( modificationTime > this.modificationTime )
                 {
                     this.modificationTime = modificationTime;
 
                     logger.info( "Creating data source '{}' from: {}", this.name, this.path );
-                    TypedDict<String> data = createEmptyMap( );
+                    Properties properties = new Properties( );
                     try( InputStream inputStream = newInputStream( this.path, READ ) )
                     {
-
-                        Properties properties = new Properties( );
                         properties.load( inputStream );
-                        for( String propertyName : properties.stringPropertyNames( ) )
-                        {
-                            data.put( propertyName, properties.getProperty( propertyName ) );
-                        }
-
                     }
-                    register( data );
+                    register( properties );
                 }
-
             }
             catch( IOException e )
             {
                 logger.error( "Could not refresh data source '{}': {}", this.path.getFileName( ).toString( ), e.getMessage( ), e );
             }
-
         }
     }
 
-    public void register( TypedDict<String> cfg )
+    public void register( Properties cfg )
     {
         this.rawDataSource.init( cfg );
 
         // create a transaction manager for the *RAW* data source (NEVER TO THE TX DATA SOURCE! THE TX-MGR MUST WORK AGAINST THE ACTUAL DATA SOURCE!)
-        this.springTxMgr.setNestedTransactionAllowed( cfg.getValueAs( "nestedTransactionsAllowed", Boolean.class, false ) );
-        this.springTxMgr.setRollbackOnCommitFailure( cfg.getValueAs( "rollbackOnCommitFailure", Boolean.class, false ) );
+        this.springTxMgr.setNestedTransactionAllowed( parseBoolean( cfg.getProperty( "nestedTransactionsAllowed", "false" ) ) );
+        this.springTxMgr.setRollbackOnCommitFailure( parseBoolean( cfg.getProperty( "rollbackOnCommitFailure", "false" ) ) );
 
         // register as a data source and transaction manager
         Dictionary<String, Object> dsDict = new Hashtable<>( );
@@ -171,6 +148,7 @@ public class TransactionManagerImpl implements TransactionManager, DataSource
         catch( IllegalStateException ignore )
         {
         }
+
         try
         {
             this.rawDataSource.close( );
@@ -268,15 +246,5 @@ public class TransactionManagerImpl implements TransactionManager, DataSource
     public boolean isWrapperFor( Class<?> type ) throws SQLException
     {
         return this.txDataSource.isWrapperFor( type );
-    }
-
-    private WrappingTypedDict<String> createEmptyMap( )
-    {
-        return createMap( new HashMap<String, List<String>>( ) );
-    }
-
-    private WrappingTypedDict<String> createMap( Map<String, List<String>> data )
-    {
-        return new WrappingTypedDict<>( data, this.conversionService, String.class );
     }
 }

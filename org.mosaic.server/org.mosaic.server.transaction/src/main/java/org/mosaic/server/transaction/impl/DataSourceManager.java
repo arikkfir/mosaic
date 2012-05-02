@@ -27,7 +27,6 @@ import static java.nio.file.Files.newDirectoryStream;
 @Component
 public class DataSourceManager
 {
-
     private static final Logger LOG = LoggerFactory.getLogger( DataSourceManager.class );
 
     private static final long SCAN_INTERVAL = 1000;
@@ -88,31 +87,26 @@ public class DataSourceManager
 
     private synchronized void scan( )
     {
-
         Path dir = this.home.getEtc( ).resolve( "data-sources" );
         if( Files.exists( dir ) && Files.isDirectory( dir ) )
         {
-
             try( DirectoryStream<Path> stream = newDirectoryStream( dir, "*.properties" ) )
             {
-
                 for( Path dsFile : stream )
                 {
                     TransactionManagerImpl txMgr = this.txManagers.get( dsFile );
                     if( txMgr == null )
                     {
-                        txMgr = new TransactionManagerImpl( dsFile, this.jdbcDriverRegistrar, this.conversionService );
+                        txMgr = new TransactionManagerImpl( dsFile, this.jdbcDriverRegistrar );
                         this.txManagers.put( dsFile, txMgr );
                     }
                     txMgr.refresh( );
                 }
-
             }
             catch( IOException e )
             {
                 LOG.error( "Could not search for data sources in '{}': {}", dir, e.getMessage( ), e );
             }
-
         }
 
         this.txManagers.values( ).iterator( );
@@ -130,7 +124,6 @@ public class DataSourceManager
 
     private class Scanner implements Runnable
     {
-
         private boolean stop;
 
         @Override

@@ -7,11 +7,14 @@ import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.util.Properties;
 import javax.sql.DataSource;
-import org.mosaic.util.collection.TypedDict;
 import org.mosaic.util.logging.Logger;
 import org.mosaic.util.logging.LoggerFactory;
 
+import static java.lang.Boolean.parseBoolean;
+import static java.lang.Integer.parseInt;
+import static java.lang.Long.parseLong;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
@@ -51,7 +54,7 @@ public class BoneCPDataSourceWrapper implements DataSource, Closeable
         return this.name;
     }
 
-    public void init( TypedDict<String> cfg )
+    public void init( Properties cfg )
     {
         BoneCPConfig bcpConfig = new BoneCPConfig( );
         bcpConfig.setAcquireIncrement( gi( cfg, "acquireIncrement", 1 ) );
@@ -200,39 +203,55 @@ public class BoneCPDataSourceWrapper implements DataSource, Closeable
         }
     }
 
-    private int gi( TypedDict<String> cfg, String key, int defaultValue )
+    private int gi( Properties cfg, String key, int defaultValue )
     {
-        return cfg.getValueAs( key, Integer.class, defaultValue );
+        return parseInt( cfg.getProperty( key, "" + defaultValue ) );
     }
 
-    private long gl( TypedDict<String> cfg, String key, long defaultValue )
+    private long gl( Properties cfg, String key, long defaultValue )
     {
-        return cfg.getValueAs( key, Long.class, defaultValue );
+        return parseLong( cfg.getProperty( key, "" + defaultValue ) );
     }
 
-    private boolean gb( TypedDict<String> cfg, String key, boolean defaultValue )
+    private boolean gb( Properties cfg, String key, boolean defaultValue )
     {
-        return cfg.getValueAs( key, Boolean.class, defaultValue );
+        return parseBoolean( cfg.getProperty( key, "" + defaultValue ) );
     }
 
-    private String rs( TypedDict<String> cfg, String key )
+    private String rs( Properties cfg, String key )
     {
-        return cfg.requireValueAs( key, String.class );
+        String value = cfg.getProperty( key );
+        if( value == null )
+        {
+            throw new IllegalStateException( String.format( "Configuration for data source '%s' is missing key '%s'", this.name, key ) );
+        }
+        else
+        {
+            return value;
+        }
     }
 
-    private String gs( TypedDict<String> cfg, String key, String defaultValue )
+    private String gs( Properties cfg, String key, String defaultValue )
     {
-        return cfg.getValueAs( key, String.class, defaultValue );
+        return cfg.getProperty( key, defaultValue );
     }
 
-    private String gs( TypedDict<String> cfg, String key )
+    private String gs( Properties cfg, String key )
     {
-        return cfg.getValueAs( key, String.class );
+        return cfg.getProperty( key );
     }
 
-    private <T extends Enum> T ge( TypedDict<String> cfg, String key, Class<T> type, T defaultValue )
+    private <T extends Enum> T ge( Properties cfg, String key, Class<T> type, T defaultValue )
     {
-        return cfg.getValueAs( key, type, defaultValue );
+        String value = gs( cfg, key );
+        if( value == null )
+        {
+            return defaultValue;
+        }
+        else
+        {
+            return Enum.valueOf( type, cfg.getProperty( key ) );
+        }
     }
 
     private class OsgiBoneCP extends BoneCP

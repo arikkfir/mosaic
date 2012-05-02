@@ -5,14 +5,12 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.*;
 import org.mosaic.config.Configuration;
-import org.mosaic.util.collection.TypedDict;
-import org.mosaic.util.collection.WrappingTypedDict;
 import org.mosaic.util.logging.Logger;
-import org.mosaic.util.logging.LoggerFactory;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 import org.springframework.core.convert.ConversionService;
 
+import static java.lang.String.format;
 import static java.nio.file.Files.*;
 import static java.nio.file.StandardOpenOption.READ;
 import static org.mosaic.util.logging.LoggerFactory.getBundleLogger;
@@ -22,7 +20,6 @@ import static org.mosaic.util.logging.LoggerFactory.getBundleLogger;
  */
 public class ConfigurationImpl implements Configuration
 {
-
     private final BundleContext bundleContext;
 
     private final Logger logger;
@@ -35,7 +32,7 @@ public class ConfigurationImpl implements Configuration
 
     private ServiceRegistration<Configuration> registration;
 
-    private TypedDict<String> data;
+    private Map<String, String> values = Collections.emptyMap( );
 
     private long modificationTime;
 
@@ -44,12 +41,16 @@ public class ConfigurationImpl implements Configuration
         this.bundleContext = bundleContext;
         this.path = path;
         this.conversionService = conversionService;
-        this.data = createEmptyMap( );
 
         String fileName = this.path.getFileName( ).toString( );
         this.name = fileName.substring( 0, fileName.indexOf( '.' ) );
-        this.logger =
-                LoggerFactory.getLogger( getBundleLogger( ConfigurationManager.class ).getName( ) + "." + this.name );
+        this.logger = getBundleLogger( ConfigurationManager.class, this.name );
+    }
+
+    @Override
+    public String getName( )
+    {
+        return this.name;
     }
 
     public Path getPath( )
@@ -63,7 +64,6 @@ public class ConfigurationImpl implements Configuration
         dict.put( "name", this.name );
         dict.put( "path", this.path.toString( ) );
         dict.put( "modificationTime", this.modificationTime );
-
         if( this.registration == null )
         {
             this.registration = this.bundleContext.registerService( Configuration.class, this, dict );
@@ -92,106 +92,89 @@ public class ConfigurationImpl implements Configuration
     {
         if( isDirectory( this.path ) || !exists( this.path ) || !isReadable( this.path ) )
         {
-
             if( this.modificationTime > 0 )
             {
-
                 logger.warn( "Configuration '{}' no longer exists/readable at: {}", this.name, this.path );
-                this.data = createEmptyMap( );
+                this.values = Collections.emptyMap( );
                 this.modificationTime = 0;
                 unregister( );
-
             }
-
         }
         else
         {
-
             try
             {
-
                 long modificationTime = getLastModifiedTime( this.path ).toMillis( );
                 if( modificationTime > this.modificationTime )
                 {
                     this.modificationTime = modificationTime;
 
                     logger.info( "Refreshing configuration '{}' from: {}", this.name, this.path );
-                    TypedDict<String> data = createEmptyMap( );
+                    Map<String, String> values = new HashMap<>( );
                     try( InputStream inputStream = newInputStream( this.path, READ ) )
                     {
-
                         Properties properties = new Properties( );
                         properties.load( inputStream );
                         for( String propertyName : properties.stringPropertyNames( ) )
                         {
-                            data.put( propertyName, properties.getProperty( propertyName ) );
+                            values.put( propertyName, properties.getProperty( propertyName ) );
                         }
-
                     }
-
-                    this.data = data;
+                    this.values = values;
                     register( );
                 }
-
             }
             catch( IOException e )
             {
                 logger.error( "Could not refresh configuration '{}': {}", this.path.getFileName( ).toString( ), e.getMessage( ), e );
             }
-
         }
-    }
-
-    @Override
-    public String getName( )
-    {
-        return this.name;
     }
 
     @Override
     public int size( )
     {
-        return this.data.size( );
+        return this.values.size( );
     }
 
     @Override
     public boolean isEmpty( )
     {
-        return this.data.isEmpty( );
+        return this.values.isEmpty( );
     }
 
     @Override
     public boolean containsKey( Object key )
     {
-        return this.data.containsKey( key );
+        return this.values.containsKey( key );
     }
 
     @Override
     public boolean containsValue( Object value )
     {
-        return this.data.containsValue( value );
+        return this.values.containsValue( value );
     }
 
     @Override
-    public List<String> get( Object key )
+    public String get( Object key )
     {
-        return this.data.get( key );
+        return this.values.get( key );
     }
 
     @Override
-    public List<String> put( String key, List<String> value )
-    {
-        throw new UnsupportedOperationException( "Configurations cannot be modified" );
-    }
-
-    @Override
-    public List<String> remove( Object key )
+    public String put( String key, String value )
     {
         throw new UnsupportedOperationException( "Configurations cannot be modified" );
     }
 
     @Override
-    public void putAll( Map<? extends String, ? extends List<String>> m )
+    public String remove( Object key )
+    {
+        throw new UnsupportedOperationException( "Configurations cannot be modified" );
+    }
+
+    @Override
+    public void putAll( Map<? extends String, ? extends String> m )
     {
         throw new UnsupportedOperationException( "Configurations cannot be modified" );
     }
@@ -205,100 +188,88 @@ public class ConfigurationImpl implements Configuration
     @Override
     public Set<String> keySet( )
     {
-        return Collections.unmodifiableSet( this.data.keySet( ) );
+        return Collections.unmodifiableSet( this.values.keySet( ) );
     }
 
     @Override
-    public Collection<List<String>> values( )
+    public Collection<String> values( )
     {
-        return Collections.unmodifiableCollection( this.data.values( ) );
+        return Collections.unmodifiableCollection( this.values.values( ) );
     }
 
     @Override
-    public Set<Entry<String, List<String>>> entrySet( )
+    public Set<Entry<String, String>> entrySet( )
     {
-        return Collections.unmodifiableSet( this.data.entrySet( ) );
+        return Collections.unmodifiableSet( this.values.entrySet( ) );
     }
 
     @Override
-    public String getValue( String key )
+    public String get( String key, String defaultValue )
     {
-        return this.data.getValue( key );
+        String value = this.values.get( key );
+        if( value == null )
+        {
+            return defaultValue;
+        }
+        else
+        {
+            return defaultValue;
+        }
     }
 
     @Override
-    public String getValue( String key, String defaultValue )
+    public String require( String key )
     {
-        return this.data.getValue( key, defaultValue );
+        String value = get( key );
+        if( value == null )
+        {
+            throw new IllegalArgumentException( format( "Configuration '%s' has no value for key '%s'", this.name, key ) );
+        }
+        else
+        {
+            return value;
+        }
     }
 
     @Override
-    public String requireValue( String key )
+    public <T> T get( String key, Class<T> type )
     {
-        return this.data.requireValue( key );
+        String value = get( key );
+        if( value == null )
+        {
+            return null;
+        }
+        else
+        {
+            return this.conversionService.convert( value, type );
+        }
     }
 
     @Override
-    public void add( String key, String value )
+    public <T> T require( String key, Class<T> type )
     {
-        throw new UnsupportedOperationException( "Configurations cannot be modified" );
+        T value = get( key, type );
+        if( value == null )
+        {
+            throw new IllegalArgumentException( format( "Configuration '%s' has no value for key '%s'", this.name, key ) );
+        }
+        else
+        {
+            return value;
+        }
     }
 
     @Override
-    public void put( String key, String value )
+    public <T> T get( String key, Class<T> type, T defaultValue )
     {
-        throw new UnsupportedOperationException( "Configurations cannot be modified" );
-    }
-
-    @Override
-    public Map<String, String> toMap( )
-    {
-        return Collections.unmodifiableMap( this.data.toMap( ) );
-    }
-
-    @Override
-    public <T> T getValueAs( String key, Class<T> type )
-    {
-        return this.data.getValueAs( key, type );
-    }
-
-    @Override
-    public <T> T getValueAs( String key, Class<T> type, T defaultValue )
-    {
-        return this.data.getValueAs( key, type, defaultValue );
-    }
-
-    @Override
-    public <T> T requireValueAs( String key, Class<T> type )
-    {
-        return this.data.requireValueAs( key, type );
-    }
-
-    @Override
-    public <T> void addAs( String key, T value )
-    {
-        throw new UnsupportedOperationException( "Configurations cannot be modified" );
-    }
-
-    @Override
-    public <T> void putAs( String key, T value )
-    {
-        throw new UnsupportedOperationException( "Configurations cannot be modified" );
-    }
-
-    @Override
-    public <T> Map<String, T> toMapAs( Class<T> type )
-    {
-        return Collections.unmodifiableMap( this.data.toMapAs( type ) );
-    }
-
-    private WrappingTypedDict<String> createEmptyMap( )
-    {
-        return createMap( new HashMap<String, List<String>>( ) );
-    }
-
-    private WrappingTypedDict<String> createMap( Map<String, List<String>> data )
-    {
-        return new WrappingTypedDict<>( data, this.conversionService, String.class );
+        T value = get( key, type );
+        if( value == null )
+        {
+            return defaultValue;
+        }
+        else
+        {
+            return value;
+        }
     }
 }
