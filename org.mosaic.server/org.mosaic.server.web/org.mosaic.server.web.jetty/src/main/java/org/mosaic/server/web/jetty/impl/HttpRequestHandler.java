@@ -35,7 +35,8 @@ import static org.eclipse.jetty.servlet.ServletContextHandler.SESSIONS;
  * @author arik
  */
 @Component
-public class HttpRequestHandler extends ContextHandlerCollection {
+public class HttpRequestHandler extends ContextHandlerCollection
+{
 
     private static final Logger LOG = LoggerFactory.getLogger( HttpRequestHandler.class );
 
@@ -46,127 +47,152 @@ public class HttpRequestHandler extends ContextHandlerCollection {
     private RequestDispatcher dispatcher;
 
     @Autowired
-    public void setConversionService( ConversionService conversionService ) {
+    public void setConversionService( ConversionService conversionService )
+    {
         this.conversionService = conversionService;
     }
 
     @ServiceRef( required = false )
-    public void setDispatcher( RequestDispatcher dispatcher ) {
+    public void setDispatcher( RequestDispatcher dispatcher )
+    {
         this.dispatcher = dispatcher;
     }
 
     @ServiceBind
-    public void addApplication( HttpApplication application ) {
+    public void addApplication( HttpApplication application )
+    {
         ServletContextHandler context = this.applications.get( application );
-        if( context == null ) {
+        if( context == null )
+        {
 
             context = new ServletContextHandler( SESSIONS );
             context.setAliases( false );
             context.setAllowNullPathInfo( true );
             context.setCompactPath( true );
             context.setContextPath( "" );
-            context.setLogger( new Slf4jLog( ServletContextHandler.class.getName() ) );
-            context.setErrorHandler( new ErrorHandler() );
+            context.setLogger( new Slf4jLog( ServletContextHandler.class.getName( ) ) );
+            context.setErrorHandler( new ErrorHandler( ) );
 
             // add filters
-            context.setDisplayName( application.getName() );
-            context.addFilter( new FilterHolder( new GzipFilter() ), "/*", EnumSet.of( DispatcherType.REQUEST ) );
+            context.setDisplayName( application.getName( ) );
+            context.addFilter( new FilterHolder( new GzipFilter( ) ), "/*", EnumSet.of( DispatcherType.REQUEST ) );
 
             // add application filters and servlet
             HttpApplicationServlet servlet = new HttpApplicationServlet( application );
             context.addServlet( new ServletHolder( "MosaicServlet", servlet ), "/*" );
 
             // update virtual hosts
-            Set<String> virtualHosts = application.getVirtualHosts();
-            context.setVirtualHosts( virtualHosts.toArray( new String[ virtualHosts.size() ] ) );
+            Set<String> virtualHosts = application.getVirtualHosts( );
+            context.setVirtualHosts( virtualHosts.toArray( new String[ virtualHosts.size( ) ] ) );
 
             // add application
             this.applications.put( application, context );
             addHandler( context );
 
-        } else {
+        }
+        else
+        {
 
             // update virtual hosts
-            Set<String> virtualHosts = application.getVirtualHosts();
-            context.setVirtualHosts( virtualHosts.toArray( new String[ virtualHosts.size() ] ) );
+            Set<String> virtualHosts = application.getVirtualHosts( );
+            context.setVirtualHosts( virtualHosts.toArray( new String[ virtualHosts.size( ) ] ) );
 
             // update path mappings
-            mapContexts();
+            mapContexts( );
 
         }
     }
 
     @ServiceUnbind
-    public void removeApplication( HttpApplication application ) {
+    public void removeApplication( HttpApplication application )
+    {
         ServletContextHandler context = this.applications.remove( application );
-        if( context != null ) {
+        if( context != null )
+        {
             removeHandler( context );
         }
     }
 
-    public class HttpApplicationServlet extends HttpServlet {
+    public class HttpApplicationServlet extends HttpServlet
+    {
 
         private final HttpApplication httpApplication;
 
-        public HttpApplicationServlet( HttpApplication httpApplication ) {
+        public HttpApplicationServlet( HttpApplication httpApplication )
+        {
             this.httpApplication = httpApplication;
         }
 
         @Override
-        protected void doGet( HttpServletRequest req, HttpServletResponse resp ) throws ServletException, IOException {
+        protected void doGet( HttpServletRequest req, HttpServletResponse resp ) throws ServletException, IOException
+        {
             handleRequest( req, resp );
         }
 
         @Override
-        protected void doPost( HttpServletRequest req, HttpServletResponse resp ) throws ServletException, IOException {
+        protected void doPost( HttpServletRequest req, HttpServletResponse resp ) throws ServletException, IOException
+        {
             handleRequest( req, resp );
         }
 
         @Override
-        protected void doPut( HttpServletRequest req, HttpServletResponse resp ) throws ServletException, IOException {
+        protected void doPut( HttpServletRequest req, HttpServletResponse resp ) throws ServletException, IOException
+        {
             handleRequest( req, resp );
         }
 
         @Override
-        protected void doDelete( HttpServletRequest req, HttpServletResponse resp )
-                throws ServletException, IOException {
+        protected void doDelete( HttpServletRequest req, HttpServletResponse resp ) throws ServletException, IOException
+        {
             handleRequest( req, resp );
         }
 
         @Override
         protected void doOptions( HttpServletRequest req, HttpServletResponse resp )
-                throws ServletException, IOException {
+        throws ServletException, IOException
+        {
             handleRequest( req, resp );
         }
 
         private void handleRequest( HttpServletRequest request, HttpServletResponse response )
-                throws IOException, ServletException {
+        throws IOException, ServletException
+        {
 
-            try {
+            try
+            {
 
                 // associate app and request on the thread
                 Http.setRequest( new HttpRequestImpl( conversionService, this.httpApplication, request, response ) );
 
                 // if no dispatcher, send 404; otherwise, pass the torch to the dispatcher
                 RequestDispatcher dispatcher = HttpRequestHandler.this.dispatcher;
-                if( dispatcher == null ) {
+                if( dispatcher == null )
+                {
                     response.sendError( HttpServletResponse.SC_NOT_FOUND );
-                } else {
-                    dispatcher.handle();
+                }
+                else
+                {
+                    dispatcher.handle( Http.request( ) );
                 }
 
-            } catch( @SuppressWarnings( "CaughtExceptionImmediatelyRethrown" ) IOException | ServletException e ) {
+            }
+            catch( @SuppressWarnings( "CaughtExceptionImmediatelyRethrown" ) IOException | ServletException e )
+            {
 
                 // bubble up I/O or servlet exceptions
                 throw e;
 
-            } catch( Exception e ) {
+            }
+            catch( Exception e )
+            {
 
                 // log and return 500
-                LOG.error( "Error processing request '{}': {}", request.getRequestURL(), e.getMessage(), e );
+                LOG.error( "Error processing request '{}': {}", request.getRequestURL( ), e.getMessage( ), e );
                 response.sendError( HttpServletResponse.SC_INTERNAL_SERVER_ERROR );
 
-            } finally {
+            }
+            finally
+            {
                 Http.setRequest( null );
             }
         }
