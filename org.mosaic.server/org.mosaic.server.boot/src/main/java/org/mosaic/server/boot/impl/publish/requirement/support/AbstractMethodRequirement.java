@@ -9,7 +9,6 @@ import org.mosaic.server.boot.impl.publish.BundleTracker;
  */
 public abstract class AbstractMethodRequirement extends AbstractBeanRequirement
 {
-
     private final Method targetMethod;
 
     protected AbstractMethodRequirement( BundleTracker tracker, String beanName, Method targetMethod )
