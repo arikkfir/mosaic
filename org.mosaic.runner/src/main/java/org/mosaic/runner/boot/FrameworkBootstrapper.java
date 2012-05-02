@@ -164,7 +164,11 @@ public class FrameworkBootstrapper
             {
                 if( !StringUtils.isBlank( line ) && !line.startsWith( "#" ) )
                 {
-                    bundles.addAll( processBootLink( resolvers, file, line ) );
+                    Set<Bundle> bootBundles = processBootLink( resolvers, file, line );
+                    if( bootBundles != null )
+                    {
+                        bundles.addAll( bootBundles );
+                    }
                 }
             }
             return bundles;
