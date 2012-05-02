@@ -18,5 +18,4 @@ public interface Configuration extends Map<String, String>
     <T> T require( String key, Class<T> type );
 
     <T> T get( String key, Class<T> type, T defaultValue );
-
 }
