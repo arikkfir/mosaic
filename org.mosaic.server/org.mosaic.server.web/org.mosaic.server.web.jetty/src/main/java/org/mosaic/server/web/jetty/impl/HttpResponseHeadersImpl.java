@@ -7,7 +7,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.joda.time.DateTime;
-import org.mosaic.server.web.HttpTime;
+import org.mosaic.server.web.util.HttpTime;
 import org.mosaic.util.collection.MissingRequiredValueException;
 import org.mosaic.web.HttpCookie;
 import org.mosaic.web.HttpResponseHeaders;
