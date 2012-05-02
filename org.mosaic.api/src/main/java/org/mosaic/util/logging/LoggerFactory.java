@@ -18,17 +18,17 @@ public class LoggerFactory {
             return getLogger( "unknown-logger" );
         }
         Bundle bundle = FrameworkUtil.getBundle( clazz );
-        return bundle != null ? getLogger( bundle.getSymbolicName() ) : getLogger( clazz.getName() );
+        return bundle != null ? getLogger( bundle.getSymbolicName( ) ) : getLogger( clazz.getName( ) );
     }
 
     public static Logger getLogger( Class<?> clazz ) {
-        return getLogger( clazz == null ? "unknown-logger" : clazz.getName() );
+        return getLogger( clazz == null ? "unknown-logger" : clazz.getName( ) );
     }
 
     public static Logger getLogger( String name ) {
         SoftReference<Logger> loggerRef = LOGGERS.get( name );
         if( loggerRef != null ) {
-            Logger wrapper = loggerRef.get();
+            Logger wrapper = loggerRef.get( );
             if( wrapper != null ) {
                 return wrapper;
             }

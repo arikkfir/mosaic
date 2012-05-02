@@ -71,8 +71,8 @@ public class WrappingTypedDict<V> extends WrappingDict<V> implements TypedDict<V
 
     @Override
     public <T> Map<String, T> toMapAs( Class<T> type ) {
-        Map<String, T> map = new HashMap<>( size() );
-        for( String key : keySet() ) {
+        Map<String, T> map = new HashMap<>( size( ) );
+        for( String key : keySet( ) ) {
             map.put( key, getValueAs( key, type ) );
         }
         return map;

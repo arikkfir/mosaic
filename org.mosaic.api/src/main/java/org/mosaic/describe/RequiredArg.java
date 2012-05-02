@@ -9,6 +9,6 @@ import java.lang.annotation.RetentionPolicy;
 @Retention( RetentionPolicy.RUNTIME )
 public @interface RequiredArg {
 
-    boolean value() default true;
+    boolean value( ) default true;
 
 }

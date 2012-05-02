@@ -8,13 +8,13 @@ import java.nio.file.Path;
 public interface Home {
 
     @SuppressWarnings( "UnusedDeclaration" )
-    Path getHome();
+    Path getHome( );
 
     @SuppressWarnings( "UnusedDeclaration" )
-    Path getBoot();
+    Path getBoot( );
 
-    Path getEtc();
+    Path getEtc( );
 
-    Path getWork();
+    Path getWork( );
 
 }

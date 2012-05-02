@@ -16,12 +16,12 @@ public interface ClassEndpointInfo {
     @SuppressWarnings( "UnusedDeclaration" )
     boolean isOfType( Class<? extends Annotation> annotationType );
 
-    String getOrigin();
+    String getOrigin( );
 
-    Annotation getType();
+    Annotation getType( );
 
-    Class<?> getClassType();
+    Class<?> getClassType( );
 
-    Object getEndpoint();
+    Object getEndpoint( );
 
 }

@@ -7,6 +7,6 @@ import org.mosaic.util.collection.TypedDict;
  */
 public interface Configuration extends TypedDict<String> {
 
-    String getName();
+    String getName( );
 
 }

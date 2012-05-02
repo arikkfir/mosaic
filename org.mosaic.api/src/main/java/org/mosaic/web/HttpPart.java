@@ -11,16 +11,16 @@ import org.springframework.http.MediaType;
  */
 public interface HttpPart {
 
-    String getName();
+    String getName( );
 
-    MediaType getContentType();
+    MediaType getContentType( );
 
-    long getSize();
+    long getSize( );
 
-    InputStream getInputStream() throws IOException;
+    InputStream getInputStream( ) throws IOException;
 
     void save( Path path ) throws IOException;
 
-    TypedDict<String> getHeaders();
+    TypedDict<String> getHeaders( );
 
 }

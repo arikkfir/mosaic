@@ -18,12 +18,11 @@ public interface MethodEndpointInfo {
     @SuppressWarnings( "UnusedDeclaration" )
     boolean isOfType( Class<? extends Annotation> annotationType );
 
-    String getOrigin();
+    String getOrigin( );
 
-    Annotation getType();
+    Annotation getType( );
 
-    Method getMethod();
+    Method getMethod( );
 
     Object invoke( Object... arguments ) throws InvocationTargetException, IllegalAccessException;
-
 }

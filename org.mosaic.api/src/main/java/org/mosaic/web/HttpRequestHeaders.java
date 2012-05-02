@@ -14,41 +14,41 @@ import org.springframework.http.MediaType;
  */
 public interface HttpRequestHeaders extends TypedDict<String> {
 
-    List<MediaType> getAccept();
+    List<MediaType> getAccept( );
 
-    List<Charset> getAcceptCharset();
+    List<Charset> getAcceptCharset( );
 
-    List<Locale> getAcceptLanguage();
+    List<Locale> getAcceptLanguage( );
 
-    String getAuthorization();
+    String getAuthorization( );
 
-    String getCacheControl();
+    String getCacheControl( );
 
-    List<Locale> getContentLanguage();
+    List<Locale> getContentLanguage( );
 
-    Long getContentLength();
+    Long getContentLength( );
 
-    MediaType getContentType();
+    MediaType getContentType( );
 
     HttpCookie getCookie( String name );
 
-    String getHost();
+    String getHost( );
 
-    Set<String> getIfMatch();
+    Set<String> getIfMatch( );
 
-    DateTime getIfModifiedSince();
+    DateTime getIfModifiedSince( );
 
-    Set<String> getIfNoneMatch();
+    Set<String> getIfNoneMatch( );
 
-    DateTime getIfUnmodifiedSince();
+    DateTime getIfUnmodifiedSince( );
 
-    String getPragma();
+    String getPragma( );
 
-    URL getReferer();
+    URL getReferer( );
 
     /**
      * @todo would be nice to return a "Device" object here
      */
-    String getUserAgent();
+    String getUserAgent( );
 
 }

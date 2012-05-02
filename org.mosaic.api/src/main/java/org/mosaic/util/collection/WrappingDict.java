@@ -11,7 +11,7 @@ public class WrappingDict<V> implements Dict<V> {
 
         private final int initialCapacity;
 
-        private ArrayListFactory() {
+        private ArrayListFactory( ) {
             this( 25 );
         }
 
@@ -20,7 +20,7 @@ public class WrappingDict<V> implements Dict<V> {
         }
 
         @Override
-        public List<V> createList() {
+        public List<V> createList( ) {
             return new ArrayList<>( this.initialCapacity );
         }
     }
@@ -29,12 +29,12 @@ public class WrappingDict<V> implements Dict<V> {
 
     private final Map<String, List<V>> map;
 
-    public WrappingDict() {
-        this( new HashMap<String, List<V>>(), new ArrayListFactory<V>() );
+    public WrappingDict( ) {
+        this( new HashMap<String, List<V>>( ), new ArrayListFactory<V>( ) );
     }
 
     public WrappingDict( Map<String, List<V>> map ) {
-        this( map, new ArrayListFactory<V>() );
+        this( map, new ArrayListFactory<V>( ) );
     }
 
     public WrappingDict( Map<String, List<V>> map, ListFactory<V> listFactory ) {
@@ -42,20 +42,20 @@ public class WrappingDict<V> implements Dict<V> {
         this.map = map;
     }
 
-    public Map<String, List<V>> getMap() {
+    public Map<String, List<V>> getMap( ) {
         return map;
     }
 
     @Override
     public V getValue( String key ) {
         List<V> values = this.map.get( key );
-        return values == null || values.isEmpty() ? null : values.get( 0 );
+        return values == null || values.isEmpty( ) ? null : values.get( 0 );
     }
 
     @Override
     public V getValue( String key, V defaultValue ) {
         List<V> values = this.map.get( key );
-        return values == null || values.isEmpty() ? defaultValue : values.get( 0 );
+        return values == null || values.isEmpty( ) ? defaultValue : values.get( 0 );
     }
 
     @Override
@@ -72,7 +72,7 @@ public class WrappingDict<V> implements Dict<V> {
     public void add( String key, V value ) {
         List<V> values = this.map.get( key );
         if( values == null ) {
-            values = this.listFactory.createList();
+            values = this.listFactory.createList( );
             this.map.put( key, values );
         }
         values.add( value );
@@ -82,31 +82,31 @@ public class WrappingDict<V> implements Dict<V> {
     public void put( String key, V value ) {
         List<V> values = this.map.get( key );
         if( values == null ) {
-            values = this.listFactory.createList();
+            values = this.listFactory.createList( );
             this.map.put( key, values );
         } else {
-            values.clear();
+            values.clear( );
         }
         values.add( value );
     }
 
     @Override
-    public Map<String, V> toMap() {
-        Map<String, V> map = new HashMap<>( this.map.size() );
-        for( String key : this.map.keySet() ) {
+    public Map<String, V> toMap( ) {
+        Map<String, V> map = new HashMap<>( this.map.size( ) );
+        for( String key : this.map.keySet( ) ) {
             map.put( key, getValue( key ) );
         }
         return map;
     }
 
     @Override
-    public int size() {
-        return map.size();
+    public int size( ) {
+        return map.size( );
     }
 
     @Override
-    public boolean isEmpty() {
-        return map.isEmpty();
+    public boolean isEmpty( ) {
+        return map.isEmpty( );
     }
 
     @Override
@@ -138,23 +138,23 @@ public class WrappingDict<V> implements Dict<V> {
     }
 
     @Override
-    public void clear() {
-        map.clear();
+    public void clear( ) {
+        map.clear( );
     }
 
     @Override
-    public Set<String> keySet() {
-        return map.keySet();
+    public Set<String> keySet( ) {
+        return map.keySet( );
     }
 
     @Override
-    public Collection<List<V>> values() {
-        return map.values();
+    public Collection<List<V>> values( ) {
+        return map.values( );
     }
 
     @Override
-    public Set<Entry<String, List<V>>> entrySet() {
-        return map.entrySet();
+    public Set<Entry<String, List<V>>> entrySet( ) {
+        return map.entrySet( );
     }
 
     @Override
@@ -168,7 +168,7 @@ public class WrappingDict<V> implements Dict<V> {
     }
 
     @Override
-    public String toString() {
-        return this.map.toString();
+    public String toString( ) {
+        return this.map.toString( );
     }
 }

@@ -10,8 +10,7 @@ public interface Dict<V> extends Map<String, List<V>> {
 
     interface ListFactory<V> {
 
-        List<V> createList();
-
+        List<V> createList( );
     }
 
     V getValue( String key );
@@ -24,6 +23,5 @@ public interface Dict<V> extends Map<String, List<V>> {
 
     void put( String key, V value );
 
-    Map<String, V> toMap();
-
+    Map<String, V> toMap( );
 }

@@ -12,6 +12,5 @@ import java.lang.annotation.Target;
 @Target( ElementType.METHOD )
 public @interface ServiceBind {
 
-    String filter() default "";
-
+    String filter( ) default "";
 }

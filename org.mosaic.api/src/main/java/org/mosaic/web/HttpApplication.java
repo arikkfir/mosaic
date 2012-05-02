@@ -9,16 +9,16 @@ import org.mosaic.util.collection.TypedDict;
  */
 public interface HttpApplication extends TypedDict<Object> {
 
-    String getName();
+    String getName( );
 
-    TypedDict<String> getParameters();
+    TypedDict<String> getParameters( );
 
-    Set<String> getVirtualHosts();
+    Set<String> getVirtualHosts( );
 
     boolean isHostIncluded( String host );
 
     boolean isAddressAllowed( String address );
 
-    PermissionPolicy getPermissionPolicy();
+    PermissionPolicy getPermissionPolicy( );
 
 }

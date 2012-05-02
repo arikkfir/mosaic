@@ -14,6 +14,6 @@ import org.mosaic.lifecycle.MethodEndpointMarker;
 @MethodEndpointMarker
 public @interface Marshaller {
 
-    String[] value() default "";
+    String[] value( ) default "";
 
 }

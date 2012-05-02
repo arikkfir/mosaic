@@ -7,28 +7,28 @@ import java.io.PrintWriter;
  */
 public interface Logger {
 
-    String getName();
+    String getName( );
 
-    boolean isTraceEnabled();
+    boolean isTraceEnabled( );
 
     @SuppressWarnings( "UnusedDeclaration" )
     Logger trace( String msg, Object... args );
 
-    boolean isDebugEnabled();
+    boolean isDebugEnabled( );
 
     Logger debug( String msg, Object... args );
 
-    boolean isInfoEnabled();
+    boolean isInfoEnabled( );
 
     Logger info( String msg, Object... args );
 
-    boolean isWarnEnabled();
+    boolean isWarnEnabled( );
 
     Logger warn( String msg, Object... args );
 
-    boolean isErrorEnabled();
+    boolean isErrorEnabled( );
 
     Logger error( String msg, Object... args );
 
-    PrintWriter getPrintWriter();
+    PrintWriter getPrintWriter( );
 }

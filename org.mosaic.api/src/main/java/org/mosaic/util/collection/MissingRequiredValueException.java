@@ -12,7 +12,7 @@ public class MissingRequiredValueException extends RuntimeException {
         this.key = key;
     }
 
-    public String getKey() {
+    public String getKey( ) {
         return key;
     }
 }

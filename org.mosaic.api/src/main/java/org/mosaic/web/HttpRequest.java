@@ -12,45 +12,45 @@ import org.springframework.http.HttpStatus;
  */
 public interface HttpRequest extends TypedDict<Object> {
 
-    HttpApplication getApplication();
+    HttpApplication getApplication( );
 
-    Object getSession();
+    Object getSession( );
 
-    HttpSession getOrCreateSession();
+    HttpSession getOrCreateSession( );
 
-    boolean isSecure();
+    boolean isSecure( );
 
-    String getClientAddress();
+    String getClientAddress( );
 
-    String getProtocol();
+    String getProtocol( );
 
-    HttpMethod getMethod();
+    HttpMethod getMethod( );
 
-    URI getUrl();
+    URI getUrl( );
 
-    TypedDict<String> getQueryParameters();
+    TypedDict<String> getQueryParameters( );
 
-    TypedDict<String> getPathParameters();
+    TypedDict<String> getPathParameters( );
 
-    HttpRequestHeaders getRequestHeaders();
+    HttpRequestHeaders getRequestHeaders( );
 
-    InputStream getRequestInputStream() throws IOException;
+    InputStream getRequestInputStream( ) throws IOException;
 
-    Reader getRequestReader() throws IOException;
+    Reader getRequestReader( ) throws IOException;
 
     HttpPart getPart( String name );
 
-    Collection<HttpPart> getParts();
+    Collection<HttpPart> getParts( );
 
-    HttpStatus getResponseStatus();
+    HttpStatus getResponseStatus( );
 
     void setResponseStatus( HttpStatus status, String text );
 
-    HttpResponseHeaders getResponseHeaders();
+    HttpResponseHeaders getResponseHeaders( );
 
-    OutputStream getResponseOutputStream() throws IOException;
+    OutputStream getResponseOutputStream( ) throws IOException;
 
-    Writer getResponseWriter() throws IOException;
+    Writer getResponseWriter( ) throws IOException;
 
-    boolean isCommitted();
+    boolean isCommitted( );
 }

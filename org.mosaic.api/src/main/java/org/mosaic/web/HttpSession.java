@@ -9,16 +9,16 @@ import org.mosaic.util.collection.TypedDict;
  */
 public interface HttpSession extends TypedDict<Object> {
 
-    DateTime getCreationTime();
+    DateTime getCreationTime( );
 
-    String getId();
+    String getId( );
 
-    DateTime getLastAccessTime();
+    DateTime getLastAccessTime( );
 
-    Duration getMaxInactiveInterval();
+    Duration getMaxInactiveInterval( );
 
-    boolean isNew();
+    boolean isNew( );
 
-    void invalidate();
+    void invalidate( );
 
 }
