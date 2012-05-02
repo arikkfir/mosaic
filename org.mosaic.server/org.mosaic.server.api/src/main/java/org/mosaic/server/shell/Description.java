@@ -1,4 +1,4 @@
-package org.mosaic.describe;
+package org.mosaic.server.shell;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -7,9 +7,9 @@ import java.lang.annotation.RetentionPolicy;
  * @author arik
  */
 @Retention( RetentionPolicy.RUNTIME )
-public @interface Label
+public @interface Description
 {
 
-    String value( );
+    String value();
 
 }

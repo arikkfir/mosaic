@@ -14,5 +14,5 @@ import org.mosaic.lifecycle.MethodEndpointMarker;
 @MethodEndpointMarker
 public @interface Interceptor
 {
-    String[] value( ) default "";
+    String[] value() default "";
 }

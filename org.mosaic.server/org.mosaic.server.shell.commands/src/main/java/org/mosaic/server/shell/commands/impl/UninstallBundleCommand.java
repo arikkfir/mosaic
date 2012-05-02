@@ -2,8 +2,8 @@ package org.mosaic.server.shell.commands.impl;
 
 import java.io.IOException;
 import java.util.List;
-import org.mosaic.describe.Description;
 import org.mosaic.server.shell.Args;
+import org.mosaic.server.shell.Description;
 import org.mosaic.server.shell.Option;
 import org.mosaic.server.shell.ShellCommand;
 import org.mosaic.server.shell.console.Console;
@@ -27,22 +27,28 @@ public class UninstallBundleCommand extends AbstractCommand
     @ShellCommand( "uninstall" )
     public void uninstallBundles( Console console,
 
-                                  @Option( alias = "e" ) @Description( "exact matching (filter arguments will not be treated as wildcards)" ) boolean exact,
+                                  @Option( alias = "e" )
+                                  @Description( "exact matching (filter arguments will not be treated as wildcards)" )
+                                  boolean exact,
 
-                                  @Option( alias = "s" ) @Description( "show full stack-traces when errors occur" ) boolean stackTraces,
+                                  @Option( alias = "s" )
+                                  @Description( "show full stack-traces when errors occur" )
+                                  boolean stackTraces,
 
-                                  @Args String... filters ) throws IOException
+                                  @Args
+                                  String... filters )
+    throws IOException
     {
 
-        List<Bundle> matchingBundles = findMatchingBundles( getBundleContext( ), exact, filters );
-        if( matchingBundles.isEmpty( ) )
+        List<Bundle> matchingBundles = findMatchingBundles( getBundleContext(), exact, filters );
+        if( matchingBundles.isEmpty() )
         {
             console.println( "No bundles match requested filters." );
             return;
         }
 
         List<Bundle> matches = filterBundlesByState( matchingBundles, INSTALLED, RESOLVED, ACTIVE );
-        if( matches.isEmpty( ) )
+        if( matches.isEmpty() )
         {
             console.println( "None of the matching bundles is in a start-able state (installed/resolved/active)" );
             return;
@@ -51,9 +57,9 @@ public class UninstallBundleCommand extends AbstractCommand
         Console.TablePrinter table = createBundlesTable( console );
         for( Bundle bundle : matches )
         {
-            table.print( bundle.getBundleId( ), capitalize( getBundleStatus( bundle ).getState( ).name( ) ), bundle.getHeaders( ).get( Constants.BUNDLE_NAME ), bundle.getSymbolicName( ) );
+            table.print( bundle.getBundleId(), capitalize( getBundleStatus( bundle ).getState().name() ), bundle.getHeaders().get( Constants.BUNDLE_NAME ), bundle.getSymbolicName() );
         }
-        table.done( );
+        table.done();
 
         if( console.ask( "Uninstall these bundles? [Y/n]", 'y', 'n' ) == 'y' )
         {
@@ -61,7 +67,7 @@ public class UninstallBundleCommand extends AbstractCommand
             {
                 try
                 {
-                    bundle.uninstall( );
+                    bundle.uninstall();
                 }
                 catch( BundleException e )
                 {
@@ -71,7 +77,7 @@ public class UninstallBundleCommand extends AbstractCommand
                     }
                     else
                     {
-                        console.println( e.getMessage( ) );
+                        console.println( e.getMessage() );
                     }
                 }
             }
@@ -80,6 +86,6 @@ public class UninstallBundleCommand extends AbstractCommand
 
     private Console.TablePrinter createBundlesTable( Console console ) throws IOException
     {
-        return console.createTable( ).addHeader( "ID", 5 ).addHeader( "State", 10 ).addHeader( "Name", 45 ).addHeader( "Symbolic Name", 50 ).start( );
+        return console.createTable().addHeader( "ID", 5 ).addHeader( "State", 10 ).addHeader( "Name", 45 ).addHeader( "Symbolic Name", 50 ).start();
     }
 }

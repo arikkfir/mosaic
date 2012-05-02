@@ -16,7 +16,7 @@ public abstract class IoUtils
         {
             try
             {
-                flushable.flush( );
+                flushable.flush();
             }
             catch( IOException ignore )
             {
@@ -30,7 +30,7 @@ public abstract class IoUtils
         {
             try
             {
-                closeable.close( );
+                closeable.close();
             }
             catch( IOException ignore )
             {

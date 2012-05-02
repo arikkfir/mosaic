@@ -26,27 +26,27 @@ public class ServiceUnbindRequirement extends AbstractTrackerRequirement
     }
 
     @Override
-    public String toString( )
+    public String toString()
     {
         return "ServiceUnbind[" +
-               getServiceType( ).getSimpleName( ) +
+               getServiceType().getSimpleName() +
                "/" +
-               getTargetMethod( ).getName( ) +
+               getTargetMethod().getName() +
                "/" +
-               getBeanName( ) +
+               getBeanName() +
                "]";
     }
 
     @Override
-    public int getPriority( )
+    public int getPriority()
     {
         return SERVICE_UNBIND_PRIORITY;
     }
 
     @Override
-    public String toShortString( )
+    public String toShortString()
     {
-        return "Unbind of '" + getServiceType( ).getSimpleName( ) + "'";
+        return "Unbind of '" + getServiceType().getSimpleName() + "'";
     }
 
     @Override
@@ -58,9 +58,9 @@ public class ServiceUnbindRequirement extends AbstractTrackerRequirement
     }
 
     @Override
-    protected boolean trackInternal( ) throws Exception
+    protected boolean trackInternal() throws Exception
     {
-        super.trackInternal( );
+        super.trackInternal();
         return true;
     }
 
@@ -75,10 +75,10 @@ public class ServiceUnbindRequirement extends AbstractTrackerRequirement
 
     protected Object[] getServiceMethodArgs( ServiceReference<?> sr, Object service )
     {
-        Method method = getTargetMethod( );
+        Method method = getTargetMethod();
 
-        List<Object> values = new LinkedList<>( );
-        for( Class<?> type : method.getParameterTypes( ) )
+        List<Object> values = new LinkedList<>();
+        for( Class<?> type : method.getParameterTypes() )
         {
             if( type.isAssignableFrom( Map.class ) )
             {
@@ -88,21 +88,21 @@ public class ServiceUnbindRequirement extends AbstractTrackerRequirement
             {
                 values.add( sr );
             }
-            else if( type.isAssignableFrom( getServiceType( ) ) )
+            else if( type.isAssignableFrom( getServiceType() ) )
             {
                 values.add( service );
             }
             else
             {
                 throw new IllegalStateException( "Unsupported argument type ('" +
-                                                 type.getSimpleName( ) +
+                                                 type.getSimpleName() +
                                                  "') in method '" +
-                                                 method.getName( ) +
+                                                 method.getName() +
                                                  "' of bean '" +
-                                                 getBeanName( ) +
+                                                 getBeanName() +
                                                  "'" );
             }
         }
-        return values.toArray( );
+        return values.toArray();
     }
 }

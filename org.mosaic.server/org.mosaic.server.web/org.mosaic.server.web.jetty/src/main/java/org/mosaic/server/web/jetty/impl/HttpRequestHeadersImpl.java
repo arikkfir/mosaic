@@ -13,14 +13,12 @@ import java.util.regex.Pattern;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import org.joda.time.DateTime;
-import org.mosaic.util.collection.MissingRequiredValueException;
-import org.mosaic.util.collection.TypedDict;
-import org.mosaic.util.collection.WrappingTypedDict;
+import org.mosaic.server.web.util.HttpTime;
+import org.mosaic.util.collection.MultiMapAccessor;
 import org.mosaic.util.logging.Logger;
 import org.mosaic.util.logging.LoggerFactory;
 import org.mosaic.web.HttpCookie;
 import org.mosaic.web.HttpRequestHeaders;
-import org.springframework.core.convert.ConversionService;
 import org.springframework.http.MediaType;
 
 import static java.util.Collections.list;
@@ -32,96 +30,143 @@ import static org.springframework.http.MediaType.parseMediaTypes;
  */
 public class HttpRequestHeadersImpl implements HttpRequestHeaders
 {
-
     private static final Logger LOG = LoggerFactory.getLogger( HttpRequestHeadersImpl.class );
 
     private static final Pattern QUALITY_PATTERN = Pattern.compile( "q=(?<quality>\\d+(?:\\.\\d+))" );
 
-    private static final Comparator<MediaType> MEDIA_TYPE_COMPARATOR = reverseOrder( new MediaTypeComparator( ) );
+    private static final Comparator<MediaType> MEDIA_TYPE_COMPARATOR = reverseOrder( new MediaTypeComparator() );
 
-    private static final Comparator<OrderedEntry<Charset>> CHARSET_COMPARATOR =
-            reverseOrder( new OrderedEntryComparator<Charset>( ) );
+    private static final Comparator<OrderedEntry<Charset>> CHARSET_COMPARATOR = reverseOrder( new OrderedEntryComparator<Charset>() );
 
     private static final Set<String> SINGLE_VALUES_HEADERS =
-            new HashSet<>( Arrays.<String>asList( "Accept", "Accept-Charset", "Accept-Encoding", "Accept-Language", "Allow", "Content-Language", "If-Match", "If-None-Match", "X-Mosaic-Accept-Override", "X-Mosaic-Accept-Charset-Override", "X-Mosaic-Accept-Encoding-Override", "X-Mosaic-Accept-Language-Override", "X-Mosaic-Allow-Override", "X-Mosaic-Content-Language-Override", "X-Mosaic-If-Match-Override", "X-Mosaic-If-None-Match-Override" ) );
+            new HashSet<>( Arrays.<String>asList(
+                    "Accept",
+                    "Accept-Charset",
+                    "Accept-Encoding",
+                    "Accept-Language",
+                    "Allow",
+                    "Content-Language",
+                    "If-Match",
+                    "If-None-Match",
+                    "X-Mosaic-Accept-Override",
+                    "X-Mosaic-Accept-Charset-Override",
+                    "X-Mosaic-Accept-Encoding-Override",
+                    "X-Mosaic-Accept-Language-Override",
+                    "X-Mosaic-Allow-Override",
+                    "X-Mosaic-Content-Language-Override",
+                    "X-Mosaic-If-Match-Override",
+                    "X-Mosaic-If-None-Match-Override"
+            ) );
 
-    private static boolean isMosaicOverrideHeader( String header )
+    private final Map<String, List<String>> headers;
+
+    private final ArrayList<Locale> locales;
+
+    private final Cookie[] cookies;
+
+    private final URL referer;
+
+    public HttpRequestHeadersImpl( HttpServletRequest request )
     {
-        return header.startsWith( "X-Mosaic-" ) && header.endsWith( "-Override" );
-    }
+        // use the request object directly because it knows to parse the Accept-Language header, and sort
+        // the languages according to the sent quality value
+        this.locales = Collections.list( request.getLocales() );
 
-    private static boolean isSingleValuedHeader( String header )
-    {
-        return SINGLE_VALUES_HEADERS.contains( header );
-    }
+        // get cookies
+        this.cookies = request.getCookies();
 
-    private final HttpServletRequest request;
+        Map<String, List<String>> headers = new HashMap<>();
+        MultiMapAccessor<String, String> hs = new MultiMapAccessor<>( headers );
 
-    private final TypedDict<String> headers;
-
-    public HttpRequestHeadersImpl( HttpServletRequest request, ConversionService conversionService )
-    {
-        this.request = request;
-
-        // copy all headers to our map
-        this.headers =
-                new WrappingTypedDict<>( new HashMap<String, List<String>>( 20 ), conversionService, String.class );
-        for( String header : list( this.request.getHeaderNames( ) ) )
+        for( String header : list( request.getHeaderNames() ) )
         {
-
             // override headers do not stand by themselves - their values must be used under the overridden header name
-            if( isMosaicOverrideHeader( header ) )
+            // TODO: what if the original header is not sent at all? (e.g. only "X-MyHeader-Override" is sent...)
+            if( header.startsWith( "X-Mosaic-" ) && header.endsWith( "-Override" ) )
             {
                 continue;
             }
 
             // first check if this header was overridden by a Mosaic Override header
-            List<String> values = list( this.request.getHeaders( "X-" + header + "-Override" ) );
-            if( values == null || values.isEmpty( ) )
+            List<String> values = list( request.getHeaders( "X-" + header + "-Override" ) );
+            if( values == null || values.isEmpty() )
             {
                 // not overridden - use this header's value
-                values = list( this.request.getHeaders( header ) );
+                values = list( request.getHeaders( header ) );
             }
 
             // add header to the map
             for( String value : values )
             {
-
                 // single-valued headers are those that might appear multiple times in the request, but their values
                 // must be joined to a single value separated by commas (",")
-                if( isSingleValuedHeader( header ) && this.headers.containsKey( header ) )
+                if( SINGLE_VALUES_HEADERS.contains( header ) && hs.containsKey( header ) )
                 {
-                    String oldValue = this.headers.getValue( header );
-                    if( oldValue.trim( ).length( ) > 0 )
+                    String oldValue = hs.getFirst( header );
+                    if( oldValue.trim().length() > 0 )
                     {
-                        this.headers.put( header, oldValue + ", " + value );
+                        hs.replace( header, oldValue + ", " + value );
                     }
                     else
                     {
-                        this.headers.put( header, value );
+                        hs.replace( header, value );
                     }
                 }
                 else
                 {
-                    this.headers.add( header, value );
+                    hs.add( header, value );
                 }
             }
+        }
+        this.headers = Collections.unmodifiableMap( headers );
+        this.referer = buildReferer( request );
+    }
 
+    @Override
+    public String getFirst( String key )
+    {
+        List<String> values = this.headers.get( key );
+        if( values == null || values.isEmpty() )
+        {
+            return null;
+        }
+        else
+        {
+            return values.get( 0 );
         }
     }
 
     @Override
-    public List<MediaType> getAccept( )
+    public List<String> get( String name )
     {
-        List<MediaType> mediaTypes = parseMediaTypes( getValue( "Accept", MediaType.ALL.toString( ) ) );
+        return this.headers.get( name );
+    }
+
+    private String getFirst( String key, String defaultValue )
+    {
+        String value = getFirst( key );
+        if( value != null )
+        {
+            return value;
+        }
+        else
+        {
+            return defaultValue;
+        }
+    }
+
+    @Override
+    public List<MediaType> getAccept()
+    {
+        List<MediaType> mediaTypes = parseMediaTypes( getFirst( "Accept", MediaType.ALL.toString() ) );
         Collections.sort( mediaTypes, MEDIA_TYPE_COMPARATOR );
         return mediaTypes;
     }
 
     @Override
-    public List<Charset> getAcceptCharset( )
+    public List<Charset> getAcceptCharset()
     {
-        String values = getValue( "Accept-Charset", "ISO-8859-1" );
+        String values = getFirst( "Accept-Charset", "ISO-8859-1" );
 
         List<OrderedEntry<Charset>> orderedCharSets = new ArrayList<>( 5 );
         for( String token : values.split( ",\\s*" ) )
@@ -131,7 +176,7 @@ public class HttpRequestHeadersImpl implements HttpRequestHeaders
             {
                 if( paramIdx == -1 )
                 {
-                    if( !"*".equals( token.trim( ) ) )
+                    if( !"*".equals( token.trim() ) )
                     {
                         orderedCharSets.add( new OrderedEntry<>( Charset.forName( token ) ) );
                     }
@@ -139,20 +184,22 @@ public class HttpRequestHeadersImpl implements HttpRequestHeaders
                 else
                 {
                     String name = token.substring( 0, paramIdx );
-                    if( !"*".equals( name.trim( ) ) )
+                    if( !"*".equals( name.trim() ) )
                     {
                         String extra = token.substring( paramIdx + 1 );
                         Matcher qualityMatcher = QUALITY_PATTERN.matcher( extra );
-                        if( qualityMatcher.matches( ) )
+                        if( qualityMatcher.matches() )
                         {
-                            orderedCharSets.add( new OrderedEntry<>( Double.valueOf( qualityMatcher.group( "quality" ) ), Charset.forName( token.substring(
-                                    paramIdx +
-                                    1 ) ) ) );
+                            orderedCharSets.add( new OrderedEntry<>(
+                                    Double.valueOf( qualityMatcher.group( "quality" ) ),
+                                    Charset.forName( token.substring( paramIdx + 1 ) ) )
+                            );
                         }
                         else
                         {
-                            orderedCharSets.add( new OrderedEntry<>( Charset.forName( token.substring( paramIdx +
-                                                                                                       1 ) ) ) );
+                            orderedCharSets.add( new OrderedEntry<>(
+                                    Charset.forName( token.substring( paramIdx + 1 ) ) )
+                            );
                         }
                     }
                 }
@@ -168,7 +215,7 @@ public class HttpRequestHeadersImpl implements HttpRequestHeaders
         }
 
         Collections.sort( orderedCharSets, CHARSET_COMPARATOR );
-        List<Charset> charSets = new LinkedList<>( );
+        List<Charset> charSets = new LinkedList<>();
         for( OrderedEntry<Charset> entry : orderedCharSets )
         {
             charSets.add( entry.value );
@@ -177,30 +224,28 @@ public class HttpRequestHeadersImpl implements HttpRequestHeaders
     }
 
     @Override
-    public List<Locale> getAcceptLanguage( )
+    public List<Locale> getAcceptLanguage()
     {
-        // use the request object directly because it knows to parse the Accept-Language header, and sort
-        // the languages according to the sent quality value
-        return Collections.list( this.request.getLocales( ) );
+        return this.locales;
     }
 
     @Override
-    public String getAuthorization( )
+    public String getAuthorization()
     {
-        return getValue( "Authorization" );
+        return getFirst( "Authorization" );
     }
 
     @Override
-    public String getCacheControl( )
+    public String getCacheControl()
     {
-        return getValue( "Cache-Control" );
+        return getFirst( "Cache-Control" );
     }
 
     @Override
-    public List<Locale> getContentLanguage( )
+    public List<Locale> getContentLanguage()
     {
-        List<Locale> languages = new LinkedList<>( );
-        for( String language : getValue( "Content-Language", "en" ).split( ",\\s*" ) )
+        List<Locale> languages = new LinkedList<>();
+        for( String language : getFirst( "Content-Language", "en" ).split( ",\\s*" ) )
         {
             languages.add( Locale.forLanguageTag( language ) );
         }
@@ -208,28 +253,26 @@ public class HttpRequestHeadersImpl implements HttpRequestHeaders
     }
 
     @Override
-    public Long getContentLength( )
+    public Long getContentLength()
     {
-        return getValueAs( "Content-Length", Long.class );
+        return Long.parseLong( getFirst( "Content-Length" ) );
     }
 
     @Override
-    public MediaType getContentType( )
+    public MediaType getContentType()
     {
-        return getValueAs( "Content-Type", MediaType.class );
+        return MediaType.parseMediaType( getFirst( "Content-Type" ) );
     }
 
     @Override
     public HttpCookie getCookie( String name )
     {
-
         // use the request object directly since it knows the parse cookies better than we do :)
-        Cookie[] cookies = this.request.getCookies( );
         if( cookies != null )
         {
             for( Cookie cookie : cookies )
             {
-                if( cookie.getName( ).equalsIgnoreCase( name ) )
+                if( cookie.getName().equalsIgnoreCase( name ) )
                 {
                     return new HttpCookieImpl( cookie );
                 }
@@ -240,16 +283,16 @@ public class HttpRequestHeadersImpl implements HttpRequestHeaders
     }
 
     @Override
-    public String getHost( )
+    public String getHost()
     {
-        return getValue( "Host" );
+        return getFirst( "Host" );
     }
 
     @Override
-    public Set<String> getIfMatch( )
+    public Set<String> getIfMatch()
     {
         Set<String> eTags = new LinkedHashSet<>( 5 );
-        String value = getValue( "If-Match" );
+        String value = getFirst( "If-Match" );
         if( value != null )
         {
             Collections.addAll( eTags, value.split( ",\\s*" ) );
@@ -258,16 +301,16 @@ public class HttpRequestHeadersImpl implements HttpRequestHeaders
     }
 
     @Override
-    public DateTime getIfModifiedSince( )
+    public DateTime getIfModifiedSince()
     {
-        return getValueAs( "If-Modified-Since", DateTime.class );
+        return HttpTime.parse( getFirst( "If-Modified-Since" ) );
     }
 
     @Override
-    public Set<String> getIfNoneMatch( )
+    public Set<String> getIfNoneMatch()
     {
         Set<String> eTags = new LinkedHashSet<>( 5 );
-        String value = getValue( "If-None-Match" );
+        String value = getFirst( "If-None-Match" );
         if( value != null )
         {
             Collections.addAll( eTags, value.split( ",\\s*" ) );
@@ -276,27 +319,38 @@ public class HttpRequestHeadersImpl implements HttpRequestHeaders
     }
 
     @Override
-    public DateTime getIfUnmodifiedSince( )
+    public DateTime getIfUnmodifiedSince()
     {
-        return getValueAs( "If-Unmodified-Since", DateTime.class );
+        return HttpTime.parse( getFirst( "If-Unmodified-Since" ) );
     }
 
     @Override
-    public String getPragma( )
+    public String getPragma()
     {
-        return getValue( "Pragma" );
+        return getFirst( "Pragma" );
     }
 
     @Override
-    public URL getReferer( )
+    public URL getReferer()
     {
-        String value = getValue( "Referer" );
+        return this.referer;
+    }
+
+    @Override
+    public String getUserAgent()
+    {
+        return getFirst( "User-Agent" );
+    }
+
+    private URL buildReferer( HttpServletRequest request )
+    {
+        String value = getFirst( "Referer" );
         if( value == null )
         {
             return null;
         }
 
-        String requestURL = this.request.getRequestURL( ).toString( );
+        String requestURL = request.getRequestURL().toString();
 
         // create a URI for the referer header
         URI referrer;
@@ -306,196 +360,35 @@ public class HttpRequestHeadersImpl implements HttpRequestHeaders
         }
         catch( URISyntaxException e )
         {
-            LOG.debug( "Illegal 'Referer' header sent to '{}': {}", requestURL, e.getMessage( ), e );
+            LOG.debug( "Illegal 'Referer' header sent to '{}': {}", requestURL, e.getMessage(), e );
             return null;
         }
-        if( referrer.getScheme( ) == null )
+        if( referrer.getScheme() == null )
         {
-
-            // relative referer - resolve against this request's URL
+            // relative referer - resolve against this request URL
             try
             {
-                return URI.create( requestURL ).resolve( referrer ).toURL( );
+                return URI.create( requestURL ).resolve( referrer ).toURL();
             }
             catch( MalformedURLException e )
             {
-                LOG.warn( "Could not resolve 'Referer' header value '{}' against base request URI '{}': {}", referrer, requestURL, e.getMessage( ), e );
+                LOG.warn( "Could not resolve 'Referer' header value '{}' against base request URI '{}': {}", referrer, requestURL, e.getMessage(), e );
                 return null;
             }
-
         }
         else
         {
-
             // absolute referer - just return that
             try
             {
-                return referrer.toURL( );
+                return referrer.toURL();
             }
             catch( MalformedURLException e )
             {
-                LOG.warn( "Could not convert 'Referer' header value '{}' for request '{}' into a URL object: {}", referrer, requestURL, e.getMessage( ), e );
+                LOG.warn( "Could not convert 'Referer' header value '{}' for request '{}' into a URL object: {}", referrer, requestURL, e.getMessage(), e );
                 return null;
             }
         }
-    }
-
-    @Override
-    public String getUserAgent( )
-    {
-        return getValue( "User-Agent" );
-    }
-
-    @Override
-    public String getValue( String key )
-    {
-        return this.headers.getValue( key );
-    }
-
-    @Override
-    public String getValue( String key, String defaultValue )
-    {
-        return this.headers.getValue( key, defaultValue );
-    }
-
-    @Override
-    public String requireValue( String key )
-    {
-        return this.headers.requireValue( key );
-    }
-
-    @Override
-    public <T> T getValueAs( String key, Class<T> type )
-    {
-        return this.headers.getValueAs( key, type );
-    }
-
-    @Override
-    public <T> T getValueAs( String key, Class<T> type, T defaultValue )
-    {
-        return this.headers.getValueAs( key, type, defaultValue );
-    }
-
-    @Override
-    public <T> T requireValueAs( String key, Class<T> type )
-    {
-        T converted = getValueAs( key, type );
-        if( converted == null )
-        {
-            throw new MissingRequiredValueException( key );
-        }
-        else
-        {
-            return converted;
-        }
-    }
-
-    @Override
-    public void add( String key, String value )
-    {
-        throw new UnsupportedOperationException( "Request headers cannot be modified! (perhaps you intended to modify the \"HttpRequest.getResponseHeaders()\" instead?)" );
-    }
-
-    @Override
-    public <T> void addAs( String key, T value )
-    {
-        throw new UnsupportedOperationException( "Request headers cannot be modified! (perhaps you intended to modify the \"HttpRequest.getResponseHeaders()\" instead?)" );
-    }
-
-    @Override
-    public <T> void putAs( String key, T value )
-    {
-        throw new UnsupportedOperationException( "Request headers cannot be modified! (perhaps you intended to modify the \"HttpRequest.getResponseHeaders()\" instead?)" );
-    }
-
-    @Override
-    public void put( String key, String value )
-    {
-        throw new UnsupportedOperationException( "Request headers cannot be modified! (perhaps you intended to modify the \"HttpRequest.getResponseHeaders()\" instead?)" );
-    }
-
-    @Override
-    public Map<String, String> toMap( )
-    {
-        return this.headers.toMap( );
-    }
-
-    @Override
-    public <T> Map<String, T> toMapAs( Class<T> type )
-    {
-        return this.headers.toMapAs( type );
-    }
-
-    @Override
-    public int size( )
-    {
-        return this.headers.size( );
-    }
-
-    @Override
-    public boolean isEmpty( )
-    {
-        return this.headers.isEmpty( );
-    }
-
-    @Override
-    public boolean containsKey( Object key )
-    {
-        return this.headers.containsKey( key );
-    }
-
-    @Override
-    public boolean containsValue( Object value )
-    {
-        return this.headers.containsValue( value );
-    }
-
-    @Override
-    public List<String> get( Object key )
-    {
-        return this.headers.get( key );
-    }
-
-    @Override
-    public List<String> put( String key, List<String> value )
-    {
-        throw new UnsupportedOperationException( "Request headers cannot be modified! (perhaps you intended to modify the \"HttpRequest.getResponseHeaders()\" instead?)" );
-    }
-
-    @Override
-    public List<String> remove( Object key )
-    {
-        throw new UnsupportedOperationException( "Request headers cannot be modified! (perhaps you intended to modify the \"HttpRequest.getResponseHeaders()\" instead?)" );
-    }
-
-    @Override
-    public void putAll( Map<? extends String, ? extends List<String>> m )
-    {
-        throw new UnsupportedOperationException( "Request headers cannot be modified! (perhaps you intended to modify the \"HttpRequest.getResponseHeaders()\" instead?)" );
-    }
-
-    @Override
-    public void clear( )
-    {
-        throw new UnsupportedOperationException( "Request headers cannot be modified! (perhaps you intended to modify the \"HttpRequest.getResponseHeaders()\" instead?)" );
-    }
-
-    @Override
-    public Set<String> keySet( )
-    {
-        return this.headers.keySet( );
-    }
-
-    @Override
-    public Collection<List<String>> values( )
-    {
-        return this.headers.values( );
-    }
-
-    @Override
-    public Set<Entry<String, List<String>>> entrySet( )
-    {
-        return this.headers.entrySet( );
     }
 
     private static class MediaTypeComparator implements Comparator<MediaType>
@@ -509,8 +402,8 @@ public class HttpRequestHeadersImpl implements HttpRequestHeaders
                 return 0;
             }
 
-            double q1 = o1.getQualityValue( );
-            double q2 = o2.getQualityValue( );
+            double q1 = o1.getQualityValue();
+            double q2 = o2.getQualityValue();
             if( q1 == q2 )
             {
                 return 0;

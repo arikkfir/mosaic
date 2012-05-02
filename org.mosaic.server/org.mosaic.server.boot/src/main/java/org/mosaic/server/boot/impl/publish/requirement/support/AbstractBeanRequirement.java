@@ -22,7 +22,7 @@ public abstract class AbstractBeanRequirement extends AbstractRequirement
         return beanFactory.getBean( this.beanName );
     }
 
-    protected String getBeanName( )
+    protected String getBeanName()
     {
         return beanName;
     }

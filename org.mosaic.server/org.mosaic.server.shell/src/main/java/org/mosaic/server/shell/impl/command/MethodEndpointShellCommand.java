@@ -11,7 +11,6 @@ import joptsimple.ArgumentAcceptingOptionSpec;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpecBuilder;
-import org.mosaic.describe.Description;
 import org.mosaic.lifecycle.MethodEndpointInfo;
 import org.mosaic.server.shell.*;
 import org.mosaic.server.shell.console.Console;
@@ -41,39 +40,39 @@ public class MethodEndpointShellCommand implements ShellCommand
 
     private final OptionParser parser;
 
-    private final List<CommandOption> options = new LinkedList<>( );
+    private final List<CommandOption> options = new LinkedList<>();
 
     public MethodEndpointShellCommand( MethodEndpointInfo endpoint )
     {
         this.endpoint = endpoint;
-        this.parser = new OptionParser( );
-        this.parser.formatHelpWith( new CommandHelpFormatter( ) );
+        this.parser = new OptionParser();
+        this.parser.formatHelpWith( new CommandHelpFormatter() );
 
-        Method method = endpoint.getMethod( );
+        Method method = endpoint.getMethod();
 
         Description descAnn = method.getAnnotation( Description.class );
-        this.description = descAnn == null ? "" : descAnn.value( );
+        this.description = descAnn == null ? "" : descAnn.value();
 
-        ParameterNameDiscoverer parameterNameDiscoverer = new LocalVariableTableParameterNameDiscoverer( );
+        ParameterNameDiscoverer parameterNameDiscoverer = new LocalVariableTableParameterNameDiscoverer();
         String[] parameterNames = parameterNameDiscoverer.getParameterNames( method );
-        Class<?>[] parameterTypes = method.getParameterTypes( );
-        Annotation[][] parameterAnnotations = method.getParameterAnnotations( );
+        Class<?>[] parameterTypes = method.getParameterTypes();
+        Annotation[][] parameterAnnotations = method.getParameterAnnotations();
 
         for( int i = 0, parameterTypesLength = parameterTypes.length; i < parameterTypesLength; i++ )
         {
             this.options.add( createOption( parameterNames[ i ], parameterTypes[ i ], parameterAnnotations[ i ] ) );
         }
 
-        String commandName = AnnotationUtils.getValue( endpoint.getType( ), "value" ).toString( );
-        if( commandName.trim( ).length( ) == 0 )
+        String commandName = AnnotationUtils.getValue( endpoint.getType(), "value" ).toString();
+        if( commandName.trim().length() == 0 )
         {
-            commandName = method.getName( );
+            commandName = method.getName();
         }
         this.name = commandName;
     }
 
     @Override
-    public String getName( )
+    public String getName()
     {
         return name;
     }
@@ -82,7 +81,7 @@ public class MethodEndpointShellCommand implements ShellCommand
     public void execute( Console console, String... args ) throws Exception
     {
         OptionSet optionSet = this.parser.parse( args );
-        List<Object> argValues = new LinkedList<>( );
+        List<Object> argValues = new LinkedList<>();
         for( CommandOption option : this.options )
         {
             argValues.add( option.getValue( console, optionSet ) );
@@ -90,41 +89,41 @@ public class MethodEndpointShellCommand implements ShellCommand
 
         try
         {
-            this.endpoint.invoke( argValues.toArray( ) );
+            this.endpoint.invoke( argValues.toArray() );
 
         }
         catch( InvocationTargetException e )
         {
-            Throwable cause = e.getCause( );
+            Throwable cause = e.getCause();
             if( cause instanceof ExitSessionException )
             {
                 throw ( ExitSessionException ) cause;
             }
-            LOG.error( "Error executing command '{}': {} ({})", this.name, e.getMessage( ), this.endpoint, e );
+            LOG.error( "Error executing command '{}': {} ({})", this.name, e.getMessage(), this.endpoint, e );
             throw e;
 
         }
         catch( Exception e )
         {
-            LOG.error( "Error executing command '{}': {} ({})", this.name, e.getMessage( ), this.endpoint, e );
+            LOG.error( "Error executing command '{}': {} ({})", this.name, e.getMessage(), this.endpoint, e );
             throw e;
         }
     }
 
     @Override
-    public String getOrigin( )
+    public String getOrigin()
     {
-        return this.endpoint.getOrigin( );
+        return this.endpoint.getOrigin();
     }
 
     @Override
-    public String getDescription( )
+    public String getDescription()
     {
         return this.description;
     }
 
     @Override
-    public String getAdditionalArgumentsDescription( )
+    public String getAdditionalArgumentsDescription()
     {
         return this.additionalArgumentsDescription;
     }
@@ -135,11 +134,11 @@ public class MethodEndpointShellCommand implements ShellCommand
         CommandHelpFormatter.set( this, console );
         try
         {
-            this.parser.printHelpOn( console.getWriter( ) );
+            this.parser.printHelpOn( console.getWriter() );
         }
         finally
         {
-            CommandHelpFormatter.reset( );
+            CommandHelpFormatter.reset();
         }
     }
 
@@ -147,10 +146,10 @@ public class MethodEndpointShellCommand implements ShellCommand
     {
 
         Description descAnn = findAnnotation( parameterAnnotation, Description.class );
-        String description = descAnn == null ? "" : descAnn.value( );
+        String description = descAnn == null ? "" : descAnn.value();
 
         ArgDescription argDescAnn = findAnnotation( parameterAnnotation, ArgDescription.class );
-        String argDesc = argDescAnn == null ? parameterName : argDescAnn.value( );
+        String argDesc = argDescAnn == null ? parameterName : argDescAnn.value();
 
         Args argsAnn = findAnnotation( parameterAnnotation, Args.class );
         if( argsAnn != null )
@@ -165,11 +164,11 @@ public class MethodEndpointShellCommand implements ShellCommand
             }
             if( parameterType.equals( String[].class ) )
             {
-                return new ArgsArrayCommandOption( );
+                return new ArgsArrayCommandOption();
             }
             else if( parameterType.equals( List.class ) )
             {
-                return new ArgsListCommandOption( );
+                return new ArgsListCommandOption();
             }
             else
             {
@@ -182,18 +181,18 @@ public class MethodEndpointShellCommand implements ShellCommand
         Option optionAnn = findAnnotation( parameterAnnotation, Option.class );
 
         RequiredArg requiredArgAnn = findAnnotation( parameterAnnotation, RequiredArg.class );
-        boolean argRequired = requiredArgAnn != null && requiredArgAnn.value( );
+        boolean argRequired = requiredArgAnn != null && requiredArgAnn.value();
 
         if( Console.class.equals( parameterType ) )
         {
 
-            return new ConsoleCommandOption( );
+            return new ConsoleCommandOption();
 
         }
         else if( Boolean.class.equals( parameterType ) || boolean.class.equals( parameterType ) )
         {
 
-            return new BooleanCommandOption( addOption( parameterName, optionAnn, description ).options( ).iterator( ).next( ) );
+            return new BooleanCommandOption( addOption( parameterName, optionAnn, description ).options().iterator().next() );
 
         }
         else
@@ -204,14 +203,14 @@ public class MethodEndpointShellCommand implements ShellCommand
             ArgumentAcceptingOptionSpec<String> spec;
             if( argRequired )
             {
-                spec = builder.withRequiredArg( );
+                spec = builder.withRequiredArg();
             }
             else
             {
-                spec = builder.withOptionalArg( );
+                spec = builder.withOptionalArg();
             }
             spec.ofType( parameterType ).describedAs( argDesc );
-            return new SimpleCommandOption( spec.options( ).iterator( ).next( ) );
+            return new SimpleCommandOption( spec.options().iterator().next() );
 
         }
     }
@@ -219,9 +218,9 @@ public class MethodEndpointShellCommand implements ShellCommand
     private OptionSpecBuilder addOption( String name, Option optionAnn, String description )
     {
         OptionSpecBuilder specBuilder;
-        if( optionAnn != null && optionAnn.alias( ).trim( ).length( ) > 0 )
+        if( optionAnn != null && optionAnn.alias().trim().length() > 0 )
         {
-            specBuilder = this.parser.acceptsAll( asList( name, optionAnn.alias( ) ), description );
+            specBuilder = this.parser.acceptsAll( asList( name, optionAnn.alias() ), description );
         }
         else
         {
@@ -234,7 +233,7 @@ public class MethodEndpointShellCommand implements ShellCommand
     {
         for( Annotation annotation : annotations )
         {
-            if( annotation.annotationType( ).equals( type ) )
+            if( annotation.annotationType().equals( type ) )
             {
                 return type.cast( annotation );
             }
@@ -299,18 +298,18 @@ public class MethodEndpointShellCommand implements ShellCommand
         @Override
         public Object getValue( Console console, OptionSet options )
         {
-            List<String> args = new LinkedList<>( );
-            ListIterator<String> i = options.nonOptionArguments( ).listIterator( );
-            while( i.hasNext( ) )
+            List<String> args = new LinkedList<>();
+            ListIterator<String> i = options.nonOptionArguments().listIterator();
+            while( i.hasNext() )
             {
-                String arg = i.next( );
+                String arg = i.next();
                 if( arg.startsWith( "\"" ) )
                 {
                     // loop while the starting quote is the *only* quote, and while we have more tokens to swallow
-                    while( arg.indexOf( '"', 1 ) < 0 && i.hasNext( ) )
+                    while( arg.indexOf( '"', 1 ) < 0 && i.hasNext() )
                     {
                         arg += ' ';
-                        arg += i.next( );
+                        arg += i.next();
                     }
 
                     int closingQuote = arg.lastIndexOf( '"' );
@@ -337,18 +336,18 @@ public class MethodEndpointShellCommand implements ShellCommand
         @Override
         public Object getValue( Console console, OptionSet options )
         {
-            List<String> args = new LinkedList<>( );
-            ListIterator<String> i = options.nonOptionArguments( ).listIterator( );
-            while( i.hasNext( ) )
+            List<String> args = new LinkedList<>();
+            ListIterator<String> i = options.nonOptionArguments().listIterator();
+            while( i.hasNext() )
             {
-                String arg = i.next( );
+                String arg = i.next();
                 if( arg.startsWith( "\"" ) )
                 {
                     // loop while the starting quote is the *only* quote, and while we have more tokens to swallow
-                    while( arg.indexOf( '"', 1 ) < 0 && i.hasNext( ) )
+                    while( arg.indexOf( '"', 1 ) < 0 && i.hasNext() )
                     {
                         arg += ' ';
-                        arg += i.next( );
+                        arg += i.next();
                     }
 
                     int closingQuote = arg.lastIndexOf( '"' );
@@ -365,7 +364,7 @@ public class MethodEndpointShellCommand implements ShellCommand
                 }
                 args.add( arg );
             }
-            return args.toArray( new String[ args.size( ) ] );
+            return args.toArray( new String[ args.size() ] );
         }
     }
 }

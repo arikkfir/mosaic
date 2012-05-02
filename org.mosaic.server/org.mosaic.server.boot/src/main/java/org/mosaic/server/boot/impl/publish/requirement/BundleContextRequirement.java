@@ -17,39 +17,39 @@ public class BundleContextRequirement extends AbstractMethodRequirement
     }
 
     @Override
-    public String toString( )
+    public String toString()
     {
-        return "BundleContextBind[" + getTargetMethod( ).getName( ) + "/" + getBeanName( ) + "]";
+        return "BundleContextBind[" + getTargetMethod().getName() + "/" + getBeanName() + "]";
     }
 
     @Override
-    public int getPriority( )
+    public int getPriority()
     {
         return BUNDLE_CONTEXT_PRIORITY;
     }
 
     @Override
-    public String toShortString( )
+    public String toShortString()
     {
         return "Bind BundleContext";
     }
 
     @Override
-    protected boolean trackInternal( ) throws Exception
+    protected boolean trackInternal() throws Exception
     {
-        super.trackInternal( );
+        super.trackInternal();
         return true;
     }
 
     @Override
     protected void onSatisfyInternal( ApplicationContext applicationContext, Object... state ) throws Exception
     {
-        invoke( getBean( applicationContext ), getBundleContext( ) );
+        invoke( getBean( applicationContext ), getBundleContext() );
     }
 
     @Override
     protected void onInitBeanInternal( Object bean ) throws Exception
     {
-        invoke( bean, getBundleContext( ) );
+        invoke( bean, getBundleContext() );
     }
 }

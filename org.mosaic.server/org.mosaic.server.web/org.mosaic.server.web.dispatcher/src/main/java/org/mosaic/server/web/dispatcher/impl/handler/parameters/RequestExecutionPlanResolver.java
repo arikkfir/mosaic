@@ -15,7 +15,7 @@ public class RequestExecutionPlanResolver implements MethodParameterResolver, Me
     @Override
     public ResolvedParameter resolve( MethodParameter methodParameter )
     {
-        if( methodParameter.getParameterType( ).isAssignableFrom( InterceptorChain.class ) )
+        if( methodParameter.getParameterType().isAssignableFrom( InterceptorChain.class ) )
         {
             return this;
         }
@@ -28,6 +28,6 @@ public class RequestExecutionPlanResolver implements MethodParameterResolver, Me
     @Override
     public Object resolve( HttpRequest request )
     {
-        return request.getValueAs( RequestExecutionPlan.class.getName( ), RequestExecutionPlan.class );
+        return request.get( RequestExecutionPlan.class.getName() );
     }
 }

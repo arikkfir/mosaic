@@ -30,19 +30,19 @@ public class RequestDispatcherImpl implements RequestDispatcher
         RequestExecutionPlan plan = buildExecutionPlan( request );
         try
         {
-            plan.execute( );
+            plan.execute();
         }
         catch( Exception e )
         {
             //TODO: handle error by invoking @ExceptionHandler(s)
-            e.printStackTrace( );  //To change body of catch statement use File | Settings | File Templates.
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         }
     }
 
     private RequestExecutionPlan buildExecutionPlan( HttpRequest request )
     {
         RequestExecutionPlan plan = new RequestExecutionPlan( request );
-        request.add( RequestExecutionPlan.class.getName( ), plan );
+        request.put( RequestExecutionPlan.class.getName(), plan );
 
         for( RequestExecutionPlan.RequestExecutionBuilder builder : this.planBuilders )
         {

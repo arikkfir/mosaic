@@ -30,11 +30,11 @@ public class BundleWatcher implements SynchronousBundleListener, Runnable
         this.bundleContext = bundleContext;
         this.watchedLocations = new CopyOnWriteArraySet<>( watchedLocations );
         this.bundleContext.addBundleListener( this );
-        Executors.newSingleThreadScheduledExecutor( ).scheduleAtFixedRate( this, 10, 1, SECONDS );
+        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate( this, 10, 1, SECONDS );
     }
 
     @Override
-    public void run( )
+    public void run()
     {
         LOG.trace( "Scanning watched bundles" );
 
@@ -45,11 +45,11 @@ public class BundleWatcher implements SynchronousBundleListener, Runnable
             if( bundle != null )
             {
                 File file = getBundleLocationAsFile( location );
-                if( file.exists( ) && file.isFile( ) && file.lastModified( ) > bundle.getLastModified( ) )
+                if( file.exists() && file.isFile() && file.lastModified() > bundle.getLastModified() )
                 {
                     try
                     {
-                        bundle.update( );
+                        bundle.update();
                     }
                     catch( BundleException e )
                     {
@@ -65,9 +65,9 @@ public class BundleWatcher implements SynchronousBundleListener, Runnable
     @Override
     public void bundleChanged( BundleEvent event )
     {
-        if( event.getType( ) == BundleEvent.UNINSTALLED )
+        if( event.getType() == BundleEvent.UNINSTALLED )
         {
-            String location = event.getBundle( ).getLocation( );
+            String location = event.getBundle().getLocation();
             if( location != null )
             {
                 this.watchedLocations.remove( location );

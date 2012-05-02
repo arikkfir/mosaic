@@ -7,8 +7,6 @@ import org.mosaic.lifecycle.ServiceBind;
 import org.mosaic.lifecycle.ServiceUnbind;
 import org.mosaic.server.web.dispatcher.impl.RequestExecutionPlan;
 import org.mosaic.server.web.dispatcher.impl.util.RegexPathMatcher;
-import org.mosaic.util.collection.TypedDict;
-import org.mosaic.util.collection.WrappingTypedDict;
 import org.mosaic.util.logging.Logger;
 import org.mosaic.util.logging.LoggerFactory;
 import org.mosaic.web.HttpRequest;
@@ -27,7 +25,7 @@ public class InterceptorsManager extends AbstractRequestExecutionBuilder
 {
     private static final Logger LOG = LoggerFactory.getLogger( InterceptorsManager.class );
 
-    private final Map<ServiceReference<?>, Interceptor> interceptors = new ConcurrentHashMap<>( );
+    private final Map<ServiceReference<?>, Interceptor> interceptors = new ConcurrentHashMap<>();
 
     @ServiceBind
     public void addInterceptor( ServiceReference<Interceptor> ref, Interceptor interceptor )
@@ -50,7 +48,7 @@ public class InterceptorsManager extends AbstractRequestExecutionBuilder
         }
         catch( Exception e )
         {
-            LOG.warn( "Interceptor '{}' could not be added to Mosaic handlers: {}", endpointInfo, e.getMessage( ), e );
+            LOG.warn( "Interceptor '{}' could not be added to Mosaic handlers: {}", endpointInfo, e.getMessage(), e );
         }
     }
 
@@ -63,12 +61,12 @@ public class InterceptorsManager extends AbstractRequestExecutionBuilder
     @Override
     public void contribute( RequestExecutionPlan plan )
     {
-        for( Map.Entry<ServiceReference<?>, Interceptor> entry : this.interceptors.entrySet( ) )
+        for( Map.Entry<ServiceReference<?>, Interceptor> entry : this.interceptors.entrySet() )
         {
-            ServiceReference<?> ref = entry.getKey( );
-            Interceptor interceptor = entry.getValue( );
+            ServiceReference<?> ref = entry.getKey();
+            Interceptor interceptor = entry.getValue();
 
-            Interceptor.InterceptorMatch match = interceptor.matches( plan.getRequest( ) );
+            Interceptor.InterceptorMatch match = interceptor.matches( plan.getRequest() );
             if( match != null )
             {
                 Integer ranking = ( Integer ) ref.getProperty( Constants.SERVICE_RANKING );
@@ -81,19 +79,15 @@ public class InterceptorsManager extends AbstractRequestExecutionBuilder
     {
         private final RegexPathMatcher.MatchResult matchResult;
 
-        private final TypedDict<String> pathParams;
+        private final Map<String, String> pathParams;
 
         private MethodEndpointInterceptorMatch( RegexPathMatcher.MatchResult matchResult )
         {
             this.matchResult = matchResult;
-            this.pathParams = new WrappingTypedDict<>( getConversionService( ), String.class );
-            for( Map.Entry<String, String> entry : this.matchResult.getVariables( ).entrySet( ) )
-            {
-                this.pathParams.add( entry.getKey( ), entry.getValue( ) );
-            }
+            this.pathParams = this.matchResult.getVariables();
         }
 
-        private TypedDict<String> getPathParams( )
+        private Map<String, String> getPathParams()
         {
             return this.pathParams;
         }
@@ -126,7 +120,7 @@ public class InterceptorsManager extends AbstractRequestExecutionBuilder
         {
             MethodEndpointInterceptorMatch endpointMatch = ( MethodEndpointInterceptorMatch ) match;
 
-            TypedDict<String> oldPathParams = pushPathParams( request, endpointMatch.getPathParams( ) );
+            Map<String, String> oldPathParams = pushPathParams( request, endpointMatch.getPathParams() );
             try
             {
                 return invoke( request );

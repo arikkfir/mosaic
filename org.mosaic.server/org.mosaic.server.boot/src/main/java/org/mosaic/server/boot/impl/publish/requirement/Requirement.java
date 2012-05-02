@@ -17,17 +17,17 @@ public interface Requirement
 
     int SERVICE_EXPORT_PRIORITY = 60;
 
-    int getPriority( );
+    int getPriority();
 
-    String toShortString( );
+    String toShortString();
 
-    boolean track( ) throws Exception;
+    boolean track() throws Exception;
 
-    void untrack( );
+    void untrack();
 
     void publish( ApplicationContext applicationContext ) throws Exception;
 
-    void unpublish( );
+    void unpublish();
 
     boolean isBeanPublishable( Object bean, String beanName );
 

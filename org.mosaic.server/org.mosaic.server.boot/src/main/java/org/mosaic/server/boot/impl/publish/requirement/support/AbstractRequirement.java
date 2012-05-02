@@ -14,7 +14,7 @@ import org.springframework.context.ApplicationContext;
 public abstract class AbstractRequirement implements Requirement
 {
 
-    private final Logger logger = LoggerFactory.getLogger( getClass( ) );
+    private final Logger logger = LoggerFactory.getLogger( getClass() );
 
     private final BundleContext bundleContext;
 
@@ -24,43 +24,43 @@ public abstract class AbstractRequirement implements Requirement
 
     protected AbstractRequirement( BundleTracker tracker )
     {
-        this.bundleContext = tracker.getBundleContext( );
+        this.bundleContext = tracker.getBundleContext();
         this.tracker = tracker;
-        this.bundleName = BundleUtils.toString( this.bundleContext.getBundle( ) );
+        this.bundleName = BundleUtils.toString( this.bundleContext.getBundle() );
     }
 
-    protected String getBundleName( )
+    protected String getBundleName()
     {
         return bundleName;
     }
 
     @Override
-    public final boolean track( ) throws Exception
+    public final boolean track() throws Exception
     {
         logger.debug( "Tracking requirement '{}' of bundle '{}'", this, this.bundleName );
-        return trackInternal( );
+        return trackInternal();
     }
 
-    protected boolean trackInternal( ) throws Exception
+    protected boolean trackInternal() throws Exception
     {
         return false;
     }
 
     @Override
-    public final void untrack( )
+    public final void untrack()
     {
         logger.debug( "Untracking requirement '{}' of bundle '{}'", this, this.bundleName );
         try
         {
-            untrackInternal( );
+            untrackInternal();
         }
         catch( Exception e )
         {
-            logger.error( "Error while untracking requirement '{}' of bundle '{}': {}", this, this.bundleName, e.getMessage( ), e );
+            logger.error( "Error while untracking requirement '{}' of bundle '{}': {}", this, this.bundleName, e.getMessage(), e );
         }
     }
 
-    protected void untrackInternal( ) throws Exception
+    protected void untrackInternal() throws Exception
     {
         // no-op
     }
@@ -78,20 +78,20 @@ public abstract class AbstractRequirement implements Requirement
     }
 
     @Override
-    public final void unpublish( )
+    public final void unpublish()
     {
         logger.debug( "Unpublishing requirement '{}' of bundle '{}'", this, this.bundleName );
         try
         {
-            unpublishInternal( );
+            unpublishInternal();
         }
         catch( Exception e )
         {
-            logger.error( "Error while unpublishing requirement '{}' of bundle '{}': {}", this, this.bundleName, e.getMessage( ), e );
+            logger.error( "Error while unpublishing requirement '{}' of bundle '{}': {}", this, this.bundleName, e.getMessage(), e );
         }
     }
 
-    protected void unpublishInternal( ) throws Exception
+    protected void unpublishInternal() throws Exception
     {
         // no-op
     }
@@ -123,7 +123,7 @@ public abstract class AbstractRequirement implements Requirement
         }
         catch( Exception e )
         {
-            logger.error( "Requirement '{}' could not be satisfied: {}", this, e.getMessage( ), e );
+            logger.error( "Requirement '{}' could not be satisfied: {}", this, e.getMessage(), e );
         }
     }
 
@@ -132,7 +132,7 @@ public abstract class AbstractRequirement implements Requirement
         // no-op
     }
 
-    protected BundleContext getBundleContext( )
+    protected BundleContext getBundleContext()
     {
         return this.bundleContext;
     }
@@ -146,7 +146,7 @@ public abstract class AbstractRequirement implements Requirement
         this.tracker.markAsSatisfied( this, state );
     }
 
-    protected void markAsUnsatisfied( )
+    protected void markAsUnsatisfied()
     {
         if( this.tracker.isSatisfied( this ) )
         {

@@ -40,19 +40,19 @@ public class FrameworkBootstrapper
         this.home = home;
     }
 
-    public Felix boot( ) throws SystemExitException
+    public Felix boot() throws SystemExitException
     {
-        Felix felix = createFelix( );
+        Felix felix = createFelix();
         try
         {
             // create boot artifacts resolvers
-            Map<String, BootArtifactResolver> resolvers = new HashMap<>( );
-            resolvers.put( "mvn", new MavenBundleBootArtifactResolver( felix.getBundleContext( ) ) );
-            resolvers.put( "file", new FileBundleBootArtifactResolver( felix.getBundleContext( ) ) );
+            Map<String, BootArtifactResolver> resolvers = new HashMap<>();
+            resolvers.put( "mvn", new MavenBundleBootArtifactResolver( felix.getBundleContext() ) );
+            resolvers.put( "file", new FileBundleBootArtifactResolver( felix.getBundleContext() ) );
 
             // install all boot jars and links
-            Set<String> watchedLocations = new HashSet<>( );
-            File[] bootJars = this.home.getBoot( ).listFiles( );
+            Set<String> watchedLocations = new HashSet<>();
+            File[] bootJars = this.home.getBoot().listFiles();
             if( bootJars != null )
             {
                 for( File file : bootJars )
@@ -60,10 +60,10 @@ public class FrameworkBootstrapper
                     watchedLocations.addAll( installBootArtifact( resolvers, file ) );
                 }
             }
-            felix.getBundleContext( ).addBundleListener( new BundleWatcher( felix.getBundleContext( ), watchedLocations ) );
+            felix.getBundleContext().addBundleListener( new BundleWatcher( felix.getBundleContext(), watchedLocations ) );
 
             // start and return the framework instance
-            felix.start( );
+            felix.start();
             return felix;
 
         }
@@ -74,28 +74,28 @@ public class FrameworkBootstrapper
         catch( Exception e )
         {
             throw new SystemExitException( "Could not start OSGi container (Apache Felix): " +
-                                           e.getMessage( ), e, ExitCode.START_ERROR );
+                                           e.getMessage(), e, ExitCode.START_ERROR );
         }
     }
 
-    private Felix createFelix( ) throws SystemExitException
+    private Felix createFelix() throws SystemExitException
     {
         try
         {
             // build Felix configuration
-            Map<String, Object> felixConfig = new HashMap<>( );
+            Map<String, Object> felixConfig = new HashMap<>();
 
             // storage properties
-            File felixWorkDir = new File( this.home.getWork( ), "felix" );
-            if( Boolean.getBoolean( "clean" ) && felixWorkDir.exists( ) )
+            File felixWorkDir = new File( this.home.getWork(), "felix" );
+            if( Boolean.getBoolean( "clean" ) && felixWorkDir.exists() )
             {
                 FileUtils.forceDelete( felixWorkDir );
             }
-            felixConfig.put( FelixConstants.FRAMEWORK_STORAGE, felixWorkDir.toString( ) );
+            felixConfig.put( FelixConstants.FRAMEWORK_STORAGE, felixWorkDir.toString() );
             felixConfig.put( BundleCache.CACHE_BUFSIZE_PROP, ( 1024 * 64 ) + "" );
 
             // logging properties
-            felixConfig.put( FelixConstants.LOG_LOGGER_PROP, new FelixLogger( ) );
+            felixConfig.put( FelixConstants.LOG_LOGGER_PROP, new FelixLogger() );
             felixConfig.put( FelixConstants.LOG_LEVEL_PROP, FelixLogger.LOG_DEBUG + "" );
 
             // start-level
@@ -109,45 +109,45 @@ public class FrameworkBootstrapper
 
             // create Felix instance with logging listeners
             Felix felix = new Felix( felixConfig );
-            felix.init( );
-            felix.getBundleContext( ).addFrameworkListener( new LoggingFrameworkListener( ) );
-            felix.getBundleContext( ).addBundleListener( new LoggingBundleListener( ) );
-            felix.getBundleContext( ).addServiceListener( new LoggingServiceListener( ) );
+            felix.init();
+            felix.getBundleContext().addFrameworkListener( new LoggingFrameworkListener() );
+            felix.getBundleContext().addBundleListener( new LoggingBundleListener() );
+            felix.getBundleContext().addServiceListener( new LoggingServiceListener() );
             return felix;
         }
         catch( Exception e )
         {
             throw new SystemExitException( "Could not create OSGi container (Apache Felix): " +
-                                           e.getMessage( ), e, ExitCode.START_ERROR );
+                                           e.getMessage(), e, ExitCode.START_ERROR );
         }
     }
 
     private Set<String> installBootArtifact( Map<String, BootArtifactResolver> resolvers, File file )
     throws SystemExitException
     {
-        Set<String> watchedLocations = new HashSet<>( );
+        Set<String> watchedLocations = new HashSet<>();
 
-        String extension = FilenameUtils.getExtension( file.getName( ) );
+        String extension = FilenameUtils.getExtension( file.getName() );
         if( extension.equalsIgnoreCase( "jars" ) )
         {
             Set<Bundle> bundles = processBootLinks( resolvers, file );
             for( Bundle bundle : bundles )
             {
-                if( bundle.getVersion( ).getQualifier( ).equalsIgnoreCase( "SNAPSHOT" ) )
+                if( bundle.getVersion().getQualifier().equalsIgnoreCase( "SNAPSHOT" ) )
                 {
-                    watchedLocations.add( bundle.getLocation( ) );
+                    watchedLocations.add( bundle.getLocation() );
                 }
             }
 
         }
         else if( extension.equalsIgnoreCase( "jar" ) )
         {
-            BootArtifact artifact = new BootArtifact( "file", file.getAbsolutePath( ) );
+            BootArtifact artifact = new BootArtifact( "file", file.getAbsolutePath() );
             for( Bundle bundle : resolvers.get( "file" ).resolve( this.home, artifact ) )
             {
-                if( bundle.getVersion( ).getQualifier( ).equalsIgnoreCase( "SNAPSHOT" ) )
+                if( bundle.getVersion().getQualifier().equalsIgnoreCase( "SNAPSHOT" ) )
                 {
-                    watchedLocations.add( bundle.getLocation( ) );
+                    watchedLocations.add( bundle.getLocation() );
                 }
             }
         }
@@ -159,7 +159,7 @@ public class FrameworkBootstrapper
     {
         try
         {
-            Set<Bundle> bundles = new HashSet<>( );
+            Set<Bundle> bundles = new HashSet<>();
             for( String line : FileUtils.readLines( file ) )
             {
                 if( !StringUtils.isBlank( line ) && !line.startsWith( "#" ) )
@@ -175,7 +175,7 @@ public class FrameworkBootstrapper
         }
         catch( IOException e )
         {
-            throw new SystemExitException( "Cannot read '" + file + "': " + e.getMessage( ), e, ExitCode.START_ERROR );
+            throw new SystemExitException( "Cannot read '" + file + "': " + e.getMessage(), e, ExitCode.START_ERROR );
         }
     }
 
@@ -183,11 +183,11 @@ public class FrameworkBootstrapper
     throws SystemExitException
     {
         BootArtifact artifact = new BootArtifact( line );
-        BootArtifactResolver resolver = resolvers.get( artifact.getType( ) );
+        BootArtifactResolver resolver = resolvers.get( artifact.getType() );
         if( resolver == null )
         {
             throw new SystemExitException( "Unknown boot artifact type '" +
-                                           artifact.getType( ) +
+                                           artifact.getType() +
                                            "' in file '" +
                                            file +
                                            "'", ExitCode.CONFIG_ERROR );

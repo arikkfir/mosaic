@@ -16,7 +16,6 @@ import org.springframework.context.ApplicationContext;
  */
 public class ServiceRefRequirement extends AbstractTrackerRequirement
 {
-
     private final boolean required;
 
     private ServiceCache cache;
@@ -33,44 +32,40 @@ public class ServiceRefRequirement extends AbstractTrackerRequirement
     }
 
     @Override
-    public String toString( )
+    public String toString()
     {
         return "ServiceRef[" +
-               "type=" + getServiceType( ).getSimpleName( ) + ", " +
-               "target-method=" + getTargetMethod( ).getName( ) + ", " +
-               "target-bean=" + getBeanName( ) + ", " +
-               "filter=" + getAdditionalFilter( ) +
+               "type=" + getServiceType().getSimpleName() + ", " +
+               "target-method=" + getTargetMethod().getName() + ", " +
+               "target-bean=" + getBeanName() + ", " +
+               "filter=" + getAdditionalFilter() +
                "]";
     }
 
     @Override
-    public int getPriority( )
+    public int getPriority()
     {
         return SERVICE_REF_PRIORITY;
     }
 
     @Override
-    public String toShortString( )
+    public String toShortString()
     {
-        return getServiceType( ).getSimpleName( );
+        return getServiceType().getSimpleName();
     }
 
     @Override
     public Object addingService( ServiceReference<Object> serviceReference )
     {
         Object newService = super.addingService( serviceReference );
-
         if( this.cache == null && newService != null )
         {
-
             // this is the first service we've found to match our requirement - cache it
             this.cache = new ServiceCache( newService, serviceReference );
 
             // notify published that we're satisfied - publish if needed
-            markAsSatisfied( );
-
+            markAsSatisfied();
         }
-
         return newService;
     }
 
@@ -79,28 +74,22 @@ public class ServiceRefRequirement extends AbstractTrackerRequirement
     {
         if( this.cache != null )
         {
-
             if( this.cache.serviceReference.compareTo( serviceReference ) == 0 && this.cache.service == service )
             {
-
                 // re-wire; the bean already has it, but since the service is updated, we want to re-inject it to signal this
-                markAsSatisfied( );
-
+                markAsSatisfied();
             }
-
         }
     }
 
     @Override
     public void removedService( ServiceReference<Object> serviceReference, Object service )
     {
-
         if( this.cache != null && this.cache.service == service )
         {
-
             // obtain a suitable replacement
-            ServiceReference<Object> newServiceReference = getTracker( ).getServiceReference( );
-            BundleContext bundleContext = getBundleContext( );
+            ServiceReference<Object> newServiceReference = getTracker().getServiceReference();
+            BundleContext bundleContext = getBundleContext();
             if( bundleContext == null )
             {
                 this.cache = null;
@@ -110,61 +99,53 @@ public class ServiceRefRequirement extends AbstractTrackerRequirement
             Object newService = newServiceReference == null ? null : bundleContext.getService( newServiceReference );
             if( newService != null )
             {
-
                 // a replacement was found, cache it
                 this.cache = new ServiceCache( newService, newServiceReference );
-                markAsSatisfied( );
-
+                markAsSatisfied();
             }
             else
             {
-
                 // no replacement was found - clear our reference cache
                 this.cache = null;
                 if( this.required )
                 {
-
                     // inform publisher to un-publish bundle since this is a required dependency
-                    markAsUnsatisfied( );
-
+                    markAsUnsatisfied();
                 }
                 else
                 {
-
                     // we're not required - just apply null to our bean
-                    markAsSatisfied( );
-
+                    markAsSatisfied();
                 }
-
             }
         }
     }
 
     @Override
-    protected boolean trackInternal( ) throws Exception
+    protected boolean trackInternal() throws Exception
     {
-        super.trackInternal( );
+        super.trackInternal();
         return !this.required || this.cache != null;
     }
 
     @Override
     protected void onSatisfyInternal( ApplicationContext applicationContext, Object... state ) throws Exception
     {
-        invoke( getBean( applicationContext ), getServiceMethodArgs( ) );
+        invoke( getBean( applicationContext ), getServiceMethodArgs() );
     }
 
     @Override
     protected void onInitBeanInternal( Object bean ) throws Exception
     {
-        invoke( bean, getServiceMethodArgs( ) );
+        invoke( bean, getServiceMethodArgs() );
     }
 
-    protected Object[] getServiceMethodArgs( )
+    protected Object[] getServiceMethodArgs()
     {
-        Method method = getTargetMethod( );
+        Method method = getTargetMethod();
 
-        List<Object> values = new LinkedList<>( );
-        for( Class<?> type : method.getParameterTypes( ) )
+        List<Object> values = new LinkedList<>();
+        for( Class<?> type : method.getParameterTypes() )
         {
             if( this.cache == null )
             {
@@ -178,22 +159,22 @@ public class ServiceRefRequirement extends AbstractTrackerRequirement
             {
                 values.add( this.cache.serviceReference );
             }
-            else if( type.isAssignableFrom( getServiceType( ) ) )
+            else if( type.isAssignableFrom( getServiceType() ) )
             {
                 values.add( this.cache.service );
             }
             else
             {
                 throw new IllegalStateException( "Unsupported argument type ('" +
-                                                 type.getSimpleName( ) +
+                                                 type.getSimpleName() +
                                                  "') in method '" +
-                                                 method.getName( ) +
+                                                 method.getName() +
                                                  "' of bean '" +
-                                                 getBeanName( ) +
+                                                 getBeanName() +
                                                  "'" );
             }
         }
-        return values.toArray( );
+        return values.toArray();
     }
 
     private static class ServiceCache

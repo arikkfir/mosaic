@@ -7,8 +7,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 import javassist.*;
-import org.mosaic.describe.Rank;
 import org.mosaic.lifecycle.ContextRef;
+import org.mosaic.lifecycle.Rank;
 import org.mosaic.lifecycle.ServiceExport;
 import org.mosaic.server.osgi.util.BundleUtils;
 import org.mosaic.server.transaction.Transactions;
@@ -65,12 +65,12 @@ public class TransactionalWeaver implements WeavingHook
 
     private BundleContext bundleContext;
 
-    public TransactionalWeaver( )
+    public TransactionalWeaver()
     {
         this.orgSpringframeworkTransactionPackageVersion =
-                getBundle( TransactionStatus.class ).getVersion( ).toString( );
-        this.orgMosaicServerTransactionPackageVersion = getBundle( Transactions.class ).getVersion( ).toString( );
-        this.orgMosaicLoggingPackageVersion = getBundle( LoggerFactory.class ).getVersion( ).toString( );
+                getBundle( TransactionStatus.class ).getVersion().toString();
+        this.orgMosaicServerTransactionPackageVersion = getBundle( Transactions.class ).getVersion().toString();
+        this.orgMosaicLoggingPackageVersion = getBundle( LoggerFactory.class ).getVersion().toString();
     }
 
     @ContextRef
@@ -83,8 +83,8 @@ public class TransactionalWeaver implements WeavingHook
     @Override
     public void weave( WovenClass wovenClass )
     {
-        if( wovenClass.getBundleWiring( ).getBundle( ).getBundleId( ) ==
-            this.bundleContext.getBundle( ).getBundleId( ) )
+        if( wovenClass.getBundleWiring().getBundle().getBundleId() ==
+            this.bundleContext.getBundle().getBundleId() )
         {
 
             // we mustn't weave classes from our bundle - will cause a circular class load
@@ -96,7 +96,7 @@ public class TransactionalWeaver implements WeavingHook
 
             for( Pattern pattern : IGNORED_BUNDLES )
             {
-                if( pattern.matcher( wovenClass.getBundleWiring( ).getRevision( ).getSymbolicName( ) ).matches( ) )
+                if( pattern.matcher( wovenClass.getBundleWiring().getRevision().getSymbolicName() ).matches() )
                 {
 
                     // never weave classes from one of the ignores bundles
@@ -107,8 +107,8 @@ public class TransactionalWeaver implements WeavingHook
         }
 
         // javassist uses thread context class-loader - set it to weaved bundle's class loader
-        ClassLoader previousTCCL = Thread.currentThread( ).getContextClassLoader( );
-        Thread.currentThread( ).setContextClassLoader( wovenClass.getBundleWiring( ).getClassLoader( ) );
+        ClassLoader previousTCCL = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader( wovenClass.getBundleWiring().getClassLoader() );
         try
         {
 
@@ -116,39 +116,39 @@ public class TransactionalWeaver implements WeavingHook
             CtClass ctClass = instrument( createClassPool( wovenClass ), wovenClass );
             if( ctClass != null )
             {
-                wovenClass.getDynamicImports( ).addAll( Arrays.asList( "org.mosaic.util.logging;version:=\"" +
-                                                                       this.orgMosaicLoggingPackageVersion +
-                                                                       "\",",
-                                                                       "org.mosaic.server.transaction;version:=\"" +
-                                                                       this.orgSpringframeworkTransactionPackageVersion +
-                                                                       "\",",
-                                                                       "org.springframework.transaction;version:=\"" +
-                                                                       this.orgMosaicServerTransactionPackageVersion +
-                                                                       "\"" ) );
-                wovenClass.setBytes( ctClass.toBytecode( ) );
+                wovenClass.getDynamicImports().addAll( Arrays.asList( "org.mosaic.util.logging;version:=\"" +
+                                                                      this.orgMosaicLoggingPackageVersion +
+                                                                      "\",",
+                                                                      "org.mosaic.server.transaction;version:=\"" +
+                                                                      this.orgSpringframeworkTransactionPackageVersion +
+                                                                      "\",",
+                                                                      "org.springframework.transaction;version:=\"" +
+                                                                      this.orgMosaicServerTransactionPackageVersion +
+                                                                      "\"" ) );
+                wovenClass.setBytes( ctClass.toBytecode() );
             }
 
         }
         catch( Exception e )
         {
-            LoggerFactory.getLogger( wovenClass.getClassName( ) ).error( "Weaving error occurred: {}", e.getMessage( ), e );
+            LoggerFactory.getLogger( wovenClass.getClassName() ).error( "Weaving error occurred: {}", e.getMessage(), e );
             throw new WeavingException( "Error weaving class '" +
-                                        wovenClass.getClassName( ) +
+                                        wovenClass.getClassName() +
                                         "': " +
-                                        e.getMessage( ), e );
+                                        e.getMessage(), e );
 
         }
         finally
         {
-            Thread.currentThread( ).setContextClassLoader( previousTCCL );
+            Thread.currentThread().setContextClassLoader( previousTCCL );
         }
     }
 
     private ClassPool createClassPool( WovenClass wovenClass )
     {
         ClassPool pool = new ClassPool( false );
-        pool.appendClassPath( new LoaderClassPath( wovenClass.getBundleWiring( ).getClassLoader( ) ) );
-        pool.appendClassPath( new LoaderClassPath( getClass( ).getClassLoader( ) ) );
+        pool.appendClassPath( new LoaderClassPath( wovenClass.getBundleWiring().getClassLoader() ) );
+        pool.appendClassPath( new LoaderClassPath( getClass().getClassLoader() ) );
         return pool;
     }
 
@@ -156,22 +156,22 @@ public class TransactionalWeaver implements WeavingHook
     throws IOException, ClassNotFoundException, CannotCompileException, NotFoundException
     {
 
-        Bundle wovenBundle = wovenClass.getBundleWiring( ).getBundle( );
-        String wovenClassName = wovenClass.getClassName( );
+        Bundle wovenBundle = wovenClass.getBundleWiring().getBundle();
+        String wovenClassName = wovenClass.getClassName();
         boolean modified = false;
 
-        CtClass ctClass = classPool.makeClass( new ByteArrayInputStream( wovenClass.getBytes( ) ) );
+        CtClass ctClass = classPool.makeClass( new ByteArrayInputStream( wovenClass.getBytes() ) );
         CtClass currentClass = ctClass;
         while( currentClass != null )
         {
-            for( CtMethod method : currentClass.getDeclaredMethods( ) )
+            for( CtMethod method : currentClass.getDeclaredMethods() )
             {
-                String methodName = method.getName( );
+                String methodName = method.getName();
 
                 Object annotation = method.getAnnotation( Transactional.class );
                 if( annotation != null )
                 {
-                    LoggerFactory.getLogger( wovenClass.getClassName( ) ).trace( "Weaving method '{}' in class '{}' of bundle '{}'", methodName, wovenClassName, BundleUtils.toString( wovenBundle ) );
+                    LoggerFactory.getLogger( wovenClass.getClassName() ).trace( "Weaving method '{}' in class '{}' of bundle '{}'", methodName, wovenClassName, BundleUtils.toString( wovenBundle ) );
 
                     // add code that will run before actual source code and start/join transactions
                     String txName = wovenClassName + "." + methodName;
@@ -189,7 +189,7 @@ public class TransactionalWeaver implements WeavingHook
                     modified = true;
                 }
             }
-            currentClass = currentClass.getSuperclass( );
+            currentClass = currentClass.getSuperclass();
         }
 
         // if at least one method was modified, return this modified class; otherwise, discard this CtClass
@@ -201,7 +201,7 @@ public class TransactionalWeaver implements WeavingHook
         {
             if( ctClass != null )
             {
-                ctClass.detach( );
+                ctClass.detach();
             }
             return null;
         }

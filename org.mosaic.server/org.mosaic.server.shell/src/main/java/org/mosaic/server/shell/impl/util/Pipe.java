@@ -28,14 +28,14 @@ public class Pipe implements Runnable
     }
 
     @Override
-    public void run( )
+    public void run()
     {
-        while( !currentThread( ).isInterrupted( ) )
+        while( !currentThread().isInterrupted() )
         {
 
             try
             {
-                int i = in.read( );
+                int i = in.read();
                 inputQueue.put( i );
 
                 if( i == -1 )
@@ -52,7 +52,7 @@ public class Pipe implements Runnable
             }
             catch( IOException e )
             {
-                LOG.error( "I/O error on pipe thread: {}", e.getMessage( ), e );
+                LOG.error( "I/O error on pipe thread: {}", e.getMessage(), e );
                 break;
             }
 

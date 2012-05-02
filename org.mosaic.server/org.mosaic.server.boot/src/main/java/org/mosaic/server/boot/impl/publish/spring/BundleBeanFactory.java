@@ -19,13 +19,13 @@ public class BundleBeanFactory extends DefaultListableBeanFactory
         BundleWiring wiring = bundle.adapt( BundleWiring.class );
         if( wiring == null )
         {
-            throw new IllegalStateException( "Bundle '" + bundle.getSymbolicName( ) + "' is uninstalled!" );
+            throw new IllegalStateException( "Bundle '" + bundle.getSymbolicName() + "' is uninstalled!" );
         }
 
         // configure application context for an OSGi environment
         setAllowBeanDefinitionOverriding( false );
         setAllowCircularReferences( false );
-        setBeanClassLoader( wiring.getClassLoader( ) );
+        setBeanClassLoader( wiring.getClassLoader() );
         setCacheBeanMetadata( false );
 
         // add bundle beans

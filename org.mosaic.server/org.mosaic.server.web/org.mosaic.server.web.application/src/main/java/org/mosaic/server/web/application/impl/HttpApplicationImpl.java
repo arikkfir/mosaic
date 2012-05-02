@@ -3,41 +3,37 @@ package org.mosaic.server.web.application.impl;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.regex.Pattern;
 import javax.xml.parsers.ParserConfigurationException;
 import org.mosaic.security.PermissionPolicy;
-import org.mosaic.util.collection.TypedDict;
-import org.mosaic.util.collection.WrappingTypedDict;
 import org.mosaic.util.logging.Logger;
-import org.mosaic.util.logging.LoggerFactory;
 import org.mosaic.web.HttpApplication;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
-import org.springframework.core.convert.ConversionService;
 import org.springframework.util.LinkedCaseInsensitiveMap;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
 
 import static java.nio.file.Files.*;
-import static java.util.Collections.unmodifiableMap;
 import static org.mosaic.server.web.application.impl.DomUtils.*;
 import static org.mosaic.util.logging.LoggerFactory.getBundleLogger;
 
 /**
  * @author arik
  */
-public class HttpApplicationImpl extends WrappingTypedDict<Object> implements HttpApplication
+public class HttpApplicationImpl implements HttpApplication
 {
-
     private final Logger logger;
 
     private final Path path;
 
     private final String name;
 
-    private TypedDict<String> parameters;
+    private final Map<String, Object> attributes = new ConcurrentSkipListMap<>();
+
+    private Map<String, String> parameters = Collections.emptyMap();
 
     private Set<Pattern> virtualHosts;
 
@@ -51,62 +47,52 @@ public class HttpApplicationImpl extends WrappingTypedDict<Object> implements Ht
 
     private long modificationTime;
 
-    public HttpApplicationImpl( Path appFile, ConversionService conversionService )
+    public HttpApplicationImpl( Path appFile )
     {
-        super( new ConcurrentHashMap<String, List<Object>>( ), conversionService, Object.class );
-
         this.path = appFile;
 
-        String fileName = appFile.getFileName( ).toString( );
-        this.name = fileName.substring( 0, fileName.length( ) - ".xml".length( ) );
-        this.logger =
-                LoggerFactory.getLogger( getBundleLogger( HttpApplicationImpl.class ).getName( ) + "." + this.name );
+        String fileName = appFile.getFileName().toString();
+        this.name = fileName.substring( 0, fileName.length() - ".xml".length() );
+        this.logger = getBundleLogger( HttpApplicationImpl.class, this.name );
     }
 
-    public void refresh( )
+    public void refresh()
     {
         if( isDirectory( this.path ) || !exists( this.path ) || !isReadable( this.path ) )
         {
-
             if( this.modificationTime > 0 )
             {
-
                 logger.info( "Application '{}' no longer exists/readable at: {}", this.name, this.path );
                 this.modificationTime = 0;
-                unregister( );
-
+                unregister();
             }
 
         }
         else
         {
-
             try
             {
-
-                long modificationTime = getLastModifiedTime( this.path ).toMillis( );
+                long modificationTime = getLastModifiedTime( this.path ).toMillis();
                 if( modificationTime > this.modificationTime )
                 {
                     this.modificationTime = modificationTime;
-                    register( );
+                    register();
                 }
-
             }
             catch( Exception e )
             {
-                logger.error( "Could not refresh application '{}': {}", this.name, e.getMessage( ), e );
+                logger.error( "Could not refresh application '{}': {}", this.name, e.getMessage(), e );
             }
-
         }
     }
 
-    public void register( ) throws IOException, SAXException, ParserConfigurationException
+    public void register() throws IOException, SAXException, ParserConfigurationException
     {
         logger.info( "Adding application '{}' from: {}", this.name, this.path );
-        parse( );
+        parse();
 
         // register as a data source and transaction manager
-        Dictionary<String, Object> dsDict = new Hashtable<>( );
+        Dictionary<String, Object> dsDict = new Hashtable<>();
         dsDict.put( "name", this.name );
         if( this.registration != null )
         {
@@ -114,47 +100,47 @@ public class HttpApplicationImpl extends WrappingTypedDict<Object> implements Ht
         }
         else
         {
-            Bundle bundle = FrameworkUtil.getBundle( getClass( ) );
-            this.registration = bundle.getBundleContext( ).registerService( HttpApplication.class, this, dsDict );
+            Bundle bundle = FrameworkUtil.getBundle( getClass() );
+            this.registration = bundle.getBundleContext().registerService( HttpApplication.class, this, dsDict );
         }
     }
 
-    public void unregister( )
+    public void unregister()
     {
         this.logger.info( "Removing application '{}'", this.name );
         try
         {
-            this.registration.unregister( );
+            this.registration.unregister();
         }
         catch( IllegalStateException ignore )
         {
         }
     }
 
-    public Path getPath( )
+    public Path getPath()
     {
         return path;
     }
 
     @Override
-    public String getName( )
+    public String getName()
     {
         return this.name;
     }
 
     @Override
-    public TypedDict<String> getParameters( )
+    public Map<String, String> getParameters()
     {
         return this.parameters;
     }
 
     @Override
-    public Set<String> getVirtualHosts( )
+    public Set<String> getVirtualHosts()
     {
-        Set<String> hosts = new HashSet<>( );
+        Set<String> hosts = new HashSet<>();
         for( Pattern pattern : this.virtualHosts )
         {
-            hosts.add( pattern.pattern( ) );
+            hosts.add( pattern.pattern() );
         }
         return hosts;
     }
@@ -162,14 +148,14 @@ public class HttpApplicationImpl extends WrappingTypedDict<Object> implements Ht
     @Override
     public boolean isHostIncluded( String host )
     {
-        if( this.virtualHosts.isEmpty( ) )
+        if( this.virtualHosts.isEmpty() )
         {
             return true;
         }
 
         for( Pattern pattern : this.virtualHosts )
         {
-            if( pattern.matcher( host ).matches( ) )
+            if( pattern.matcher( host ).matches() )
             {
                 return true;
             }
@@ -182,14 +168,14 @@ public class HttpApplicationImpl extends WrappingTypedDict<Object> implements Ht
     {
         for( Pattern pattern : this.restrictedClientAddresses )
         {
-            if( pattern.matcher( address ).matches( ) )
+            if( pattern.matcher( address ).matches() )
             {
                 // restricted
                 return false;
             }
         }
 
-        if( this.allowedClientAddresses.isEmpty( ) )
+        if( this.allowedClientAddresses.isEmpty() )
         {
 
             // if no allowed patterns defined, allowed
@@ -201,7 +187,7 @@ public class HttpApplicationImpl extends WrappingTypedDict<Object> implements Ht
 
             for( Pattern pattern : this.allowedClientAddresses )
             {
-                if( pattern.matcher( address ).matches( ) )
+                if( pattern.matcher( address ).matches() )
                 {
                     return true;
                 }
@@ -212,15 +198,87 @@ public class HttpApplicationImpl extends WrappingTypedDict<Object> implements Ht
     }
 
     @Override
-    public PermissionPolicy getPermissionPolicy( )
+    public PermissionPolicy getPermissionPolicy()
     {
         return this.permissionPolicy;
     }
 
-    private void parse( ) throws IOException, SAXException, ParserConfigurationException
+    @Override
+    public int size()
     {
-        Element appElt = parseDocument( this.path ).getDocumentElement( );
-        if( !appElt.getLocalName( ).equals( "application" ) )
+        return this.attributes.size();
+    }
+
+    @Override
+    public boolean isEmpty()
+    {
+        return this.attributes.isEmpty();
+    }
+
+    @Override
+    public boolean containsKey( Object key )
+    {
+        return this.attributes.containsKey( key );
+    }
+
+    @Override
+    public boolean containsValue( Object value )
+    {
+        return this.attributes.containsValue( value );
+    }
+
+    @Override
+    public Object get( Object key )
+    {
+        return this.attributes.get( key );
+    }
+
+    @Override
+    public Object put( String key, Object value )
+    {
+        return this.attributes.put( key, value );
+    }
+
+    @Override
+    public Object remove( Object key )
+    {
+        return this.attributes.remove( key );
+    }
+
+    @Override
+    public void putAll( Map<? extends String, ?> m )
+    {
+        this.attributes.putAll( m );
+    }
+
+    @Override
+    public void clear()
+    {
+        this.attributes.clear();
+    }
+
+    @Override
+    public Set<String> keySet()
+    {
+        return this.attributes.keySet();
+    }
+
+    @Override
+    public Collection<Object> values()
+    {
+        return this.attributes.values();
+    }
+
+    @Override
+    public Set<Entry<String, Object>> entrySet()
+    {
+        return this.attributes.entrySet();
+    }
+
+    private void parse() throws IOException, SAXException, ParserConfigurationException
+    {
+        Element appElt = parseDocument( this.path ).getDocumentElement();
+        if( !appElt.getLocalName().equals( "application" ) )
         {
             throw new IllegalArgumentException( "Could not find <application> tag in application file '" +
                                                 this.path +
@@ -229,42 +287,42 @@ public class HttpApplicationImpl extends WrappingTypedDict<Object> implements Ht
 
         // parse virtual hosts
         Element virtualHostsElt = getFirstChildElement( appElt, "virtual-hosts" );
-        Set<Pattern> virtualHosts = new HashSet<>( );
+        Set<Pattern> virtualHosts = new HashSet<>();
         if( virtualHostsElt != null )
         {
             for( Element virtualHostElt : getChildElements( virtualHostsElt, "virtual-host" ) )
             {
-                virtualHosts.add( Pattern.compile( virtualHostElt.getTextContent( ).trim( ) ) );
+                virtualHosts.add( Pattern.compile( virtualHostElt.getTextContent().trim() ) );
             }
         }
         this.virtualHosts = Collections.unmodifiableSet( virtualHosts );
 
         // parse security
-        RulePermissionPolicy permissionPolicy = new RulePermissionPolicy( );
+        RulePermissionPolicy permissionPolicy = new RulePermissionPolicy();
         Element securityElt = getFirstChildElement( appElt, "security" );
         if( securityElt != null )
         {
 
             // parse allowed-client-addresses
             Element allowedClientAddressesElt = getFirstChildElement( securityElt, "allowed-client-addresses" );
-            Set<Pattern> allowedClientAddresses = new HashSet<>( );
+            Set<Pattern> allowedClientAddresses = new HashSet<>();
             if( allowedClientAddressesElt != null )
             {
                 for( Element addressElt : getChildElements( allowedClientAddressesElt, "address" ) )
                 {
-                    allowedClientAddresses.add( Pattern.compile( addressElt.getTextContent( ).trim( ) ) );
+                    allowedClientAddresses.add( Pattern.compile( addressElt.getTextContent().trim() ) );
                 }
             }
             this.allowedClientAddresses = Collections.unmodifiableSet( allowedClientAddresses );
 
             // parse restricted-client-addresses
             Element restrictedClientAddressesElt = getFirstChildElement( securityElt, "restricted-client-addresses" );
-            Set<Pattern> restrictedClientAddresses = new HashSet<>( );
+            Set<Pattern> restrictedClientAddresses = new HashSet<>();
             if( restrictedClientAddressesElt != null )
             {
                 for( Element addressElt : getChildElements( restrictedClientAddressesElt, "address" ) )
                 {
-                    restrictedClientAddresses.add( Pattern.compile( addressElt.getTextContent( ).trim( ) ) );
+                    restrictedClientAddresses.add( Pattern.compile( addressElt.getTextContent().trim() ) );
                 }
             }
             this.restrictedClientAddresses = Collections.unmodifiableSet( restrictedClientAddresses );
@@ -275,7 +333,7 @@ public class HttpApplicationImpl extends WrappingTypedDict<Object> implements Ht
             {
                 for( Role role : parseRoles( rolesElt ) )
                 {
-                    permissionPolicy.addRolePermissionsRule( role.getName( ), role.getPermissionPatterns( ) );
+                    permissionPolicy.addRolePermissionsRule( role.getName(), role.getPermissionPatterns() );
                 }
             }
 
@@ -294,22 +352,21 @@ public class HttpApplicationImpl extends WrappingTypedDict<Object> implements Ht
 
         // parse parameters
         Element paramsElt = getFirstChildElement( appElt, "parameters" );
-        WrappingTypedDict<String> params = new WrappingTypedDict<>( this.conversionService, String.class );
+        Map<String, String> params = new HashMap<>();
         if( paramsElt != null )
         {
             for( Element paramElt : getChildElements( paramsElt ) )
             {
-                params.add( paramElt.getLocalName( ), paramElt.getTextContent( ).trim( ) );
+                params.put( paramElt.getLocalName(), paramElt.getTextContent().trim() );
             }
         }
-        this.parameters =
-                new WrappingTypedDict<>( unmodifiableMap( params.getMap( ) ), this.conversionService, String.class );
+        this.parameters = Collections.unmodifiableMap( params );
     }
 
     private static Collection<Role> parseRoles( Element rolesElt )
     {
-        Map<String, Role> rolesMap = new LinkedCaseInsensitiveMap<>( );
-        Set<Role> rootRoles = new HashSet<>( );
+        Map<String, Role> rolesMap = new LinkedCaseInsensitiveMap<>();
+        Set<Role> rootRoles = new HashSet<>();
         for( Element roleElt : getChildElements( rolesElt ) )
         {
             rootRoles.add( new Role( roleElt ) );
@@ -318,7 +375,6 @@ public class HttpApplicationImpl extends WrappingTypedDict<Object> implements Ht
         {
             rootRole.populateRoles( rolesMap );
         }
-        return rolesMap.values( );
+        return rolesMap.values();
     }
-
 }

@@ -12,6 +12,7 @@ import java.util.Hashtable;
 import java.util.Properties;
 import javax.sql.DataSource;
 import org.mosaic.server.transaction.TransactionManager;
+import org.mosaic.util.collection.MapAccessor;
 import org.mosaic.util.logging.Logger;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
@@ -22,9 +23,9 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 
-import static java.lang.Boolean.parseBoolean;
 import static java.nio.file.Files.*;
 import static java.nio.file.StandardOpenOption.READ;
+import static org.mosaic.util.collection.Maps.mapFrom;
 import static org.mosaic.util.logging.LoggerFactory.getBundleLogger;
 
 /**
@@ -33,7 +34,7 @@ import static org.mosaic.util.logging.LoggerFactory.getBundleLogger;
 public class TransactionManagerImpl implements TransactionManager, DataSource
 {
     public static final String[] TX_MGR_INTERFACES = new String[] {
-            TransactionManager.class.getName( ), DataSource.class.getName( )
+            TransactionManager.class.getName(), DataSource.class.getName()
     };
 
     private final Logger logger;
@@ -57,8 +58,8 @@ public class TransactionManagerImpl implements TransactionManager, DataSource
         this.path = dataSourceFile;
 
         // discover name
-        String fileName = this.path.getFileName( ).toString( );
-        this.name = fileName.substring( 0, fileName.length( ) - ".properties".length( ) );
+        String fileName = this.path.getFileName().toString();
+        this.name = fileName.substring( 0, fileName.length() - ".properties".length() );
 
         // create logger
         this.logger = getBundleLogger( TransactionManagerImpl.class, this.name );
@@ -72,15 +73,15 @@ public class TransactionManagerImpl implements TransactionManager, DataSource
         // create a transaction manager used by @Transactional classes
         this.springTxMgr = new DataSourceTransactionManager( this.rawDataSource );
         this.springTxMgr.setValidateExistingTransaction( true );
-        this.springTxMgr.afterPropertiesSet( );
+        this.springTxMgr.afterPropertiesSet();
     }
 
-    public Path getPath( )
+    public Path getPath()
     {
         return path;
     }
 
-    public void refresh( )
+    public void refresh()
     {
         if( isDirectory( this.path ) || !exists( this.path ) || !isReadable( this.path ) )
         {
@@ -88,44 +89,44 @@ public class TransactionManagerImpl implements TransactionManager, DataSource
             {
                 logger.warn( "Data source '{}' no longer exists/readable at: {}", this.name, this.path );
                 this.modificationTime = 0;
-                unregister( );
+                unregister();
             }
         }
         else
         {
             try
             {
-                long modificationTime = getLastModifiedTime( this.path ).toMillis( );
+                long modificationTime = getLastModifiedTime( this.path ).toMillis();
                 if( modificationTime > this.modificationTime )
                 {
                     this.modificationTime = modificationTime;
 
                     logger.info( "Creating data source '{}' from: {}", this.name, this.path );
-                    Properties properties = new Properties( );
+                    Properties properties = new Properties();
                     try( InputStream inputStream = newInputStream( this.path, READ ) )
                     {
                         properties.load( inputStream );
                     }
-                    register( properties );
+                    register( new MapAccessor<>( mapFrom( properties ) ) );
                 }
             }
             catch( IOException e )
             {
-                logger.error( "Could not refresh data source '{}': {}", this.path.getFileName( ).toString( ), e.getMessage( ), e );
+                logger.error( "Could not refresh data source '{}': {}", this.path.getFileName().toString(), e.getMessage(), e );
             }
         }
     }
 
-    public void register( Properties cfg )
+    public void register( MapAccessor<String, String> c )
     {
-        this.rawDataSource.init( cfg );
+        this.rawDataSource.init( c );
 
         // create a transaction manager for the *RAW* data source (NEVER TO THE TX DATA SOURCE! THE TX-MGR MUST WORK AGAINST THE ACTUAL DATA SOURCE!)
-        this.springTxMgr.setNestedTransactionAllowed( parseBoolean( cfg.getProperty( "nestedTransactionsAllowed", "false" ) ) );
-        this.springTxMgr.setRollbackOnCommitFailure( parseBoolean( cfg.getProperty( "rollbackOnCommitFailure", "false" ) ) );
+        this.springTxMgr.setNestedTransactionAllowed( c.get( "nestedTransactionsAllowed", Boolean.class, false ) );
+        this.springTxMgr.setRollbackOnCommitFailure( c.get( "rollbackOnCommitFailure", Boolean.class, false ) );
 
         // register as a data source and transaction manager
-        Dictionary<String, Object> dsDict = new Hashtable<>( );
+        Dictionary<String, Object> dsDict = new Hashtable<>();
         dsDict.put( "name", this.name );
         if( this.registration != null )
         {
@@ -133,17 +134,17 @@ public class TransactionManagerImpl implements TransactionManager, DataSource
         }
         else
         {
-            Bundle bundle = FrameworkUtil.getBundle( getClass( ) );
-            this.registration = bundle.getBundleContext( ).registerService( TX_MGR_INTERFACES, this, dsDict );
+            Bundle bundle = FrameworkUtil.getBundle( getClass() );
+            this.registration = bundle.getBundleContext().registerService( TX_MGR_INTERFACES, this, dsDict );
         }
     }
 
-    public void unregister( )
+    public void unregister()
     {
-        this.logger.info( "Shutting down connection pool '{}'", this.rawDataSource.getPoolName( ) );
+        this.logger.info( "Shutting down connection pool '{}'", this.rawDataSource.getPoolName() );
         try
         {
-            this.registration.unregister( );
+            this.registration.unregister();
         }
         catch( IllegalStateException ignore )
         {
@@ -151,18 +152,18 @@ public class TransactionManagerImpl implements TransactionManager, DataSource
 
         try
         {
-            this.rawDataSource.close( );
+            this.rawDataSource.close();
         }
         catch( Exception e )
         {
-            this.logger.error( "Could not close data source '{}': {}", this.rawDataSource.getPoolName( ), e.getMessage( ), e );
+            this.logger.error( "Could not close data source '{}': {}", this.rawDataSource.getPoolName(), e.getMessage(), e );
         }
     }
 
     @Override
     public Object begin( String name )
     {
-        DefaultTransactionDefinition txDef = new DefaultTransactionDefinition( );
+        DefaultTransactionDefinition txDef = new DefaultTransactionDefinition();
         txDef.setName( name );
         txDef.setPropagationBehavior( TransactionDefinition.PROPAGATION_REQUIRED );
         return this.springTxMgr.getTransaction( txDef );
@@ -195,9 +196,9 @@ public class TransactionManagerImpl implements TransactionManager, DataSource
     }
 
     @Override
-    public Connection getConnection( ) throws SQLException
+    public Connection getConnection() throws SQLException
     {
-        return this.txDataSource.getConnection( );
+        return this.txDataSource.getConnection();
     }
 
     @Override
@@ -207,9 +208,9 @@ public class TransactionManagerImpl implements TransactionManager, DataSource
     }
 
     @Override
-    public PrintWriter getLogWriter( ) throws SQLException
+    public PrintWriter getLogWriter() throws SQLException
     {
-        return this.txDataSource.getLogWriter( );
+        return this.txDataSource.getLogWriter();
     }
 
     @Override
@@ -225,15 +226,15 @@ public class TransactionManagerImpl implements TransactionManager, DataSource
     }
 
     @Override
-    public int getLoginTimeout( ) throws SQLException
+    public int getLoginTimeout() throws SQLException
     {
-        return this.txDataSource.getLoginTimeout( );
+        return this.txDataSource.getLoginTimeout();
     }
 
     @Override
-    public java.util.logging.Logger getParentLogger( ) throws SQLFeatureNotSupportedException
+    public java.util.logging.Logger getParentLogger() throws SQLFeatureNotSupportedException
     {
-        return this.txDataSource.getParentLogger( );
+        return this.txDataSource.getParentLogger();
     }
 
     @Override

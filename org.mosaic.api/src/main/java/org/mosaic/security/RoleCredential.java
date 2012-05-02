@@ -14,19 +14,19 @@ public class RoleCredential implements User.Credential
     }
 
     @Override
-    public String getName( )
+    public String getName()
     {
         return this.roleName;
     }
 
     @Override
-    public String getType( )
+    public String getType()
     {
         return "role";
     }
 
     @Override
-    public String toString( )
+    public String toString()
     {
         return "Role[" + this.roleName + "]";
     }

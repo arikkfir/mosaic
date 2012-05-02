@@ -16,9 +16,9 @@ import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
-import org.joda.time.Duration;
 import org.mosaic.config.Configuration;
 import org.mosaic.lifecycle.ServiceRef;
+import org.mosaic.util.collection.MapAccessor;
 import org.mosaic.util.logging.Logger;
 import org.mosaic.util.logging.LoggerFactory;
 import org.mosaic.web.HttpServer;
@@ -27,7 +27,6 @@ import org.springframework.stereotype.Component;
 
 import static org.eclipse.jetty.util.ssl.SslContextFactory.DEFAULT_KEYMANAGERFACTORY_ALGORITHM;
 import static org.eclipse.jetty.util.ssl.SslContextFactory.DEFAULT_TRUSTMANAGERFACTORY_ALGORITHM;
-import static org.joda.time.Duration.standardSeconds;
 import static org.springframework.util.StringUtils.hasText;
 import static org.springframework.util.StringUtils.tokenizeToStringArray;
 
@@ -42,8 +41,6 @@ public class HttpServerImpl implements HttpServer
 
     private Server jetty;
 
-    private Configuration cfg;
-
     private HttpRequestHandler handler;
 
     @Autowired
@@ -55,21 +52,18 @@ public class HttpServerImpl implements HttpServer
     @ServiceRef( filter = "name=jetty" )
     public void configure( Configuration cfg )
     {
-
         // if we've already started Jetty - first stop it
         if( this.jetty != null )
         {
             try
             {
-
                 LOG.debug( "Stopping Jetty HTTP server (configuration changed)" );
-                this.jetty.stop( );
+                this.jetty.stop();
                 LOG.info( "Stopped Jetty HTTP server (configuration changed)" );
-
             }
             catch( Exception e )
             {
-                LOG.error( "Could not stop Jetty HTTP server: {}", e.getMessage( ), e );
+                LOG.error( "Could not stop Jetty HTTP server: {}", e.getMessage(), e );
                 return;
             }
         }
@@ -78,22 +72,19 @@ public class HttpServerImpl implements HttpServer
         LOG.debug( "Starting Jetty HTTP server" );
         try
         {
-
-            this.cfg = cfg;
-            Server server = createServer( );
-            server.start( );
+            Server server = createServer( new MapAccessor<>( cfg ) );
+            server.start();
             this.jetty = server;
             LOG.info( "Started Jetty HTTP server" );
-
         }
         catch( Exception e )
         {
-            LOG.error( "Could not start JettyHTTP server: {}", e.getMessage( ), e );
+            LOG.error( "Could not start JettyHTTP server: {}", e.getMessage(), e );
         }
     }
 
     @PreDestroy
-    public void destroy( )
+    public void destroy()
     {
         if( this.jetty != null )
         {
@@ -101,200 +92,179 @@ public class HttpServerImpl implements HttpServer
             {
 
                 LOG.debug( "Stopping Jetty HTTP server (configuration changed)" );
-                this.jetty.stop( );
+                this.jetty.stop();
                 LOG.info( "Stopped Jetty HTTP server (configuration changed)" );
 
             }
             catch( Exception e )
             {
-                LOG.error( "Could not stop Jetty HTTP server: {}", e.getMessage( ), e );
+                LOG.error( "Could not stop Jetty HTTP server: {}", e.getMessage(), e );
             }
         }
     }
 
-    private Server createServer( ) throws IOException
+    private Server createServer( MapAccessor<String, String> c ) throws IOException
     {
-        Server server = new Server( );
-        server.setConnectors( createConnectors( ) );
-        server.setGracefulShutdown( duration( "gracefulShutdownTimeout", standardSeconds( 5 ) ) );
+        Server server = new Server();
+        server.setConnectors( createConnectors( c ) );
+        server.setGracefulShutdown( c.get( "gracefulShutdownTimeout", Integer.class, 5000 ) );
         server.setHandler( this.handler );
-        server.setSendDateHeader( b( "sendDateHeader", true ) );
+        server.setSendDateHeader( c.get( "sendDateHeader", Boolean.class, true ) );
         server.setSendServerVersion( false );
         server.setStopAtShutdown( false );
-        server.setThreadPool( createThreadPool( ) );
-        server.setUncheckedPrintWriter( b( "uncheckedPrintWriter", false ) );
+        server.setThreadPool( createThreadPool( c ) );
+        server.setUncheckedPrintWriter( c.get( "uncheckedPrintWriter", Boolean.class, false ) );
         return server;
     }
 
-    private Connector[] createConnectors( ) throws IOException
+    private Connector[] createConnectors( MapAccessor<String, String> c ) throws IOException
     {
-        Collection<Connector> connectors = new LinkedList<>( );
-        if( b( "http.enabled", true ) )
+        Collection<Connector> connectors = new LinkedList<>();
+        if( c.get( "http.enabled", Boolean.class, true ) )
         {
-            connectors.add( createHttpConnector( ) );
+            connectors.add( createHttpConnector( c ) );
         }
-        if( b( "ajp.enabled", false ) )
+        if( c.get( "ajp.enabled", Boolean.class, false ) )
         {
-            connectors.add( createAjpConnector( ) );
+            connectors.add( createAjpConnector( c ) );
         }
-        if( b( "https.enabled", false ) )
+        if( c.get( "https.enabled", Boolean.class, false ) )
         {
-            connectors.add( createHttpsConnector( ) );
+            connectors.add( createHttpsConnector( c ) );
         }
-        return connectors.toArray( new Connector[ connectors.size( ) ] );
+        return connectors.toArray( new Connector[ connectors.size() ] );
     }
 
-    private SelectChannelConnector createHttpConnector( )
+    private SelectChannelConnector createHttpConnector( MapAccessor<String, String> c )
     {
-        SelectChannelConnector selectChannelConnector = new SelectChannelConnector( );
-        selectChannelConnector.setAcceptorPriorityOffset( i( "http.acceptors.priority.offset", 0 ) );
-        selectChannelConnector.setAcceptors( i( "http.acceptors.threads", 1 ) );
-        selectChannelConnector.setAcceptQueueSize( i( "http.acceptors.queue.size", 1024 ) );
-        selectChannelConnector.setConfidentialPort( i( "http.confidential.port", 443 ) );
-        selectChannelConnector.setConfidentialScheme( s( "http.confidential.scheme", "https" ) );
-        selectChannelConnector.setForwarded( b( "http.support.x-forwarded.headers", true ) );
-        selectChannelConnector.setHost( s( "http.bind.host" ) );
-        selectChannelConnector.setLowResourcesConnections( i( "http.low.resources.connections.threshold", 1000 ) );
-        selectChannelConnector.setLowResourcesMaxIdleTime( i( "http.low.resources.connections.max.idle.millis", 1000 *
-                                                                                                                5 ) );
-        selectChannelConnector.setMaxIdleTime( i( "http.max.idle.millis", 1000 * 15 ) );
+        SelectChannelConnector selectChannelConnector = new SelectChannelConnector();
+        selectChannelConnector.setAcceptorPriorityOffset( c.get( "http.acceptors.priority.offset", Integer.class, 0 ) );
+        selectChannelConnector.setAcceptors( c.get( "http.acceptors.threads", Integer.class, 1 ) );
+        selectChannelConnector.setAcceptQueueSize( c.get( "http.acceptors.queue.size", Integer.class, 1024 ) );
+        selectChannelConnector.setConfidentialPort( c.get( "http.confidential.port", Integer.class, 443 ) );
+        selectChannelConnector.setConfidentialScheme( c.get( "http.confidential.scheme", "https" ) );
+        selectChannelConnector.setForwarded( c.get( "http.support.x-forwarded.headers", Boolean.class, true ) );
+        selectChannelConnector.setHost( c.get( "http.bind.host" ) );
+        selectChannelConnector.setLowResourcesConnections( c.get( "http.low.resources.connections.threshold", Integer.class, 1000 ) );
+        selectChannelConnector.setLowResourcesMaxIdleTime( c.get( "http.low.resources.connections.max.idle.millis", Integer.class, 1000 * 5 ) );
+        selectChannelConnector.setMaxIdleTime( c.get( "http.max.idle.millis", Integer.class, 1000 * 15 ) );
         selectChannelConnector.setName( "httpConnector" );
-        selectChannelConnector.setPort( i( "http.port", 8080 ) );
-        selectChannelConnector.setRequestBufferSize( i( "http.request.buffer.size", 1024 * 4 ) );
-        selectChannelConnector.setRequestHeaderSize( i( "http.request.header.size", 1024 * 2 ) );
-        selectChannelConnector.setResolveNames( b( "http.resolve.client.names", false ) );
-        selectChannelConnector.setResponseBufferSize( i( "http.response.buffer.size", 1024 * 8 ) );
-        selectChannelConnector.setResponseHeaderSize( i( "http.response.header.size", 1024 * 2 ) );
-        selectChannelConnector.setReuseAddress( b( "http.reuse.address", true ) );
-        selectChannelConnector.setSoLingerTime( i( "http.socket.linger.time", -1 ) );
-        selectChannelConnector.setStatsOn( b( "http.statistics", false ) );
-        selectChannelConnector.setUseDirectBuffers( b( "http.use.direct.buffers", true ) );
+        selectChannelConnector.setPort( c.get( "http.port", Integer.class, 8080 ) );
+        selectChannelConnector.setRequestBufferSize( c.get( "http.request.buffer.size", Integer.class, 1024 * 4 ) );
+        selectChannelConnector.setRequestHeaderSize( c.get( "http.request.header.size", Integer.class, 1024 * 2 ) );
+        selectChannelConnector.setResolveNames( c.get( "http.resolve.client.names", Boolean.class, false ) );
+        selectChannelConnector.setResponseBufferSize( c.get( "http.response.buffer.size", Integer.class, 1024 * 8 ) );
+        selectChannelConnector.setResponseHeaderSize( c.get( "http.response.header.size", Integer.class, 1024 * 2 ) );
+        selectChannelConnector.setReuseAddress( c.get( "http.reuse.address", Boolean.class, true ) );
+        selectChannelConnector.setSoLingerTime( c.get( "http.socket.linger.time", Integer.class, -1 ) );
+        selectChannelConnector.setStatsOn( c.get( "http.statistics", Boolean.class, false ) );
+        selectChannelConnector.setUseDirectBuffers( c.get( "http.use.direct.buffers", Boolean.class, true ) );
         return selectChannelConnector;
     }
 
-    private SslConnector createHttpsConnector( ) throws IOException
+    private SslConnector createHttpsConnector( MapAccessor<String, String> c ) throws IOException
     {
-        SslContextFactory sslContextFactory = new SslContextFactory( );
+        SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setAllowRenegotiate( true );
-        sslContextFactory.setCertAlias( s( "https.certificate.alias" ) );
-        sslContextFactory.setCrlPath( s( "https.crl.path" ) );
-        sslContextFactory.setExcludeCipherSuites( tokenizeToStringArray( s( "https.ciphers.excludes", "" ), ",:\n\r\f\t " ) );
-        sslContextFactory.setIncludeCipherSuites( tokenizeToStringArray( s( "https.ciphers.includes", "" ), ",:\n\r\f\t " ) );
-        sslContextFactory.setKeyManagerPassword( fs( "https.key.manager.password" ) );
-        sslContextFactory.setKeyStorePath( s( "https.key.store.path" ) );
-        sslContextFactory.setKeyStorePassword( fs( "https.key.store.password" ) );
-        sslContextFactory.setKeyStoreProvider( s( "https.key.store.provider" ) );
-        sslContextFactory.setKeyStoreType( s( "https.key.store.type", "JKS" ) );
-        sslContextFactory.setMaxCertPathLength( i( "https.certificate.max.length", 99 ) );
-        sslContextFactory.setNeedClientAuth( b( "https.need.client.auth", false ) );
-        sslContextFactory.setProtocol( s( "https.protocol", "TLS" ) );
-        sslContextFactory.setProvider( s( "https.provider" ) );
-        sslContextFactory.setSecureRandomAlgorithm( s( "https.secure.random.algorithm" ) );
-        sslContextFactory.setSslKeyManagerFactoryAlgorithm( s( "https.ssl.key.manager.factory.algorithm", DEFAULT_KEYMANAGERFACTORY_ALGORITHM ) );
-        sslContextFactory.setTrustManagerFactoryAlgorithm( s( "https.trust.manager.factory.algorithm", DEFAULT_TRUSTMANAGERFACTORY_ALGORITHM ) );
+        sslContextFactory.setCertAlias( c.get( "https.certificate.alias" ) );
+        sslContextFactory.setCrlPath( c.get( "https.crl.path" ) );
+        sslContextFactory.setExcludeCipherSuites( tokenizeToStringArray( c.get( "https.ciphers.excludes", "" ), ",:\n\r\f\t " ) );
+        sslContextFactory.setIncludeCipherSuites( tokenizeToStringArray( c.get( "https.ciphers.includes", "" ), ",:\n\r\f\t " ) );
+        sslContextFactory.setKeyManagerPassword( fs( c, "https.key.manager.password" ) );
+        sslContextFactory.setKeyStorePath( c.get( "https.key.store.path" ) );
+        sslContextFactory.setKeyStorePassword( fs( c, "https.key.store.password" ) );
+        sslContextFactory.setKeyStoreProvider( c.get( "https.key.store.provider" ) );
+        sslContextFactory.setKeyStoreType( c.get( "https.key.store.type", "JKS" ) );
+        sslContextFactory.setMaxCertPathLength( c.get( "https.certificate.max.length", Integer.class, 99 ) );
+        sslContextFactory.setNeedClientAuth( c.get( "https.need.client.auth", Boolean.class, false ) );
+        sslContextFactory.setProtocol( c.get( "https.protocol", "TLS" ) );
+        sslContextFactory.setProvider( c.get( "https.provider" ) );
+        sslContextFactory.setSecureRandomAlgorithm( c.get( "https.secure.random.algorithm" ) );
+        sslContextFactory.setSslKeyManagerFactoryAlgorithm( c.get( "https.ssl.key.manager.factory.algorithm", DEFAULT_KEYMANAGERFACTORY_ALGORITHM ) );
+        sslContextFactory.setTrustManagerFactoryAlgorithm( c.get( "https.trust.manager.factory.algorithm", DEFAULT_TRUSTMANAGERFACTORY_ALGORITHM ) );
 
-        String trustStorePath = s( "https.trust.store.path" );
+        String trustStorePath = c.get( "https.trust.store.path" );
         if( hasText( trustStorePath ) )
         {
             sslContextFactory.setTrustStore( trustStorePath );
-            sslContextFactory.setTrustStorePassword( fs( "https.trust.store.password" ) );
-            sslContextFactory.setTrustStoreProvider( s( "https.trust.store.provider" ) );
-            sslContextFactory.setTrustStoreType( s( "https.trust.store.type", "JKS" ) );
+            sslContextFactory.setTrustStorePassword( fs( c, "https.trust.store.password" ) );
+            sslContextFactory.setTrustStoreProvider( c.get( "https.trust.store.provider" ) );
+            sslContextFactory.setTrustStoreType( c.get( "https.trust.store.type", "JKS" ) );
         }
-        sslContextFactory.setValidateCerts( b( "https.validate.certificates", true ) );
-        sslContextFactory.setWantClientAuth( b( "https.want.client.auth", false ) );
+        sslContextFactory.setValidateCerts( c.get( "https.validate.certificates", Boolean.class, true ) );
+        sslContextFactory.setWantClientAuth( c.get( "https.want.client.auth", Boolean.class, false ) );
 
         SslSelectChannelConnector connector = new SslSelectChannelConnector( sslContextFactory );
-        connector.setAcceptorPriorityOffset( i( "https.acceptors.priority.offset", 0 ) );
-        connector.setAcceptors( i( "https.acceptors.threads", 1 ) );
-        connector.setAcceptQueueSize( i( "https.acceptors.queue.size", 1024 ) );
-        connector.setConfidentialPort( i( "https.confidential.port", 8443 ) );
-        connector.setConfidentialScheme( s( "https.confidential.scheme", "https" ) );
-        connector.setForwarded( b( "https.support.x-forwarded.headers", true ) );
-        connector.setHost( s( "https.bind.host" ) );
-        connector.setLowResourcesConnections( i( "https.low.resources.connections.threshold", 1000 ) );
-        connector.setLowResourcesMaxIdleTime( i( "https.low.resources.connections.max.idle.millis", 1000 * 5 ) );
-        connector.setMaxIdleTime( i( "https.max.idle.millis", 1000 * 15 ) );
+        connector.setAcceptorPriorityOffset( c.get( "https.acceptors.priority.offset", Integer.class, 0 ) );
+        connector.setAcceptors( c.get( "https.acceptors.threads", Integer.class, 1 ) );
+        connector.setAcceptQueueSize( c.get( "https.acceptors.queue.size", Integer.class, 1024 ) );
+        connector.setConfidentialPort( c.get( "https.confidential.port", Integer.class, 8443 ) );
+        connector.setConfidentialScheme( c.get( "https.confidential.scheme", "https" ) );
+        connector.setForwarded( c.get( "https.support.x-forwarded.headers", Boolean.class, true ) );
+        connector.setHost( c.get( "https.bind.host" ) );
+        connector.setLowResourcesConnections( c.get( "https.low.resources.connections.threshold", Integer.class, 1000 ) );
+        connector.setLowResourcesMaxIdleTime( c.get( "https.low.resources.connections.max.idle.millis", Integer.class, 1000 * 5 ) );
+        connector.setMaxIdleTime( c.get( "https.max.idle.millis", Integer.class, 1000 * 15 ) );
         connector.setName( "httpsConnector" );
-        connector.setPort( i( "https.port", 8443 ) );
-        connector.setRequestBufferSize( i( "https.request.buffer.size", 1024 * 4 ) );
-        connector.setRequestHeaderSize( i( "https.request.header.size", 1024 * 2 ) );
-        connector.setResolveNames( b( "https.resolve.client.names", false ) );
-        connector.setResponseBufferSize( i( "https.response.buffer.size", 1024 * 8 ) );
-        connector.setResponseHeaderSize( i( "https.response.header.size", 1024 * 2 ) );
-        connector.setReuseAddress( b( "https.reuse.address", true ) );
-        connector.setSoLingerTime( i( "https.socket.linger.time", -1 ) );
-        connector.setStatsOn( b( "https.statistics", false ) );
-        connector.setUseDirectBuffers( b( "https.use.direct.buffers", true ) );
+        connector.setPort( c.get( "https.port", Integer.class, 8443 ) );
+        connector.setRequestBufferSize( c.get( "https.request.buffer.size", Integer.class, 1024 * 4 ) );
+        connector.setRequestHeaderSize( c.get( "https.request.header.size", Integer.class, 1024 * 2 ) );
+        connector.setResolveNames( c.get( "https.resolve.client.names", Boolean.class, false ) );
+        connector.setResponseBufferSize( c.get( "https.response.buffer.size", Integer.class, 1024 * 8 ) );
+        connector.setResponseHeaderSize( c.get( "https.response.header.size", Integer.class, 1024 * 2 ) );
+        connector.setReuseAddress( c.get( "https.reuse.address", Boolean.class, true ) );
+        connector.setSoLingerTime( c.get( "https.socket.linger.time", Integer.class, -1 ) );
+        connector.setStatsOn( c.get( "https.statistics", Boolean.class, false ) );
+        connector.setUseDirectBuffers( c.get( "https.use.direct.buffers", Boolean.class, true ) );
         return connector;
     }
 
-    private Ajp13SocketConnector createAjpConnector( )
+    private Ajp13SocketConnector createAjpConnector( MapAccessor<String, String> c )
     {
-        Ajp13SocketConnector connector = new Ajp13SocketConnector( );
-        connector.setAcceptorPriorityOffset( i( "ajp.acceptors.priority.offset", 0 ) );
-        connector.setAcceptors( i( "ajp.acceptors.threads", 1 ) );
-        connector.setAcceptQueueSize( i( "ajp.acceptors.queue.size", 1024 ) );
-        connector.setConfidentialPort( i( "ajp.confidential.port", 8443 ) );
-        connector.setConfidentialScheme( s( "ajp.confidential.scheme", "https" ) );
-        connector.setForwarded( b( "ajp.support.x-forwarded.headers", true ) );
-        connector.setHost( s( "ajp.bind.host" ) );
-        connector.setLowResourcesMaxIdleTime( i( "ajp.low.resources.connections.max.idle.millis", 1000 * 5 ) );
-        connector.setMaxIdleTime( i( "ajp.max.idle.millis", 1000 * 15 ) );
+        Ajp13SocketConnector connector = new Ajp13SocketConnector();
+        connector.setAcceptorPriorityOffset( c.get( "ajp.acceptors.priority.offset", Integer.class, 0 ) );
+        connector.setAcceptors( c.get( "ajp.acceptors.threads", Integer.class, 1 ) );
+        connector.setAcceptQueueSize( c.get( "ajp.acceptors.queue.size", Integer.class, 1024 ) );
+        connector.setConfidentialPort( c.get( "ajp.confidential.port", Integer.class, 8443 ) );
+        connector.setConfidentialScheme( c.get( "ajp.confidential.scheme", "https" ) );
+        connector.setForwarded( c.get( "ajp.support.x-forwarded.headers", Boolean.class, true ) );
+        connector.setHost( c.get( "ajp.bind.host" ) );
+        connector.setLowResourcesMaxIdleTime( c.get( "ajp.low.resources.connections.max.idle.millis", Integer.class, 1000 * 5 ) );
+        connector.setMaxIdleTime( c.get( "ajp.max.idle.millis", Integer.class, 1000 * 15 ) );
         connector.setName( "ajpConnector" );
-        connector.setPort( i( "ajp.port", 8080 ) );
-        connector.setRequestBufferSize( i( "ajp.request.buffer.size", 1024 * 12 ) );
-        connector.setRequestHeaderSize( i( "ajp.request.header.size", 1024 * 6 ) );
-        connector.setResolveNames( b( "ajp.resolve.client.names", false ) );
-        connector.setResponseBufferSize( i( "ajp.response.buffer.size", 1024 * 12 ) );
-        connector.setResponseHeaderSize( i( "ajp.response.header.size", 1024 * 6 ) );
-        connector.setReuseAddress( b( "ajp.reuse.address", true ) );
-        connector.setSoLingerTime( i( "ajp.socket.linger.time", -1 ) );
-        connector.setStatsOn( b( "ajp.statistics", false ) );
+        connector.setPort( c.get( "ajp.port", Integer.class, 8080 ) );
+        connector.setRequestBufferSize( c.get( "ajp.request.buffer.size", Integer.class, 1024 * 12 ) );
+        connector.setRequestHeaderSize( c.get( "ajp.request.header.size", Integer.class, 1024 * 6 ) );
+        connector.setResolveNames( c.get( "ajp.resolve.client.names", Boolean.class, false ) );
+        connector.setResponseBufferSize( c.get( "ajp.response.buffer.size", Integer.class, 1024 * 12 ) );
+        connector.setResponseHeaderSize( c.get( "ajp.response.header.size", Integer.class, 1024 * 6 ) );
+        connector.setReuseAddress( c.get( "ajp.reuse.address", Boolean.class, true ) );
+        connector.setSoLingerTime( c.get( "ajp.socket.linger.time", Integer.class, -1 ) );
+        connector.setStatsOn( c.get( "ajp.statistics", Boolean.class, false ) );
         return connector;
     }
 
-    private ThreadPool createThreadPool( )
+    private ThreadPool createThreadPool( MapAccessor<String, String> c )
     {
-        QueuedThreadPool threadPool = new QueuedThreadPool( );
+        QueuedThreadPool threadPool = new QueuedThreadPool();
         threadPool.setDaemon( true );
-        threadPool.setMaxIdleTimeMs( i( "jetty.thread.pool.max.idle.time.millis", 1000 * 60 ) );
-        threadPool.setMaxQueued( i( "jetty.thread.pool.max.queued", 1000 ) );
-        threadPool.setMaxStopTimeMs( i( "jetty.thread.pool.max.stop.time.millis", 0 ) );
-        threadPool.setMaxThreads( i( "jetty.thread.pool.max.threads", 500 ) );
-        threadPool.setMinThreads( i( "jetty.thread.pool.min.threads", 1 ) );
+        threadPool.setMaxIdleTimeMs( c.get( "jetty.thread.pool.max.idle.time.millis", Integer.class, 1000 * 60 ) );
+        threadPool.setMaxQueued( c.get( "jetty.thread.pool.max.queued", Integer.class, 1000 ) );
+        threadPool.setMaxStopTimeMs( c.get( "jetty.thread.pool.max.stop.time.millis", Integer.class, 0 ) );
+        threadPool.setMaxThreads( c.get( "jetty.thread.pool.max.threads", Integer.class, 500 ) );
+        threadPool.setMinThreads( c.get( "jetty.thread.pool.min.threads", Integer.class, 1 ) );
         threadPool.setName( "org.mosaic.server.jetty" );
         return threadPool;
     }
 
-    private Integer i( String key, int defaultValue )
+    private String fs( MapAccessor<String, String> c, String key ) throws IOException
     {
-        return this.cfg.getValueAs( key, Integer.class, defaultValue );
+        return fs( c, key, null );
     }
 
-    private Boolean b( String key, boolean defaultValue )
+    private String fs( MapAccessor<String, String> c, String key, String defaultValue ) throws IOException
     {
-        return this.cfg.getValueAs( key, Boolean.class, defaultValue );
-    }
-
-    private String s( String key )
-    {
-        return this.cfg.getValue( key );
-    }
-
-    private String s( String key, String defaultValue )
-    {
-        return this.cfg.getValue( key, defaultValue );
-    }
-
-    private String fs( String key ) throws IOException
-    {
-        return fs( key, null );
-    }
-
-    private String fs( String key, String defaultValue ) throws IOException
-    {
-        String value = s( key );
+        String value = c.get( key );
         if( !hasText( value ) )
         {
             return defaultValue;
@@ -319,13 +289,7 @@ public class HttpServerImpl implements HttpServer
             return defaultValue;
         }
 
-        String contents = new String( Files.readAllBytes( path ), "UTF-8" ).trim( );
-        return contents.length( ) == 0 ? defaultValue : contents.trim( );
+        String contents = new String( Files.readAllBytes( path ), "UTF-8" ).trim();
+        return contents.length() == 0 ? defaultValue : contents.trim();
     }
-
-    private int duration( String key, Duration defaultValue )
-    {
-        return ( int ) cfg.getValueAs( key, Duration.class, defaultValue ).getMillis( );
-    }
-
 }

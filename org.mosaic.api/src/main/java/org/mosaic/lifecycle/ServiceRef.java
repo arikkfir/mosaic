@@ -13,7 +13,7 @@ import java.lang.annotation.Target;
 public @interface ServiceRef
 {
 
-    String filter( ) default "";
+    String filter() default "";
 
-    boolean required( ) default true;
+    boolean required() default true;
 }

@@ -1,25 +1,23 @@
 package org.mosaic.web;
 
+import java.util.Map;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
-import org.mosaic.util.collection.TypedDict;
 
 /**
  * @author arik
  */
-public interface HttpSession extends TypedDict<Object>
+public interface HttpSession extends Map<String, Object>
 {
+    DateTime getCreationTime();
 
-    DateTime getCreationTime( );
+    String getId();
 
-    String getId( );
+    DateTime getLastAccessTime();
 
-    DateTime getLastAccessTime( );
+    Duration getMaxInactiveInterval();
 
-    Duration getMaxInactiveInterval( );
+    boolean isNew();
 
-    boolean isNew( );
-
-    void invalidate( );
-
+    void invalidate();
 }

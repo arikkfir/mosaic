@@ -41,7 +41,7 @@ public class JdbcDriverRegistrar implements BundleListener
 
     private BundleContext bundleContext;
 
-    private final Map<Bundle, Collection<Driver>> driverClasses = new ConcurrentHashMap<>( );
+    private final Map<Bundle, Collection<Driver>> driverClasses = new ConcurrentHashMap<>();
 
     @ContextRef
     public void setBundleContext( BundleContext bundleContext )
@@ -54,7 +54,7 @@ public class JdbcDriverRegistrar implements BundleListener
 
         if( info == null )
         {
-            info = new Properties( );
+            info = new Properties();
         }
         if( user != null )
         {
@@ -66,7 +66,7 @@ public class JdbcDriverRegistrar implements BundleListener
         }
 
         // iterate through the drivers, searching for an appropriate one
-        for( Collection<Driver> drivers : this.driverClasses.values( ) )
+        for( Collection<Driver> drivers : this.driverClasses.values() )
         {
             for( Driver driver : drivers )
             {
@@ -90,26 +90,26 @@ public class JdbcDriverRegistrar implements BundleListener
     @Override
     public synchronized void bundleChanged( BundleEvent event )
     {
-        if( event.getType( ) == BundleEvent.RESOLVED )
+        if( event.getType() == BundleEvent.RESOLVED )
         {
-            scanForJdbcDrivers( event.getBundle( ) );
+            scanForJdbcDrivers( event.getBundle() );
         }
-        else if( event.getType( ) == BundleEvent.UNRESOLVED )
+        else if( event.getType() == BundleEvent.UNRESOLVED )
         {
-            removeJdbcDrivers( event.getBundle( ) );
+            removeJdbcDrivers( event.getBundle() );
         }
     }
 
     @PostConstruct
-    public synchronized void init( )
+    public synchronized void init()
     {
         this.bundleContext.addBundleListener( this );
-        Bundle[] bundles = this.bundleContext.getBundles( );
+        Bundle[] bundles = this.bundleContext.getBundles();
         if( bundles != null )
         {
             for( Bundle bundle : bundles )
             {
-                if( bundle.getState( ) == Bundle.ACTIVE || bundle.getState( ) == Bundle.RESOLVED )
+                if( bundle.getState() == Bundle.ACTIVE || bundle.getState() == Bundle.RESOLVED )
                 {
                     scanForJdbcDrivers( bundle );
                 }
@@ -118,19 +118,19 @@ public class JdbcDriverRegistrar implements BundleListener
     }
 
     @PreDestroy
-    public void destroy( )
+    public void destroy()
     {
         this.bundleContext.removeBundleListener( this );
     }
 
     private void scanForJdbcDrivers( Bundle bundle )
     {
-        Collection<Driver> jdbcDriverClasses = new LinkedHashSet<>( );
+        Collection<Driver> jdbcDriverClasses = new LinkedHashSet<>();
 
         URL driverServiceUrl = bundle.getEntry( "/META-INF/services/java.sql.Driver" );
         if( driverServiceUrl != null )
         {
-            try( InputStreamReader in = new InputStreamReader( driverServiceUrl.openStream( ), "UTF-8" ) )
+            try( InputStreamReader in = new InputStreamReader( driverServiceUrl.openStream(), "UTF-8" ) )
             {
                 for( String className : CharStreams.readLines( in ) )
                 {
@@ -138,14 +138,14 @@ public class JdbcDriverRegistrar implements BundleListener
                     {
 
                         Class<?> cls = bundle.loadClass( className );
-                        if( !isAbstract( cls.getModifiers( ) ) && !cls.isInterface( ) )
+                        if( !isAbstract( cls.getModifiers() ) && !cls.isInterface() )
                         {
 
                             if( Driver.class.isAssignableFrom( cls ) )
                             {
                                 Class<? extends Driver> driverClass = cls.asSubclass( Driver.class );
-                                Constructor<? extends Driver> defaultConstructor = driverClass.getConstructor( );
-                                Driver driver = defaultConstructor.newInstance( );
+                                Constructor<? extends Driver> defaultConstructor = driverClass.getConstructor();
+                                Driver driver = defaultConstructor.newInstance();
 
                                 DriverManager.registerDriver( driver );
                                 jdbcDriverClasses.add( driver );
@@ -157,7 +157,7 @@ public class JdbcDriverRegistrar implements BundleListener
                     }
                     catch( ClassNotFoundException | InvocationTargetException | InstantiationException | IllegalAccessException | SQLException e )
                     {
-                        LOG.warn( "Could not scan JDBC drivers in bundle '{}': {}", BundleUtils.toString( bundle ), e.getMessage( ), e );
+                        LOG.warn( "Could not scan JDBC drivers in bundle '{}': {}", BundleUtils.toString( bundle ), e.getMessage(), e );
 
                     }
                     catch( NoSuchMethodException e )
@@ -169,16 +169,16 @@ public class JdbcDriverRegistrar implements BundleListener
             }
             catch( UnsupportedEncodingException e )
             {
-                LOG.warn( "UTF-8 is not supported in this JVM: {}", e.getMessage( ), e );
+                LOG.warn( "UTF-8 is not supported in this JVM: {}", e.getMessage(), e );
 
             }
             catch( IOException e )
             {
-                LOG.warn( "Could not scan JDBC drivers in bundle '{}': {}", BundleUtils.toString( bundle ), e.getMessage( ), e );
+                LOG.warn( "Could not scan JDBC drivers in bundle '{}': {}", BundleUtils.toString( bundle ), e.getMessage(), e );
             }
         }
 
-        if( !jdbcDriverClasses.isEmpty( ) )
+        if( !jdbcDriverClasses.isEmpty() )
         {
             this.driverClasses.put( bundle, jdbcDriverClasses );
         }
@@ -197,7 +197,7 @@ public class JdbcDriverRegistrar implements BundleListener
                 }
                 catch( SQLException e )
                 {
-                    LOG.warn( "Could not unregister JDBC driver '{}': {}", driver, e.getMessage( ), e );
+                    LOG.warn( "Could not unregister JDBC driver '{}': {}", driver, e.getMessage(), e );
                 }
             }
         }

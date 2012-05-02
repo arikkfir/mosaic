@@ -9,15 +9,15 @@ import org.mosaic.server.shell.console.Console;
 public interface ShellCommand
 {
 
-    String getName( );
+    String getName();
 
     void execute( Console console, String... args ) throws Exception;
 
-    String getOrigin( );
+    String getOrigin();
 
-    String getDescription( );
+    String getDescription();
 
-    String getAdditionalArgumentsDescription( );
+    String getAdditionalArgumentsDescription();
 
     void showHelp( Console console ) throws IOException;
 }

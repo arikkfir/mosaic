@@ -26,7 +26,7 @@ import static org.apache.commons.lang.StringUtils.isBlank;
  */
 public abstract class AbstractBootArtifactResolver implements BootArtifactResolver
 {
-    private final Logger LOG = LoggerFactory.getLogger( getClass( ) );
+    private final Logger LOG = LoggerFactory.getLogger( getClass() );
 
     private final BundleContext bundleContext;
 
@@ -35,7 +35,7 @@ public abstract class AbstractBootArtifactResolver implements BootArtifactResolv
         this.bundleContext = bundleContext;
     }
 
-    protected BundleContext getBundleContext( )
+    protected BundleContext getBundleContext()
     {
         return this.bundleContext;
     }
@@ -49,13 +49,13 @@ public abstract class AbstractBootArtifactResolver implements BootArtifactResolv
         try
         {
             JarFile jarFile = new JarFile( bundleFile, true, JarFile.OPEN_READ );
-            Manifest manifest = jarFile.getManifest( );
+            Manifest manifest = jarFile.getManifest();
             if( manifest == null )
             {
                 return null;
             }
 
-            Attributes mainAttributes = manifest.getMainAttributes( );
+            Attributes mainAttributes = manifest.getMainAttributes();
             if( mainAttributes == null )
             {
                 return null;
@@ -77,7 +77,7 @@ public abstract class AbstractBootArtifactResolver implements BootArtifactResolv
                                                                         bundleFile +
                                                                         "' has an illegal 'Bundle-Version' header" );
             }
-            snapshot = fileVersion.getQualifier( ).equalsIgnoreCase( "SNAPSHOT" );
+            snapshot = fileVersion.getQualifier().equalsIgnoreCase( "SNAPSHOT" );
 
         }
         catch( IOException e )
@@ -87,10 +87,10 @@ public abstract class AbstractBootArtifactResolver implements BootArtifactResolv
 
         try
         {
-            Collection<Bundle> bundles = new LinkedList<>( );
-            for( Bundle bundle : BundleUtils.findBundlesBySymbolicName( getBundleContext( ), fileSymbolicName ) )
+            Collection<Bundle> bundles = new LinkedList<>();
+            for( Bundle bundle : BundleUtils.findBundlesBySymbolicName( getBundleContext(), fileSymbolicName ) )
             {
-                int comparison = fileVersion.compareTo( bundle.getVersion( ) );
+                int comparison = fileVersion.compareTo( bundle.getVersion() );
                 if( comparison < 0 )
                 {
                     LOG.debug( "Newer version of '{}' is already installed, skipping file '{}'", fileSymbolicName, bundleFile );
@@ -116,28 +116,28 @@ public abstract class AbstractBootArtifactResolver implements BootArtifactResolv
                 }
             }
 
-            if( bundles.size( ) == 1 )
+            if( bundles.size() == 1 )
             {
                 // since matching bundle - lets update it
-                Bundle bundle = bundles.iterator( ).next( );
+                Bundle bundle = bundles.iterator().next();
                 bundle.update( new FileInputStream( bundleFile ) );
                 BundleStartLevel startLevel = bundle.adapt( BundleStartLevel.class );
                 startLevel.setStartLevel( 2 );
                 return new HashSet<>( Arrays.asList( bundle ) );
             }
-            else if( !bundles.isEmpty( ) )
+            else if( !bundles.isEmpty() )
             {
                 // multiple matching bundles - uninstall all of them, and then install our own
                 for( Bundle bundle : bundles )
                 {
-                    bundle.uninstall( );
+                    bundle.uninstall();
                 }
             }
 
             // if we got here it means that either more than one bundle matched this symbolic name, or none matched it
             // if multiple, they were uninstalled above; otherwise its new. In both cases - we can install it fresh
-            Bundle bundle = getBundleContext( ).installBundle( bundleFile.toURI( ).toString( ) );
-            bundle.start( );
+            Bundle bundle = getBundleContext().installBundle( bundleFile.toURI().toString() );
+            bundle.start();
             BundleStartLevel startLevel = bundle.adapt( BundleStartLevel.class );
             startLevel.setStartLevel( 2 );
             return new HashSet<>( Arrays.asList( bundle ) );

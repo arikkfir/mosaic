@@ -14,8 +14,6 @@ import org.mosaic.lifecycle.ServiceRef;
 import org.mosaic.util.logging.Logger;
 import org.mosaic.util.logging.LoggerFactory;
 import org.osgi.framework.BundleContext;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Component;
 
 import static java.nio.file.Files.exists;
@@ -32,9 +30,7 @@ public class ConfigurationManager
 
     private static final long SCAN_INTERVAL = 1000;
 
-    private final Map<Path, ConfigurationImpl> configurations = new ConcurrentHashMap<>( );
-
-    private ConversionService conversionService;
+    private final Map<Path, ConfigurationImpl> configurations = new ConcurrentHashMap<>();
 
     private Home home;
 
@@ -48,12 +44,6 @@ public class ConfigurationManager
         this.bundleContext = bundleContext;
     }
 
-    @Autowired
-    public void setConversionService( ConversionService conversionService )
-    {
-        this.conversionService = conversionService;
-    }
-
     @ServiceRef
     public void setHome( Home home )
     {
@@ -61,18 +51,18 @@ public class ConfigurationManager
     }
 
     @PostConstruct
-    public void init( )
+    public void init()
     {
-        scan( );
+        scan();
 
-        this.scanner = new Scanner( );
+        this.scanner = new Scanner();
         Thread t = new Thread( scanner, "ConfigurationsWatcher" );
         t.setDaemon( true );
-        t.start( );
+        t.start();
     }
 
     @PreDestroy
-    public void destroy( )
+    public void destroy()
     {
         if( this.scanner != null )
         {
@@ -80,10 +70,10 @@ public class ConfigurationManager
         }
     }
 
-    private synchronized void scan( )
+    private synchronized void scan()
     {
 
-        try( DirectoryStream<Path> stream = newDirectoryStream( this.home.getEtc( ), "*.properties" ) )
+        try( DirectoryStream<Path> stream = newDirectoryStream( this.home.getEtc(), "*.properties" ) )
         {
 
             for( Path configFile : stream )
@@ -91,27 +81,27 @@ public class ConfigurationManager
                 ConfigurationImpl configuration = this.configurations.get( configFile );
                 if( configuration == null )
                 {
-                    configuration = new ConfigurationImpl( this.bundleContext, configFile, this.conversionService );
+                    configuration = new ConfigurationImpl( this.bundleContext, configFile );
                     this.configurations.put( configFile, configuration );
                 }
-                configuration.refresh( );
+                configuration.refresh();
             }
 
         }
         catch( IOException e )
         {
-            LOG.error( "Could not search for configurations in '{}': {}", this.home.getEtc( ), e.getMessage( ), e );
+            LOG.error( "Could not search for configurations in '{}': {}", this.home.getEtc(), e.getMessage(), e );
         }
 
-        this.configurations.values( ).iterator( );
-        Iterator<ConfigurationImpl> iterator = this.configurations.values( ).iterator( );
-        while( iterator.hasNext( ) )
+        this.configurations.values().iterator();
+        Iterator<ConfigurationImpl> iterator = this.configurations.values().iterator();
+        while( iterator.hasNext() )
         {
-            ConfigurationImpl configuration = iterator.next( );
-            if( !exists( configuration.getPath( ) ) )
+            ConfigurationImpl configuration = iterator.next();
+            if( !exists( configuration.getPath() ) )
             {
-                configuration.unregister( );
-                iterator.remove( );
+                configuration.unregister();
+                iterator.remove();
             }
         }
     }
@@ -122,7 +112,7 @@ public class ConfigurationManager
         private boolean stop;
 
         @Override
-        public void run( )
+        public void run()
         {
             while( !this.stop )
             {
@@ -134,7 +124,7 @@ public class ConfigurationManager
                 {
                     break;
                 }
-                scan( );
+                scan();
             }
         }
     }

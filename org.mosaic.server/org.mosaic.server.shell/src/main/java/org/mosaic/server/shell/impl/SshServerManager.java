@@ -24,6 +24,7 @@ import org.mosaic.lifecycle.ServiceRef;
 import org.mosaic.server.shell.impl.auth.UserAuthLocalhostNone;
 import org.mosaic.server.shell.impl.session.MosaicServerSession;
 import org.mosaic.server.shell.impl.session.Session;
+import org.mosaic.util.collection.MapAccessor;
 import org.mosaic.util.logging.Logger;
 import org.mosaic.util.logging.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,11 +40,11 @@ public class SshServerManager
 
     private static final Logger LOG = LoggerFactory.getLogger( SshServerManager.class );
 
-    private MosaicSessionFactory sessionFactory = new MosaicSessionFactory( );
+    private MosaicSessionFactory sessionFactory = new MosaicSessionFactory();
 
     private Home home;
 
-    private Configuration configuration;
+    private MapAccessor<String, String> configuration;
 
     private SshServer sshServer;
 
@@ -74,11 +75,11 @@ public class SshServerManager
     @ServiceRef( filter = "name=ssh" )
     public void setConfiguration( Configuration configuration ) throws InterruptedException
     {
-        this.configuration = configuration;
+        this.configuration = new MapAccessor<>( configuration );
         if( this.sshServer != null )
         {
-            stop( );
-            init( );
+            stop();
+            init();
         }
     }
 
@@ -89,33 +90,32 @@ public class SshServerManager
     }
 
     @PostConstruct
-    public synchronized void init( ) throws InterruptedException
+    public synchronized void init() throws InterruptedException
     {
-
         // create a new SSH daemon server and configure it
-        this.sshServer = SshServer.setUpDefaultServer( );
-        this.sshServer.setPort( this.configuration.getValueAs( "port", Integer.class, 9080 ) );
-        this.sshServer.setShellFactory( new MosaicSshShellFactory( ) );
+        this.sshServer = SshServer.setUpDefaultServer();
+        this.sshServer.setPort( this.configuration.get( "port", Integer.class, 9080 ) );
+        this.sshServer.setShellFactory( new MosaicSshShellFactory() );
         this.sshServer.setPasswordAuthenticator( this.passwordAuthenticator );
-        this.sshServer.setUserAuthFactories( createUserAuthFactories( ) );
-        this.sshServer.setKeyPairProvider( new SimpleGeneratorHostKeyProvider( this.home.getWork( ).resolve( "host.ser" ).toString( ) ) );
+        this.sshServer.setUserAuthFactories( createUserAuthFactories() );
+        this.sshServer.setKeyPairProvider( new SimpleGeneratorHostKeyProvider( this.home.getWork().resolve( "host.ser" ).toString() ) );
         this.sshServer.setPublickeyAuthenticator( this.publicKeyAuthenticator );
         this.sshServer.setSessionFactory( this.sessionFactory );
 
         // start the new SSH daemon server
         try
         {
-            this.sshServer.start( );
+            this.sshServer.start();
         }
         catch( IOException e )
         {
-            LOG.warn( "Could not start Mosaic shell service: {}", e.getMessage( ), e );
+            LOG.warn( "Could not start Mosaic shell service: {}", e.getMessage(), e );
         }
 
     }
 
     @PreDestroy
-    public void stop( ) throws InterruptedException
+    public void stop() throws InterruptedException
     {
         if( this.sshServer != null )
         {
@@ -123,12 +123,12 @@ public class SshServerManager
         }
     }
 
-    private List<NamedFactory<UserAuth>> createUserAuthFactories( )
+    private List<NamedFactory<UserAuth>> createUserAuthFactories()
     {
-        List<NamedFactory<UserAuth>> factories = new ArrayList<>( );
-        factories.add( new UserAuthLocalhostNone.Factory( ) );
-        factories.add( new UserAuthPassword.Factory( ) );
-        factories.add( new UserAuthPublicKey.Factory( ) );
+        List<NamedFactory<UserAuth>> factories = new ArrayList<>();
+        factories.add( new UserAuthLocalhostNone.Factory() );
+        factories.add( new UserAuthPassword.Factory() );
+        factories.add( new UserAuthPublicKey.Factory() );
         return factories;
     }
 
@@ -146,7 +146,7 @@ public class SshServerManager
     {
 
         @Override
-        public Command create( )
+        public Command create()
         {
             Session session = applicationContext.getBean( Session.class );
             session.setHome( home );

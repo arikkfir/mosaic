@@ -29,21 +29,21 @@ public class ConsoleImpl implements Console
     }
 
     @Override
-    public Writer getWriter( )
+    public Writer getWriter()
     {
-        return this.consoleReader.getOutput( );
+        return this.consoleReader.getOutput();
     }
 
     @Override
-    public int getWidth( )
+    public int getWidth()
     {
-        return this.consoleReader.getTerminal( ).getWidth( );
+        return this.consoleReader.getTerminal().getWidth();
     }
 
     @Override
-    public int getHeight( )
+    public int getHeight()
     {
-        return this.consoleReader.getTerminal( ).getHeight( );
+        return this.consoleReader.getTerminal().getHeight();
     }
 
     @Override
@@ -53,16 +53,16 @@ public class ConsoleImpl implements Console
     }
 
     @Override
-    public Console flush( ) throws IOException
+    public Console flush() throws IOException
     {
-        this.consoleReader.flush( );
+        this.consoleReader.flush();
         return this;
     }
 
     @Override
-    public boolean backspace( ) throws IOException
+    public boolean backspace() throws IOException
     {
-        return this.consoleReader.backspace( );
+        return this.consoleReader.backspace();
     }
 
     @Override
@@ -75,23 +75,23 @@ public class ConsoleImpl implements Console
     public boolean replace( int num, String replacement ) throws IOException
     {
         boolean replace = this.consoleReader.replace( num, replacement );
-        flush( );
+        flush();
         return replace;
     }
 
     @Override
-    public int readCharacter( ) throws IOException
+    public int readCharacter() throws IOException
     {
-        return this.consoleReader.readCharacter( );
+        return this.consoleReader.readCharacter();
     }
 
     @Override
     public int readCharacter( final char... allowed ) throws IOException
     {
         Arrays.sort( allowed ); // always need to sort before binarySearch
-        while( !currentThread( ).isInterrupted( ) )
+        while( !currentThread().isInterrupted() )
         {
-            int i = readCharacter( );
+            int i = readCharacter();
             if( i < 0 )
             {
                 throw new EOFException( "Connection terminated" );
@@ -120,79 +120,79 @@ public class ConsoleImpl implements Console
             this.consoleReader.print( allowed[ i ] + "" );
         }
         this.consoleReader.print( "] " );
-        this.consoleReader.flush( );
+        this.consoleReader.flush();
         int i = readCharacter( allowed );
-        println( );
+        println();
         return i;
     }
 
     @Override
-    public String readLine( ) throws IOException
+    public String readLine() throws IOException
     {
-        return this.consoleReader.readLine( );
+        return this.consoleReader.readLine();
     }
 
     @Override
     public Console print( Object s ) throws IOException
     {
-        this.consoleReader.print( s == null ? "" : s.toString( ) );
-        flush( );
+        this.consoleReader.print( s == null ? "" : s.toString() );
+        flush();
         return this;
     }
 
     @Override
-    public Console println( ) throws IOException
+    public Console println() throws IOException
     {
-        this.consoleReader.println( );
-        flush( );
+        this.consoleReader.println();
+        flush();
         return this;
     }
 
     @Override
     public Console println( Object s ) throws IOException
     {
-        this.consoleReader.println( s == null ? "" : s.toString( ) );
-        flush( );
+        this.consoleReader.println( s == null ? "" : s.toString() );
+        flush();
         return this;
     }
 
     @Override
-    public boolean delete( ) throws IOException
+    public boolean delete() throws IOException
     {
-        return this.consoleReader.delete( );
+        return this.consoleReader.delete();
     }
 
     @Override
-    public boolean killLine( ) throws IOException
+    public boolean killLine() throws IOException
     {
-        return this.consoleReader.killLine( );
+        return this.consoleReader.killLine();
     }
 
     @Override
-    public boolean clearScreen( ) throws IOException
+    public boolean clearScreen() throws IOException
     {
-        return this.consoleReader.clearScreen( );
+        return this.consoleReader.clearScreen();
     }
 
     @Override
-    public Console beep( ) throws IOException
+    public Console beep() throws IOException
     {
-        this.consoleReader.beep( );
+        this.consoleReader.beep();
         return this;
     }
 
     @Override
-    public boolean paste( ) throws IOException
+    public boolean paste() throws IOException
     {
-        boolean paste = this.consoleReader.paste( );
-        flush( );
+        boolean paste = this.consoleReader.paste();
+        flush();
         return paste;
     }
 
     @Override
-    public TableHeaders createTable( )
+    public TableHeaders createTable()
     {
-        return new Table( );
+        return new Table();
     }
 
     @Override
@@ -204,10 +204,10 @@ public class ConsoleImpl implements Console
     @Override
     public Console printStackTrace( Throwable throwable ) throws IOException
     {
-        PrintWriter printWriter = new PrintWriter( getWriter( ) );
+        PrintWriter printWriter = new PrintWriter( getWriter() );
         throwable.printStackTrace( printWriter );
-        printWriter.flush( );
-        flush( );
+        printWriter.flush();
+        flush();
         return this;
     }
 
@@ -223,15 +223,15 @@ public class ConsoleImpl implements Console
 
         private final String indent;
 
-        private final List<String> titles = new LinkedList<>( );
+        private final List<String> titles = new LinkedList<>();
 
-        private final List<Integer> lengths = new LinkedList<>( );
+        private final List<Integer> lengths = new LinkedList<>();
 
         private int lineLength;
 
         private String chromeLine;
 
-        private Table( )
+        private Table()
         {
             this( 0 );
         }
@@ -244,7 +244,7 @@ public class ConsoleImpl implements Console
         @Override
         public TableHeaders addHeader( String title, int width )
         {
-            if( title.length( ) > width )
+            if( title.length() > width )
             {
                 throw new IllegalArgumentException( "Width of '" +
                                                     title +
@@ -260,9 +260,9 @@ public class ConsoleImpl implements Console
         }
 
         @Override
-        public TablePrinter start( ) throws IOException
+        public TablePrinter start() throws IOException
         {
-            if( this.titles.size( ) == 0 )
+            if( this.titles.size() == 0 )
             {
                 throw new IllegalStateException( "No headers added to table! Call 'TableHeaders.add(..) method first" );
             }
@@ -270,7 +270,7 @@ public class ConsoleImpl implements Console
             this.lineLength++;
             StringBuilder chromeLine = new StringBuilder( this.lineLength );
             StringBuilder headerLine = new StringBuilder( this.lineLength );
-            for( int i = 0; i < this.titles.size( ); i++ )
+            for( int i = 0; i < this.titles.size(); i++ )
             {
                 int length = this.lengths.get( i );
                 chromeLine.append( '+' ).append( repeat( '-', length ) );
@@ -278,7 +278,7 @@ public class ConsoleImpl implements Console
             }
             chromeLine.append( '+' );
             headerLine.append( '|' );
-            this.chromeLine = chromeLine.toString( );
+            this.chromeLine = chromeLine.toString();
 
             ConsoleImpl.this.print( this.indent ).println( chromeLine );
             ConsoleImpl.this.print( this.indent ).println( headerLine );
@@ -293,7 +293,7 @@ public class ConsoleImpl implements Console
             // build a matrix of values - outer list is the columns, and each inner list is lines for that column value
             List<List<String>> matrix = new ArrayList<>( values.length );
             int lineCount = 1;
-            for( int colIndex = 0; colIndex < this.titles.size( ); colIndex++ )
+            for( int colIndex = 0; colIndex < this.titles.size(); colIndex++ )
             {
                 Integer colLength = this.lengths.get( colIndex );
                 Object value;
@@ -306,20 +306,20 @@ public class ConsoleImpl implements Console
                     value = values[ colIndex ];
                 }
 
-                List<String> valueLines = splitLinesOnLengthAndWords( value.toString( ), colLength );
+                List<String> valueLines = splitLinesOnLengthAndWords( value.toString(), colLength );
                 matrix.add( valueLines );
-                lineCount = max( valueLines.size( ), lineCount );
+                lineCount = max( valueLines.size(), lineCount );
             }
 
             StringBuilder buffer = new StringBuilder( this.lineLength );
             for( int lineIndex = 0; lineIndex < lineCount; lineIndex++ )
             {
                 buffer.delete( 0, Integer.MAX_VALUE );
-                for( int colIndex = 0; colIndex < this.titles.size( ); colIndex++ )
+                for( int colIndex = 0; colIndex < this.titles.size(); colIndex++ )
                 {
                     Integer colLength = this.lengths.get( colIndex );
                     List<String> colLines = matrix.get( colIndex );
-                    String line = lineIndex < colLines.size( )
+                    String line = lineIndex < colLines.size()
                                   ? rightPad( colLines.get( lineIndex ), colLength )
                                   : repeat( ' ', colLength );
                     buffer.append( '|' ).append( line );
@@ -332,7 +332,7 @@ public class ConsoleImpl implements Console
         }
 
         @Override
-        public void done( ) throws IOException
+        public void done() throws IOException
         {
             ConsoleImpl.this.print( this.indent ).println( chromeLine );
         }

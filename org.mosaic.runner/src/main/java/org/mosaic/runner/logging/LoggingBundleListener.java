@@ -20,14 +20,14 @@ public class LoggingBundleListener implements SynchronousBundleListener
     @Override
     public void bundleChanged( BundleEvent event )
     {
-        Bundle bundle = event.getBundle( );
+        Bundle bundle = event.getBundle();
         String bts = BundleUtils.toString( bundle );
 
         MDC.put( MDC_BUNDLE_KEY, bts );
         try
         {
             Logger logger = LoggerFactory.getLogger( OSGI_LOG_NAME );
-            switch( event.getType( ) )
+            switch( event.getType() )
             {
                 case BundleEvent.INSTALLED:
                     logger.info( "Installed bundle: {}", bts );

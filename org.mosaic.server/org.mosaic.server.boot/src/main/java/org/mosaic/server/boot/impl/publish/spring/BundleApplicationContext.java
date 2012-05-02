@@ -21,17 +21,17 @@ public class BundleApplicationContext extends GenericApplicationContext
         BundleWiring wiring = bundle.adapt( BundleWiring.class );
         if( wiring == null )
         {
-            throw new IllegalStateException( "Bundle '" + bundle.getSymbolicName( ) + "' is uninstalled!" );
+            throw new IllegalStateException( "Bundle '" + bundle.getSymbolicName() + "' is uninstalled!" );
         }
 
         // configure application context for an OSGi environment
         setAllowBeanDefinitionOverriding( false );
         setAllowCircularReferences( false );
-        setClassLoader( wiring.getClassLoader( ) );
+        setClassLoader( wiring.getClassLoader() );
         setDisplayName( "ApplicationContext[" + BundleUtils.toString( bundle ) + "]" );
         setEnvironment( createBundleSpringEnvironment( bundle ) );
         setId( BundleUtils.toString( bundle ) );
-        setResourceLoader( new OsgiResourcePatternResolver( bundle, getClassLoader( ) ) );
+        setResourceLoader( new OsgiResourcePatternResolver( bundle, getClassLoader() ) );
 
         // add bundle beans
         registerBundleBeans( bundle, this, springNamespacePlugin );

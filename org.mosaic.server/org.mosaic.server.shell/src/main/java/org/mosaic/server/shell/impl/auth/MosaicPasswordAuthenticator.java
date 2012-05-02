@@ -36,7 +36,7 @@ public class MosaicPasswordAuthenticator implements PasswordAuthenticator
     public boolean authenticate( String username, String password, ServerSession session )
     {
 
-        Path passwordFile = this.home.getEtc( ).resolve( "passwd" );
+        Path passwordFile = this.home.getEtc().resolve( "passwd" );
         if( !Files.exists( passwordFile ) || !Files.isReadable( passwordFile ) )
         {
             LOG.warn( "The '{}' file could not be found or read - no password authentication can occur", passwordFile );
@@ -46,7 +46,7 @@ public class MosaicPasswordAuthenticator implements PasswordAuthenticator
         try( Reader reader = Files.newBufferedReader( passwordFile, Charset.forName( "UTF-8" ) ) )
         {
 
-            Properties properties = new Properties( );
+            Properties properties = new Properties();
             properties.load( reader );
 
             String sentMd5Password = DigestUtils.md5Hex( password );
@@ -62,7 +62,7 @@ public class MosaicPasswordAuthenticator implements PasswordAuthenticator
         }
         catch( IOException e )
         {
-            LOG.warn( "Error reading passwords from '{}': {}", passwordFile, e.getMessage( ), e );
+            LOG.warn( "Error reading passwords from '{}': {}", passwordFile, e.getMessage(), e );
             return false;
         }
 

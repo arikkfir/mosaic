@@ -21,7 +21,7 @@ public class FelixLogger extends Logger
     @Override
     protected void doLog( Bundle bundle, ServiceReference sr, int level, String msg, Throwable throwable )
     {
-        MDC.put( MDC_SR_KEY, sr == null ? null : sr.toString( ) );
+        MDC.put( MDC_SR_KEY, sr == null ? null : sr.toString() );
         MDC.put( MDC_BUNDLE_KEY, bundle == null ? null : BundleUtils.toString( bundle ) );
         try
         {

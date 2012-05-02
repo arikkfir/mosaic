@@ -11,19 +11,19 @@ public class Role
 
     private final String name;
 
-    private final Collection<Role> childRoles = new LinkedList<>( );
+    private final Collection<Role> childRoles = new LinkedList<>();
 
-    private final Set<String> permissions = new HashSet<>( );
+    private final Set<String> permissions = new HashSet<>();
 
     public Role( Element element )
     {
-        this.name = element.getLocalName( );
+        this.name = element.getLocalName();
 
         // parse our permissions
         List<Element> permissionElts = DomUtils.getChildElements( element, "permission" );
         for( Element permissionElt : permissionElts )
         {
-            this.permissions.add( permissionElt.getTextContent( ).trim( ) );
+            this.permissions.add( permissionElt.getTextContent().trim() );
         }
 
         // parse all other nodes - every element which is not in the permission elements list is a sub-role element
@@ -37,17 +37,17 @@ public class Role
         }
     }
 
-    public String getName( )
+    public String getName()
     {
         return name;
     }
 
-    public Set<String> getPermissionPatterns( )
+    public Set<String> getPermissionPatterns()
     {
         Set<String> patterns = new HashSet<>( this.permissions );
         for( Role childRole : this.childRoles )
         {
-            patterns.addAll( childRole.getPermissionPatterns( ) );
+            patterns.addAll( childRole.getPermissionPatterns() );
         }
         return patterns;
     }

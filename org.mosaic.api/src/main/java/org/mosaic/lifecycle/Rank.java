@@ -1,4 +1,4 @@
-package org.mosaic.describe;
+package org.mosaic.lifecycle;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -13,6 +13,6 @@ import java.lang.annotation.Target;
 public @interface Rank
 {
 
-    int value( ) default 0;
+    int value() default 0;
 
 }

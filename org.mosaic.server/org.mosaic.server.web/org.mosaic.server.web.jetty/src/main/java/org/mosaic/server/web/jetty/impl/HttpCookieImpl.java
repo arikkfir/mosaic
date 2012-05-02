@@ -17,15 +17,15 @@ public class HttpCookieImpl implements HttpCookie
     }
 
     @Override
-    public String getName( )
+    public String getName()
     {
-        return this.cookie.getName( );
+        return this.cookie.getName();
     }
 
     @Override
-    public String getValue( )
+    public String getValue()
     {
-        return this.cookie.getValue( );
+        return this.cookie.getValue();
     }
 
     @Override
@@ -35,9 +35,9 @@ public class HttpCookieImpl implements HttpCookie
     }
 
     @Override
-    public String getDomain( )
+    public String getDomain()
     {
-        return this.cookie.getDomain( );
+        return this.cookie.getDomain();
     }
 
     @Override
@@ -47,9 +47,9 @@ public class HttpCookieImpl implements HttpCookie
     }
 
     @Override
-    public String getPath( )
+    public String getPath()
     {
-        return this.cookie.getPath( );
+        return this.cookie.getPath();
     }
 
     @Override
@@ -59,9 +59,9 @@ public class HttpCookieImpl implements HttpCookie
     }
 
     @Override
-    public Integer getMaxAge( )
+    public Integer getMaxAge()
     {
-        int maxAge = this.cookie.getMaxAge( );
+        int maxAge = this.cookie.getMaxAge();
         return maxAge < 0 ? null : maxAge;
     }
 
@@ -72,9 +72,9 @@ public class HttpCookieImpl implements HttpCookie
     }
 
     @Override
-    public boolean getSecure( )
+    public boolean getSecure()
     {
-        return this.cookie.getSecure( );
+        return this.cookie.getSecure();
     }
 
     @Override
@@ -84,9 +84,9 @@ public class HttpCookieImpl implements HttpCookie
     }
 
     @Override
-    public boolean getHttpOnly( )
+    public boolean getHttpOnly()
     {
-        return this.cookie.isHttpOnly( );  //To change body of implemented methods use File | Settings | File Templates.
+        return this.cookie.isHttpOnly();  //To change body of implemented methods use File | Settings | File Templates.
     }
 
     @Override
@@ -96,9 +96,9 @@ public class HttpCookieImpl implements HttpCookie
     }
 
     @Override
-    public int getVersion( )
+    public int getVersion()
     {
-        return this.cookie.getVersion( );
+        return this.cookie.getVersion();
     }
 
     @Override
@@ -108,9 +108,9 @@ public class HttpCookieImpl implements HttpCookie
     }
 
     @Override
-    public String getComment( )
+    public String getComment()
     {
-        return this.cookie.getComment( );
+        return this.cookie.getComment();
     }
 
     @Override

@@ -20,14 +20,14 @@ public class LoggingFrameworkListener implements FrameworkListener
     @Override
     public void frameworkEvent( FrameworkEvent event )
     {
-        MDC.put( MDC_BUNDLE_KEY, BundleUtils.toString( event.getBundle( ) ) );
+        MDC.put( MDC_BUNDLE_KEY, BundleUtils.toString( event.getBundle() ) );
         try
         {
-            Throwable throwable = event.getThrowable( );
-            String throwableMsg = throwable != null ? throwable.getMessage( ) : "";
+            Throwable throwable = event.getThrowable();
+            String throwableMsg = throwable != null ? throwable.getMessage() : "";
 
             Logger logger = LoggerFactory.getLogger( "org.mosaic.server.osgi.framework" );
-            switch( event.getType( ) )
+            switch( event.getType() )
             {
                 case FrameworkEvent.STARTED:
                     synchronized( Runner.class )
@@ -45,8 +45,8 @@ public class LoggingFrameworkListener implements FrameworkListener
                     break;
 
                 case FrameworkEvent.STARTLEVEL_CHANGED:
-                    FrameworkStartLevel startLevel = event.getBundle( ).adapt( FrameworkStartLevel.class );
-                    logger.info( "OSGi Framework start level has been changed to: {}", startLevel.getStartLevel( ), throwable );
+                    FrameworkStartLevel startLevel = event.getBundle().adapt( FrameworkStartLevel.class );
+                    logger.info( "OSGi Framework start level has been changed to: {}", startLevel.getStartLevel(), throwable );
                     break;
 
                 case FrameworkEvent.WARNING:

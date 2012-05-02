@@ -15,7 +15,7 @@ public class MosaicServerSession extends ServerSession
         super( server, ioSession );
     }
 
-    public boolean isClosing( )
+    public boolean isClosing()
     {
         return this.closing;
     }

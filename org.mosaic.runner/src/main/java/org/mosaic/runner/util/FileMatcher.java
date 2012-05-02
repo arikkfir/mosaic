@@ -66,7 +66,7 @@ public class FileMatcher
 
     private List<File> _find( String pattern )
     {
-        if( this.file.isFile( ) )
+        if( this.file.isFile() )
         {
             throw new IllegalStateException( "_find(...) is only supported on directory resources" );
         }
@@ -77,15 +77,15 @@ public class FileMatcher
                 this.file.listFiles( ( FileFilter ) new WildcardFileFilter( tokens[ 0 ], IOCase.SYSTEM ) );
         if( matchingFiles == null )
         {
-            return Collections.emptyList( );
+            return Collections.emptyList();
         }
 
-        List<File> matches = new LinkedList<>( );
+        List<File> matches = new LinkedList<>();
         if( tokens.length == 1 )
         {
             for( File file : matchingFiles )
             {
-                if( file.isFile( ) )
+                if( file.isFile() )
                 {
                     matches.add( file );
                 }
@@ -96,7 +96,7 @@ public class FileMatcher
             String next = StringUtils.join( tokens, '/', 1, tokens.length );
             for( File file : matchingFiles )
             {
-                if( file.isDirectory( ) )
+                if( file.isDirectory() )
                 {
                     matches.addAll( new FileMatcher( file )._find( next ) );
                 }

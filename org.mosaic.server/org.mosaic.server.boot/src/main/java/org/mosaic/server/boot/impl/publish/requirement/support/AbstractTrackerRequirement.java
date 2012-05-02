@@ -32,27 +32,27 @@ public abstract class AbstractTrackerRequirement extends AbstractMethodRequireme
         this.additionalFilter = additionalFilter;
 
         Filter filter = createFilter( this.serviceType, additionalFilter );
-        this.tracker = new ServiceTracker<>( getBundleContext( ), filter, this );
+        this.tracker = new ServiceTracker<>( getBundleContext(), filter, this );
     }
 
     @Override
-    protected boolean trackInternal( ) throws Exception
+    protected boolean trackInternal() throws Exception
     {
-        this.tracker.open( );
+        this.tracker.open();
         return false;
     }
 
     @Override
-    protected void untrackInternal( ) throws Exception
+    protected void untrackInternal() throws Exception
     {
-        this.tracker.close( );
+        this.tracker.close();
     }
 
     @Override
     public Object addingService( ServiceReference<Object> serviceReference )
     {
         // no-op
-        BundleContext bundleContext = getBundleContext( );
+        BundleContext bundleContext = getBundleContext();
         return bundleContext == null ? null : bundleContext.getService( serviceReference );
     }
 
@@ -68,26 +68,26 @@ public abstract class AbstractTrackerRequirement extends AbstractMethodRequireme
         // no-op
     }
 
-    protected ServiceTracker<Object, Object> getTracker( )
+    protected ServiceTracker<Object, Object> getTracker()
     {
         return tracker;
     }
 
-    protected Class<?> getServiceType( )
+    protected Class<?> getServiceType()
     {
         return serviceType;
     }
 
-    protected String getAdditionalFilter( )
+    protected String getAdditionalFilter()
     {
         return additionalFilter;
     }
 
     private Filter createFilter( Class<?> serviceType, String additionalFilter )
     {
-        String classFilter = "(" + OBJECTCLASS + "=" + serviceType.getName( ) + ")";
+        String classFilter = "(" + OBJECTCLASS + "=" + serviceType.getName() + ")";
         String filterString;
-        if( additionalFilter != null && additionalFilter.trim( ).length( ) > 0 )
+        if( additionalFilter != null && additionalFilter.trim().length() > 0 )
         {
             if( !additionalFilter.startsWith( "(" ) )
             {

@@ -138,35 +138,35 @@ public class Session implements Command, Runnable, SessionAware
         // the thread which populates the input queue from the ssh session's input stream
         this.inputThread = new Thread( new Pipe( this.in, this.inputQueue ), "SSHD/input" );
         this.inputThread.setDaemon( true );
-        this.inputThread.start( );
+        this.inputThread.start();
 
         // create the console reader used for interacting with the user
         try
         {
-            String username = this.session.getUsername( );
-            Path historyFile = this.home.getWork( ).resolve( "history/" + username );
-            this.history = new FileHistory( historyFile.toFile( ) );
+            String username = this.session.getUsername();
+            Path historyFile = this.home.getWork().resolve( "history/" + username );
+            this.history = new FileHistory( historyFile.toFile() );
 
             this.consoleReader =
                     new ConsoleReader( new PipeInputStream( this.inputQueue ), this.out, new SshTerminal( env ) );
             this.consoleReader.setHistory( history );
-            this.consoleReader.setPrompt( "[" + this.session.getUsername( ) + "@host.com]$ " );
-            this.consoleReader.addCompleter( new CommandCompleter( ) );
+            this.consoleReader.setPrompt( "[" + this.session.getUsername() + "@host.com]$ " );
+            this.consoleReader.addCompleter( new CommandCompleter() );
 
         }
         catch( Exception e )
         {
-            throw new IllegalStateException( "Cannot start SSH console session: " + e.getMessage( ), e );
+            throw new IllegalStateException( "Cannot start SSH console session: " + e.getMessage(), e );
         }
 
         // start the console thread, using 'this' as the runnable
         this.consoleThread = new Thread( this, "SSHD/console" );
         this.consoleThread.setDaemon( true );
-        this.consoleThread.start( );
+        this.consoleThread.start();
     }
 
     @Override
-    public void run( )
+    public void run()
     {
         this.running = true;
 
@@ -175,10 +175,10 @@ public class Session implements Command, Runnable, SessionAware
         {
             WelcomeMessage.print( this.bundleContext, console );
             String line;
-            while( this.running && ( line = console.readLine( ) ) != null )
+            while( this.running && ( line = console.readLine() ) != null )
             {
-                line = line.trim( );
-                if( line.length( ) > 0 )
+                line = line.trim();
+                if( line.length() > 0 )
                 {
                     String[] tokens = line.split( " " );
 
@@ -212,7 +212,7 @@ public class Session implements Command, Runnable, SessionAware
                         {
                             if( this.running )
                             {
-                                console.println( e.getMessage( ) );
+                                console.println( e.getMessage() );
                             }
                         }
                         catch( Exception e )
@@ -229,7 +229,7 @@ public class Session implements Command, Runnable, SessionAware
             // persist history
             try
             {
-                this.history.flush( );
+                this.history.flush();
             }
             catch( IOException ignore )
             {
@@ -238,18 +238,18 @@ public class Session implements Command, Runnable, SessionAware
         }
         catch( IOException e )
         {
-            LOG.error( "I/O error occurred in SSH session: {}", e.getMessage( ), e );
+            LOG.error( "I/O error occurred in SSH session: {}", e.getMessage(), e );
         }
         finally
         {
             this.running = false;
-            if( !this.session.isClosing( ) )
+            if( !this.session.isClosing() )
             {
                 try
                 {
-                    console.println( );
+                    console.println();
                     console.println( "Goodbye!" );
-                    console.flush( );
+                    console.flush();
                     this.session.close( false );
                 }
                 catch( IOException ignore )
@@ -261,12 +261,12 @@ public class Session implements Command, Runnable, SessionAware
     }
 
     @Override
-    public void destroy( )
+    public void destroy()
     {
 
         this.running = false;
-        this.consoleThread.interrupt( );
-        this.inputThread.interrupt( );
+        this.consoleThread.interrupt();
+        this.inputThread.interrupt();
 
         IoUtils.flush( out, err );
         IoUtils.close( in, out, err );
@@ -290,11 +290,11 @@ public class Session implements Command, Runnable, SessionAware
                 return -1;
             }
 
-            Collection<ShellCommand> commands = commandsManager.getCommands( );
-            SortedSet<String> commandNames = new TreeSet<>( );
+            Collection<ShellCommand> commands = commandsManager.getCommands();
+            SortedSet<String> commandNames = new TreeSet<>();
             for( ShellCommand command : commands )
             {
-                commandNames.add( command.getName( ) );
+                commandNames.add( command.getName() );
             }
 
             if( buffer == null )
@@ -312,11 +312,11 @@ public class Session implements Command, Runnable, SessionAware
                     candidates.add( match );
                 }
             }
-            if( candidates.size( ) == 1 )
+            if( candidates.size() == 1 )
             {
                 candidates.set( 0, candidates.get( 0 ) + " " );
             }
-            return candidates.isEmpty( ) ? -1 : 0;
+            return candidates.isEmpty() ? -1 : 0;
         }
     }
 
@@ -331,13 +331,13 @@ public class Session implements Command, Runnable, SessionAware
         }
 
         @Override
-        public int read( ) throws IOException
+        public int read() throws IOException
         {
             try
             {
                 if( running )
                 {
-                    return inputQueue.take( );
+                    return inputQueue.take();
                 }
                 else
                 {

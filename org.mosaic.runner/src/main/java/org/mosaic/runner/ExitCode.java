@@ -66,7 +66,7 @@ public enum ExitCode
      *
      * @return the OS exit code
      */
-    public int getCode( )
+    public int getCode()
     {
         return this.code;
     }

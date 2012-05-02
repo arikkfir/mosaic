@@ -24,17 +24,17 @@ public abstract class SpringUtils
 
     public static ConfigurableEnvironment createBundleSpringEnvironment( Bundle bundle )
     {
-        Map<String, Object> headersMap = new HashMap<>( );
-        Dictionary<String, String> headers = bundle.getHeaders( );
-        Enumeration<String> headerNames = headers.keys( );
-        while( headerNames.hasMoreElements( ) )
+        Map<String, Object> headersMap = new HashMap<>();
+        Dictionary<String, String> headers = bundle.getHeaders();
+        Enumeration<String> headerNames = headers.keys();
+        while( headerNames.hasMoreElements() )
         {
-            String headerName = headerNames.nextElement( );
+            String headerName = headerNames.nextElement();
             headersMap.put( headerName, headers.get( headerName ) );
         }
 
-        StandardEnvironment environment = new StandardEnvironment( );
-        environment.getPropertySources( ).addFirst( new MapPropertySource( "bundle", headersMap ) );
+        StandardEnvironment environment = new StandardEnvironment();
+        environment.getPropertySources().addFirst( new MapPropertySource( "bundle", headersMap ) );
         return environment;
     }
 
@@ -49,23 +49,23 @@ public abstract class SpringUtils
         }
 
         XmlBeanDefinitionReader xmlReader = new XmlBeanDefinitionReader( beanFactory );
-        xmlReader.setBeanClassLoader( wiring.getClassLoader( ) );
+        xmlReader.setBeanClassLoader( wiring.getClassLoader() );
         xmlReader.setEntityResolver( osgiSpringNamespacePlugin );
         xmlReader.setEnvironment( createBundleSpringEnvironment( bundle ) );
         xmlReader.setNamespaceHandlerResolver( osgiSpringNamespacePlugin );
-        xmlReader.setResourceLoader( new OsgiResourcePatternResolver( bundle, wiring.getClassLoader( ) ) );
+        xmlReader.setResourceLoader( new OsgiResourcePatternResolver( bundle, wiring.getClassLoader() ) );
 
         Enumeration<URL> xmlFiles = bundle.findEntries( "/META-INF/spring/", "*.xml", true );
-        while( xmlFiles.hasMoreElements( ) )
+        while( xmlFiles.hasMoreElements() )
         {
-            xmlReader.loadBeanDefinitions( new UrlResource( xmlFiles.nextElement( ) ) );
+            xmlReader.loadBeanDefinitions( new UrlResource( xmlFiles.nextElement() ) );
         }
     }
 
     public static Class<?> getBeanClass( Bundle bundle, BeanDefinitionRegistry beanFactory, String beanDefinitionName )
     {
         BeanDefinition beanDefinition = beanFactory.getBeanDefinition( beanDefinitionName );
-        String beanClassName = beanDefinition.getBeanClassName( );
+        String beanClassName = beanDefinition.getBeanClassName();
         Class<?> beanClass = null;
 
         // attempt to resolve class using the bean class name property of the bean definition
@@ -84,7 +84,7 @@ public abstract class SpringUtils
         if( beanClass == null && beanDefinition instanceof AbstractBeanDefinition )
         {
             AbstractBeanDefinition def = ( AbstractBeanDefinition ) beanDefinition;
-            beanClass = def.getBeanClass( );
+            beanClass = def.getBeanClass();
         }
         return beanClass;
     }

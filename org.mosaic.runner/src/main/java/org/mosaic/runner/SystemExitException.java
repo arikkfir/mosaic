@@ -20,7 +20,7 @@ public class SystemExitException extends Exception
         this.exitCode = exitCode;
     }
 
-    public ExitCode getExitCode( )
+    public ExitCode getExitCode()
     {
         return this.exitCode;
     }

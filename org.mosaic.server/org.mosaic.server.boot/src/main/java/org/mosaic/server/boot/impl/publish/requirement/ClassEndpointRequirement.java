@@ -18,7 +18,6 @@ import org.springframework.context.ApplicationContext;
  */
 public class ClassEndpointRequirement extends AbstractBeanRequirement implements ClassEndpointInfo
 {
-
     private static final Logger LOG = LoggerFactory.getLogger( ClassEndpointRequirement.class );
 
     private final Annotation type;
@@ -37,64 +36,64 @@ public class ClassEndpointRequirement extends AbstractBeanRequirement implements
     }
 
     @Override
-    public String toString( )
+    public String toString()
     {
         return "ClassEndpoint[" +
-               this.classType.getSimpleName( ) +
+               this.classType.getSimpleName() +
                "@" +
-               this.type.annotationType( ).getSimpleName( ) +
+               this.type.annotationType().getSimpleName() +
                "/" +
-               getBeanName( ) +
+               getBeanName() +
                "]";
     }
 
     @Override
-    public int getPriority( )
+    public int getPriority()
     {
         return SERVICE_EXPORT_PRIORITY;
     }
 
     @Override
-    public String toShortString( )
+    public String toShortString()
     {
-        return "ClassEndpoint[" + getBeanName( ) + "]";
+        return "ClassEndpoint[" + getBeanName() + "]";
     }
 
     @Override
-    protected boolean trackInternal( ) throws Exception
+    protected boolean trackInternal() throws Exception
     {
-        super.trackInternal( );
+        super.trackInternal();
         return true;
     }
 
     @Override
     protected void publishInternal( ApplicationContext applicationContext ) throws Exception
     {
-        BundleContext bundleContext = getBundleContext( );
+        BundleContext bundleContext = getBundleContext();
         if( bundleContext == null )
         {
-            LOG.warn( "Bundle being published when not active?? For bundle: {}", getBundleName( ) );
+            LOG.warn( "Bundle being published when not active?? For bundle: {}", getBundleName() );
         }
         else
         {
             this.applicationContext = applicationContext;
 
-            Dictionary<String, Object> properties = new Hashtable<>( );
-            properties.put( TYPE, this.type.annotationType( ).getName( ) );
-            properties.put( SHORT_TYPE, this.type.annotationType( ).getSimpleName( ) );
-            properties.put( CLASS_NAME, this.classType.getName( ) );
+            Dictionary<String, Object> properties = new Hashtable<>();
+            properties.put( TYPE, this.type.annotationType().getName() );
+            properties.put( SHORT_TYPE, this.type.annotationType().getSimpleName() );
+            properties.put( CLASS_NAME, this.classType.getName() );
             this.registration = bundleContext.registerService( ClassEndpointInfo.class, this, properties );
         }
     }
 
     @Override
-    protected void unpublishInternal( ) throws Exception
+    protected void unpublishInternal() throws Exception
     {
         if( this.registration != null )
         {
             try
             {
-                this.registration.unregister( );
+                this.registration.unregister();
             }
             catch( IllegalStateException ignore )
             {
@@ -104,31 +103,31 @@ public class ClassEndpointRequirement extends AbstractBeanRequirement implements
     }
 
     @Override
-    public String getOrigin( )
+    public String getOrigin()
     {
-        return BundleUtils.toString( getBundleContext( ) );
+        return BundleUtils.toString( getBundleContext() );
     }
 
     @Override
     public boolean isOfType( Class<? extends Annotation> annotationType )
     {
-        return this.type.annotationType( ).equals( annotationType );
+        return this.type.annotationType().equals( annotationType );
     }
 
     @Override
-    public Annotation getType( )
+    public Annotation getType()
     {
         return this.type;
     }
 
     @Override
-    public Class<?> getClassType( )
+    public Class<?> getClassType()
     {
         return this.classType;
     }
 
     @Override
-    public Object getEndpoint( )
+    public Object getEndpoint()
     {
         return getBean( this.applicationContext );
     }

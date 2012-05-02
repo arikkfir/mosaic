@@ -15,7 +15,6 @@ import org.mosaic.lifecycle.ServiceRef;
 import org.mosaic.util.logging.Logger;
 import org.mosaic.util.logging.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Component;
 
 import static java.nio.file.Files.exists;
@@ -31,11 +30,9 @@ public class DataSourceManager
 
     private static final long SCAN_INTERVAL = 1000;
 
-    private final Map<Path, TransactionManagerImpl> txManagers = new HashMap<>( );
+    private final Map<Path, TransactionManagerImpl> txManagers = new HashMap<>();
 
     private JdbcDriverRegistrar jdbcDriverRegistrar;
-
-    private ConversionService conversionService;
 
     private Home home;
 
@@ -47,12 +44,6 @@ public class DataSourceManager
         this.jdbcDriverRegistrar = jdbcDriverRegistrar;
     }
 
-    @Autowired
-    public void setConversionService( ConversionService conversionService )
-    {
-        this.conversionService = conversionService;
-    }
-
     @ServiceRef
     public void setHome( Home home )
     {
@@ -60,34 +51,34 @@ public class DataSourceManager
     }
 
     @PostConstruct
-    public synchronized void init( )
+    public synchronized void init()
     {
-        scan( );
+        scan();
 
-        this.scanner = new Scanner( );
+        this.scanner = new Scanner();
         Thread t = new Thread( scanner, "DataSourceWatcher" );
         t.setDaemon( true );
-        t.start( );
+        t.start();
     }
 
     @PreDestroy
-    public synchronized void destroy( ) throws SQLException
+    public synchronized void destroy() throws SQLException
     {
         if( this.scanner != null )
         {
             this.scanner.stop = true;
         }
 
-        for( TransactionManagerImpl txMgr : this.txManagers.values( ) )
+        for( TransactionManagerImpl txMgr : this.txManagers.values() )
         {
-            txMgr.unregister( );
+            txMgr.unregister();
         }
-        this.txManagers.clear( );
+        this.txManagers.clear();
     }
 
-    private synchronized void scan( )
+    private synchronized void scan()
     {
-        Path dir = this.home.getEtc( ).resolve( "data-sources" );
+        Path dir = this.home.getEtc().resolve( "data-sources" );
         if( Files.exists( dir ) && Files.isDirectory( dir ) )
         {
             try( DirectoryStream<Path> stream = newDirectoryStream( dir, "*.properties" ) )
@@ -100,24 +91,24 @@ public class DataSourceManager
                         txMgr = new TransactionManagerImpl( dsFile, this.jdbcDriverRegistrar );
                         this.txManagers.put( dsFile, txMgr );
                     }
-                    txMgr.refresh( );
+                    txMgr.refresh();
                 }
             }
             catch( IOException e )
             {
-                LOG.error( "Could not search for data sources in '{}': {}", dir, e.getMessage( ), e );
+                LOG.error( "Could not search for data sources in '{}': {}", dir, e.getMessage(), e );
             }
         }
 
-        this.txManagers.values( ).iterator( );
-        Iterator<TransactionManagerImpl> iterator = this.txManagers.values( ).iterator( );
-        while( iterator.hasNext( ) )
+        this.txManagers.values().iterator();
+        Iterator<TransactionManagerImpl> iterator = this.txManagers.values().iterator();
+        while( iterator.hasNext() )
         {
-            TransactionManagerImpl txMgr = iterator.next( );
-            if( !exists( txMgr.getPath( ) ) )
+            TransactionManagerImpl txMgr = iterator.next();
+            if( !exists( txMgr.getPath() ) )
             {
-                txMgr.unregister( );
-                iterator.remove( );
+                txMgr.unregister();
+                iterator.remove();
             }
         }
     }
@@ -127,11 +118,11 @@ public class DataSourceManager
         private boolean stop;
 
         @Override
-        public void run( )
+        public void run()
         {
             while( !this.stop )
             {
-                scan( );
+                scan();
                 try
                 {
                     Thread.sleep( SCAN_INTERVAL );

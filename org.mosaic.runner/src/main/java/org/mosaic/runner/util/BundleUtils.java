@@ -19,7 +19,7 @@ public abstract class BundleUtils
         }
         else
         {
-            return bundle.getSymbolicName( ) + "-" + bundle.getVersion( ) + "[" + bundle.getBundleId( ) + "]";
+            return bundle.getSymbolicName() + "-" + bundle.getVersion() + "[" + bundle.getBundleId() + "]";
         }
     }
 
@@ -30,25 +30,27 @@ public abstract class BundleUtils
         {
             try
             {
-                return toString( bundleContext.getBundle( ) );
+                return toString( bundleContext.getBundle() );
             }
-            catch( IllegalStateException ignore ) {}
+            catch( IllegalStateException ignore )
+            {
+            }
         }
         return "";
     }
 
     public static Collection<Bundle> findBundlesBySymbolicName( BundleContext bundleContext, String symbolicName )
     {
-        Bundle[] bundles = bundleContext.getBundles( );
+        Bundle[] bundles = bundleContext.getBundles();
         if( bundles == null || bundles.length == 0 )
         {
-            return Collections.emptyList( );
+            return Collections.emptyList();
         }
 
-        Collection<Bundle> matches = new LinkedList<>( );
+        Collection<Bundle> matches = new LinkedList<>();
         for( Bundle bundle : bundles )
         {
-            if( bundle.getSymbolicName( ).equals( symbolicName ) )
+            if( bundle.getSymbolicName().equals( symbolicName ) )
             {
                 matches.add( bundle );
             }

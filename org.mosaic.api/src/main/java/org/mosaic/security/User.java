@@ -1,24 +1,22 @@
 package org.mosaic.security;
 
-import org.mosaic.util.collection.TypedDict;
+import java.util.Map;
 
 /**
  * @author arik
  */
-public interface User extends TypedDict<Object>
+public interface User extends Map<String, Object>
 {
-
     interface Credential
     {
+        String getName();
 
-        String getName( );
-
-        String getType( );
+        String getType();
     }
 
-    String getName( );
+    String getName();
 
-    String getDisplayName( );
+    String getDisplayName();
 
     <T extends Credential> T getCredential( Class<T> type );
 

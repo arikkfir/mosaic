@@ -18,52 +18,52 @@ public class ServerHome
 
     private final File work;
 
-    public ServerHome( ) throws IOException
+    public ServerHome() throws IOException
     {
-        this.home = findMosaicHome( );
+        this.home = findMosaicHome();
         FileUtils.forceMkdir( this.home );
-        System.setProperty( "mosaic.home", this.home.toString( ) );
+        System.setProperty( "mosaic.home", this.home.toString() );
 
         this.boot = new File( this.home, "boot" );
         FileUtils.forceMkdir( this.boot );
-        System.setProperty( "mosaic.home.boot", this.boot.toString( ) );
+        System.setProperty( "mosaic.home.boot", this.boot.toString() );
 
         this.etc = new File( this.home, "etc" );
         FileUtils.forceMkdir( this.etc );
-        System.setProperty( "mosaic.home.etc", this.etc.toString( ) );
+        System.setProperty( "mosaic.home.etc", this.etc.toString() );
 
         this.work = new File( this.home, "work" );
         FileUtils.forceMkdir( this.work );
-        System.setProperty( "mosaic.home.work", this.work.toString( ) );
+        System.setProperty( "mosaic.home.work", this.work.toString() );
     }
 
-    public File getHome( )
+    public File getHome()
     {
         return this.home;
     }
 
-    public File getBoot( )
+    public File getBoot()
     {
         return boot;
     }
 
-    public File getEtc( )
+    public File getEtc()
     {
         return this.etc;
     }
 
-    public File getWork( )
+    public File getWork()
     {
         return this.work;
     }
 
-    private static File findMosaicHome( )
+    private static File findMosaicHome()
     {
         String homePath = System.getProperty( "mosaicHome" );
         if( homePath != null )
         {
             File home = new File( homePath );
-            if( home.isAbsolute( ) )
+            if( home.isAbsolute() )
             {
                 return home;
             }

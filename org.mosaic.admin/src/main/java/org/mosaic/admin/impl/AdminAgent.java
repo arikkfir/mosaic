@@ -1,7 +1,5 @@
 package org.mosaic.admin.impl;
 
-import org.mosaic.util.logging.Logger;
-import org.mosaic.util.logging.LoggerFactory;
 import org.mosaic.util.logging.Trace;
 import org.mosaic.web.HttpRequest;
 import org.mosaic.web.handler.InterceptorChain;
@@ -17,9 +15,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class AdminAgent
 {
-
-    private static final Logger LOG = LoggerFactory.getLogger( AdminAgent.class );
-
     @Get
     @Service( "/services/arik" )
     @Trace
@@ -40,6 +35,6 @@ public class AdminAgent
     public Object interceptMe( HttpRequest request, InterceptorChain chain ) throws Exception
     {
         System.out.println( "Intercepting..." );
-        return chain.next( );
+        return chain.next();
     }
 }

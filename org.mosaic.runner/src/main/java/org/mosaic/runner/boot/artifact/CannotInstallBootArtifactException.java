@@ -19,12 +19,12 @@ public class CannotInstallBootArtifactException extends SystemExitException
 
     public CannotInstallBootArtifactException( BootArtifact artifact, Throwable cause )
     {
-        super( "Artifact '" + artifact + "' cannot be resolved: " + cause.getMessage( ), cause, ExitCode.CONFIG_ERROR );
+        super( "Artifact '" + artifact + "' cannot be resolved: " + cause.getMessage(), cause, ExitCode.CONFIG_ERROR );
         this.artifact = artifact;
     }
 
     @SuppressWarnings( "UnusedDeclaration" )
-    public BootArtifact getArtifact( )
+    public BootArtifact getArtifact()
     {
         return artifact;
     }

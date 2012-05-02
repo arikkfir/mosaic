@@ -8,8 +8,6 @@ import org.mosaic.lifecycle.ServiceUnbind;
 import org.mosaic.security.AccessDeniedException;
 import org.mosaic.server.web.dispatcher.impl.RequestExecutionPlan;
 import org.mosaic.server.web.dispatcher.impl.util.RegexPathMatcher;
-import org.mosaic.util.collection.TypedDict;
-import org.mosaic.util.collection.WrappingTypedDict;
 import org.mosaic.util.logging.Logger;
 import org.mosaic.util.logging.LoggerFactory;
 import org.mosaic.web.HttpRequest;
@@ -39,7 +37,7 @@ public class HandlersManager extends AbstractRequestExecutionBuilder
 
     private NotFoundHandler notFoundHandler;
 
-    private List<HandlerEntry> handlers = Collections.emptyList( );
+    private List<HandlerEntry> handlers = Collections.emptyList();
 
     @Autowired
     public void setNotFoundHandler( NotFoundHandler notFoundHandler )
@@ -86,11 +84,11 @@ public class HandlersManager extends AbstractRequestExecutionBuilder
     @Override
     public void contribute( RequestExecutionPlan plan )
     {
-        for( int i = this.handlers.size( ) - 1; i >= 0; i-- )
+        for( int i = this.handlers.size() - 1; i >= 0; i-- )
         {
             HandlerEntry entry = this.handlers.get( i );
 
-            Handler.HandlerMatch match = entry.handler.matches( plan.getRequest( ) );
+            Handler.HandlerMatch match = entry.handler.matches( plan.getRequest() );
             if( match != null )
             {
                 plan.setHandler( entry.handler, match );
@@ -111,19 +109,19 @@ public class HandlersManager extends AbstractRequestExecutionBuilder
         }
         catch( Exception e )
         {
-            LOG.warn( "Handler '{}' could not be added to Mosaic handlers: {}", handler, e.getMessage( ), e );
+            LOG.warn( "Handler '{}' could not be added to Mosaic handlers: {}", handler, e.getMessage(), e );
         }
     }
 
     private void removeHandler( ServiceReference<?> ref )
     {
         List<HandlerEntry> newHandlers = new ArrayList<>( this.handlers );
-        for( Iterator<HandlerEntry> iterator = newHandlers.iterator( ); iterator.hasNext( ); )
+        for( Iterator<HandlerEntry> iterator = newHandlers.iterator(); iterator.hasNext(); )
         {
-            HandlerEntry entry = iterator.next( );
+            HandlerEntry entry = iterator.next();
             if( entry.ref.equals( ref ) )
             {
-                iterator.remove( );
+                iterator.remove();
                 this.handlers = newHandlers;
                 return;
             }
@@ -147,7 +145,7 @@ public class HandlersManager extends AbstractRequestExecutionBuilder
         {
             Integer myRank = ( Integer ) this.ref.getProperty( SERVICE_RANKING );
             Integer thatRank = ( Integer ) o.ref.getProperty( SERVICE_RANKING );
-            return compare( myRank, thatRank, new NullSafeComparator<>( new ComparableComparator<Integer>( ), true ) );
+            return compare( myRank, thatRank, new NullSafeComparator<>( new ComparableComparator<Integer>(), true ) );
         }
     }
 
@@ -155,19 +153,15 @@ public class HandlersManager extends AbstractRequestExecutionBuilder
     {
         private final RegexPathMatcher.MatchResult matchResult;
 
-        private final TypedDict<String> pathParams;
+        private final Map<String, String> pathParams;
 
         private MethodEndpointHandlerMatch( RegexPathMatcher.MatchResult matchResult )
         {
             this.matchResult = matchResult;
-            this.pathParams = new WrappingTypedDict<>( getConversionService( ), String.class );
-            for( Map.Entry<String, String> entry : this.matchResult.getVariables( ).entrySet( ) )
-            {
-                this.pathParams.add( entry.getKey( ), entry.getValue( ) );
-            }
+            this.pathParams = this.matchResult.getVariables();
         }
 
-        private TypedDict<String> getPathParams( )
+        private Map<String, String> getPathParams()
         {
             return this.pathParams;
         }
@@ -181,7 +175,7 @@ public class HandlersManager extends AbstractRequestExecutionBuilder
                                        Class<? extends Annotation> pathPatternsAnnotation )
         {
             super( methodEndpointInfo, pathPatternsAnnotation );
-            this.securityExpression = getMethodSecurity( methodEndpointInfo.getMethod( ) );
+            this.securityExpression = getMethodSecurity( methodEndpointInfo.getMethod() );
         }
 
         @Override
@@ -202,7 +196,7 @@ public class HandlersManager extends AbstractRequestExecutionBuilder
         public Object handle( HttpRequest request, HandlerMatch match ) throws Exception
         {
             MethodEndpointHandlerMatch endpointMatch = ( MethodEndpointHandlerMatch ) match;
-            TypedDict<String> oldPathParams = pushPathParams( request, endpointMatch.getPathParams( ) );
+            Map<String, String> oldPathParams = pushPathParams( request, endpointMatch.getPathParams() );
             try
             {
                 // check security
@@ -212,7 +206,7 @@ public class HandlersManager extends AbstractRequestExecutionBuilder
                     if( result == null || !result )
                     {
                         // security filter not passed - don't handle this request
-                        throw new AccessDeniedException( );
+                        throw new AccessDeniedException();
                     }
                 }
                 return invoke( request );

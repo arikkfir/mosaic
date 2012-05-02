@@ -27,7 +27,7 @@ import java.util.Set;
  */
 public abstract class SystemPropertyUtils
 {
-    private static final PropertyPlaceholderHelper HELPER = new PropertyPlaceholderHelper( );
+    private static final PropertyPlaceholderHelper HELPER = new PropertyPlaceholderHelper();
 
     public static String resolvePlaceholders( String text )
     {
@@ -81,14 +81,14 @@ public abstract class SystemPropertyUtils
 
         private final boolean ignoreUnresolvablePlaceholders;
 
-        private PropertyPlaceholderHelper( )
+        private PropertyPlaceholderHelper()
         {
             this.ignoreUnresolvablePlaceholders = false;
         }
 
         private String replacePlaceholders( String value, PlaceholderResolver placeholderResolver )
         {
-            return parseStringValue( value, placeholderResolver, new HashSet<String>( ) );
+            return parseStringValue( value, placeholderResolver, new HashSet<String>() );
         }
 
         private String parseStringValue( String strVal,
@@ -104,7 +104,7 @@ public abstract class SystemPropertyUtils
                 int endIndex = findPlaceholderEndIndex( buf, startIndex );
                 if( endIndex != -1 )
                 {
-                    String placeholder = buf.substring( startIndex + this.placeholderPrefix.length( ), endIndex );
+                    String placeholder = buf.substring( startIndex + this.placeholderPrefix.length(), endIndex );
                     if( !visitedPlaceholders.add( placeholder ) )
                     {
                         throw new IllegalArgumentException( "Circular placeholder reference '" +
@@ -120,7 +120,7 @@ public abstract class SystemPropertyUtils
                         {
                             String actualPlaceholder = placeholder.substring( 0, separatorIndex );
                             String defaultValue =
-                                    placeholder.substring( separatorIndex + this.valueSeparator.length( ) );
+                                    placeholder.substring( separatorIndex + this.valueSeparator.length() );
                             propVal = placeholderResolver.resolvePlaceholder( actualPlaceholder );
                             if( propVal == null )
                             {
@@ -131,12 +131,12 @@ public abstract class SystemPropertyUtils
                     if( propVal != null )
                     {
                         propVal = parseStringValue( propVal, placeholderResolver, visitedPlaceholders );
-                        buf.replace( startIndex, endIndex + this.placeholderSuffix.length( ), propVal );
-                        startIndex = buf.indexOf( this.placeholderPrefix, startIndex + propVal.length( ) );
+                        buf.replace( startIndex, endIndex + this.placeholderSuffix.length(), propVal );
+                        startIndex = buf.indexOf( this.placeholderPrefix, startIndex + propVal.length() );
                     }
                     else if( this.ignoreUnresolvablePlaceholders )
                     {
-                        startIndex = buf.indexOf( this.placeholderPrefix, endIndex + this.placeholderSuffix.length( ) );
+                        startIndex = buf.indexOf( this.placeholderPrefix, endIndex + this.placeholderSuffix.length() );
                     }
                     else
                     {
@@ -151,21 +151,21 @@ public abstract class SystemPropertyUtils
                 }
             }
 
-            return buf.toString( );
+            return buf.toString();
         }
 
         private int findPlaceholderEndIndex( CharSequence buf, int startIndex )
         {
-            int index = startIndex + this.placeholderPrefix.length( );
+            int index = startIndex + this.placeholderPrefix.length();
             int withinNestedPlaceholder = 0;
-            while( index < buf.length( ) )
+            while( index < buf.length() )
             {
                 if( substringMatch( buf, index, this.placeholderSuffix ) )
                 {
                     if( withinNestedPlaceholder > 0 )
                     {
                         withinNestedPlaceholder--;
-                        index = index + this.placeholderSuffix.length( );
+                        index = index + this.placeholderSuffix.length();
                     }
                     else
                     {
@@ -175,7 +175,7 @@ public abstract class SystemPropertyUtils
                 else if( substringMatch( buf, index, this.simplePrefix ) )
                 {
                     withinNestedPlaceholder++;
-                    index = index + this.simplePrefix.length( );
+                    index = index + this.simplePrefix.length();
                 }
                 else
                 {
@@ -187,10 +187,10 @@ public abstract class SystemPropertyUtils
 
         private static boolean substringMatch( CharSequence str, int index, CharSequence substring )
         {
-            for( int j = 0; j < substring.length( ); j++ )
+            for( int j = 0; j < substring.length(); j++ )
             {
                 int i = index + j;
-                if( i >= str.length( ) || str.charAt( i ) != substring.charAt( j ) )
+                if( i >= str.length() || str.charAt( i ) != substring.charAt( j ) )
                 {
                     return false;
                 }

@@ -28,10 +28,10 @@ public abstract class HandlerUtils
         Annotation pathPatternsAnn = HandlerUtils.findAnn( method, annotationType );
         if( pathPatternsAnn == null )
         {
-            throw new IllegalArgumentException( String.format( "Method '%s' has no @%s annotation", method.getName( ), annotationType.getSimpleName( ) ) );
+            throw new IllegalArgumentException( String.format( "Method '%s' has no @%s annotation", method.getName(), annotationType.getSimpleName() ) );
         }
 
-        List<RegexPathMatcher> matchers = new LinkedList<>( );
+        List<RegexPathMatcher> matchers = new LinkedList<>();
         for( String pathPattern : ( String[] ) AnnotationUtils.getValue( pathPatternsAnn ) )
         {
             matchers.add( new RegexPathMatcher( pathPattern ) );
@@ -42,7 +42,7 @@ public abstract class HandlerUtils
     public static Expression getMethodFilter( Method method )
     {
         Filter filterAnn = HandlerUtils.findAnn( method, Filter.class );
-        return filterAnn != null ? new SpelExpressionParser( ).parseExpression( filterAnn.value( ) ) : null;
+        return filterAnn != null ? new SpelExpressionParser().parseExpression( filterAnn.value() ) : null;
     }
 
     public static Expression getMethodSecurity( Method method )
@@ -52,13 +52,13 @@ public abstract class HandlerUtils
         {
             return null;
         }
-        else if( securedAnn.value( ).trim( ).length( ) == 0 )
+        else if( securedAnn.value().trim().length() == 0 )
         {
-            return new SpelExpressionParser( ).parseExpression( "user != null" );
+            return new SpelExpressionParser().parseExpression( "user != null" );
         }
         else
         {
-            return new SpelExpressionParser( ).parseExpression( securedAnn.value( ) );
+            return new SpelExpressionParser().parseExpression( securedAnn.value() );
         }
     }
 
@@ -66,10 +66,10 @@ public abstract class HandlerUtils
             Collection<MethodParameterResolver> resolvers, Method method )
     {
 
-        ParameterNameDiscoverer nameDiscoverer = new LocalVariableTableParameterNameDiscoverer( );
+        ParameterNameDiscoverer nameDiscoverer = new LocalVariableTableParameterNameDiscoverer();
 
-        List<MethodParameterResolver.ResolvedParameter> resolvedParameters = new LinkedList<>( );
-        for( int i = 0; i < method.getParameterTypes( ).length; i++ )
+        List<MethodParameterResolver.ResolvedParameter> resolvedParameters = new LinkedList<>();
+        for( int i = 0; i < method.getParameterTypes().length; i++ )
         {
             MethodParameter methodParameter = new MethodParameter( method, i );
             methodParameter.initParameterNameDiscovery( nameDiscoverer );
@@ -84,12 +84,12 @@ public abstract class HandlerUtils
                 }
             }
 
-            if( resolvedParameters.size( ) == i )
+            if( resolvedParameters.size() == i )
             {
                 throw new IllegalStateException( format( "Parameter '%s' of method '%s' in class '%s' is not supported",
-                                                         methodParameter.getParameterName( ),
-                                                         method.getName( ),
-                                                         method.getDeclaringClass( ).getSimpleName( ) ) );
+                                                         methodParameter.getParameterName(),
+                                                         method.getName(),
+                                                         method.getDeclaringClass().getSimpleName() ) );
             }
         }
         return resolvedParameters;
@@ -100,7 +100,7 @@ public abstract class HandlerUtils
         A ann = findAnnotation( method, type );
         if( ann == null )
         {
-            return findAnnotation( method.getDeclaringClass( ), type );
+            return findAnnotation( method.getDeclaringClass(), type );
         }
         else
         {

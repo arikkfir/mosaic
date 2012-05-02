@@ -17,6 +17,6 @@ import java.lang.annotation.Target;
 public @interface Option
 {
 
-    String alias( ) default "";
+    String alias() default "";
 
 }

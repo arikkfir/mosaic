@@ -68,7 +68,7 @@ public class AuthorizedKeys
         }
         catch( final UnsupportedEncodingException e )
         {
-            return string.getBytes( );
+            return string.getBytes();
         }
     }
 
@@ -89,7 +89,7 @@ public class AuthorizedKeys
     public AuthorizedKeys( Path authorizedKeysFile ) throws IOException
     {
 
-        List<PublicKey> keys = new ArrayList<>( );
+        List<PublicKey> keys = new ArrayList<>();
         try( Scanner scanner = new Scanner( authorizedKeysFile ) )
         {
 
@@ -98,15 +98,15 @@ public class AuthorizedKeys
 
             // read each line, corresponding to a key
             int lineNumber = 0;
-            while( scanner.hasNext( ) )
+            while( scanner.hasNext() )
             {
                 lineNumber++;
 
                 // get line (without leading and trailing blanks)
-                String line = scanner.next( ).trim( );
+                String line = scanner.next().trim();
 
                 // ignore blank line and comments
-                if( ( line.length( ) == 0 ) || ( line.charAt( 0 ) == '#' ) )
+                if( ( line.length() == 0 ) || ( line.charAt( 0 ) == '#' ) )
                 {
                     continue;
                 }
@@ -118,7 +118,7 @@ public class AuthorizedKeys
                 }
                 catch( final Exception e )
                 {
-                    throw new ParseKeyException( "Line " + lineNumber + ": " + e.getMessage( ), e );
+                    throw new ParseKeyException( "Line " + lineNumber + ": " + e.getMessage(), e );
                 }
             }
 
@@ -126,14 +126,14 @@ public class AuthorizedKeys
         this.keys = Collections.unmodifiableList( keys );
     }
 
-    public List<PublicKey> getKeys( )
+    public List<PublicKey> getKeys()
     {
         return keys;
     }
 
     private BigInteger readBigInteger( ByteBuffer buffer )
     {
-        byte[] bytes = new byte[ buffer.getInt( ) ];
+        byte[] bytes = new byte[ buffer.getInt() ];
         buffer.get( bytes );
         return new BigInteger( bytes );
     }
@@ -158,12 +158,12 @@ public class AuthorizedKeys
         // key type
         if( line.startsWith( PREFIX_KEY_TYPE_DSA ) )
         {
-            line = line.substring( PREFIX_KEY_TYPE_DSA.length( ) );
+            line = line.substring( PREFIX_KEY_TYPE_DSA.length() );
             type = KeyType.DSA;
         }
         else if( line.startsWith( PREFIX_KEY_TYPE_RSA ) )
         {
-            line = line.substring( PREFIX_KEY_TYPE_RSA.length( ) );
+            line = line.substring( PREFIX_KEY_TYPE_RSA.length() );
             type = KeyType.RSA;
         }
         else
@@ -195,14 +195,14 @@ public class AuthorizedKeys
                 // exponent + modulus
                 BigInteger pubExp = readBigInteger( buffer );
                 BigInteger mod = readBigInteger( buffer );
-                return KeyFactory.getInstance( KeyType.RSA.name( ) ).generatePublic( new RSAPublicKeySpec( mod, pubExp ) );
+                return KeyFactory.getInstance( KeyType.RSA.name() ).generatePublic( new RSAPublicKeySpec( mod, pubExp ) );
             case DSA:
                 // p + q+ g + y
                 BigInteger p = readBigInteger( buffer );
                 BigInteger q = readBigInteger( buffer );
                 BigInteger g = readBigInteger( buffer );
                 BigInteger y = readBigInteger( buffer );
-                return KeyFactory.getInstance( KeyType.DSA.name( ) ).generatePublic( new DSAPublicKeySpec( y, p, q, g ) );
+                return KeyFactory.getInstance( KeyType.DSA.name() ).generatePublic( new DSAPublicKeySpec( y, p, q, g ) );
             default:
                 throw new IOException( "not implemented: " + type );
         }
@@ -210,7 +210,7 @@ public class AuthorizedKeys
 
     private String readString( ByteBuffer buffer )
     {
-        final int len = buffer.getInt( );
+        final int len = buffer.getInt();
         final byte[] bytes = new byte[ len ];
         buffer.get( bytes );
         return asString( bytes );

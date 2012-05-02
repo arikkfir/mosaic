@@ -7,11 +7,11 @@ import org.mosaic.web.HttpRequest;
  */
 public abstract class Http
 {
-    private static final ThreadLocal<HttpRequest> REQUEST = new ThreadLocal<>( );
+    private static final ThreadLocal<HttpRequest> REQUEST = new ThreadLocal<>();
 
-    public static HttpRequest request( )
+    public static HttpRequest request()
     {
-        return REQUEST.get( );
+        return REQUEST.get();
     }
 
     public static void setRequest( HttpRequest request )

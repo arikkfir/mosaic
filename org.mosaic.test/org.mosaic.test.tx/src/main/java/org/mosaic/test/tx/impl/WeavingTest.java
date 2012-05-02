@@ -36,33 +36,33 @@ public class WeavingTest
     @Transactional
     @ShellCommand( "test-good" )
     @Trace
-    public void testWithTx( ) throws SQLException
+    public void testWithTx() throws SQLException
     {
-        try( Connection connection = this.dataSource.getConnection( ) )
+        try( Connection connection = this.dataSource.getConnection() )
         {
             try( PreparedStatement stmt = connection.prepareStatement( UPDATE_SQL ) )
             {
-                stmt.execute( );
+                stmt.execute();
                 System.out.println( "Updated database" );
             }
         }
-        testParticipate( );
+        testParticipate();
     }
 
     @Transactional
     @Trace
-    private void testParticipate( ) throws SQLException
+    private void testParticipate() throws SQLException
     {
-        try( Connection connection = this.dataSource.getConnection( ) )
+        try( Connection connection = this.dataSource.getConnection() )
         {
             System.out.println( "Connection is: " + System.identityHashCode( connection ) );
             try( PreparedStatement stmt = connection.prepareStatement( SELECT_SQL ) )
             {
-                try( ResultSet rs = stmt.executeQuery( ) )
+                try( ResultSet rs = stmt.executeQuery() )
                 {
-                    while( rs.next( ) )
+                    while( rs.next() )
                     {
-                        String label = rs.getMetaData( ).getColumnLabel( 1 );
+                        String label = rs.getMetaData().getColumnLabel( 1 );
                         String value = rs.getString( 1 );
                         System.out.println( label + ": " + value );
                     }

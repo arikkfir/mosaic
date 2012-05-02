@@ -26,7 +26,7 @@ public abstract class AbstractCommand
         this.statusHelper = statusHelper;
     }
 
-    public BundleContext getBundleContext( )
+    public BundleContext getBundleContext()
     {
         return bundleContext;
     }
@@ -41,7 +41,7 @@ public abstract class AbstractCommand
     {
         if( this.statusHelper != null )
         {
-            return this.statusHelper.getBundleStatus( bundle.getBundleId( ) );
+            return this.statusHelper.getBundleStatus( bundle.getBundleId() );
         }
         else
         {
@@ -51,7 +51,7 @@ public abstract class AbstractCommand
 
     protected String capitalize( String state )
     {
-        state = state.toLowerCase( );
+        state = state.toLowerCase();
         state = Character.toUpperCase( state.charAt( 0 ) ) + state.substring( 1 );
         return state;
     }
@@ -67,15 +67,15 @@ public abstract class AbstractCommand
         }
 
         @Override
-        public BundleState getState( )
+        public BundleState getState()
         {
-            return BundleState.valueOfOsgiState( this.bundle.getState( ) );
+            return BundleState.valueOfOsgiState( this.bundle.getState() );
         }
 
         @Override
-        public Collection<String> getUnsatisfiedRequirements( )
+        public Collection<String> getUnsatisfiedRequirements()
         {
-            return Collections.emptyList( );
+            return Collections.emptyList();
         }
     }
 }

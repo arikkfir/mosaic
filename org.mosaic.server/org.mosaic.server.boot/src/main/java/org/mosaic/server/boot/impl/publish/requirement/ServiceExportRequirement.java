@@ -33,55 +33,55 @@ public class ServiceExportRequirement extends AbstractBeanRequirement
     }
 
     @Override
-    public String toString( )
+    public String toString()
     {
-        return "ServiceExport[" + this.apiType.getSimpleName( ) + "/" + getBeanName( ) + "]";
+        return "ServiceExport[" + this.apiType.getSimpleName() + "/" + getBeanName() + "]";
     }
 
     @Override
-    public int getPriority( )
+    public int getPriority()
     {
         return SERVICE_EXPORT_PRIORITY;
     }
 
     @Override
-    public String toShortString( )
+    public String toShortString()
     {
-        return "Export as '" + this.apiType.getSimpleName( ) + "'";
+        return "Export as '" + this.apiType.getSimpleName() + "'";
     }
 
     @Override
-    protected boolean trackInternal( ) throws Exception
+    protected boolean trackInternal() throws Exception
     {
-        super.trackInternal( );
+        super.trackInternal();
         return true;
     }
 
     @Override
     protected void publishInternal( ApplicationContext applicationContext ) throws Exception
     {
-        BundleContext bundleContext = getBundleContext( );
+        BundleContext bundleContext = getBundleContext();
         if( bundleContext == null )
         {
-            LOG.warn( "Publishing non-active bundle?? For bundle: {}", getBundleName( ) );
+            LOG.warn( "Publishing non-active bundle?? For bundle: {}", getBundleName() );
         }
         else
         {
-            Dictionary<String, Object> props = new Hashtable<>( );
+            Dictionary<String, Object> props = new Hashtable<>();
             props.put( Constants.SERVICE_RANKING, this.ranking );
             this.registration =
-                    bundleContext.registerService( this.apiType.getName( ), getBean( applicationContext ), props );
+                    bundleContext.registerService( this.apiType.getName(), getBean( applicationContext ), props );
         }
     }
 
     @Override
-    protected void unpublishInternal( ) throws Exception
+    protected void unpublishInternal() throws Exception
     {
         if( this.registration != null )
         {
             try
             {
-                this.registration.unregister( );
+                this.registration.unregister();
             }
             catch( IllegalStateException ignore )
             {

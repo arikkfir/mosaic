@@ -20,16 +20,16 @@ public class LoggingServiceListener implements ServiceListener
     @Override
     public void serviceChanged( ServiceEvent event )
     {
-        ServiceReference<?> sr = event.getServiceReference( );
-        Bundle bundle = sr.getBundle( );
+        ServiceReference<?> sr = event.getServiceReference();
+        Bundle bundle = sr.getBundle();
         String bts = BundleUtils.toString( bundle );
 
-        MDC.put( MDC_SR_KEY, sr.toString( ) );
+        MDC.put( MDC_SR_KEY, sr.toString() );
         MDC.put( MDC_BUNDLE_KEY, bts );
         try
         {
             Logger logger = LoggerFactory.getLogger( OSGI_LOG_NAME );
-            switch( event.getType( ) )
+            switch( event.getType() )
             {
                 case ServiceEvent.REGISTERED:
                     logger.info( "Service for types '{}' has been registered by bundle '{}'", sr.getProperty( Constants.OBJECTCLASS ), bts );

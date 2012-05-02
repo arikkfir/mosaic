@@ -5,5 +5,4 @@ package org.mosaic.web;
  */
 public interface HttpServer
 {
-
 }

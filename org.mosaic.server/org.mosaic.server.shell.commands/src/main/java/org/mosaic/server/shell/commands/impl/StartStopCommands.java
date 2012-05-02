@@ -3,9 +3,9 @@ package org.mosaic.server.shell.commands.impl;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.mosaic.describe.Description;
 import org.mosaic.server.osgi.util.BundleUtils;
 import org.mosaic.server.shell.Args;
+import org.mosaic.server.shell.Description;
 import org.mosaic.server.shell.Option;
 import org.mosaic.server.shell.ShellCommand;
 import org.mosaic.server.shell.console.Console;
@@ -35,15 +35,15 @@ public class StartStopCommands extends AbstractCommand
                               @Args String... filters ) throws IOException
     {
 
-        List<Bundle> matchingBundles = findMatchingBundles( getBundleContext( ), exact, filters );
-        if( matchingBundles.isEmpty( ) )
+        List<Bundle> matchingBundles = findMatchingBundles( getBundleContext(), exact, filters );
+        if( matchingBundles.isEmpty() )
         {
             console.println( "No bundles match requested filters." );
             return;
         }
 
         List<Bundle> matches = filterBundlesByState( matchingBundles, INSTALLED, RESOLVED );
-        if( matches.isEmpty( ) )
+        if( matches.isEmpty() )
         {
             console.println( "None of the matching bundles is in a start-able state (installed/resolved)" );
             return;
@@ -52,9 +52,9 @@ public class StartStopCommands extends AbstractCommand
         Console.TablePrinter table = createBundlesTable( console );
         for( Bundle bundle : matches )
         {
-            table.print( bundle.getBundleId( ), capitalize( getBundleStatus( bundle ).getState( ).name( ) ), bundle.getHeaders( ).get( Constants.BUNDLE_NAME ), bundle.getSymbolicName( ) );
+            table.print( bundle.getBundleId(), capitalize( getBundleStatus( bundle ).getState().name() ), bundle.getHeaders().get( Constants.BUNDLE_NAME ), bundle.getSymbolicName() );
         }
-        table.done( );
+        table.done();
 
         if( console.ask( "Start these bundles? [Y/n]", 'y', 'n' ) == 'y' )
         {
@@ -62,7 +62,7 @@ public class StartStopCommands extends AbstractCommand
             {
                 try
                 {
-                    bundle.start( );
+                    bundle.start();
                 }
                 catch( BundleException e )
                 {
@@ -72,7 +72,7 @@ public class StartStopCommands extends AbstractCommand
                     }
                     else
                     {
-                        console.println( e.getMessage( ) );
+                        console.println( e.getMessage() );
                     }
                 }
             }
@@ -83,22 +83,23 @@ public class StartStopCommands extends AbstractCommand
     @ShellCommand( "resolve" )
     public void resolveBundles( Console console,
 
-                                @Option( alias = "e" ) @Description( "exact matching (filter arguments will not be treated as wildcards)" ) boolean exact,
+                                @Option( alias = "e" )
+                                @Description( "exact matching (filter arguments will not be treated as wildcards)" )
+                                boolean exact,
 
-                                @Option( alias = "s" ) @Description( "show full stack-traces when errors occur" ) boolean stackTraces,
-
-                                @Args String... filters ) throws IOException
+                                @Args
+                                String... filters ) throws IOException
     {
 
-        List<Bundle> matchingBundles = findMatchingBundles( getBundleContext( ), exact, filters );
-        if( matchingBundles.isEmpty( ) )
+        List<Bundle> matchingBundles = findMatchingBundles( getBundleContext(), exact, filters );
+        if( matchingBundles.isEmpty() )
         {
             console.println( "No bundles match requested filters." );
             return;
         }
 
         List<Bundle> matches = filterBundlesByState( matchingBundles, INSTALLED );
-        if( matches.isEmpty( ) )
+        if( matches.isEmpty() )
         {
             console.println( "None of the matching bundles is in a resolvable state" );
             return;
@@ -107,13 +108,13 @@ public class StartStopCommands extends AbstractCommand
         Console.TablePrinter table = createBundlesTable( console );
         for( Bundle bundle : matches )
         {
-            table.print( bundle.getBundleId( ), capitalize( getBundleStatus( bundle ).getState( ).name( ) ), bundle.getHeaders( ).get( Constants.BUNDLE_NAME ), bundle.getSymbolicName( ) );
+            table.print( bundle.getBundleId(), capitalize( getBundleStatus( bundle ).getState().name() ), bundle.getHeaders().get( Constants.BUNDLE_NAME ), bundle.getSymbolicName() );
         }
-        table.done( );
+        table.done();
 
         if( console.ask( "Resolve these bundles? [Y/n]", 'y', 'n' ) == 'y' )
         {
-            Bundle systemBundle = getBundleContext( ).getBundle( 0 );
+            Bundle systemBundle = getBundleContext().getBundle( 0 );
             FrameworkWiring frameworkWiring = systemBundle.adapt( FrameworkWiring.class );
             boolean result = frameworkWiring.resolveBundles( matches );
             if( result )
@@ -124,7 +125,7 @@ public class StartStopCommands extends AbstractCommand
             {
                 for( Bundle bundle : matches )
                 {
-                    if( bundle.getState( ) != RESOLVED && bundle.getState( ) != ACTIVE )
+                    if( bundle.getState() != RESOLVED && bundle.getState() != ACTIVE )
                     {
                         console.print( "Bundle '" ).print( BundleUtils.toString( bundle ) ).println( "' could not be resolved." );
                     }
@@ -137,11 +138,9 @@ public class StartStopCommands extends AbstractCommand
     @ShellCommand( "refresh" )
     public void refreshBundles( Console console,
 
-                                @Option( alias = "e" ) @Description( "exact matching (filter arguments will not be treated as wildcards)" ) boolean exact,
-
-                                @Option( alias = "t" ) @Description( "how long to wait (in seconds) for the refresh operation to finish" ) Integer timeout,
-
-                                @Option( alias = "s" ) @Description( "show full stack-traces when errors occur" ) boolean stackTraces )
+                                @Option( alias = "t" )
+                                @Description( "how long to wait (in seconds) for the refresh operation to finish" )
+                                Integer timeout )
     throws IOException
     {
 
@@ -152,9 +151,9 @@ public class StartStopCommands extends AbstractCommand
 
         final AtomicBoolean finish = new AtomicBoolean( false );
 
-        Bundle systemBundle = getBundleContext( ).getBundle( 0 );
+        Bundle systemBundle = getBundleContext().getBundle( 0 );
         FrameworkWiring frameworkWiring = systemBundle.adapt( FrameworkWiring.class );
-        frameworkWiring.refreshBundles( null, new FrameworkListener( )
+        frameworkWiring.refreshBundles( null, new FrameworkListener()
         {
             @Override
             public void frameworkEvent( FrameworkEvent event )
@@ -163,8 +162,8 @@ public class StartStopCommands extends AbstractCommand
             }
         } );
 
-        long start = System.currentTimeMillis( );
-        while( !finish.get( ) && System.currentTimeMillis( ) - start < timeout * 30 )
+        long start = System.currentTimeMillis();
+        while( !finish.get() && System.currentTimeMillis() - start < timeout * 30 )
         {
             try
             {
@@ -176,7 +175,7 @@ public class StartStopCommands extends AbstractCommand
             }
         }
 
-        if( finish.get( ) )
+        if( finish.get() )
         {
             console.println( "Done. Please check the server logs to ensure there were no errors." );
         }
@@ -190,15 +189,21 @@ public class StartStopCommands extends AbstractCommand
     @ShellCommand( "stop" )
     public void stopBundles( Console console,
 
-                             @Option( alias = "e" ) @Description( "exact matching (filter arguments will not be treated as wildcards)" ) boolean exact,
+                             @Option( alias = "e" )
+                             @Description( "exact matching (filter arguments will not be treated as wildcards)" )
+                             boolean exact,
 
-                             @Option( alias = "s" ) @Description( "show full stack-traces when errors occur" ) boolean stackTraces,
+                             @Option( alias = "s" )
+                             @Description( "show full stack-traces when errors occur" )
+                             boolean stackTraces,
 
-                             @Args String... filters ) throws IOException
+                             @Args
+                             String... filters )
+    throws IOException
     {
 
-        List<Bundle> matches = findMatchingBundles( getBundleContext( ), exact, filters );
-        if( matches.isEmpty( ) )
+        List<Bundle> matches = findMatchingBundles( getBundleContext(), exact, filters );
+        if( matches.isEmpty() )
         {
             console.println( "No bundles match requested filters." );
             return;
@@ -208,7 +213,7 @@ public class StartStopCommands extends AbstractCommand
             matches = filterBundlesByState( matches, ACTIVE );
             for( Bundle match : matches )
             {
-                if( match.getSymbolicName( ).equals( "org.mosaic.server.shell" ) )
+                if( match.getSymbolicName().equals( "org.mosaic.server.shell" ) )
                 {
                     console.println( "Cannot stop the shell bundle from within a shell. You may physically delete the shell bundle file to achieve that." );
                     return;
@@ -219,9 +224,9 @@ public class StartStopCommands extends AbstractCommand
         Console.TablePrinter table = createBundlesTable( console );
         for( Bundle bundle : matches )
         {
-            table.print( bundle.getBundleId( ), capitalize( getBundleStatus( bundle ).getState( ).name( ) ), bundle.getHeaders( ).get( Constants.BUNDLE_NAME ), bundle.getSymbolicName( ) );
+            table.print( bundle.getBundleId(), capitalize( getBundleStatus( bundle ).getState().name() ), bundle.getHeaders().get( Constants.BUNDLE_NAME ), bundle.getSymbolicName() );
         }
-        table.done( );
+        table.done();
 
         if( console.ask( "Start these bundles? [Y/n]", 'y', 'n' ) == 'y' )
         {
@@ -229,7 +234,7 @@ public class StartStopCommands extends AbstractCommand
             {
                 try
                 {
-                    bundle.stop( );
+                    bundle.stop();
                 }
                 catch( BundleException e )
                 {
@@ -239,7 +244,7 @@ public class StartStopCommands extends AbstractCommand
                     }
                     else
                     {
-                        console.println( e.getMessage( ) );
+                        console.println( e.getMessage() );
                     }
                 }
             }
@@ -248,6 +253,6 @@ public class StartStopCommands extends AbstractCommand
 
     private Console.TablePrinter createBundlesTable( Console console ) throws IOException
     {
-        return console.createTable( ).addHeader( "ID", 5 ).addHeader( "State", 10 ).addHeader( "Name", 45 ).addHeader( "Symbolic Name", 50 ).start( );
+        return console.createTable().addHeader( "ID", 5 ).addHeader( "State", 10 ).addHeader( "Name", 45 ).addHeader( "Symbolic Name", 50 ).start();
     }
 }

@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 public class InspectionListenerHook implements ListenerHook
 {
 
-    private final Map<Bundle, List<String>> requirements = new WeakHashMap<>( );
+    private final Map<Bundle, List<String>> requirements = new WeakHashMap<>();
 
     public List<String> getServiceRequirements( Bundle bundle )
     {
@@ -30,16 +30,16 @@ public class InspectionListenerHook implements ListenerHook
     {
         for( ListenerInfo info : listeners )
         {
-            Bundle bundle = info.getBundleContext( ).getBundle( );
+            Bundle bundle = info.getBundleContext().getBundle();
 
             List<String> reqs = this.requirements.get( bundle );
             if( reqs == null )
             {
-                reqs = new CopyOnWriteArrayList<>( );
+                reqs = new CopyOnWriteArrayList<>();
                 this.requirements.put( bundle, reqs );
             }
 
-            reqs.add( info.getFilter( ) );
+            reqs.add( info.getFilter() );
         }
     }
 
@@ -48,13 +48,13 @@ public class InspectionListenerHook implements ListenerHook
     {
         for( ListenerInfo info : listeners )
         {
-            Bundle bundle = info.getBundleContext( ).getBundle( );
+            Bundle bundle = info.getBundleContext().getBundle();
 
             List<String> reqs = this.requirements.get( bundle );
             if( reqs != null )
             {
-                reqs.remove( info.getFilter( ) );
-                if( reqs.isEmpty( ) )
+                reqs.remove( info.getFilter() );
+                if( reqs.isEmpty() )
                 {
                     this.requirements.remove( bundle );
                 }

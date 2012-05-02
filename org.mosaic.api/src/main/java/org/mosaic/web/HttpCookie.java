@@ -5,39 +5,37 @@ package org.mosaic.web;
  */
 public interface HttpCookie
 {
+    String getName();
 
-    String getName( );
-
-    String getValue( );
+    String getValue();
 
     void setValue( String value );
 
-    String getDomain( );
+    String getDomain();
 
     void setDomain( String domain );
 
-    String getPath( );
+    String getPath();
 
     void setPath( String path );
 
-    Integer getMaxAge( );
+    Integer getMaxAge();
 
     void setMaxAge( Integer maxAge );
 
-    boolean getSecure( );
+    boolean getSecure();
 
     void setSecure( boolean secure );
 
-    String getComment( );
+    String getComment();
 
     void setComment( String comment );
 
-    boolean getHttpOnly( );
+    boolean getHttpOnly();
 
     void setHttpOnly( boolean httpOnly );
 
-    int getVersion( );
+    int getVersion();
 
     void setVersion( int version );
-
 }

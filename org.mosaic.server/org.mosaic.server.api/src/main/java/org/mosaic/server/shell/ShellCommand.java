@@ -15,6 +15,6 @@ import org.mosaic.lifecycle.MethodEndpointMarker;
 public @interface ShellCommand
 {
 
-    String value( ) default "";
+    String value() default "";
 
 }

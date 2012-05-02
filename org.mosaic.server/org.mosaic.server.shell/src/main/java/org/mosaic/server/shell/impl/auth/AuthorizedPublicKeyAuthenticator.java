@@ -49,7 +49,7 @@ public class AuthorizedPublicKeyAuthenticator implements PublickeyAuthenticator
     public boolean authenticate( String username, PublicKey key, ServerSession session )
     {
 
-        Path authKeysFile = this.home.getEtc( ).resolve( "authorized_keys" );
+        Path authKeysFile = this.home.getEtc().resolve( "authorized_keys" );
         if( !Files.exists( authKeysFile ) || !Files.isReadable( authKeysFile ) )
         {
             LOG.warn( "The '{}' file could not be found or read - no public key authentication can occur", authKeysFile );
@@ -61,7 +61,7 @@ public class AuthorizedPublicKeyAuthenticator implements PublickeyAuthenticator
 
             // dynamically read key file at each login attempt
             AuthorizedKeys keys = new AuthorizedKeys( authKeysFile );
-            for( PublicKey authorizedKey : keys.getKeys( ) )
+            for( PublicKey authorizedKey : keys.getKeys() )
             {
                 if( isSameKey( authorizedKey, key ) )
                 {
@@ -72,7 +72,7 @@ public class AuthorizedPublicKeyAuthenticator implements PublickeyAuthenticator
         }
         catch( IOException e )
         {
-            LOG.warn( "Error reading authorized keys from '{}': {}", authKeysFile, e.getMessage( ), e );
+            LOG.warn( "Error reading authorized keys from '{}': {}", authKeysFile, e.getMessage(), e );
         }
 
         return false;
@@ -96,27 +96,27 @@ public class AuthorizedPublicKeyAuthenticator implements PublickeyAuthenticator
 
     private boolean isSameRSAKey( RSAPublicKey k1, RSAPublicKey k2 )
     {
-        return k1.getPublicExponent( ).equals( k2.getPublicExponent( ) ) && k1.getModulus( ).equals( k2.getModulus( ) );
+        return k1.getPublicExponent().equals( k2.getPublicExponent() ) && k1.getModulus().equals( k2.getModulus() );
     }
 
     @SuppressWarnings( "SimplifiableIfStatement" )
     private boolean isSameDSAKey( DSAPublicKey k1, DSAPublicKey k2 )
     {
-        if( !k1.getY( ).equals( k2.getY( ) ) )
+        if( !k1.getY().equals( k2.getY() ) )
         {
             return false;
         }
-        else if( !k1.getParams( ).getG( ).equals( k2.getParams( ).getG( ) ) )
+        else if( !k1.getParams().getG().equals( k2.getParams().getG() ) )
         {
             return false;
         }
-        else if( !k1.getParams( ).getP( ).equals( k2.getParams( ).getP( ) ) )
+        else if( !k1.getParams().getP().equals( k2.getParams().getP() ) )
         {
             return false;
         }
         else
         {
-            return k1.getParams( ).getQ( ).equals( k2.getParams( ).getQ( ) );
+            return k1.getParams().getQ().equals( k2.getParams().getQ() );
         }
     }
 

@@ -58,27 +58,27 @@ public class LogWeaver implements WeavingHook
 
     private ServiceRegistration<WeavingHook> registration;
 
-    public LogWeaver( )
+    public LogWeaver()
     {
-        this.orgMosaicLoggingPackageVersion = getBundle( LoggerFactory.class ).getVersion( ).toString( );
+        this.orgMosaicLoggingPackageVersion = getBundle( LoggerFactory.class ).getVersion().toString();
     }
 
     public void open( BundleContext bundleContext )
     {
         this.bundleContext = bundleContext;
 
-        Dictionary<String, Object> props = new Hashtable<>( );
+        Dictionary<String, Object> props = new Hashtable<>();
         props.put( Constants.SERVICE_RANKING, -200 );
         this.bundleContext.registerService( WeavingHook.class, this, props );
     }
 
-    public void close( )
+    public void close()
     {
         try
         {
             if( this.registration != null )
             {
-                this.registration.unregister( );
+                this.registration.unregister();
             }
         }
         catch( IllegalStateException ignore )
@@ -101,8 +101,8 @@ public class LogWeaver implements WeavingHook
             return;
 
         }
-        else if( wovenClass.getBundleWiring( ).getBundle( ).getBundleId( ) ==
-                 this.bundleContext.getBundle( ).getBundleId( ) )
+        else if( wovenClass.getBundleWiring().getBundle().getBundleId() ==
+                 this.bundleContext.getBundle().getBundleId() )
         {
 
             // we mustn't weave classes from our bundle - will cause a circular class load
@@ -114,7 +114,7 @@ public class LogWeaver implements WeavingHook
 
             for( Pattern pattern : IGNORED_BUNDLES )
             {
-                if( pattern.matcher( wovenClass.getBundleWiring( ).getRevision( ).getSymbolicName( ) ).matches( ) )
+                if( pattern.matcher( wovenClass.getBundleWiring().getRevision().getSymbolicName() ).matches() )
                 {
 
                     // never weave classes from one of the ignores bundles
@@ -125,8 +125,8 @@ public class LogWeaver implements WeavingHook
         }
 
         // javassist uses thread context class-loader - set it to weaved bundle's class loader
-        ClassLoader previousTCCL = Thread.currentThread( ).getContextClassLoader( );
-        Thread.currentThread( ).setContextClassLoader( wovenClass.getBundleWiring( ).getClassLoader( ) );
+        ClassLoader previousTCCL = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader( wovenClass.getBundleWiring().getClassLoader() );
         try
         {
 
@@ -134,32 +134,32 @@ public class LogWeaver implements WeavingHook
             CtClass ctClass = instrument( createClassPool( wovenClass ), wovenClass );
             if( ctClass != null )
             {
-                wovenClass.getDynamicImports( ).addAll( Arrays.asList( "org.mosaic.util.logging;version:=\"" +
-                                                                       this.orgMosaicLoggingPackageVersion +
-                                                                       "\"," ) );
-                wovenClass.setBytes( ctClass.toBytecode( ) );
+                wovenClass.getDynamicImports().addAll( Arrays.asList( "org.mosaic.util.logging;version:=\"" +
+                                                                      this.orgMosaicLoggingPackageVersion +
+                                                                      "\"," ) );
+                wovenClass.setBytes( ctClass.toBytecode() );
             }
 
         }
         catch( Exception e )
         {
             throw new WeavingException( "Error weaving class '" +
-                                        wovenClass.getClassName( ) +
+                                        wovenClass.getClassName() +
                                         "': " +
-                                        e.getMessage( ), e );
+                                        e.getMessage(), e );
 
         }
         finally
         {
-            Thread.currentThread( ).setContextClassLoader( previousTCCL );
+            Thread.currentThread().setContextClassLoader( previousTCCL );
         }
     }
 
     private ClassPool createClassPool( WovenClass wovenClass )
     {
         ClassPool classPool = new ClassPool( false );
-        classPool.appendClassPath( new LoaderClassPath( wovenClass.getBundleWiring( ).getClassLoader( ) ) );
-        classPool.appendClassPath( new LoaderClassPath( getClass( ).getClassLoader( ) ) );
+        classPool.appendClassPath( new LoaderClassPath( wovenClass.getBundleWiring().getClassLoader() ) );
+        classPool.appendClassPath( new LoaderClassPath( getClass().getClassLoader() ) );
         return classPool;
     }
 
@@ -167,17 +167,17 @@ public class LogWeaver implements WeavingHook
     throws IOException, ClassNotFoundException, CannotCompileException, NotFoundException
     {
 
-        Bundle wovenBundle = wovenClass.getBundleWiring( ).getBundle( );
-        String wovenClassName = wovenClass.getClassName( );
+        Bundle wovenBundle = wovenClass.getBundleWiring().getBundle();
+        String wovenClassName = wovenClass.getClassName();
         boolean modified = false;
 
-        CtClass ctClass = classPool.makeClass( new ByteArrayInputStream( wovenClass.getBytes( ) ) );
+        CtClass ctClass = classPool.makeClass( new ByteArrayInputStream( wovenClass.getBytes() ) );
         CtClass currentClass = ctClass;
         while( currentClass != null )
         {
-            for( CtMethod method : currentClass.getDeclaredMethods( ) )
+            for( CtMethod method : currentClass.getDeclaredMethods() )
             {
-                String methodName = method.getName( );
+                String methodName = method.getName();
 
                 Object annotation = method.getAnnotation( Trace.class );
                 if( annotation != null )
@@ -199,7 +199,7 @@ public class LogWeaver implements WeavingHook
                     modified = true;
                 }
             }
-            currentClass = currentClass.getSuperclass( );
+            currentClass = currentClass.getSuperclass();
         }
 
         // if at least one method was modified, return this modified class; otherwise, discard this CtClass
@@ -211,7 +211,7 @@ public class LogWeaver implements WeavingHook
         {
             if( ctClass != null )
             {
-                ctClass.detach( );
+                ctClass.detach();
             }
             return null;
         }

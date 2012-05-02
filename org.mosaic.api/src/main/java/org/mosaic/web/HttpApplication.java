@@ -1,25 +1,23 @@
 package org.mosaic.web;
 
+import java.util.Map;
 import java.util.Set;
 import org.mosaic.security.PermissionPolicy;
-import org.mosaic.util.collection.TypedDict;
 
 /**
  * @author arik
  */
-public interface HttpApplication extends TypedDict<Object>
+public interface HttpApplication extends Map<String, Object>
 {
+    String getName();
 
-    String getName( );
+    Map<String, String> getParameters();
 
-    TypedDict<String> getParameters( );
-
-    Set<String> getVirtualHosts( );
+    Set<String> getVirtualHosts();
 
     boolean isHostIncluded( String host );
 
     boolean isAddressAllowed( String address );
 
-    PermissionPolicy getPermissionPolicy( );
-
+    PermissionPolicy getPermissionPolicy();
 }

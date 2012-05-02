@@ -3,15 +3,14 @@ package org.mosaic.server.web.dispatcher.impl.handler;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
+import java.util.Map;
 import org.mosaic.lifecycle.MethodEndpointInfo;
 import org.mosaic.server.web.PathParamsAware;
 import org.mosaic.server.web.dispatcher.impl.RequestExecutionPlan;
 import org.mosaic.server.web.dispatcher.impl.handler.parameters.MethodParameterResolver;
 import org.mosaic.server.web.dispatcher.impl.util.RegexPathMatcher;
-import org.mosaic.util.collection.TypedDict;
 import org.mosaic.web.HttpRequest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.convert.ConversionService;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
@@ -22,20 +21,7 @@ import static org.mosaic.server.web.dispatcher.impl.util.HandlerUtils.*;
  */
 public abstract class AbstractRequestExecutionBuilder implements RequestExecutionPlan.RequestExecutionBuilder
 {
-    private ConversionService conversionService;
-
     private List<MethodParameterResolver> methodParameterResolvers;
-
-    public ConversionService getConversionService( )
-    {
-        return conversionService;
-    }
-
-    @Autowired
-    public void setConversionService( ConversionService conversionService )
-    {
-        this.conversionService = conversionService;
-    }
 
     @Autowired
     public void setMethodParameterResolvers( List<MethodParameterResolver> methodParameterResolvers )
@@ -57,9 +43,9 @@ public abstract class AbstractRequestExecutionBuilder implements RequestExecutio
                                          Class<? extends Annotation> pathPatternsAnnotation )
         {
             this.methodEndpointInfo = methodEndpointInfo;
-            this.pathMatchers = getMethodPaths( this.methodEndpointInfo.getMethod( ), pathPatternsAnnotation );
-            this.filterExpression = getMethodFilter( this.methodEndpointInfo.getMethod( ) );
-            this.parameters = resolveMethodParameters( methodParameterResolvers, this.methodEndpointInfo.getMethod( ) );
+            this.pathMatchers = getMethodPaths( this.methodEndpointInfo.getMethod(), pathPatternsAnnotation );
+            this.filterExpression = getMethodFilter( this.methodEndpointInfo.getMethod() );
+            this.parameters = resolveMethodParameters( methodParameterResolvers, this.methodEndpointInfo.getMethod() );
         }
 
         protected RegexPathMatcher.MatchResult accepts( HttpRequest request )
@@ -77,11 +63,11 @@ public abstract class AbstractRequestExecutionBuilder implements RequestExecutio
             // TODO: check HTTP methods
 
             // check paths
-            String path = request.getUrl( ).getPath( );
+            String path = request.getUrl().getPath();
             for( RegexPathMatcher matcher : this.pathMatchers )
             {
                 RegexPathMatcher.MatchResult match = matcher.match( path );
-                if( match.isMatching( ) )
+                if( match.isMatching() )
                 {
                     return match;
                 }
@@ -89,9 +75,9 @@ public abstract class AbstractRequestExecutionBuilder implements RequestExecutio
             return null;
         }
 
-        protected TypedDict<String> pushPathParams( HttpRequest request, TypedDict<String> newPathParams )
+        protected Map<String, String> pushPathParams( HttpRequest request, Map<String, String> newPathParams )
         {
-            TypedDict<String> oldPathParams = request.getPathParameters( );
+            Map<String, String> oldPathParams = request.getPathParameters();
             PathParamsAware pathParamsAware;
             if( request instanceof PathParamsAware )
             {
@@ -107,14 +93,14 @@ public abstract class AbstractRequestExecutionBuilder implements RequestExecutio
 
         protected Object invoke( HttpRequest request ) throws InvocationTargetException, IllegalAccessException
         {
-            if( this.parameters.isEmpty( ) )
+            if( this.parameters.isEmpty() )
             {
-                return this.methodEndpointInfo.invoke( );
+                return this.methodEndpointInfo.invoke();
             }
             else
             {
-                Object[] arguments = new Object[ this.parameters.size( ) ];
-                for( int i = 0; i < this.parameters.size( ); i++ )
+                Object[] arguments = new Object[ this.parameters.size() ];
+                for( int i = 0; i < this.parameters.size(); i++ )
                 {
                     arguments[ i ] = this.parameters.get( i ).resolve( request );
                 }
@@ -122,7 +108,7 @@ public abstract class AbstractRequestExecutionBuilder implements RequestExecutio
             }
         }
 
-        protected void popPathParams( HttpRequest request, TypedDict<String> oldPathParams )
+        protected void popPathParams( HttpRequest request, Map<String, String> oldPathParams )
         {
             PathParamsAware pathParamsAware;
             if( request instanceof PathParamsAware )

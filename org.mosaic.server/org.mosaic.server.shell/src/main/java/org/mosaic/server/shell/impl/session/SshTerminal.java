@@ -18,24 +18,24 @@ public class SshTerminal extends TerminalSupport
     }
 
     @Override
-    public void init( ) throws Exception
+    public void init() throws Exception
     {
-        super.init( );
+        super.init();
         setAnsiSupported( true );
         setEchoEnabled( false );
     }
 
     @Override
-    public int getWidth( )
+    public int getWidth()
     {
-        String value = this.environment.getEnv( ).get( Environment.ENV_COLUMNS );
+        String value = this.environment.getEnv().get( Environment.ENV_COLUMNS );
         return value == null ? 80 : Integer.valueOf( value );
     }
 
     @Override
-    public int getHeight( )
+    public int getHeight()
     {
-        String value = this.environment.getEnv( ).get( Environment.ENV_LINES );
+        String value = this.environment.getEnv().get( Environment.ENV_LINES );
         return value == null ? 24 : Integer.valueOf( value );
     }
 }

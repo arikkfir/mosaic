@@ -8,7 +8,7 @@ import org.mosaic.server.transaction.demarcation.impl.TransactionDemarcator;
 public abstract class Transactions
 {
 
-    private static final TransactionDemarcator DEMARCATOR = new TransactionDemarcator( );
+    private static final TransactionDemarcator DEMARCATOR = new TransactionDemarcator();
 
     @SuppressWarnings( "UnusedDeclaration" )
     public static void begin( String transactionName, Object transactional )
@@ -17,15 +17,15 @@ public abstract class Transactions
     }
 
     @SuppressWarnings( "UnusedDeclaration" )
-    public static void rollback( )
+    public static void rollback()
     {
-        DEMARCATOR.rollback( );
+        DEMARCATOR.rollback();
     }
 
     @SuppressWarnings( "UnusedDeclaration" )
-    public static void finish( )
+    public static void finish()
     {
-        DEMARCATOR.rollback( );
+        DEMARCATOR.rollback();
     }
 
 }

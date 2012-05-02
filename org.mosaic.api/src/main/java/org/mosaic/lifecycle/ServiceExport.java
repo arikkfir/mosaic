@@ -13,5 +13,5 @@ import java.lang.annotation.Target;
 public @interface ServiceExport
 {
 
-    Class<?> value( );
+    Class<?> value();
 }

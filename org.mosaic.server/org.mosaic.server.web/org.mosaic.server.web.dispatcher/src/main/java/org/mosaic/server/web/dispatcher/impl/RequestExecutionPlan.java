@@ -25,16 +25,18 @@ public class RequestExecutionPlan implements InterceptorChain
 
     private Handler.HandlerMatch handlerMatch;
 
-    private List<InterceptorEntry> interceptors = new ArrayList<>( );
+    private List<InterceptorEntry> interceptors = new ArrayList<>();
 
     private Iterator<InterceptorEntry> executionIterator;
+
+    // TODO: add marshaller here (MarshallerManager should put the highest-ranking *matching* marshaller here)
 
     public RequestExecutionPlan( HttpRequest request )
     {
         this.request = request;
     }
 
-    public HttpRequest getRequest( )
+    public HttpRequest getRequest()
     {
         return request;
     }
@@ -50,25 +52,25 @@ public class RequestExecutionPlan implements InterceptorChain
         this.interceptors.add( new InterceptorEntry( ranking, interceptor, match ) );
     }
 
-    public void execute( ) throws Exception
+    public void execute() throws Exception
     {
         Collections.sort( this.interceptors );
-        this.executionIterator = this.interceptors.iterator( );
-        next( );
+        this.executionIterator = this.interceptors.iterator();
+        next();
     }
 
     @Override
-    public Object next( ) throws Exception
+    public Object next() throws Exception
     {
         if( this.executionIterator == null )
         {
             // not initialized - probably 'execute' has not been called or the execution has finished
             throw new IllegalStateException( "Execution plan has finished execution, or is not prepared for execution!" );
         }
-        else if( this.executionIterator.hasNext( ) )
+        else if( this.executionIterator.hasNext() )
         {
             // invoke next interceptor in the chain
-            InterceptorEntry interceptorEntry = this.executionIterator.next( );
+            InterceptorEntry interceptorEntry = this.executionIterator.next();
             return interceptorEntry.interceptor.handle( this.request, interceptorEntry.interceptorMatch, this );
         }
         else

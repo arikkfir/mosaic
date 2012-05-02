@@ -13,5 +13,5 @@ import java.lang.annotation.Target;
 public @interface ServiceBind
 {
 
-    String filter( ) default "";
+    String filter() default "";
 }

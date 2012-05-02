@@ -8,8 +8,8 @@ import java.util.Collection;
 public interface BundleStatus
 {
 
-    BundleState getState( );
+    BundleState getState();
 
-    Collection<String> getUnsatisfiedRequirements( );
+    Collection<String> getUnsatisfiedRequirements();
 
 }

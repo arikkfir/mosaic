@@ -13,10 +13,10 @@ public abstract class BundleUtils
 
     public static Collection<Bundle> getAllBundles( BundleContext bundleContext )
     {
-        Bundle[] bundles = bundleContext.getBundles( );
+        Bundle[] bundles = bundleContext.getBundles();
         if( bundles == null )
         {
-            return Collections.emptyList( );
+            return Collections.emptyList();
         }
         else
         {
@@ -27,10 +27,10 @@ public abstract class BundleUtils
     public static Collection<Bundle> findBundlesInStates( BundleContext bundleContext, Integer... states )
     {
         Collection<Integer> bundleStates = Arrays.asList( states );
-        Collection<Bundle> resolvedBundles = new LinkedList<>( );
+        Collection<Bundle> resolvedBundles = new LinkedList<>();
         for( Bundle bundle : getAllBundles( bundleContext ) )
         {
-            if( bundleStates.contains( bundle.getState( ) ) )
+            if( bundleStates.contains( bundle.getState() ) )
             {
                 resolvedBundles.add( bundle );
             }
@@ -40,7 +40,7 @@ public abstract class BundleUtils
 
     public static List<Bundle> findMatchingBundles( BundleContext bundleContext, boolean exact, String... filters )
     {
-        List<Bundle> matches = new LinkedList<>( );
+        List<Bundle> matches = new LinkedList<>();
         for( Bundle bundle : getAllBundles( bundleContext ) )
         {
 
@@ -48,9 +48,9 @@ public abstract class BundleUtils
             if( filters != null && filters.length > 0 )
             {
 
-                long bundleId = bundle.getBundleId( );
-                String bundleName = bundle.getHeaders( ).get( Constants.BUNDLE_NAME );
-                String symbolicName = bundle.getSymbolicName( );
+                long bundleId = bundle.getBundleId();
+                String bundleName = bundle.getHeaders().get( Constants.BUNDLE_NAME );
+                String symbolicName = bundle.getSymbolicName();
                 match = false;
                 for( String arg : filters )
                 {
@@ -91,11 +91,11 @@ public abstract class BundleUtils
     public static List<Bundle> filterBundlesByState( List<Bundle> bundles, Integer... states )
     {
         List<Integer> statesList = Arrays.asList( states );
-        List<Bundle> matches = new LinkedList<>( );
+        List<Bundle> matches = new LinkedList<>();
         for( Bundle bundle : bundles )
         {
 
-            if( statesList.contains( bundle.getState( ) ) )
+            if( statesList.contains( bundle.getState() ) )
             {
                 matches.add( bundle );
             }
@@ -112,7 +112,7 @@ public abstract class BundleUtils
         }
         else
         {
-            return bundle.getSymbolicName( ) + "-" + bundle.getVersion( ) + "[" + bundle.getBundleId( ) + "]";
+            return bundle.getSymbolicName() + "-" + bundle.getVersion() + "[" + bundle.getBundleId() + "]";
         }
     }
 
@@ -122,7 +122,7 @@ public abstract class BundleUtils
         {
             try
             {
-                return toString( bundleContext.getBundle( ) );
+                return toString( bundleContext.getBundle() );
             }
             catch( IllegalStateException ignore )
             {

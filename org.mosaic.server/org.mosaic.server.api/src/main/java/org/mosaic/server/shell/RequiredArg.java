@@ -10,6 +10,6 @@ import java.lang.annotation.RetentionPolicy;
 public @interface RequiredArg
 {
 
-    boolean value( ) default true;
+    boolean value() default true;
 
 }

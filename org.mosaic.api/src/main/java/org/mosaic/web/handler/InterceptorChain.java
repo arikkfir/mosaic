@@ -5,5 +5,5 @@ package org.mosaic.web.handler;
  */
 public interface InterceptorChain
 {
-    Object next( ) throws Exception;
+    Object next() throws Exception;
 }

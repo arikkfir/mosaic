@@ -17,30 +17,30 @@ public class UserAuthLocalhostNone implements UserAuth
     public static class Factory implements NamedFactory<UserAuth>
     {
 
-        public String getName( )
+        public String getName()
         {
             return "none";
         }
 
-        public UserAuth create( )
+        public UserAuth create()
         {
-            return new UserAuthLocalhostNone( );
+            return new UserAuthLocalhostNone();
         }
     }
 
     public Boolean auth( ServerSession session, String username, Buffer buffer )
     {
-        IoSession ioSession = session.getIoSession( );
+        IoSession ioSession = session.getIoSession();
         if( ioSession == null )
         {
             return false;
         }
 
-        SocketAddress remoteAddress = ioSession.getRemoteAddress( );
+        SocketAddress remoteAddress = ioSession.getRemoteAddress();
         if( remoteAddress instanceof InetSocketAddress )
         {
             InetSocketAddress inetAddress = ( InetSocketAddress ) remoteAddress;
-            return inetAddress.getAddress( ).getHostAddress( ).equals( "127.0.0.1" );
+            return inetAddress.getAddress().getHostAddress().equals( "127.0.0.1" );
         }
         return false;
     }

@@ -5,9 +5,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Set;
-import org.mosaic.describe.Description;
 import org.mosaic.server.osgi.util.BundleUtils;
 import org.mosaic.server.shell.Args;
+import org.mosaic.server.shell.Description;
 import org.mosaic.server.shell.Option;
 import org.mosaic.server.shell.ShellCommand;
 import org.mosaic.server.shell.console.Console;
@@ -30,11 +30,17 @@ public class InstallBundleCommand extends AbstractCommand
     @ShellCommand( "install" )
     public void installBundle( Console console,
 
-                               @Option( alias = "s" ) @Description( "show full stack-traces when errors occur" ) boolean stackTraces,
+                               @Option( alias = "s" )
+                               @Description( "show full stack-traces when errors occur" )
+                               boolean stackTraces,
 
-                               @Option( alias = "t" ) @Description( "start the bundles after installation" ) boolean start,
+                               @Option( alias = "t" )
+                               @Description( "start the bundles after installation" )
+                               boolean start,
 
-                               @Args String... locations ) throws IOException
+                               @Args
+                               String... locations )
+    throws IOException
     {
 
         Set<URI> uris = getBundleUris( console, locations );
@@ -44,10 +50,10 @@ public class InstallBundleCommand extends AbstractCommand
         }
 
         // first install or update all given locations
-        Set<Bundle> bundles = new HashSet<>( );
+        Set<Bundle> bundles = new HashSet<>();
         for( URI uri : uris )
         {
-            Bundle bundle = getBundleContext( ).getBundle( uri.toString( ) );
+            Bundle bundle = getBundleContext().getBundle( uri.toString() );
             if( bundle != null )
             {
 
@@ -69,7 +75,7 @@ public class InstallBundleCommand extends AbstractCommand
         // only start if all bundles were installed/updated successfully
         if( start )
         {
-            if( bundles.size( ) != uris.size( ) )
+            if( bundles.size() != uris.size() )
             {
                 console.println( "Not all given locations were processed successfully - will not start any bundles" );
                 return;
@@ -80,11 +86,18 @@ public class InstallBundleCommand extends AbstractCommand
             {
                 try
                 {
-                    bundle.start( );
+                    bundle.start();
                 }
                 catch( BundleException e )
                 {
-                    console.print( "Could not start bundle '" ).print( BundleUtils.toString( bundle ) ).println( "'" );
+                    if( stackTraces )
+                    {
+                        console.printStackTrace( e );
+                    }
+                    else
+                    {
+                        console.print( "Could not start bundle '" ).print( BundleUtils.toString( bundle ) ).print( "': " ).println( e.getMessage() );
+                    }
                 }
             }
         }
@@ -94,18 +107,18 @@ public class InstallBundleCommand extends AbstractCommand
     {
         try
         {
-            bundles.add( getBundleContext( ).installBundle( uri.toString( ) ) );
+            bundles.add( getBundleContext().installBundle( uri.toString() ) );
         }
         catch( BundleException e )
         {
-            LOG.warn( "Could not install bundle from '{}': {}", uri, e.getMessage( ), e );
-            console.print( "Could not install bundle from '" ).print( uri ).print( "': " ).println( e.getMessage( ) );
+            LOG.warn( "Could not install bundle from '{}': {}", uri, e.getMessage(), e );
+            console.print( "Could not install bundle from '" ).print( uri ).print( "': " ).println( e.getMessage() );
         }
     }
 
     private Set<URI> getBundleUris( Console console, String[] locations ) throws IOException
     {
-        Set<URI> uris = new HashSet<>( );
+        Set<URI> uris = new HashSet<>();
         for( String location : locations )
         {
             try
@@ -114,7 +127,7 @@ public class InstallBundleCommand extends AbstractCommand
             }
             catch( URISyntaxException e )
             {
-                String msg = e.getMessage( );
+                String msg = e.getMessage();
                 console.print( "Illegal URI location at: " ).print( location ).print( " (" ).print( msg ).println( ")" );
                 return null;
             }
@@ -130,23 +143,23 @@ public class InstallBundleCommand extends AbstractCommand
         console.print( "Location '" ).print( uri ).println( "' is already installed - will update this bundle." );
         try
         {
-            bundle.stop( );
+            bundle.stop();
 
             try
             {
-                bundle.update( );
+                bundle.update();
                 bundles.add( bundle );
             }
             catch( BundleException e )
             {
-                LOG.warn( "Could not update bundle from '{}': {}", uri, e.getMessage( ), e );
+                LOG.warn( "Could not update bundle from '{}': {}", uri, e.getMessage(), e );
                 console.print( "Could not update bundle '" ).print( bs ).println( "' - it will not be started" );
             }
 
         }
         catch( BundleException e )
         {
-            LOG.warn( "Could not stop bundle from '{}': {}", uri, e.getMessage( ), e );
+            LOG.warn( "Could not stop bundle from '{}': {}", uri, e.getMessage(), e );
             console.print( "Could not stop bundle '" ).print( bs ).println( "' - it will not be updated" );
         }
     }

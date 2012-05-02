@@ -8,10 +8,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.joda.time.DateTime;
 import org.mosaic.server.web.util.HttpTime;
-import org.mosaic.util.collection.MissingRequiredValueException;
 import org.mosaic.web.HttpCookie;
 import org.mosaic.web.HttpResponseHeaders;
-import org.springframework.core.convert.ConversionService;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 
@@ -23,27 +21,23 @@ import static org.springframework.util.StringUtils.collectionToCommaDelimitedStr
  */
 public class HttpResponseHeadersImpl implements HttpResponseHeaders
 {
-
     private final HttpServletResponse response;
 
-    private final ConversionService conversionService;
-
-    public HttpResponseHeadersImpl( HttpServletResponse response, ConversionService conversionService )
+    public HttpResponseHeadersImpl( HttpServletResponse response )
     {
         this.response = response;
-        this.conversionService = conversionService;
     }
 
     @Override
-    public Set<HttpMethod> getAllow( )
+    public Set<HttpMethod> getAllow()
     {
-        Set<HttpMethod> methods = new HashSet<>( );
-        String allow = getValue( "Allow" );
+        Set<HttpMethod> methods = new HashSet<>();
+        String allow = getFirst( "Allow" );
         if( allow != null )
         {
             for( String method : allow.split( ",\\s*" ) )
             {
-                methods.add( HttpMethod.valueOf( method.toUpperCase( ) ) );
+                methods.add( HttpMethod.valueOf( method.toUpperCase() ) );
             }
         }
         return methods;
@@ -56,9 +50,9 @@ public class HttpResponseHeadersImpl implements HttpResponseHeaders
     }
 
     @Override
-    public String getCacheControl( )
+    public String getCacheControl()
     {
-        return getValue( "Cache-Control" );
+        return getFirst( "Cache-Control" );
     }
 
     @Override
@@ -68,84 +62,84 @@ public class HttpResponseHeadersImpl implements HttpResponseHeaders
     }
 
     @Override
-    public Locale getContentLanguage( )
+    public Locale getContentLanguage()
     {
-        return getValueAs( "Content-Language", Locale.class );
+        return new Locale( getFirst( "Content-Language" ) );
     }
 
     @Override
     public void setContentLanguage( Locale contentLanguage )
     {
-        putAs( "Content-Language", contentLanguage );
+        put( "Content-Language", contentLanguage.toString() );
     }
 
     @Override
-    public Long getContentLength( )
+    public Long getContentLength()
     {
-        return getValueAs( "Content-Length", Long.class );
+        return Long.parseLong( getFirst( "Content-Length" ) );
     }
 
     @Override
     public void setContentLength( Long contentLength )
     {
-        putAs( "Content-Length", contentLength );
+        put( "Content-Length", "" + contentLength );
     }
 
     @Override
-    public MediaType getContentType( )
+    public MediaType getContentType()
     {
-        return getValueAs( "Content-Type", MediaType.class );
+        return MediaType.parseMediaType( getFirst( "Content-Type" ) );
     }
 
     @Override
     public void setContentType( MediaType contentType )
     {
-        putAs( "Content-Type", contentType );
+        put( "Content-Type", contentType.toString() );
     }
 
     @Override
-    public Charset getContentCharset( )
+    public Charset getContentCharset()
     {
-        return Charset.forName( this.response.getCharacterEncoding( ) );
+        return Charset.forName( this.response.getCharacterEncoding() );
     }
 
     @Override
     public void setContentCharset( Charset charset )
     {
-        this.response.setCharacterEncoding( charset.name( ) );
+        this.response.setCharacterEncoding( charset.name() );
     }
 
     @Override
     public void addCookie( HttpCookie newCookie )
     {
-        Cookie cookie = new Cookie( newCookie.getName( ), newCookie.getValue( ) );
+        Cookie cookie = new Cookie( newCookie.getName(), newCookie.getValue() );
 
-        if( newCookie.getDomain( ) != null )
+        if( newCookie.getDomain() != null )
         {
-            cookie.setDomain( newCookie.getDomain( ) );
+            cookie.setDomain( newCookie.getDomain() );
         }
-        if( newCookie.getPath( ) != null )
+        if( newCookie.getPath() != null )
         {
-            cookie.setPath( newCookie.getPath( ) );
+            cookie.setPath( newCookie.getPath() );
         }
-        if( newCookie.getMaxAge( ) != null )
+        if( newCookie.getMaxAge() != null )
         {
-            cookie.setMaxAge( newCookie.getMaxAge( ) );
+            cookie.setMaxAge( newCookie.getMaxAge() );
         }
-        cookie.setHttpOnly( newCookie.getHttpOnly( ) );
-        cookie.setSecure( newCookie.getSecure( ) );
-        cookie.setVersion( newCookie.getVersion( ) );
-        if( newCookie.getComment( ) != null )
+        cookie.setHttpOnly( newCookie.getHttpOnly() );
+        cookie.setSecure( newCookie.getSecure() );
+        cookie.setVersion( newCookie.getVersion() );
+        if( newCookie.getComment() != null )
         {
-            cookie.setComment( newCookie.getComment( ) );
+            cookie.setComment( newCookie.getComment() );
         }
         this.response.addCookie( cookie );
     }
 
     @Override
-    public String getETag( )
+    public String getETag()
     {
-        return getValue( "ETag" );
+        return getFirst( "ETag" );
     }
 
     @Override
@@ -155,15 +149,9 @@ public class HttpResponseHeadersImpl implements HttpResponseHeaders
     }
 
     @Override
-    public DateTime getExpires( )
+    public Long getExpires()
     {
-        return getValueAs( "Expires", DateTime.class );
-    }
-
-    @Override
-    public void setExpires( DateTime expires )
-    {
-        putAs( "Expires", expires );
+        return Long.parseLong( getFirst( "Expires" ) );
     }
 
     @Override
@@ -183,7 +171,7 @@ public class HttpResponseHeadersImpl implements HttpResponseHeaders
 
             // zero or negative means that we want to completely prevent any user agent/proxy from caching our response
             this.response.setHeader( "Pragma", "no-cache" );
-            this.response.setHeader( "Expires", HttpTime.format( new DateTime( ) ) );
+            this.response.setHeader( "Expires", HttpTime.format( new DateTime() ) );
             this.response.setHeader( "Cache-Control", "no-cache, no-store" );
 
         }
@@ -191,28 +179,36 @@ public class HttpResponseHeadersImpl implements HttpResponseHeaders
         {
 
             // any other number means we want to allow caching of this response, but only for the next specified seconds
-            this.response.setHeader( "Expires", HttpTime.format( new DateTime( currentTimeMillis( ) +
+            this.response.setHeader( "Expires", HttpTime.format( new DateTime( currentTimeMillis() +
                                                                                secondsFromNow * 1000l ) ) );
             this.response.setHeader( "Cache-Control", "max-age=" + secondsFromNow + ", must-revalidate" );
         }
     }
 
     @Override
-    public DateTime getLastModified( )
+    public DateTime getLastModified()
     {
-        return getValueAs( "Last-Modified", DateTime.class );
+        String value = getFirst( "Last-Modified" );
+        if( value == null )
+        {
+            return null;
+        }
+        else
+        {
+            return HttpTime.parse( value );
+        }
     }
 
     @Override
     public void setLastModified( DateTime lastModified )
     {
-        putAs( "Last-Modified", lastModified );
+        put( "Last-Modified", HttpTime.format( lastModified ) );
     }
 
     @Override
-    public String getLocation( )
+    public String getLocation()
     {
-        return getValue( "Location" );
+        return getFirst( "Location" );
     }
 
     @Override
@@ -224,14 +220,14 @@ public class HttpResponseHeadersImpl implements HttpResponseHeaders
         }
         catch( IOException e )
         {
-            throw new RuntimeIOException( "Error redirecting to '" + location + "': " + e.getMessage( ), e );
+            throw new RuntimeIOException( "Error redirecting to '" + location + "': " + e.getMessage(), e );
         }
     }
 
     @Override
-    public String getPragma( )
+    public String getPragma()
     {
-        return getValue( "Pragma" );
+        return getFirst( "Pragma" );
     }
 
     @Override
@@ -241,21 +237,21 @@ public class HttpResponseHeadersImpl implements HttpResponseHeaders
     }
 
     @Override
-    public Integer getRetryAfter( )
+    public Integer getRetryAfter()
     {
-        return getValueAs( "Retry-After", Integer.class );
+        return Integer.parseInt( getFirst( "Retry-After" ) );
     }
 
     @Override
     public void setRetryAfter( Integer retryAfter )
     {
-        putAs( "Retry-After", retryAfter );
+        put( "Retry-After", "" + retryAfter );
     }
 
     @Override
-    public String getServer( )
+    public String getServer()
     {
-        return getValue( "Server" );
+        return getFirst( "Server" );
     }
 
     @Override
@@ -265,9 +261,9 @@ public class HttpResponseHeadersImpl implements HttpResponseHeaders
     }
 
     @Override
-    public String getWwwAuthenticate( )
+    public String getWwwAuthenticate()
     {
-        return getValue( "WWW-Authenticate" );
+        return getFirst( "WWW-Authenticate" );
     }
 
     @Override
@@ -277,70 +273,14 @@ public class HttpResponseHeadersImpl implements HttpResponseHeaders
     }
 
     @Override
-    public void disableCache( )
+    public void disableCache()
     {
         setExpires( 0l );
     }
 
-    @Override
-    public String getValue( String key )
+    private String getFirst( String key )
     {
         return this.response.getHeader( key );
-    }
-
-    @Override
-    public String getValue( String key, String defaultValue )
-    {
-        String value = getValue( key );
-        return value == null ? defaultValue : value;
-    }
-
-    @Override
-    public String requireValue( String key )
-    {
-        String value = getValue( key );
-        if( value != null )
-        {
-            return value;
-        }
-        else
-        {
-            throw new MissingRequiredValueException( key );
-        }
-    }
-
-    @Override
-    public <T> T getValueAs( String key, Class<T> type )
-    {
-        String value = getValue( key );
-        if( value != null )
-        {
-            return this.conversionService.convert( value, type );
-        }
-        else
-        {
-            return null;
-        }
-    }
-
-    @Override
-    public <T> T getValueAs( String key, Class<T> type, T defaultValue )
-    {
-        String value = getValue( key );
-        if( value != null )
-        {
-            return this.conversionService.convert( value, type );
-        }
-        else
-        {
-            return defaultValue;
-        }
-    }
-
-    @Override
-    public <T> T requireValueAs( String key, Class<T> type )
-    {
-        return this.conversionService.convert( requireValue( key ), type );
     }
 
     @Override
@@ -356,69 +296,33 @@ public class HttpResponseHeadersImpl implements HttpResponseHeaders
     }
 
     @Override
-    public <T> void addAs( String key, T value )
+    public int size()
     {
-        add( key, this.conversionService.convert( value, String.class ) );
+        return this.response.getHeaderNames().size();
     }
 
     @Override
-    public <T> void putAs( String key, T value )
+    public boolean isEmpty()
     {
-        put( key, this.conversionService.convert( value, String.class ) );
-    }
-
-    @Override
-    public Map<String, String> toMap( )
-    {
-        Collection<String> headerNames = this.response.getHeaderNames( );
-        Map<String, String> headers = new HashMap<>( headerNames.size( ) );
-        for( String headerName : headerNames )
-        {
-            headers.put( headerName, getValue( headerName ) );
-        }
-        return headers;
-    }
-
-    @Override
-    public <T> Map<String, T> toMapAs( Class<T> type )
-    {
-        Collection<String> headerNames = this.response.getHeaderNames( );
-        Map<String, T> headers = new HashMap<>( headerNames.size( ) );
-        for( String headerName : headerNames )
-        {
-            headers.put( headerName, getValueAs( headerName, type ) );
-        }
-        return headers;
-    }
-
-    @Override
-    public int size( )
-    {
-        return this.response.getHeaderNames( ).size( );
-    }
-
-    @Override
-    public boolean isEmpty( )
-    {
-        return this.response.getHeaderNames( ).isEmpty( );
+        return this.response.getHeaderNames().isEmpty();
     }
 
     @Override
     public boolean containsKey( Object key )
     {
-        return this.response.containsHeader( key.toString( ) );
+        return this.response.containsHeader( key.toString() );
     }
 
     @Override
     public boolean containsValue( Object value )
     {
-        return toMap( ).containsValue( value );
+        throw new UnsupportedOperationException( "Cannot call 'containsValue' on HTTP response headers" );
     }
 
     @Override
     public List<String> get( Object key )
     {
-        return new LinkedList<>( this.response.getHeaders( key.toString( ) ) );
+        return new LinkedList<>( this.response.getHeaders( key.toString() ) );
     }
 
     @Override
@@ -439,36 +343,36 @@ public class HttpResponseHeadersImpl implements HttpResponseHeaders
     public List<String> remove( Object key )
     {
         List<String> previousValues = get( key );
-        this.response.setHeader( key.toString( ), null );
+        this.response.setHeader( key.toString(), null );
         return previousValues;
     }
 
     @Override
     public void putAll( Map<? extends String, ? extends List<String>> map )
     {
-        for( Entry<? extends String, ? extends List<String>> entry : map.entrySet( ) )
+        for( Entry<? extends String, ? extends List<String>> entry : map.entrySet() )
         {
-            put( entry.getKey( ), entry.getValue( ) );
+            put( entry.getKey(), entry.getValue() );
         }
     }
 
     @Override
-    public void clear( )
+    public void clear()
     {
         throw new UnsupportedOperationException( "Clearing all headers is not supported (too dangerous)" );
     }
 
     @Override
-    public Set<String> keySet( )
+    public Set<String> keySet()
     {
-        return new HashSet<>( this.response.getHeaderNames( ) );
+        return new HashSet<>( this.response.getHeaderNames() );
     }
 
     @Override
-    public Collection<List<String>> values( )
+    public Collection<List<String>> values()
     {
-        Collection<List<String>> values = new LinkedList<>( );
-        for( String headerName : this.response.getHeaderNames( ) )
+        Collection<List<String>> values = new LinkedList<>();
+        for( String headerName : this.response.getHeaderNames() )
         {
             values.add( new LinkedList<>( this.response.getHeaders( headerName ) ) );
         }
@@ -476,10 +380,10 @@ public class HttpResponseHeadersImpl implements HttpResponseHeaders
     }
 
     @Override
-    public Set<Entry<String, List<String>>> entrySet( )
+    public Set<Entry<String, List<String>>> entrySet()
     {
-        Set<Entry<String, List<String>>> values = new HashSet<>( this.response.getHeaderNames( ).size( ) );
-        for( String headerName : this.response.getHeaderNames( ) )
+        Set<Entry<String, List<String>>> values = new HashSet<>( this.response.getHeaderNames().size() );
+        for( String headerName : this.response.getHeaderNames() )
         {
             LinkedList<String> headerValues = new LinkedList<>( this.response.getHeaders( headerName ) );
             values.add( new AbstractMap.SimpleImmutableEntry<String, List<java.lang.String>>( headerName, headerValues ) );

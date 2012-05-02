@@ -34,7 +34,7 @@ public abstract class HttpTime
 
         try
         {
-            return RFC_1123_DATE_TIME_FORMATTER.parseDateTime( httpTime.substring( 0, httpTime.length( ) -
+            return RFC_1123_DATE_TIME_FORMATTER.parseDateTime( httpTime.substring( 0, httpTime.length() -
                                                                                       4 ) ).withZone( ZONE );
         }
         catch( IllegalArgumentException ignore )

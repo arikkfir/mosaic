@@ -11,7 +11,7 @@ public class RegexPathMatcherTest extends Assert
 {
 
     @Test
-    public void basicTests( )
+    public void basicTests()
     {
         testPattern( "/arik/kfir", "/arik/kfir", true );
         testPattern( "/arik/kfir", "/arik/notkfir", false );
@@ -42,17 +42,17 @@ public class RegexPathMatcherTest extends Assert
         String desc = "Matching of pattern '" +
                       pattern +
                       "' (regex is '" +
-                      result.getRegex( ) +
+                      result.getRegex() +
                       "') with input '" +
                       path +
                       "' ";
 
         assertEquals( desc +
-                      ( shouldMatch ? "should succeed" : "should NOT succeed" ), shouldMatch, result.isMatching( ) );
+                      ( shouldMatch ? "should succeed" : "should NOT succeed" ), shouldMatch, result.isMatching() );
 
-        Map<String, String> matchedVars = result.getVariables( );
+        Map<String, String> matchedVars = result.getVariables();
 
-        assertEquals( desc + " variables count", vars.length, matchedVars.size( ) );
+        assertEquals( desc + " variables count", vars.length, matchedVars.size() );
         for( Variable var : vars )
         {
             if( !matchedVars.containsKey( var.name ) )

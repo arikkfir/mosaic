@@ -17,7 +17,7 @@ public abstract class AbstractMethodRequirement extends AbstractBeanRequirement
         this.targetMethod = targetMethod;
     }
 
-    protected Method getTargetMethod( )
+    protected Method getTargetMethod()
     {
         return targetMethod;
     }
@@ -30,7 +30,7 @@ public abstract class AbstractMethodRequirement extends AbstractBeanRequirement
         }
         catch( InvocationTargetException e )
         {
-            Throwable cause = e.getCause( );
+            Throwable cause = e.getCause();
             if( cause instanceof Exception )
             {
                 throw ( Exception ) cause;

@@ -19,7 +19,7 @@ public class HttpRequestResolver implements MethodParameterResolver, MethodParam
     @Override
     public ResolvedParameter resolve( MethodParameter methodParameter )
     {
-        if( methodParameter.getParameterType( ).isAssignableFrom( HttpRequest.class ) )
+        if( methodParameter.getParameterType().isAssignableFrom( HttpRequest.class ) )
         {
             return this;
         }

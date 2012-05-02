@@ -37,12 +37,12 @@ public class BundleBootstrapper implements BundleActivator, SynchronousBundleLis
     public void start( BundleContext context ) throws Exception
     {
         this.bundleContext = context;
-        this.bundleContext.registerService( Home.class, new HomeService( ), null );
+        this.bundleContext.registerService( Home.class, new HomeService(), null );
 
         this.springNamespacePlugin = new OsgiSpringNamespacePlugin( this.bundleContext );
-        this.springNamespacePlugin.open( );
+        this.springNamespacePlugin.open();
 
-        this.logWeaver = new LogWeaver( );
+        this.logWeaver = new LogWeaver();
         this.logWeaver.open( this.bundleContext );
 
         this.helperReg = this.bundleContext.registerService( BundleStatusHelper.class, this, null );
@@ -50,7 +50,7 @@ public class BundleBootstrapper implements BundleActivator, SynchronousBundleLis
 
         for( Bundle bundle : BundleUtils.findBundlesInStates( this.bundleContext, Bundle.ACTIVE ) )
         {
-            if( bundle.getBundleId( ) != this.bundleContext.getBundle( ).getBundleId( ) && shouldTrackBundle( bundle ) )
+            if( bundle.getBundleId() != this.bundleContext.getBundle().getBundleId() && shouldTrackBundle( bundle ) )
             {
                 trackBundle( bundle );
             }
@@ -60,15 +60,15 @@ public class BundleBootstrapper implements BundleActivator, SynchronousBundleLis
     @Override
     public void stop( BundleContext context ) throws Exception
     {
-        for( BundleTracker tracker : this.trackers.values( ) )
+        for( BundleTracker tracker : this.trackers.values() )
         {
-            tracker.untrack( );
+            tracker.untrack();
         }
         if( this.helperReg != null )
         {
             try
             {
-                this.helperReg.unregister( );
+                this.helperReg.unregister();
             }
             catch( IllegalArgumentException ignore )
             {
@@ -76,10 +76,10 @@ public class BundleBootstrapper implements BundleActivator, SynchronousBundleLis
         }
         this.bundleContext.removeBundleListener( this );
 
-        this.logWeaver.close( );
+        this.logWeaver.close();
         this.logWeaver = null;
 
-        this.springNamespacePlugin.close( );
+        this.springNamespacePlugin.close();
         this.springNamespacePlugin = null;
 
         this.bundleContext = null;
@@ -102,8 +102,8 @@ public class BundleBootstrapper implements BundleActivator, SynchronousBundleLis
     @Override
     public void bundleChanged( BundleEvent event )
     {
-        Bundle bundle = event.getBundle( );
-        switch( event.getType( ) )
+        Bundle bundle = event.getBundle();
+        switch( event.getType() )
         {
             case BundleEvent.STARTED:
                 if( shouldTrackBundle( bundle ) )
@@ -113,16 +113,16 @@ public class BundleBootstrapper implements BundleActivator, SynchronousBundleLis
                 break;
 
             case BundleEvent.STOPPING:
-                BundleTracker tracker = this.trackers.remove( bundle.getBundleId( ) );
+                BundleTracker tracker = this.trackers.remove( bundle.getBundleId() );
                 if( tracker != null )
                 {
                     try
                     {
-                        tracker.untrack( );
+                        tracker.untrack();
                     }
                     catch( Exception e )
                     {
-                        LOG.error( "An error occurred while removing bundle '{}' from the list of tracked bundles: {}", BundleUtils.toString( bundle ), e.getMessage( ), e );
+                        LOG.error( "An error occurred while removing bundle '{}' from the list of tracked bundles: {}", BundleUtils.toString( bundle ), e.getMessage(), e );
                     }
                 }
                 break;
@@ -134,12 +134,12 @@ public class BundleBootstrapper implements BundleActivator, SynchronousBundleLis
         BundleTracker tracker = new BundleTracker( bundle, this.springNamespacePlugin );
         try
         {
-            tracker.track( );
-            this.trackers.put( bundle.getBundleId( ), tracker );
+            tracker.track();
+            this.trackers.put( bundle.getBundleId(), tracker );
         }
         catch( Exception e )
         {
-            LOG.error( "Cannot track bundle '{}': {}", BundleUtils.toString( bundle ), e.getMessage( ), e );
+            LOG.error( "Cannot track bundle '{}': {}", BundleUtils.toString( bundle ), e.getMessage(), e );
         }
     }
 
@@ -152,7 +152,7 @@ public class BundleBootstrapper implements BundleActivator, SynchronousBundleLis
             return false;
 
         }
-        else if( bundle.getHeaders( ).get( Constants.BUNDLE_ACTIVATOR ) != null )
+        else if( bundle.getHeaders().get( Constants.BUNDLE_ACTIVATOR ) != null )
         {
 
             // mosaic bundles must not have activators
@@ -178,10 +178,10 @@ public class BundleBootstrapper implements BundleActivator, SynchronousBundleLis
 
         public BundleStatusImpl( Bundle bundle )
         {
-            BundleTracker tracker = trackers.get( bundle.getBundleId( ) );
+            BundleTracker tracker = trackers.get( bundle.getBundleId() );
             if( tracker != null )
             {
-                if( tracker.isTracking( ) && tracker.isPublished( ) )
+                if( tracker.isTracking() && tracker.isPublished() )
                 {
                     this.state = BundleState.PUBLISHED;
                 }
@@ -190,29 +190,29 @@ public class BundleBootstrapper implements BundleActivator, SynchronousBundleLis
                     this.state = BundleState.ACTIVE;
                 }
 
-                List<String> unsatisfiedRequirements = new LinkedList<>( );
-                for( Requirement requirement : tracker.getUnsatisfiedRequirements( ) )
+                List<String> unsatisfiedRequirements = new LinkedList<>();
+                for( Requirement requirement : tracker.getUnsatisfiedRequirements() )
                 {
-                    unsatisfiedRequirements.add( requirement.toShortString( ) );
+                    unsatisfiedRequirements.add( requirement.toShortString() );
                 }
                 this.unsatisfiedRequirements = Collections.unmodifiableCollection( unsatisfiedRequirements );
 
             }
             else
             {
-                this.state = BundleState.valueOfOsgiState( bundle.getState( ) );
-                this.unsatisfiedRequirements = Collections.emptyList( );
+                this.state = BundleState.valueOfOsgiState( bundle.getState() );
+                this.unsatisfiedRequirements = Collections.emptyList();
             }
         }
 
         @Override
-        public BundleState getState( )
+        public BundleState getState()
         {
             return this.state;
         }
 
         @Override
-        public Collection<String> getUnsatisfiedRequirements( )
+        public Collection<String> getUnsatisfiedRequirements()
         {
             return this.unsatisfiedRequirements;
         }

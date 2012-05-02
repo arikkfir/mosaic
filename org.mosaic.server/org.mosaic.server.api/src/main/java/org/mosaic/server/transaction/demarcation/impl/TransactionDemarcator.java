@@ -15,14 +15,14 @@ import org.springframework.transaction.TransactionException;
 public class TransactionDemarcator
 {
 
-    private static final ThreadLocal<TransactionInfo> transactionInfoHolder = new InheritableThreadLocal<>( );
+    private static final ThreadLocal<TransactionInfo> transactionInfoHolder = new InheritableThreadLocal<>();
 
     @SuppressWarnings( "UnusedDeclaration" )
     public void begin( String transactionName, Object transactional )
     {
         try
         {
-            new TransactionInfo( transactionName, transactional ).bind( );
+            new TransactionInfo( transactionName, transactional ).bind();
         }
         catch( CannotCreateTransactionException e )
         {
@@ -30,48 +30,48 @@ public class TransactionDemarcator
         }
         catch( Exception e )
         {
-            throw new CannotCreateTransactionException( e.getMessage( ), e );
+            throw new CannotCreateTransactionException( e.getMessage(), e );
         }
     }
 
     @SuppressWarnings( "UnusedDeclaration" )
-    public void rollback( )
+    public void rollback()
     {
-        TransactionInfo tx = transactionInfoHolder.get( );
+        TransactionInfo tx = transactionInfoHolder.get();
         try
         {
-            tx.rollback( );
+            tx.rollback();
         }
         catch( TransactionException e )
         {
             Logger logger = LoggerFactory.getLogger( tx.transactionName );
-            logger.error( "Could not rollback transaction '{}': {}", tx.transactionName, e.getMessage( ), e );
+            logger.error( "Could not rollback transaction '{}': {}", tx.transactionName, e.getMessage(), e );
         }
         finally
         {
             try
             {
-                tx.restore( );
+                tx.restore();
             }
             catch( Exception e )
             {
                 Logger logger = LoggerFactory.getLogger( tx.transactionName );
-                logger.error( "Could not unbind from transaction '{}': {}", tx.transactionName, e.getMessage( ), e );
+                logger.error( "Could not unbind from transaction '{}': {}", tx.transactionName, e.getMessage(), e );
             }
         }
     }
 
     @SuppressWarnings( "UnusedDeclaration" )
-    public void finish( )
+    public void finish()
     {
-        TransactionInfo tx = transactionInfoHolder.get( );
+        TransactionInfo tx = transactionInfoHolder.get();
         try
         {
-            tx.commit( );
+            tx.commit();
         }
         finally
         {
-            tx.restore( );
+            tx.restore();
         }
     }
 
@@ -92,11 +92,11 @@ public class TransactionDemarcator
 
         public TransactionInfo( String transactionName, Object transactional )
         {
-            this.bundleContext = FrameworkUtil.getBundle( transactional.getClass( ) ).getBundleContext( );
+            this.bundleContext = FrameworkUtil.getBundle( transactional.getClass() ).getBundleContext();
             if( bundleContext == null )
             {
                 throw new CannotCreateTransactionException( "Class '" +
-                                                            transactional.getClass( ) +
+                                                            transactional.getClass() +
                                                             "' is not part of any bundle" );
             }
 
@@ -117,31 +117,31 @@ public class TransactionDemarcator
             this.transactionName = transactionName;
         }
 
-        private void bind( )
+        private void bind()
         {
             this.transaction = this.transactionManager.begin( this.transactionName );
-            this.oldTransactionInfo = transactionInfoHolder.get( );
+            this.oldTransactionInfo = transactionInfoHolder.get();
             transactionInfoHolder.set( this );
         }
 
-        private void rollback( )
+        private void rollback()
         {
             this.transactionManager.rollback( this.transaction );
         }
 
-        private void commit( )
+        private void commit()
         {
             this.transactionManager.commit( this.transaction );
         }
 
-        private void restore( )
+        private void restore()
         {
             transactionInfoHolder.set( this.oldTransactionInfo );
             this.bundleContext.ungetService( this.transactionManagerRef );
         }
 
         @Override
-        public String toString( )
+        public String toString()
         {
             return "Transaction[name=" + this.transactionName + "]";
         }

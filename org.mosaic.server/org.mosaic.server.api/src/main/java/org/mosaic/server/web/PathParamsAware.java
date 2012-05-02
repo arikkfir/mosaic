@@ -1,13 +1,11 @@
 package org.mosaic.server.web;
 
-import org.mosaic.util.collection.TypedDict;
+import java.util.Map;
 
 /**
  * @author arik
  */
 public interface PathParamsAware
 {
-
-    void setPathParams( TypedDict<String> params );
-
+    void setPathParams( Map<String, String> params );
 }

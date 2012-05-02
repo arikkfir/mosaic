@@ -25,14 +25,14 @@ public class FileBundleBootArtifactResolver extends AbstractBootArtifactResolver
     public Set<Bundle> resolve( ServerHome home, BootArtifact artifact ) throws CannotInstallBootArtifactException
     {
 
-        File file = new File( artifact.getCoordinates( ) );
-        if( !file.isAbsolute( ) )
+        File file = new File( artifact.getCoordinates() );
+        if( !file.isAbsolute() )
         {
-            file = new File( home.getHome( ), artifact.getCoordinates( ) );
+            file = new File( home.getHome(), artifact.getCoordinates() );
         }
 
-        Set<Bundle> bundles = new HashSet<>( );
-        List<File> matches = FileMatcher.find( file.getAbsolutePath( ) );
+        Set<Bundle> bundles = new HashSet<>();
+        List<File> matches = FileMatcher.find( file.getAbsolutePath() );
         for( File match : matches )
         {
             Set<Bundle> resolvedBundles = installOrUpdateBundle( artifact, match );

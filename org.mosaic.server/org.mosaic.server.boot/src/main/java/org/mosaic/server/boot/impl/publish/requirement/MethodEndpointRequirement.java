@@ -45,65 +45,65 @@ public class MethodEndpointRequirement extends AbstractMethodRequirement impleme
     }
 
     @Override
-    public String toString( )
+    public String toString()
     {
         return "MethodEndpoint[@" +
-               this.type.annotationType( ).getSimpleName( ) +
+               this.type.annotationType().getSimpleName() +
                "/" +
-               getTargetMethod( ).getName( ) +
+               getTargetMethod().getName() +
                "/" +
-               getBeanName( ) +
+               getBeanName() +
                "]";
     }
 
     @Override
-    public int getPriority( )
+    public int getPriority()
     {
         return SERVICE_EXPORT_PRIORITY;
     }
 
     @Override
-    public String toShortString( )
+    public String toShortString()
     {
-        return "Export '" + getTargetMethod( ).getName( ) + "' as @" + this.type.annotationType( ).getSimpleName( );
+        return "Export '" + getTargetMethod().getName() + "' as @" + this.type.annotationType().getSimpleName();
     }
 
     @Override
-    protected boolean trackInternal( ) throws Exception
+    protected boolean trackInternal() throws Exception
     {
-        super.trackInternal( );
+        super.trackInternal();
         return true;
     }
 
     @Override
     protected void publishInternal( ApplicationContext applicationContext ) throws Exception
     {
-        BundleContext bundleContext = getBundleContext( );
+        BundleContext bundleContext = getBundleContext();
         if( bundleContext == null )
         {
-            LOG.warn( "Bundle being published when not active?? For bundle: {}", getBundleName( ) );
+            LOG.warn( "Bundle being published when not active?? For bundle: {}", getBundleName() );
         }
         else
         {
             this.applicationContext = applicationContext;
 
-            Dictionary<String, Object> properties = new Hashtable<>( );
-            properties.put( TYPE, this.type.annotationType( ).getName( ) );
-            properties.put( SHORT_TYPE, this.type.annotationType( ).getSimpleName( ) );
-            properties.put( METHOD_NAME, getTargetMethod( ).getName( ) );
+            Dictionary<String, Object> properties = new Hashtable<>();
+            properties.put( TYPE, this.type.annotationType().getName() );
+            properties.put( SHORT_TYPE, this.type.annotationType().getSimpleName() );
+            properties.put( METHOD_NAME, getTargetMethod().getName() );
             properties.put( SERVICE_RANKING, this.ranking );
             this.registration = bundleContext.registerService( MethodEndpointInfo.class, this, properties );
         }
     }
 
     @Override
-    protected void unpublishInternal( ) throws Exception
+    protected void unpublishInternal() throws Exception
     {
         if( this.registration != null )
         {
             try
             {
-                this.registration.unregister( );
+                this.registration.unregister();
             }
             catch( IllegalStateException ignore )
             {
@@ -113,27 +113,27 @@ public class MethodEndpointRequirement extends AbstractMethodRequirement impleme
     }
 
     @Override
-    public String getOrigin( )
+    public String getOrigin()
     {
-        return BundleUtils.toString( getBundleContext( ) );
+        return BundleUtils.toString( getBundleContext() );
     }
 
     @Override
     public boolean isOfType( Class<? extends Annotation> annotationType )
     {
-        return this.type.annotationType( ).equals( annotationType );
+        return this.type.annotationType().equals( annotationType );
     }
 
     @Override
-    public Annotation getType( )
+    public Annotation getType()
     {
         return this.type;
     }
 
     @Override
-    public Method getMethod( )
+    public Method getMethod()
     {
-        return getTargetMethod( );
+        return getTargetMethod();
     }
 
     @Override
@@ -142,11 +142,11 @@ public class MethodEndpointRequirement extends AbstractMethodRequirement impleme
         ApplicationContext applicationContext = this.applicationContext;
         if( applicationContext == null )
         {
-            throw new IllegalStateException( "Bundle '" + getBundleName( ) + "' is closed" );
+            throw new IllegalStateException( "Bundle '" + getBundleName() + "' is closed" );
         }
         else
         {
-            return getTargetMethod( ).invoke( getBean( applicationContext ), arguments );
+            return getTargetMethod().invoke( getBean( applicationContext ), arguments );
         }
     }
 }

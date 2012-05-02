@@ -17,8 +17,6 @@ import org.mosaic.server.web.application.HttpApplicationManager;
 import org.mosaic.util.logging.Logger;
 import org.mosaic.util.logging.LoggerFactory;
 import org.mosaic.web.HttpApplication;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Component;
 
 import static java.nio.file.Files.exists;
@@ -35,19 +33,11 @@ public class HttpApplicationManagerImpl implements HttpApplicationManager
 
     private static final long SCAN_INTERVAL = 1000;
 
-    private final Map<Path, HttpApplicationImpl> applications = new HashMap<>( );
-
-    private ConversionService conversionService;
+    private final Map<Path, HttpApplicationImpl> applications = new HashMap<>();
 
     private Home home;
 
     private Scanner scanner;
-
-    @Autowired
-    public void setConversionService( ConversionService conversionService )
-    {
-        this.conversionService = conversionService;
-    }
 
     @ServiceRef
     public void setHome( Home home )
@@ -56,32 +46,32 @@ public class HttpApplicationManagerImpl implements HttpApplicationManager
     }
 
     @PostConstruct
-    public synchronized void init( )
+    public synchronized void init()
     {
-        scan( );
+        scan();
 
-        this.scanner = new Scanner( );
+        this.scanner = new Scanner();
         Thread t = new Thread( scanner, "ApplicationsWatcher" );
         t.setDaemon( true );
-        t.start( );
+        t.start();
     }
 
     @PreDestroy
-    public synchronized void destroy( ) throws SQLException
+    public synchronized void destroy() throws SQLException
     {
         if( this.scanner != null )
         {
             this.scanner.stop = true;
         }
-        this.applications.clear( );
+        this.applications.clear();
     }
 
     @Override
     public HttpApplication getApplication( String name )
     {
-        for( HttpApplicationImpl application : this.applications.values( ) )
+        for( HttpApplicationImpl application : this.applications.values() )
         {
-            if( application.getName( ).equalsIgnoreCase( name ) )
+            if( application.getName().equalsIgnoreCase( name ) )
             {
                 return application;
             }
@@ -89,10 +79,10 @@ public class HttpApplicationManagerImpl implements HttpApplicationManager
         return null;
     }
 
-    private synchronized void scan( )
+    private synchronized void scan()
     {
 
-        Path dir = this.home.getEtc( ).resolve( "apps" );
+        Path dir = this.home.getEtc().resolve( "apps" );
         if( Files.exists( dir ) && Files.isDirectory( dir ) )
         {
 
@@ -104,28 +94,28 @@ public class HttpApplicationManagerImpl implements HttpApplicationManager
                     HttpApplicationImpl application = this.applications.get( appFile );
                     if( application == null )
                     {
-                        application = new HttpApplicationImpl( appFile, this.conversionService );
+                        application = new HttpApplicationImpl( appFile );
                         this.applications.put( appFile, application );
                     }
-                    application.refresh( );
+                    application.refresh();
                 }
 
             }
             catch( IOException e )
             {
-                LOG.error( "Could not search for applications in '{}': {}", dir, e.getMessage( ), e );
+                LOG.error( "Could not search for applications in '{}': {}", dir, e.getMessage(), e );
             }
 
         }
 
-        this.applications.values( ).iterator( );
-        Iterator<HttpApplicationImpl> iterator = this.applications.values( ).iterator( );
-        while( iterator.hasNext( ) )
+        this.applications.values().iterator();
+        Iterator<HttpApplicationImpl> iterator = this.applications.values().iterator();
+        while( iterator.hasNext() )
         {
-            HttpApplicationImpl application = iterator.next( );
-            if( !exists( application.getPath( ) ) )
+            HttpApplicationImpl application = iterator.next();
+            if( !exists( application.getPath() ) )
             {
-                iterator.remove( );
+                iterator.remove();
             }
         }
     }
@@ -136,7 +126,7 @@ public class HttpApplicationManagerImpl implements HttpApplicationManager
         private boolean stop;
 
         @Override
-        public void run( )
+        public void run()
         {
             while( !this.stop )
             {
@@ -148,7 +138,7 @@ public class HttpApplicationManagerImpl implements HttpApplicationManager
                 {
                     break;
                 }
-                scan( );
+                scan();
             }
         }
     }

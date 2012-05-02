@@ -3,7 +3,8 @@ package org.mosaic.web;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
-import org.mosaic.util.collection.TypedDict;
+import java.util.List;
+import java.util.Map;
 import org.springframework.http.MediaType;
 
 /**
@@ -11,17 +12,15 @@ import org.springframework.http.MediaType;
  */
 public interface HttpPart
 {
+    String getName();
 
-    String getName( );
+    MediaType getContentType();
 
-    MediaType getContentType( );
+    long getSize();
 
-    long getSize( );
-
-    InputStream getInputStream( ) throws IOException;
+    InputStream getInputStream() throws IOException;
 
     void save( Path path ) throws IOException;
 
-    TypedDict<String> getHeaders( );
-
+    Map<String, List<String>> getHeaders();
 }

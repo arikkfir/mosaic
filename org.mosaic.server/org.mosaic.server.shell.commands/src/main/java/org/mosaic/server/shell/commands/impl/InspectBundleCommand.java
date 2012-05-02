@@ -2,10 +2,10 @@ package org.mosaic.server.shell.commands.impl;
 
 import java.io.IOException;
 import java.util.*;
-import org.mosaic.describe.Description;
 import org.mosaic.server.osgi.BundleStatus;
 import org.mosaic.server.osgi.util.BundleUtils;
 import org.mosaic.server.shell.Args;
+import org.mosaic.server.shell.Description;
 import org.mosaic.server.shell.Option;
 import org.mosaic.server.shell.ShellCommand;
 import org.mosaic.server.shell.console.Console;
@@ -41,23 +41,33 @@ public class InspectBundleCommand extends AbstractCommand
     @ShellCommand( "inspect" )
     public void inspectBundle( Console console,
 
-                               @Option( alias = "e" ) @Description( "exact matching (filter arguments will not be treated as wildcards)" ) boolean exact,
+                               @Option( alias = "e" )
+                               @Description( "exact matching (filter arguments will not be treated as wildcards)" )
+                               boolean exact,
 
-                               @Option( alias = "h" ) @Description( "show bundle headers" ) boolean headers,
+                               @Option( alias = "h" )
+                               @Description( "show bundle headers" )
+                               boolean headers,
 
-                               @Option( alias = "s" ) @Description( "show registered and used services" ) boolean services,
+                               @Option( alias = "s" )
+                               @Description( "show registered and used services" )
+                               boolean services,
 
-                               @Option( alias = "w" ) @Description( "show bundle wires" ) boolean wires,
+                               @Option( alias = "w" )
+                               @Description( "show bundle wires" )
+                               boolean wires,
 
-                               @Option( alias = "p" ) @Description( "show package imports/exports" ) boolean packages,
+                               @Option( alias = "p" )
+                               @Description( "show package imports/exports" )
+                               boolean packages,
 
-                               @Args String... filters
-
-    ) throws IOException
+                               @Args
+                               String... filters )
+    throws IOException
     {
 
-        List<Bundle> matches = findMatchingBundles( getBundleContext( ), exact, filters );
-        if( matches.isEmpty( ) )
+        List<Bundle> matches = findMatchingBundles( getBundleContext(), exact, filters );
+        if( matches.isEmpty() )
         {
 
             console.println( "No bundles match requested filters." );
@@ -73,11 +83,11 @@ public class InspectBundleCommand extends AbstractCommand
 
                 if( !first )
                 {
-                    console.println( repeat( "*", console.getWidth( ) - 1 ) );
+                    console.println( repeat( "*", console.getWidth() - 1 ) );
                 }
                 else
                 {
-                    console.println( );
+                    console.println();
                     first = false;
                 }
 
@@ -114,22 +124,22 @@ public class InspectBundleCommand extends AbstractCommand
     private void showGeneralInfo( Console console, Bundle bundle, BundleStatus status ) throws IOException
     {
         console.println( "GENERAL INFORMATION" );
-        console.print( "        Bundle ID:     " ).println( bundle.getBundleId( ) );
-        console.print( "        Symbolic name: " ).println( bundle.getSymbolicName( ) );
-        console.print( "        Version:       " ).println( bundle.getVersion( ) );
-        console.print( "        State:         " ).println( status.getState( ) );
-        console.print( "        Last modified: " ).println( new Date( bundle.getLastModified( ) ) );
-        console.print( "        Location:      " ).println( bundle.getLocation( ) );
+        console.print( "        Bundle ID:     " ).println( bundle.getBundleId() );
+        console.print( "        Symbolic name: " ).println( bundle.getSymbolicName() );
+        console.print( "        Version:       " ).println( bundle.getVersion() );
+        console.print( "        State:         " ).println( status.getState() );
+        console.print( "        Last modified: " ).println( new Date( bundle.getLastModified() ) );
+        console.print( "        Location:      " ).println( bundle.getLocation() );
     }
 
     private void showHeaders( Console console, Bundle bundle ) throws IOException
     {
         console.println( "HEADERS" );
-        Dictionary<String, String> bundleHeaders = bundle.getHeaders( );
-        Enumeration<String> keys = bundleHeaders.keys( );
-        while( keys.hasMoreElements( ) )
+        Dictionary<String, String> bundleHeaders = bundle.getHeaders();
+        Enumeration<String> keys = bundleHeaders.keys();
+        while( keys.hasMoreElements() )
         {
-            String header = keys.nextElement( );
+            String header = keys.nextElement();
             String value = bundleHeaders.get( header );
             console.print( "        " ).print( header ).print( ": " ).println( value );
         }
@@ -137,7 +147,7 @@ public class InspectBundleCommand extends AbstractCommand
 
     private void showServices( Console console, Bundle bundle ) throws IOException
     {
-        ServiceReference<?>[] providedServices = bundle.getRegisteredServices( );
+        ServiceReference<?>[] providedServices = bundle.getRegisteredServices();
         if( providedServices != null )
         {
             console.println( "REGISTERED SERVICES" );
@@ -152,7 +162,7 @@ public class InspectBundleCommand extends AbstractCommand
                 {
                     console.println( "        ---------------------------------------------------------------------------------" );
                 }
-                for( String propertyKey : reference.getPropertyKeys( ) )
+                for( String propertyKey : reference.getPropertyKeys() )
                 {
                     Object value = reference.getProperty( propertyKey );
                     if( value instanceof String[] )
@@ -161,7 +171,7 @@ public class InspectBundleCommand extends AbstractCommand
                     }
                     console.print( "        " ).print( propertyKey ).print( ": " ).println( value );
                 }
-                Bundle[] usingBundles = reference.getUsingBundles( );
+                Bundle[] usingBundles = reference.getUsingBundles();
                 if( usingBundles != null )
                 {
                     for( Bundle usingBundle : usingBundles )
@@ -176,13 +186,13 @@ public class InspectBundleCommand extends AbstractCommand
             }
         }
 
-        ServiceReference<?>[] servicesInUse = bundle.getServicesInUse( );
+        ServiceReference<?>[] servicesInUse = bundle.getServicesInUse();
         if( servicesInUse != null )
         {
             console.println( "IMPORTED SERVICES" );
             for( ServiceReference<?> reference : servicesInUse )
             {
-                for( String propertyKey : reference.getPropertyKeys( ) )
+                for( String propertyKey : reference.getPropertyKeys() )
                 {
                     Object value = reference.getProperty( propertyKey );
                     if( value instanceof String[] )
@@ -191,7 +201,7 @@ public class InspectBundleCommand extends AbstractCommand
                     }
                     console.print( "        " ).print( propertyKey ).print( ": " ).println( value );
                 }
-                Bundle providingBundle = reference.getBundle( );
+                Bundle providingBundle = reference.getBundle();
                 if( providingBundle != null )
                 {
                     console.print( "        Provided by: " ).println( BundleUtils.toString( providingBundle ) );
@@ -226,33 +236,33 @@ public class InspectBundleCommand extends AbstractCommand
         {
             for( BundleCapability capability : packageCapabilities )
             {
-                allPackageWires.put( capability, new LinkedList<BundleWire>( ) );
+                allPackageWires.put( capability, new LinkedList<BundleWire>() );
             }
         }
 
         List<BundleWire> providedPackageWires = wiring.getProvidedWires( PACKAGE_NAMESPACE );
         for( BundleWire wire : providedPackageWires )
         {
-            BundleCapability capability = wire.getCapability( );
+            BundleCapability capability = wire.getCapability();
             allPackageWires.get( capability ).add( wire );
         }
 
-        if( allPackageWires.isEmpty( ) )
+        if( allPackageWires.isEmpty() )
         {
             console.println( "NO PACKAGE EXPORTS" );
         }
         else
         {
             console.println( "PACKAGE EXPORTS" );
-            for( Map.Entry<BundleCapability, Collection<BundleWire>> entry : allPackageWires.entrySet( ) )
+            for( Map.Entry<BundleCapability, Collection<BundleWire>> entry : allPackageWires.entrySet() )
             {
-                BundleCapability capability = entry.getKey( );
-                Object packageName = capability.getAttributes( ).get( PACKAGE_NAMESPACE );
-                Object version = capability.getAttributes( ).get( VERSION_ATTRIBUTE );
+                BundleCapability capability = entry.getKey();
+                Object packageName = capability.getAttributes().get( PACKAGE_NAMESPACE );
+                Object version = capability.getAttributes().get( VERSION_ATTRIBUTE );
                 console.print( "        " ).print( packageName ).print( " [" ).print( version ).println( "]" );
 
-                Collection<BundleWire> importers = entry.getValue( );
-                if( importers.isEmpty( ) )
+                Collection<BundleWire> importers = entry.getValue();
+                if( importers.isEmpty() )
                 {
                     console.println( "            Not imported by any other bundle." );
                 }
@@ -260,7 +270,7 @@ public class InspectBundleCommand extends AbstractCommand
                 {
                     for( BundleWire wire : importers )
                     {
-                        Bundle importer = wire.getRequirerWiring( ).getBundle( );
+                        Bundle importer = wire.getRequirerWiring().getBundle();
                         console.print( "            Imported by '" ).print( BundleUtils.toString( importer ) ).println( "'" );
                     }
                 }
@@ -287,30 +297,30 @@ public class InspectBundleCommand extends AbstractCommand
         List<BundleWire> requiredWires = wiring.getRequiredWires( PACKAGE_NAMESPACE );
         for( BundleWire wire : requiredWires )
         {
-            allPackageWires.put( wire.getRequirement( ), wire );
+            allPackageWires.put( wire.getRequirement(), wire );
         }
 
-        if( allPackageWires.isEmpty( ) )
+        if( allPackageWires.isEmpty() )
         {
             console.println( "NO PACKAGE IMPORTS" );
         }
         else
         {
             console.println( "PACKAGE IMPORTS" );
-            for( Map.Entry<BundleRequirement, BundleWire> entry : allPackageWires.entrySet( ) )
+            for( Map.Entry<BundleRequirement, BundleWire> entry : allPackageWires.entrySet() )
             {
-                BundleRequirement requirement = entry.getKey( );
+                BundleRequirement requirement = entry.getKey();
 
-                console.print( "        " ).print( requirement.getDirectives( ).get( FILTER_DIRECTIVE ) );
+                console.print( "        " ).print( requirement.getDirectives().get( FILTER_DIRECTIVE ) );
 
-                Object resolution = requirement.getDirectives( ).get( "resolution" );
-                if( resolution != null && resolution.toString( ).equalsIgnoreCase( "optional" ) )
+                Object resolution = requirement.getDirectives().get( "resolution" );
+                if( resolution != null && resolution.toString().equalsIgnoreCase( "optional" ) )
                 {
                     console.print( " (optional)" );
                 }
-                console.println( ).print( "            -> " );
+                console.println().print( "            -> " );
 
-                BundleWire wire = entry.getValue( );
+                BundleWire wire = entry.getValue();
                 if( wire == null )
                 {
 
@@ -319,12 +329,12 @@ public class InspectBundleCommand extends AbstractCommand
                 }
                 else
                 {
-                    BundleWiring providerWiring = wire.getProviderWiring( );
-                    String providerSymbolicName = providerWiring.getRevision( ).getSymbolicName( );
-                    Version providerVersion = providerWiring.getRevision( ).getVersion( );
-                    Object providedPackageName = wire.getCapability( ).getAttributes( ).get( PACKAGE_NAMESPACE );
-                    Object providedPackageVersion = wire.getCapability( ).getAttributes( ).get( VERSION_ATTRIBUTE );
-                    console.print( providedPackageName ).print( " [" ).print( providedPackageVersion ).print( "] " ).print( " in " ).print( providerSymbolicName ).print( "@" ).print( providerVersion ).println( );
+                    BundleWiring providerWiring = wire.getProviderWiring();
+                    String providerSymbolicName = providerWiring.getRevision().getSymbolicName();
+                    Version providerVersion = providerWiring.getRevision().getVersion();
+                    Object providedPackageName = wire.getCapability().getAttributes().get( PACKAGE_NAMESPACE );
+                    Object providedPackageVersion = wire.getCapability().getAttributes().get( VERSION_ATTRIBUTE );
+                    console.print( providedPackageName ).print( " [" ).print( providedPackageVersion ).print( "] " ).print( " in " ).print( providerSymbolicName ).print( "@" ).print( providerVersion ).println();
                 }
             }
         }
@@ -353,8 +363,8 @@ public class InspectBundleCommand extends AbstractCommand
 
     private void showMissingRequirements( Console console, BundleStatus status ) throws IOException
     {
-        Collection<String> unsatisfiedRequirements = status.getUnsatisfiedRequirements( );
-        if( unsatisfiedRequirements != null && !unsatisfiedRequirements.isEmpty( ) )
+        Collection<String> unsatisfiedRequirements = status.getUnsatisfiedRequirements();
+        if( unsatisfiedRequirements != null && !unsatisfiedRequirements.isEmpty() )
         {
             console.println( "MISSING REQUIREMENTS" );
             for( String requirement : unsatisfiedRequirements )

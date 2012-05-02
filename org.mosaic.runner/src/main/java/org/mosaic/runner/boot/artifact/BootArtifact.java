@@ -32,12 +32,12 @@ public class BootArtifact
         this.coordinates = coordinates;
     }
 
-    public String getType( )
+    public String getType()
     {
         return type;
     }
 
-    public String getCoordinates( )
+    public String getCoordinates()
     {
         return coordinates;
     }
@@ -50,7 +50,7 @@ public class BootArtifact
         {
             return true;
         }
-        if( o == null || getClass( ) != o.getClass( ) )
+        if( o == null || getClass() != o.getClass() )
         {
             return false;
         }
@@ -70,16 +70,16 @@ public class BootArtifact
     }
 
     @Override
-    public int hashCode( )
+    public int hashCode()
     {
-        int result = type.hashCode( );
-        result = 31 * result + coordinates.hashCode( );
+        int result = type.hashCode();
+        result = 31 * result + coordinates.hashCode();
         return result;
     }
 
     @Override
-    public String toString( )
+    public String toString()
     {
-        return new ToStringBuilder( this ).append( "type", this.type ).append( "coordinates", this.coordinates ).toString( );
+        return new ToStringBuilder( this ).append( "type", this.type ).append( "coordinates", this.coordinates ).toString();
     }
 }

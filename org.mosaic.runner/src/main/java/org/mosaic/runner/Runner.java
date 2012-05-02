@@ -22,26 +22,26 @@ public class Runner
         this.home = home;
     }
 
-    public ExitCode run( ) throws SystemExitException
+    public ExitCode run() throws SystemExitException
     {
-        long start = currentTimeMillis( );
+        long start = currentTimeMillis();
 
         // print home configuration
         this.logger.info( "******************************************************************************************" );
         this.logger.info( " Starting Mosaic server:" );
-        this.logger.info( "    Home:    {}", this.home.getHome( ) );
-        this.logger.info( "    Boot:    {}", this.home.getBoot( ) );
-        this.logger.info( "    Config:  {}", this.home.getEtc( ) );
-        this.logger.info( "    Work:    {}", this.home.getWork( ) );
+        this.logger.info( "    Home:    {}", this.home.getHome() );
+        this.logger.info( "    Boot:    {}", this.home.getBoot() );
+        this.logger.info( "    Config:  {}", this.home.getEtc() );
+        this.logger.info( "    Work:    {}", this.home.getWork() );
         this.logger.info( "******************************************************************************************" );
         this.logger.info( " " );
 
         // create and start the server
         FrameworkBootstrapper bootstrapper = new FrameworkBootstrapper( this.home );
-        Felix felix = bootstrapper.boot( );
+        Felix felix = bootstrapper.boot();
 
         // print summary and wait for the server to shutdown
-        long startupDurationMillis = currentTimeMillis( ) - start;
+        long startupDurationMillis = currentTimeMillis() - start;
         synchronized( Runner.class )
         {
             this.logger.info( " " );
@@ -64,7 +64,7 @@ public class Runner
             try
             {
                 FrameworkEvent event = felix.waitForStop( 1000 * 60 );
-                switch( event.getType( ) )
+                switch( event.getType() )
                 {
                     case FrameworkEvent.STOPPED:
 
@@ -89,7 +89,7 @@ public class Runner
 
                         // framework stopped abnormally, with an unspecified reason, return an error exit code
                         this.logger.info( "Mosaic has been stopped due to an unknown cause (" +
-                                          event.getType( ) +
+                                          event.getType() +
                                           ")" );
                         return ExitCode.RUNTIME_ERROR;
 

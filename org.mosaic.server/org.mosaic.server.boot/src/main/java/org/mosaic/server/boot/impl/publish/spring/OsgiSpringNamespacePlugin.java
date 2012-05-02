@@ -33,9 +33,9 @@ public class OsgiSpringNamespacePlugin implements EntityResolver, NamespaceHandl
 
     private final BundleContext bundleContext;
 
-    private final Map<Long, Properties> springSchemasCache = new ConcurrentHashMap<>( );
+    private final Map<Long, Properties> springSchemasCache = new ConcurrentHashMap<>();
 
-    private final Map<Long, Properties> springHandlersCache = new ConcurrentHashMap<>( );
+    private final Map<Long, Properties> springHandlersCache = new ConcurrentHashMap<>();
 
     public OsgiSpringNamespacePlugin( BundleContext bundleContext )
     {
@@ -43,20 +43,20 @@ public class OsgiSpringNamespacePlugin implements EntityResolver, NamespaceHandl
 
         for( Bundle bundle : BundleUtils.getAllBundles( this.bundleContext ) )
         {
-            if( bundle.getState( ) == Bundle.RESOLVED || bundle.getState( ) == Bundle.ACTIVE )
+            if( bundle.getState() == Bundle.RESOLVED || bundle.getState() == Bundle.ACTIVE )
             {
                 processResolvedBundle( bundle );
             }
         }
     }
 
-    public void open( )
+    public void open()
     {
         LOG.debug( "Adding Spring namespace handler and entity resolver bundle listener" );
         this.bundleContext.addBundleListener( this );
     }
 
-    public void close( )
+    public void close()
     {
         this.bundleContext.removeBundleListener( this );
         LOG.debug( "Removing Spring namespace handler and entity resolver bundle listener" );
@@ -65,14 +65,14 @@ public class OsgiSpringNamespacePlugin implements EntityResolver, NamespaceHandl
     @Override
     public void bundleChanged( BundleEvent event )
     {
-        Bundle bundle = event.getBundle( );
-        if( event.getType( ) == BundleEvent.RESOLVED )
+        Bundle bundle = event.getBundle();
+        if( event.getType() == BundleEvent.RESOLVED )
         {
 
             processResolvedBundle( bundle );
 
         }
-        else if( event.getType( ) == BundleEvent.UNRESOLVED )
+        else if( event.getType() == BundleEvent.UNRESOLVED )
         {
 
             processUnresolvedBundles( bundle );
@@ -84,13 +84,13 @@ public class OsgiSpringNamespacePlugin implements EntityResolver, NamespaceHandl
     public NamespaceHandler resolve( String namespaceUri )
     {
 
-        for( Map.Entry<Long, Properties> entry : this.springHandlersCache.entrySet( ) )
+        for( Map.Entry<Long, Properties> entry : this.springHandlersCache.entrySet() )
         {
 
-            String handlerClassName = entry.getValue( ).getProperty( namespaceUri );
+            String handlerClassName = entry.getValue().getProperty( namespaceUri );
             if( handlerClassName != null )
             {
-                Bundle bundle = this.bundleContext.getBundle( entry.getKey( ) );
+                Bundle bundle = this.bundleContext.getBundle( entry.getKey() );
                 if( bundle != null )
                 {
 
@@ -104,13 +104,13 @@ public class OsgiSpringNamespacePlugin implements EntityResolver, NamespaceHandl
                                                           "] for namespace [" +
                                                           namespaceUri +
                                                           "] does not implement the [" +
-                                                          NamespaceHandler.class.getName( ) +
+                                                          NamespaceHandler.class.getName() +
                                                           "] interface" );
                         }
 
                         NamespaceHandler namespaceHandler =
                                 ( NamespaceHandler ) BeanUtils.instantiateClass( handlerClass );
-                        namespaceHandler.init( );
+                        namespaceHandler.init();
                         return namespaceHandler;
 
                     }
@@ -121,7 +121,7 @@ public class OsgiSpringNamespacePlugin implements EntityResolver, NamespaceHandl
                                                       "' from bundle '" +
                                                       bundle +
                                                       "': " +
-                                                      e.getMessage( ), e );
+                                                      e.getMessage(), e );
                     }
 
                 }
@@ -137,13 +137,13 @@ public class OsgiSpringNamespacePlugin implements EntityResolver, NamespaceHandl
         if( systemId != null )
         {
 
-            for( Map.Entry<Long, Properties> entry : this.springSchemasCache.entrySet( ) )
+            for( Map.Entry<Long, Properties> entry : this.springSchemasCache.entrySet() )
             {
 
-                String schemaLocation = entry.getValue( ).getProperty( systemId );
+                String schemaLocation = entry.getValue().getProperty( systemId );
                 if( schemaLocation != null )
                 {
-                    Bundle bundle = this.bundleContext.getBundle( entry.getKey( ) );
+                    Bundle bundle = this.bundleContext.getBundle( entry.getKey() );
                     if( bundle != null )
                     {
 
@@ -153,7 +153,7 @@ public class OsgiSpringNamespacePlugin implements EntityResolver, NamespaceHandl
                         URL schemaUrl = bundle.getResource( schemaLocation );
                         if( schemaUrl != null )
                         {
-                            InputSource source = new InputSource( schemaUrl.openStream( ) );
+                            InputSource source = new InputSource( schemaUrl.openStream() );
                             source.setPublicId( publicId );
                             source.setSystemId( systemId );
                             return source;
@@ -176,13 +176,13 @@ public class OsgiSpringNamespacePlugin implements EntityResolver, NamespaceHandl
             try
             {
 
-                this.springSchemasCache.put( bundle.getBundleId( ), loadProperties( new UrlResource( springSchemasFile ) ) );
+                this.springSchemasCache.put( bundle.getBundleId(), loadProperties( new UrlResource( springSchemasFile ) ) );
 
             }
             catch( IOException e )
             {
 
-                LOG.warn( "Could not load 'spring.schemas' file from bundle '{}': {}", BundleUtils.toString( bundle ), e.getMessage( ), e );
+                LOG.warn( "Could not load 'spring.schemas' file from bundle '{}': {}", BundleUtils.toString( bundle ), e.getMessage(), e );
 
             }
         }
@@ -193,13 +193,13 @@ public class OsgiSpringNamespacePlugin implements EntityResolver, NamespaceHandl
             try
             {
 
-                this.springHandlersCache.put( bundle.getBundleId( ), loadProperties( new UrlResource( springHandlersFile ) ) );
+                this.springHandlersCache.put( bundle.getBundleId(), loadProperties( new UrlResource( springHandlersFile ) ) );
 
             }
             catch( IOException e )
             {
 
-                LOG.warn( "Could not load 'spring.handlers' file from bundle '{}': {}", BundleUtils.toString( bundle ), e.getMessage( ), e );
+                LOG.warn( "Could not load 'spring.handlers' file from bundle '{}': {}", BundleUtils.toString( bundle ), e.getMessage(), e );
 
             }
         }
@@ -207,8 +207,8 @@ public class OsgiSpringNamespacePlugin implements EntityResolver, NamespaceHandl
 
     private void processUnresolvedBundles( Bundle bundle )
     {
-        this.springSchemasCache.remove( bundle.getBundleId( ) );
-        this.springHandlersCache.remove( bundle.getBundleId( ) );
+        this.springSchemasCache.remove( bundle.getBundleId() );
+        this.springHandlersCache.remove( bundle.getBundleId() );
     }
 
 }

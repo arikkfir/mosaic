@@ -12,8 +12,7 @@ import org.osgi.framework.ServiceReference;
  */
 public class ServiceListRequirement extends AbstractTrackerRequirement
 {
-
-    private final List<Object> cachedReferences = new CopyOnWriteArrayList<>( );
+    private final List<Object> cachedReferences = new CopyOnWriteArrayList<>();
 
     public ServiceListRequirement( BundleTracker tracker,
                                    Class<?> serviceType,
@@ -22,11 +21,11 @@ public class ServiceListRequirement extends AbstractTrackerRequirement
                                    Method targetMethod )
     {
         super( tracker, serviceType, additionalFilter, beanName, targetMethod );
-        Class<?>[] parameterTypes = targetMethod.getParameterTypes( );
+        Class<?>[] parameterTypes = targetMethod.getParameterTypes();
         if( parameterTypes.length != 1 || !parameterTypes[ 0 ].isAssignableFrom( List.class ) )
         {
             throw new IllegalArgumentException( "Method '" +
-                                                getTargetMethod( ).getName( ) +
+                                                getTargetMethod().getName() +
                                                 "' is bean '" +
                                                 beanName +
                                                 "' has an illegal signature: must be single List parameter" );
@@ -34,27 +33,21 @@ public class ServiceListRequirement extends AbstractTrackerRequirement
     }
 
     @Override
-    public String toString( )
+    public String toString()
     {
-        return "ServiceList[" +
-               getServiceType( ).getSimpleName( ) +
-               "/" +
-               getTargetMethod( ).getName( ) +
-               "/" +
-               getBeanName( ) +
-               "]";
+        return "ServiceList[" + getServiceType().getSimpleName() + "/" + getTargetMethod().getName() + "/" + getBeanName() + "]";
     }
 
     @Override
-    public int getPriority( )
+    public int getPriority()
     {
         return SERVICE_LIST_PRIORITY;
     }
 
     @Override
-    public String toShortString( )
+    public String toShortString()
     {
-        return "List<" + getServiceType( ).getSimpleName( ) + ">";
+        return "List<" + getServiceType().getSimpleName() + ">";
     }
 
     @Override
@@ -72,9 +65,9 @@ public class ServiceListRequirement extends AbstractTrackerRequirement
     }
 
     @Override
-    protected boolean trackInternal( ) throws Exception
+    protected boolean trackInternal() throws Exception
     {
-        super.trackInternal( );
+        super.trackInternal();
         return true;
     }
 

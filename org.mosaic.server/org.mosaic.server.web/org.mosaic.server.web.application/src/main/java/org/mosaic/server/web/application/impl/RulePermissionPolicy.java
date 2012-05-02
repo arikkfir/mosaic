@@ -29,7 +29,7 @@ public class RulePermissionPolicy implements PermissionPolicy
         private CredentialTypeExpressionRule( String credentialType, String rule )
         {
             this.credentialType = credentialType;
-            this.rule = new SpelExpressionParser( ).parseExpression( rule );
+            this.rule = new SpelExpressionParser().parseExpression( rule );
         }
 
         @Override
@@ -37,7 +37,7 @@ public class RulePermissionPolicy implements PermissionPolicy
         {
             for( User.Credential credential : credentials )
             {
-                if( credential.getType( ).equalsIgnoreCase( this.credentialType ) )
+                if( credential.getType().equalsIgnoreCase( this.credentialType ) )
                 {
                     EvaluationContext ctx = new StandardEvaluationContext( credential );
                     ctx.setVariable( "operation", operation );
@@ -64,7 +64,7 @@ public class RulePermissionPolicy implements PermissionPolicy
             this.roleName = roleName;
             for( String pattern : permissionPatterns )
             {
-                this.permissions.add( Pattern.compile( pattern.trim( ) ) );
+                this.permissions.add( Pattern.compile( pattern.trim() ) );
             }
         }
 
@@ -73,11 +73,11 @@ public class RulePermissionPolicy implements PermissionPolicy
         {
             for( User.Credential credential : credentials )
             {
-                if( credential instanceof RoleCredential && credential.getName( ).equalsIgnoreCase( this.roleName ) )
+                if( credential instanceof RoleCredential && credential.getName().equalsIgnoreCase( this.roleName ) )
                 {
                     for( Pattern pattern : this.permissions )
                     {
-                        if( pattern.matcher( operation ).matches( ) )
+                        if( pattern.matcher( operation ).matches() )
                         {
                             return true;
                         }
@@ -88,9 +88,9 @@ public class RulePermissionPolicy implements PermissionPolicy
         }
     }
 
-    private final List<PermissionPolicy> rules = new LinkedList<>( );
+    private final List<PermissionPolicy> rules = new LinkedList<>();
 
-    public RulePermissionPolicy( )
+    public RulePermissionPolicy()
     {
         // allow admins to do anything
         addCredentialTypeExpressionRule( "admin", "true" );

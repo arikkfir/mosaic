@@ -6,50 +6,51 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import org.joda.time.DateTime;
-import org.mosaic.util.collection.TypedDict;
 import org.springframework.http.MediaType;
 
 /**
  * @author arik
  */
-public interface HttpRequestHeaders extends TypedDict<String>
+public interface HttpRequestHeaders
 {
+    String getFirst( String name );
 
-    List<MediaType> getAccept( );
+    List<String> get( String name );
 
-    List<Charset> getAcceptCharset( );
+    List<MediaType> getAccept();
 
-    List<Locale> getAcceptLanguage( );
+    List<Charset> getAcceptCharset();
 
-    String getAuthorization( );
+    List<Locale> getAcceptLanguage();
 
-    String getCacheControl( );
+    String getAuthorization();
 
-    List<Locale> getContentLanguage( );
+    String getCacheControl();
 
-    Long getContentLength( );
+    List<Locale> getContentLanguage();
 
-    MediaType getContentType( );
+    Long getContentLength();
+
+    MediaType getContentType();
 
     HttpCookie getCookie( String name );
 
-    String getHost( );
+    String getHost();
 
-    Set<String> getIfMatch( );
+    Set<String> getIfMatch();
 
-    DateTime getIfModifiedSince( );
+    DateTime getIfModifiedSince();
 
-    Set<String> getIfNoneMatch( );
+    Set<String> getIfNoneMatch();
 
-    DateTime getIfUnmodifiedSince( );
+    DateTime getIfUnmodifiedSince();
 
-    String getPragma( );
+    String getPragma();
 
-    URL getReferer( );
+    URL getReferer();
 
     /**
      * @todo would be nice to return a "Device" object here
      */
-    String getUserAgent( );
-
+    String getUserAgent();
 }

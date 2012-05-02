@@ -5,7 +5,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.*;
-import org.mosaic.describe.Rank;
 import org.mosaic.lifecycle.*;
 import org.mosaic.server.boot.impl.publish.BundleTracker;
 import org.mosaic.server.boot.impl.publish.spring.BundleBeanFactory;
@@ -30,7 +29,7 @@ public class RequirementFactory
     {
         Requirement createRequirement( BundleTracker tracker,
                                        Class<?> serviceType,
-                                       T annotation,
+                                       boolean list, T annotation,
                                        String beanDefinitionName, Method method );
     }
 
@@ -49,12 +48,12 @@ public class RequirementFactory
         this.osgiSpringNamespacePlugin = osgiSpringNamespacePlugin;
     }
 
-    public Collection<Requirement> detectRequirements( )
+    public Collection<Requirement> detectRequirements()
     {
         BundleBeanFactory beanFactory = new BundleBeanFactory( this.bundle, this.osgiSpringNamespacePlugin );
 
-        List<Requirement> requirements = new LinkedList<>( );
-        for( String beanDefinitionName : beanFactory.getBeanDefinitionNames( ) )
+        List<Requirement> requirements = new LinkedList<>();
+        for( String beanDefinitionName : beanFactory.getBeanDefinitionNames() )
         {
             Class<?> beanClass = SpringUtils.getBeanClass( this.bundle, beanFactory, beanDefinitionName );
             if( beanClass != null )
@@ -68,9 +67,9 @@ public class RequirementFactory
                     Rank rankAnn = AnnotationUtils.findAnnotation( beanClass, Rank.class );
                     if( rankAnn != null )
                     {
-                        rank = rankAnn.value( );
+                        rank = rankAnn.value();
                     }
-                    requirements.add( new ServiceExportRequirement( this.tracker, beanDefinitionName, exportAnn.value( ), rank ) );
+                    requirements.add( new ServiceExportRequirement( this.tracker, beanDefinitionName, exportAnn.value(), rank ) );
                 }
 
                 // detect class endpoints
@@ -90,7 +89,7 @@ public class RequirementFactory
                 }
             }
         }
-        Collections.sort( requirements, new RequirementPriorityComparator( ) );
+        Collections.sort( requirements, new RequirementPriorityComparator() );
         return requirements;
     }
 
@@ -102,31 +101,31 @@ public class RequirementFactory
             return;
         }
 
-        Class<?>[] parameterTypes = method.getParameterTypes( );
+        Class<?>[] parameterTypes = method.getParameterTypes();
         if( parameterTypes.length == 0 )
         {
             throw new IllegalStateException( format( "Method '%s' in bean '%s' has the @%s annotation, but has no parameters",
-                                                     method.getName( ),
+                                                     method.getName(),
                                                      beanDefinitionName,
-                                                     ContextRef.class.getSimpleName( ) ) );
+                                                     ContextRef.class.getSimpleName() ) );
         }
         else if( parameterTypes.length > 1 )
         {
             // @ContextRef methods must have exactly one parameter
             throw new IllegalStateException( format( "Method '%s' in bean '%s' has the @%s annotation, but has more than one parameter",
-                                                     method.getName( ),
+                                                     method.getName(),
                                                      beanDefinitionName,
-                                                     ContextRef.class.getSimpleName( ) ) );
+                                                     ContextRef.class.getSimpleName() ) );
         }
         else if( !parameterTypes[ 0 ].isAssignableFrom( BundleContext.class ) )
         {
             // @ContextRef methods must have exactly one parameter
             throw new IllegalStateException( format( "Method '%s' in bean '%s' has the @%s annotation, but has a parameter of an illegal type (%s): must be of type '%s'",
-                                                     method.getName( ),
+                                                     method.getName(),
                                                      beanDefinitionName,
-                                                     ContextRef.class.getSimpleName( ),
-                                                     parameterTypes[ 0 ].getSimpleName( ),
-                                                     BundleContext.class.getSimpleName( ) ) );
+                                                     ContextRef.class.getSimpleName(),
+                                                     parameterTypes[ 0 ].getSimpleName(),
+                                                     BundleContext.class.getSimpleName() ) );
         }
         else
         {
@@ -139,56 +138,58 @@ public class RequirementFactory
                                           Method method,
                                           Collection<Requirement> requirements )
     {
-        createRequirement( requirements, beanDefinitionName, method, ServiceRef.class, true, new ServiceRequirementFactory<ServiceRef>( )
+        createRequirement( requirements, beanDefinitionName, method, ServiceRef.class, true, new ServiceRequirementFactory<ServiceRef>()
         {
             @Override
             public Requirement createRequirement( BundleTracker tracker,
                                                   Class<?> serviceType,
-                                                  ServiceRef annotation,
+                                                  boolean list, ServiceRef annotation,
                                                   String beanDefinitionName,
                                                   Method method )
             {
-                return new ServiceRefRequirement( tracker,
-                                                  serviceType,
-                                                  annotation.filter( ),
-                                                  annotation.required( ),
-                                                  beanDefinitionName,
-                                                  method );
+                if( list )
+                {
+                    return new ServiceListRequirement( tracker, serviceType, annotation.filter(), beanDefinitionName, method );
+                }
+                else
+                {
+                    return new ServiceRefRequirement( tracker, serviceType, annotation.filter(), annotation.required(), beanDefinitionName, method );
+                }
             }
         } );
     }
 
     private void detectServiceBindings( String beanDefinitionName, Method method, Collection<Requirement> requirements )
     {
-        createRequirement( requirements, beanDefinitionName, method, ServiceBind.class, true, new ServiceRequirementFactory<ServiceBind>( )
+        createRequirement( requirements, beanDefinitionName, method, ServiceBind.class, true, new ServiceRequirementFactory<ServiceBind>()
         {
             @Override
             public Requirement createRequirement( BundleTracker tracker,
                                                   Class<?> serviceType,
-                                                  ServiceBind annotation,
+                                                  boolean list, ServiceBind annotation,
                                                   String beanDefinitionName,
                                                   Method method )
             {
                 return new ServiceBindRequirement( tracker,
                                                    serviceType,
-                                                   annotation.filter( ),
+                                                   annotation.filter(),
                                                    beanDefinitionName,
                                                    method );
             }
         } );
 
-        createRequirement( requirements, beanDefinitionName, method, ServiceUnbind.class, true, new ServiceRequirementFactory<ServiceUnbind>( )
+        createRequirement( requirements, beanDefinitionName, method, ServiceUnbind.class, true, new ServiceRequirementFactory<ServiceUnbind>()
         {
             @Override
             public Requirement createRequirement( BundleTracker tracker,
                                                   Class<?> serviceType,
-                                                  ServiceUnbind annotation,
+                                                  boolean list, ServiceUnbind annotation,
                                                   String beanDefinitionName,
                                                   Method method )
             {
                 return new ServiceUnbindRequirement( tracker,
                                                      serviceType,
-                                                     annotation.filter( ),
+                                                     annotation.filter(),
                                                      beanDefinitionName,
                                                      method );
             }
@@ -204,7 +205,7 @@ public class RequirementFactory
             Rank rankAnn = AnnotationUtils.findAnnotation( method, Rank.class );
             if( rankAnn != null )
             {
-                rank = rankAnn.value( );
+                rank = rankAnn.value();
             }
             requirements.add( new MethodEndpointRequirement( this.tracker, beanDefinitionName, method, metaAnnotation, rank ) );
         }
@@ -225,17 +226,18 @@ public class RequirementFactory
         }
 
         // no parameters? no soup!
-        Class<?>[] parameterTypes = method.getParameterTypes( );
+        Class<?>[] parameterTypes = method.getParameterTypes();
         if( parameterTypes.length == 0 )
         {
             throw new IllegalStateException( format( "Method '%s' in bean '%s' has the @%s annotation, but has no parameters",
-                                                     method.getName( ),
+                                                     method.getName(),
                                                      beanDefinitionName,
-                                                     annotationType.getSimpleName( ) ) );
+                                                     annotationType.getSimpleName() ) );
         }
 
         // iterate over parameters, and attempt to discover the type of service this requirement refers to
         Class<?> serviceType = null;
+        boolean list = false;
         for( int i = 0, parameterTypesLength = parameterTypes.length; i < parameterTypesLength; i++ )
         {
             Class<?> parameterType = parameterTypes[ i ];
@@ -245,14 +247,14 @@ public class RequirementFactory
             {
                 // extract service type from generic ServiceReference<SERVICE_TYPE_HERE> declaration
                 // ignores cases where the service reference points to a wildcard (e.g. ServiceReference<?...>)
-                Type genericParameter = methodParameter.getGenericParameterType( );
+                Type genericParameter = methodParameter.getGenericParameterType();
                 if( !( genericParameter instanceof ParameterizedType ) )
                 {
                     continue;
                 }
 
                 ParameterizedType parameterizedType = ( ParameterizedType ) genericParameter;
-                Type[] actualTypeArguments = parameterizedType.getActualTypeArguments( );
+                Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
                 if( actualTypeArguments.length != 1 || !( actualTypeArguments[ 0 ] instanceof Class<?> ) )
                 {
                     continue;
@@ -266,7 +268,7 @@ public class RequirementFactory
                 else if( !serviceType.equals( serviceRefParameter ) )
                 {
                     throw new IllegalStateException( format( "Conflicting service types in method '%s' of bean '%s'",
-                                                             method.getName( ), beanDefinitionName ) );
+                                                             method.getName(), beanDefinitionName ) );
                 }
             }
             else if( supportLists && parameterType.isAssignableFrom( List.class ) )
@@ -276,16 +278,17 @@ public class RequirementFactory
                 if( itemType == null )
                 {
                     throw new IllegalStateException( format( "Untyped 'List' parameter in method '%s' of bean '%s'",
-                                                             method.getName( ), beanDefinitionName ) );
+                                                             method.getName(), beanDefinitionName ) );
                 }
                 else if( serviceType == null )
                 {
                     serviceType = itemType;
+                    list = true;
                 }
                 else if( !serviceType.equals( itemType ) )
                 {
                     throw new IllegalStateException( format( "Conflicting service types in method '%s' of bean '%s'",
-                                                             method.getName( ), beanDefinitionName ) );
+                                                             method.getName(), beanDefinitionName ) );
                 }
             }
             else if( serviceType == null )
@@ -295,7 +298,7 @@ public class RequirementFactory
             else if( !serviceType.equals( parameterType ) )
             {
                 throw new IllegalStateException( format( "Conflicting service types in method '%s' of bean '%s'",
-                                                         method.getName( ), beanDefinitionName ) );
+                                                         method.getName(), beanDefinitionName ) );
             }
         }
 
@@ -303,13 +306,13 @@ public class RequirementFactory
         if( serviceType == null )
         {
             throw new IllegalStateException( format( "Could not infer service type from signature of @%s method '%s' in bean '%s' - check your parameters",
-                                                     annotationType.getSimpleName( ),
-                                                     method.getName( ),
+                                                     annotationType.getSimpleName(),
+                                                     method.getName(),
                                                      beanDefinitionName ) );
         }
         else
         {
-            requirements.add( factory.createRequirement( this.tracker, serviceType, annotation, beanDefinitionName, method ) );
+            requirements.add( factory.createRequirement( this.tracker, serviceType, list, annotation, beanDefinitionName, method ) );
         }
     }
 
@@ -321,7 +324,7 @@ public class RequirementFactory
         }
         else
         {
-            for( Annotation annotation : method.getAnnotations( ) )
+            for( Annotation annotation : method.getAnnotations() )
             {
                 T foundAnnotation = findAnnotation( annotation, annotationType );
                 if( foundAnnotation != null )
@@ -335,19 +338,19 @@ public class RequirementFactory
 
     private static <T extends Annotation> T findAnnotation( Annotation annotation, Class<T> annotationType )
     {
-        if( annotation.annotationType( ).getPackage( ).getName( ).startsWith( "java.lang" ) )
+        if( annotation.annotationType().getPackage().getName().startsWith( "java.lang" ) )
         {
             return null;
 
         }
-        else if( annotation.annotationType( ).isAnnotationPresent( annotationType ) )
+        else if( annotation.annotationType().isAnnotationPresent( annotationType ) )
         {
-            return annotation.annotationType( ).getAnnotation( annotationType );
+            return annotation.annotationType().getAnnotation( annotationType );
 
         }
         else
         {
-            for( Annotation nested : annotation.annotationType( ).getAnnotations( ) )
+            for( Annotation nested : annotation.annotationType().getAnnotations() )
             {
                 T foundAnnotation = findAnnotation( nested, annotationType );
                 if( foundAnnotation != null )
@@ -368,7 +371,7 @@ public class RequirementFactory
         }
         else
         {
-            for( Annotation annotation : clazz.getAnnotations( ) )
+            for( Annotation annotation : clazz.getAnnotations() )
             {
                 Annotation foundAnnotation = findAnnotationWithMeta( annotation, metaAnnotationType );
                 if( foundAnnotation != null )
@@ -389,7 +392,7 @@ public class RequirementFactory
         }
         else
         {
-            for( Annotation annotation : method.getAnnotations( ) )
+            for( Annotation annotation : method.getAnnotations() )
             {
                 Annotation foundAnnotation = findAnnotationWithMeta( annotation, metaAnnotationType );
                 if( foundAnnotation != null )
@@ -404,19 +407,19 @@ public class RequirementFactory
     private static <T extends Annotation> Annotation findAnnotationWithMeta( Annotation annotation,
                                                                              Class<T> metaAnnotationType )
     {
-        if( annotation.annotationType( ).getPackage( ).getName( ).startsWith( "java.lang" ) )
+        if( annotation.annotationType().getPackage().getName().startsWith( "java.lang" ) )
         {
             return null;
 
         }
-        else if( annotation.annotationType( ).isAnnotationPresent( metaAnnotationType ) )
+        else if( annotation.annotationType().isAnnotationPresent( metaAnnotationType ) )
         {
             return annotation;
 
         }
         else
         {
-            for( Annotation nested : annotation.annotationType( ).getAnnotations( ) )
+            for( Annotation nested : annotation.annotationType().getAnnotations() )
             {
                 Annotation foundAnnotation = findAnnotationWithMeta( nested, metaAnnotationType );
                 if( foundAnnotation != null )
@@ -433,7 +436,7 @@ public class RequirementFactory
         @Override
         public int compare( Requirement o1, Requirement o2 )
         {
-            return new Integer( o1.getPriority( ) ).compareTo( o2.getPriority( ) );
+            return new Integer( o1.getPriority() ).compareTo( o2.getPriority() );
         }
     }
 }
