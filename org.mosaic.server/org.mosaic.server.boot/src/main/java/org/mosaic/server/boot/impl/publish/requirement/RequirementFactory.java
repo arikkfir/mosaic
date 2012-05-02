@@ -18,7 +18,7 @@ import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.ReflectionUtils;
 
-import static org.mosaic.util.format.Formatter.format;
+import static java.lang.String.format;
 import static org.springframework.core.GenericCollectionTypeResolver.getCollectionParameterType;
 
 /**
@@ -266,9 +266,7 @@ public class RequirementFactory
                 else if( !serviceType.equals( serviceRefParameter ) )
                 {
                     throw new IllegalStateException( format( "Conflicting service types in method '%s' of bean '%s'",
-                                                             method.getName( ),
-                                                             beanDefinitionName,
-                                                             annotationType.getSimpleName( ) ) );
+                                                             method.getName( ), beanDefinitionName ) );
                 }
             }
             else if( supportLists && parameterType.isAssignableFrom( List.class ) )
@@ -287,9 +285,7 @@ public class RequirementFactory
                 else if( !serviceType.equals( itemType ) )
                 {
                     throw new IllegalStateException( format( "Conflicting service types in method '%s' of bean '%s'",
-                                                             method.getName( ),
-                                                             beanDefinitionName,
-                                                             annotationType.getSimpleName( ) ) );
+                                                             method.getName( ), beanDefinitionName ) );
                 }
             }
             else if( serviceType == null )
@@ -299,9 +295,7 @@ public class RequirementFactory
             else if( !serviceType.equals( parameterType ) )
             {
                 throw new IllegalStateException( format( "Conflicting service types in method '%s' of bean '%s'",
-                                                         method.getName( ),
-                                                         beanDefinitionName,
-                                                         annotationType.getSimpleName( ) ) );
+                                                         method.getName( ), beanDefinitionName ) );
             }
         }
 
