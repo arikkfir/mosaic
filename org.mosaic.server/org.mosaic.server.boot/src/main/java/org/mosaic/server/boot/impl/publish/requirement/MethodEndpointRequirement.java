@@ -15,6 +15,8 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 import org.springframework.context.ApplicationContext;
 
+import static org.osgi.framework.Constants.SERVICE_RANKING;
+
 /**
  * @author arik
  */
@@ -25,14 +27,21 @@ public class MethodEndpointRequirement extends AbstractMethodRequirement impleme
 
     private final Annotation type;
 
+    private final int ranking;
+
     private ServiceRegistration<MethodEndpointInfo> registration;
 
     private ApplicationContext applicationContext;
 
-    public MethodEndpointRequirement( BundleTracker tracker, String beanName, Method targetMethod, Annotation type )
+    public MethodEndpointRequirement( BundleTracker tracker,
+                                      String beanName,
+                                      Method targetMethod,
+                                      Annotation type,
+                                      int ranking )
     {
         super( tracker, beanName, targetMethod );
         this.type = type;
+        this.ranking = ranking;
     }
 
     @Override
@@ -82,6 +91,7 @@ public class MethodEndpointRequirement extends AbstractMethodRequirement impleme
             properties.put( TYPE, this.type.annotationType( ).getName( ) );
             properties.put( SHORT_TYPE, this.type.annotationType( ).getSimpleName( ) );
             properties.put( METHOD_NAME, getTargetMethod( ).getName( ) );
+            properties.put( SERVICE_RANKING, this.ranking );
             this.registration = bundleContext.registerService( MethodEndpointInfo.class, this, properties );
         }
     }
