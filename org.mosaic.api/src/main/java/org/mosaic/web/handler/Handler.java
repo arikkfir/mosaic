@@ -7,11 +7,7 @@ import org.mosaic.web.HttpRequest;
  */
 public interface Handler
 {
-
-    interface HandlerMatch
-    {
-
-    }
+    interface HandlerMatch { }
 
     HandlerMatch matches( HttpRequest request );
 
