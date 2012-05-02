@@ -1,6 +1,7 @@
 package org.mosaic.server.web.dispatcher.impl.handler.parameters;
 
 import org.mosaic.web.HttpRequest;
+import org.springframework.core.MethodParameter;
 
 /**
  * @author arik
@@ -15,6 +16,6 @@ public interface MethodParameterResolver
 
     }
 
-    ResolvedParameter resolve( MethodParameterInfo methodParameterInfo );
+    ResolvedParameter resolve( MethodParameter methodParameter );
 
 }

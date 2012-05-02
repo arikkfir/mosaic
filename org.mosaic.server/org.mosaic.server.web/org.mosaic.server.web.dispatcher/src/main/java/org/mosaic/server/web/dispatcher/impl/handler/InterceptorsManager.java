@@ -1,53 +1,141 @@
 package org.mosaic.server.web.dispatcher.impl.handler;
 
-import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.mosaic.lifecycle.MethodEndpointInfo;
 import org.mosaic.lifecycle.ServiceBind;
 import org.mosaic.lifecycle.ServiceUnbind;
-import org.mosaic.server.web.dispatcher.impl.handler.parameters.MethodParameterResolver;
+import org.mosaic.server.web.dispatcher.impl.RequestExecutionPlan;
+import org.mosaic.server.web.dispatcher.impl.util.RegexPathMatcher;
+import org.mosaic.util.collection.TypedDict;
+import org.mosaic.util.collection.WrappingTypedDict;
 import org.mosaic.util.logging.Logger;
 import org.mosaic.util.logging.LoggerFactory;
-import org.mosaic.web.handler.annotation.Service;
+import org.mosaic.web.HttpRequest;
+import org.mosaic.web.handler.Interceptor;
+import org.mosaic.web.handler.InterceptorChain;
+import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Component;
 
 /**
  * @author arik
  */
 @Component
-public class InterceptorsManager
+public class InterceptorsManager extends AbstractRequestExecutionBuilder
+        implements RequestExecutionPlan.RequestExecutionBuilder
 {
-
     private static final Logger LOG = LoggerFactory.getLogger( InterceptorsManager.class );
 
-    private ConversionService conversionService;
+    private final Map<ServiceReference<?>, Interceptor> interceptors = new ConcurrentHashMap<>( );
 
-    private List<MethodParameterResolver> methodParameterResolvers;
-
-    @Autowired
-    public void setConversionService( ConversionService conversionService )
+    @ServiceBind
+    public void addInterceptor( ServiceReference<Interceptor> ref, Interceptor interceptor )
     {
-        this.conversionService = conversionService;
+        this.interceptors.put( ref, interceptor );
     }
 
-    @Autowired
-    public void setMethodParameterResolvers( List<MethodParameterResolver> methodParameterResolvers )
+    @ServiceUnbind
+    public void removeInterceptor( ServiceReference<Interceptor> ref )
     {
-        this.methodParameterResolvers = methodParameterResolvers;
+        this.interceptors.remove( ref );
     }
 
     @ServiceBind( filter = "methodEndpointShortType=Interceptor" )
-    public void addInterceptor( ServiceReference<?> ref, MethodEndpointInfo endpointInfo )
+    public void addInterceptorMethod( ServiceReference<MethodEndpointInfo> ref, MethodEndpointInfo endpointInfo )
     {
-        this.interceptors.put( ref, new MethodEndpointHandler( endpointInfo, Service.class ) );
+        try
+        {
+            this.interceptors.put( ref, new MethodEndpointInterceptor( endpointInfo ) );
+        }
+        catch( Exception e )
+        {
+            LOG.warn( "Interceptor '{}' could not be added to Mosaic handlers: {}", endpointInfo, e.getMessage( ), e );
+        }
     }
 
     @ServiceUnbind( filter = "methodEndpointShortType=Interceptor" )
-    public void removeInterceptor( ServiceReference<?> ref )
+    public void removeInterceptorMethod( ServiceReference<MethodEndpointInfo> ref )
     {
         this.interceptors.remove( ref );
+    }
+
+    @Override
+    public void contribute( RequestExecutionPlan plan )
+    {
+        for( Map.Entry<ServiceReference<?>, Interceptor> entry : this.interceptors.entrySet( ) )
+        {
+            ServiceReference<?> ref = entry.getKey( );
+            Interceptor interceptor = entry.getValue( );
+
+            Interceptor.InterceptorMatch match = interceptor.matches( plan.getRequest( ) );
+            if( match != null )
+            {
+                Integer ranking = ( Integer ) ref.getProperty( Constants.SERVICE_RANKING );
+                plan.addInterceptor( ranking == null ? 0 : ranking, interceptor, match );
+            }
+        }
+    }
+
+    private class MethodEndpointInterceptorMatch implements Interceptor.InterceptorMatch
+    {
+        private final RegexPathMatcher.MatchResult matchResult;
+
+        private final TypedDict<String> pathParams;
+
+        private MethodEndpointInterceptorMatch( RegexPathMatcher.MatchResult matchResult )
+        {
+            this.matchResult = matchResult;
+            this.pathParams = new WrappingTypedDict<>( getConversionService( ), String.class );
+            for( Map.Entry<String, String> entry : this.matchResult.getVariables( ).entrySet( ) )
+            {
+                this.pathParams.add( entry.getKey( ), entry.getValue( ) );
+            }
+        }
+
+        private TypedDict<String> getPathParams( )
+        {
+            return this.pathParams;
+        }
+    }
+
+    private class MethodEndpointInterceptor extends MethodEndpointWrapper implements Interceptor
+    {
+        private MethodEndpointInterceptor( MethodEndpointInfo methodEndpointInfo ) throws IllegalStateException
+        {
+            super( methodEndpointInfo, org.mosaic.web.handler.annotation.Interceptor.class );
+        }
+
+        @Override
+        public InterceptorMatch matches( HttpRequest request )
+        {
+            RegexPathMatcher.MatchResult match = accepts( request );
+            if( match != null )
+            {
+                return new MethodEndpointInterceptorMatch( match );
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        @Override
+        public Object handle( HttpRequest request, InterceptorMatch match, InterceptorChain chain )
+        throws Exception
+        {
+            MethodEndpointInterceptorMatch endpointMatch = ( MethodEndpointInterceptorMatch ) match;
+
+            TypedDict<String> oldPathParams = pushPathParams( request, endpointMatch.getPathParams( ) );
+            try
+            {
+                return invoke( request );
+            }
+            finally
+            {
+                popPathParams( request, oldPathParams );
+            }
+        }
     }
 
 }

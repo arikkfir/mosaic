@@ -1,6 +1,7 @@
 package org.mosaic.server.web.dispatcher.impl.handler.parameters;
 
 import org.mosaic.web.HttpRequest;
+import org.springframework.core.MethodParameter;
 import org.springframework.stereotype.Component;
 
 /**
@@ -9,7 +10,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class HttpRequestResolver implements MethodParameterResolver, MethodParameterResolver.ResolvedParameter
 {
-
     @Override
     public Object resolve( HttpRequest request )
     {
@@ -17,8 +17,15 @@ public class HttpRequestResolver implements MethodParameterResolver, MethodParam
     }
 
     @Override
-    public ResolvedParameter resolve( MethodParameterInfo methodParameterInfo )
+    public ResolvedParameter resolve( MethodParameter methodParameter )
     {
-        return this;
+        if( methodParameter.getParameterType( ).isAssignableFrom( HttpRequest.class ) )
+        {
+            return this;
+        }
+        else
+        {
+            return null;
+        }
     }
 }
