@@ -10,7 +10,6 @@ import static org.springframework.core.annotation.AnnotationUtils.findAnnotation
  */
 public abstract class HandlerUtils
 {
-
     public static <A extends Annotation> A findAnn( Method method, Class<A> type )
     {
         A ann = findAnnotation( method, type );
@@ -23,5 +22,4 @@ public abstract class HandlerUtils
             return ann;
         }
     }
-
 }
