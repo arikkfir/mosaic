@@ -24,6 +24,25 @@ public class LoggerFactory
         return bundle != null ? getLogger( bundle.getSymbolicName( ) ) : getLogger( clazz.getName( ) );
     }
 
+    public static Logger getBundleLogger( Class<?> clazz, String ext )
+    {
+        if( clazz == null )
+        {
+            return getLogger( "unknown-logger" );
+        }
+
+        Bundle bundle = FrameworkUtil.getBundle( clazz );
+        Logger logger;
+        if( bundle != null )
+        {
+            return getLogger( bundle.getSymbolicName( ) + "." + ext );
+        }
+        else
+        {
+            return getLogger( clazz.getName( ) + "." + ext );
+        }
+    }
+
     public static Logger getLogger( Class<?> clazz )
     {
         return getLogger( clazz == null ? "unknown-logger" : clazz.getName( ) );
