@@ -96,7 +96,7 @@ public abstract class AbstractBootArtifactResolver implements BootArtifactResolv
                     LOG.debug( "Newer version of '{}' is already installed, skipping file '{}'", fileSymbolicName, bundleFile );
                     return null;
                 }
-                else if( comparison == 0 && !snapshot )
+                else if( comparison == 0 )
                 {
                     if( snapshot )
                     {
