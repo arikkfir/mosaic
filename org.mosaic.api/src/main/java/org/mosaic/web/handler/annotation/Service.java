@@ -14,7 +14,5 @@ import org.mosaic.lifecycle.MethodEndpointMarker;
 @MethodEndpointMarker
 public @interface Service
 {
-
     String[] value( );
-
 }
