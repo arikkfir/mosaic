@@ -13,21 +13,25 @@ import org.slf4j.MDC;
  * @author arik
  */
 @SuppressWarnings( "ThrowableResultOfMethodCallIgnored" )
-public class LoggingFrameworkListener implements FrameworkListener {
-
+public class LoggingFrameworkListener implements FrameworkListener
+{
     private static final String MDC_BUNDLE_KEY = "logging-osgi-bundle";
 
     @Override
-    public void frameworkEvent( FrameworkEvent event ) {
-        MDC.put( MDC_BUNDLE_KEY, BundleUtils.toString( event.getBundle() ) );
-        try {
-            Throwable throwable = event.getThrowable();
-            String throwableMsg = throwable != null ? throwable.getMessage() : "";
+    public void frameworkEvent( FrameworkEvent event )
+    {
+        MDC.put( MDC_BUNDLE_KEY, BundleUtils.toString( event.getBundle( ) ) );
+        try
+        {
+            Throwable throwable = event.getThrowable( );
+            String throwableMsg = throwable != null ? throwable.getMessage( ) : "";
 
             Logger logger = LoggerFactory.getLogger( "org.mosaic.server.osgi.framework" );
-            switch( event.getType() ) {
+            switch( event.getType( ) )
+            {
                 case FrameworkEvent.STARTED:
-                    synchronized( Runner.class ) {
+                    synchronized( Runner.class )
+                    {
                         logger.info( "Started the OSGi Framework", throwable );
                     }
                     break;
@@ -41,8 +45,8 @@ public class LoggingFrameworkListener implements FrameworkListener {
                     break;
 
                 case FrameworkEvent.STARTLEVEL_CHANGED:
-                    FrameworkStartLevel startLevel = event.getBundle().adapt( FrameworkStartLevel.class );
-                    logger.info( "OSGi Framework start level has been changed to: {}", startLevel.getStartLevel(), throwable );
+                    FrameworkStartLevel startLevel = event.getBundle( ).adapt( FrameworkStartLevel.class );
+                    logger.info( "OSGi Framework start level has been changed to: {}", startLevel.getStartLevel( ), throwable );
                     break;
 
                 case FrameworkEvent.WARNING:
@@ -65,7 +69,9 @@ public class LoggingFrameworkListener implements FrameworkListener {
                     logger.info( "Restarting the OSGi Framework due to boot class-path modification", throwable );
                     break;
             }
-        } finally {
+        }
+        finally
+        {
             MDC.remove( MDC_BUNDLE_KEY );
         }
     }

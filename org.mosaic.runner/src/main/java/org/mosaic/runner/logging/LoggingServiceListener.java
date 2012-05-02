@@ -9,8 +9,8 @@ import org.slf4j.MDC;
 /**
  * @author arik
  */
-public class LoggingServiceListener implements ServiceListener {
-
+public class LoggingServiceListener implements ServiceListener
+{
     private static final String OSGI_LOG_NAME = "org.mosaic.server.osgi.services";
 
     private static final String MDC_SR_KEY = "logging-osgi-service-ref";
@@ -18,16 +18,19 @@ public class LoggingServiceListener implements ServiceListener {
     private static final String MDC_BUNDLE_KEY = "logging-osgi-bundle";
 
     @Override
-    public void serviceChanged( ServiceEvent event ) {
-        ServiceReference<?> sr = event.getServiceReference();
-        Bundle bundle = sr.getBundle();
+    public void serviceChanged( ServiceEvent event )
+    {
+        ServiceReference<?> sr = event.getServiceReference( );
+        Bundle bundle = sr.getBundle( );
         String bts = BundleUtils.toString( bundle );
 
-        MDC.put( MDC_SR_KEY, sr.toString() );
+        MDC.put( MDC_SR_KEY, sr.toString( ) );
         MDC.put( MDC_BUNDLE_KEY, bts );
-        try {
+        try
+        {
             Logger logger = LoggerFactory.getLogger( OSGI_LOG_NAME );
-            switch( event.getType() ) {
+            switch( event.getType( ) )
+            {
                 case ServiceEvent.REGISTERED:
                     logger.info( "Service for types '{}' has been registered by bundle '{}'", sr.getProperty( Constants.OBJECTCLASS ), bts );
                     break;
@@ -40,7 +43,9 @@ public class LoggingServiceListener implements ServiceListener {
                     logger.info( "Service for types '{}' from bundle '{}' has been unregistered", sr.getProperty( Constants.OBJECTCLASS ), bts );
                     break;
             }
-        } finally {
+        }
+        finally
+        {
             MDC.remove( MDC_SR_KEY );
             MDC.remove( MDC_BUNDLE_KEY );
         }

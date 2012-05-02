@@ -14,26 +14,30 @@ import org.osgi.framework.BundleContext;
 /**
  * @author arik
  */
-public class FileBundleBootArtifactResolver extends AbstractBootArtifactResolver implements BootArtifactResolver {
-
-    public FileBundleBootArtifactResolver( BundleContext bundleContext ) {
+public class FileBundleBootArtifactResolver extends AbstractBootArtifactResolver implements BootArtifactResolver
+{
+    public FileBundleBootArtifactResolver( BundleContext bundleContext )
+    {
         super( bundleContext );
     }
 
     @Override
-    public Set<Bundle> resolve( ServerHome home, BootArtifact artifact )
-            throws CannotInstallBootArtifactException {
+    public Set<Bundle> resolve( ServerHome home, BootArtifact artifact ) throws CannotInstallBootArtifactException
+    {
 
-        File file = new File( artifact.getCoordinates() );
-        if( !file.isAbsolute() ) {
-            file = new File( home.getHome(), artifact.getCoordinates() );
+        File file = new File( artifact.getCoordinates( ) );
+        if( !file.isAbsolute( ) )
+        {
+            file = new File( home.getHome( ), artifact.getCoordinates( ) );
         }
 
-        Set<Bundle> bundles = new HashSet<>();
-        List<File> matches = FileMatcher.find( file.getAbsolutePath() );
-        for( File match : matches ) {
+        Set<Bundle> bundles = new HashSet<>( );
+        List<File> matches = FileMatcher.find( file.getAbsolutePath( ) );
+        for( File match : matches )
+        {
             Set<Bundle> resolvedBundles = installOrUpdateBundle( artifact, match );
-            if( resolvedBundles != null ) {
+            if( resolvedBundles != null )
+            {
                 bundles.addAll( resolvedBundles );
             }
         }

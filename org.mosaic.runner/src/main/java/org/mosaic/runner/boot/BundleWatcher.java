@@ -17,39 +17,44 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 /**
  * @author arik
  */
-public class BundleWatcher implements SynchronousBundleListener, Runnable {
-
+public class BundleWatcher implements SynchronousBundleListener, Runnable
+{
     private static final Logger LOG = LoggerFactory.getLogger( BundleWatcher.class );
 
     private final BundleContext bundleContext;
 
     private final Set<String> watchedLocations;
 
-    public BundleWatcher( BundleContext bundleContext, Collection<String> watchedLocations ) {
+    public BundleWatcher( BundleContext bundleContext, Collection<String> watchedLocations )
+    {
         this.bundleContext = bundleContext;
         this.watchedLocations = new CopyOnWriteArraySet<>( watchedLocations );
         this.bundleContext.addBundleListener( this );
-        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate( this, 10, 1, SECONDS );
+        Executors.newSingleThreadScheduledExecutor( ).scheduleAtFixedRate( this, 10, 1, SECONDS );
     }
 
     @Override
-    public void run() {
+    public void run( )
+    {
         LOG.trace( "Scanning watched bundles" );
 
         Set<String> locations = new LinkedHashSet<>( this.watchedLocations );
-        for( String location : locations ) {
+        for( String location : locations )
+        {
             Bundle bundle = this.bundleContext.getBundle( location );
-            if( bundle != null ) {
+            if( bundle != null )
+            {
                 File file = getBundleLocationAsFile( location );
-                if( file.exists() && file.isFile() && file.lastModified() > bundle.getLastModified() ) {
-                    try {
-                        bundle.update();
-                    } catch( BundleException e ) {
+                if( file.exists( ) && file.isFile( ) && file.lastModified( ) > bundle.getLastModified( ) )
+                {
+                    try
+                    {
+                        bundle.update( );
+                    }
+                    catch( BundleException e )
+                    {
                         LOG.warn( "Could not update bundle '{}' from '{}': {}", new Object[] {
-                                BundleUtils.toString( bundle ),
-                                location,
-                                e.getMessage(),
-                                e
+                                BundleUtils.toString( bundle ), location, e.getMessage( ), e
                         } );
                     }
                 }
@@ -58,22 +63,32 @@ public class BundleWatcher implements SynchronousBundleListener, Runnable {
     }
 
     @Override
-    public void bundleChanged( BundleEvent event ) {
-        if( event.getType() == BundleEvent.UNINSTALLED ) {
-            String location = event.getBundle().getLocation();
-            if( location != null ) {
+    public void bundleChanged( BundleEvent event )
+    {
+        if( event.getType( ) == BundleEvent.UNINSTALLED )
+        {
+            String location = event.getBundle( ).getLocation( );
+            if( location != null )
+            {
                 this.watchedLocations.remove( location );
             }
         }
     }
 
-    private File getBundleLocationAsFile( String location ) {
-        if( !location.startsWith( "file:" ) ) {
+    private File getBundleLocationAsFile( String location )
+    {
+        if( !location.startsWith( "file:" ) )
+        {
             return null;
-        } else {
-            try {
+        }
+        else
+        {
+            try
+            {
                 return new File( URI.create( location ) );
-            } catch( Exception e ) {
+            }
+            catch( Exception e )
+            {
                 return null;
             }
         }

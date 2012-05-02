@@ -11,39 +11,44 @@ import static java.lang.System.currentTimeMillis;
 /**
  * @author arik
  */
-public class Runner {
-
+public class Runner
+{
     private final Logger logger = LoggerFactory.getLogger( Runner.class );
 
     private final ServerHome home;
 
-    public Runner( ServerHome home ) {
+    public Runner( ServerHome home )
+    {
         this.home = home;
     }
 
-    public ExitCode run() throws SystemExitException {
-        long start = currentTimeMillis();
+    public ExitCode run( ) throws SystemExitException
+    {
+        long start = currentTimeMillis( );
 
         // print home configuration
         this.logger.info( "******************************************************************************************" );
         this.logger.info( " Starting Mosaic server:" );
-        this.logger.info( "    Home:    {}", this.home.getHome() );
-        this.logger.info( "    Boot:    {}", this.home.getBoot() );
-        this.logger.info( "    Config:  {}", this.home.getEtc() );
-        this.logger.info( "    Work:    {}", this.home.getWork() );
+        this.logger.info( "    Home:    {}", this.home.getHome( ) );
+        this.logger.info( "    Boot:    {}", this.home.getBoot( ) );
+        this.logger.info( "    Config:  {}", this.home.getEtc( ) );
+        this.logger.info( "    Work:    {}", this.home.getWork( ) );
         this.logger.info( "******************************************************************************************" );
         this.logger.info( " " );
 
         // create and start the server
         FrameworkBootstrapper bootstrapper = new FrameworkBootstrapper( this.home );
-        Felix felix = bootstrapper.boot();
+        Felix felix = bootstrapper.boot( );
 
         // print summary and wait for the server to shutdown
-        long startupDurationMillis = currentTimeMillis() - start;
-        synchronized( Runner.class ) {
+        long startupDurationMillis = currentTimeMillis( ) - start;
+        synchronized( Runner.class )
+        {
             this.logger.info( " " );
             this.logger.info( "*************************************************************************" );
-            this.logger.info( " Server is running (initialized in {} seconds, or {} milli-seconds)", startupDurationMillis / 1000, startupDurationMillis );
+            this.logger.info( " Server is running (initialized in {} seconds, or {} milli-seconds)",
+                              startupDurationMillis /
+                              1000, startupDurationMillis );
             this.logger.info( "*************************************************************************" );
             this.logger.info( " " );
         }
@@ -52,11 +57,15 @@ public class Runner {
         return waitForOsgiContainerToStop( felix );
     }
 
-    private ExitCode waitForOsgiContainerToStop( Felix felix ) {
-        while( true ) {
-            try {
+    private ExitCode waitForOsgiContainerToStop( Felix felix )
+    {
+        while( true )
+        {
+            try
+            {
                 FrameworkEvent event = felix.waitForStop( 1000 * 60 );
-                switch( event.getType() ) {
+                switch( event.getType( ) )
+                {
                     case FrameworkEvent.STOPPED:
 
                         // framework stopped normally
@@ -79,7 +88,9 @@ public class Runner {
                     default:
 
                         // framework stopped abnormally, with an unspecified reason, return an error exit code
-                        this.logger.info( "Mosaic has been stopped due to an unknown cause (" + event.getType() + ")" );
+                        this.logger.info( "Mosaic has been stopped due to an unknown cause (" +
+                                          event.getType( ) +
+                                          ")" );
                         return ExitCode.RUNTIME_ERROR;
 
                     case FrameworkEvent.STOPPED_UPDATE:
@@ -89,14 +100,13 @@ public class Runner {
                         continue;
 
                     case FrameworkEvent.WAIT_TIMEDOUT:
-
                         // no-op: framework is still running - do nothing and keep looping+waiting
                         // (do not remove this or the 'switch' case will go to 'default' which will stop the JVM)
-
                 }
 
-            } catch( InterruptedException e ) {
-
+            }
+            catch( InterruptedException e )
+            {
                 this.logger.warn( "Mosaic has been interrupted - exiting", e );
                 return ExitCode.INTERRUPTED;
 

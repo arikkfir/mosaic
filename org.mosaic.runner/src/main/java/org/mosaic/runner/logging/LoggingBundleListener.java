@@ -11,21 +11,24 @@ import org.slf4j.MDC;
 /**
  * @author arik
  */
-public class LoggingBundleListener implements SynchronousBundleListener {
-
+public class LoggingBundleListener implements SynchronousBundleListener
+{
     private static final String OSGI_LOG_NAME = "org.mosaic.server.osgi.bundles";
 
     private static final String MDC_BUNDLE_KEY = "logging-osgi-bundle";
 
     @Override
-    public void bundleChanged( BundleEvent event ) {
-        Bundle bundle = event.getBundle();
+    public void bundleChanged( BundleEvent event )
+    {
+        Bundle bundle = event.getBundle( );
         String bts = BundleUtils.toString( bundle );
 
         MDC.put( MDC_BUNDLE_KEY, bts );
-        try {
+        try
+        {
             Logger logger = LoggerFactory.getLogger( OSGI_LOG_NAME );
-            switch( event.getType() ) {
+            switch( event.getType( ) )
+            {
                 case BundleEvent.INSTALLED:
                     logger.info( "Installed bundle: {}", bts );
                     break;
@@ -62,7 +65,9 @@ public class LoggingBundleListener implements SynchronousBundleListener {
                     logger.info( "Uninstalled bundle: {}", bts );
                     break;
             }
-        } finally {
+        }
+        finally
+        {
             MDC.remove( MDC_BUNDLE_KEY );
         }
     }

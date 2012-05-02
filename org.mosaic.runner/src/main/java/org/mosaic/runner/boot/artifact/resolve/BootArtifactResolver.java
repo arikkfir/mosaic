@@ -9,8 +9,8 @@ import org.osgi.framework.Bundle;
 /**
  * @author arik
  */
-public interface BootArtifactResolver {
-
+public interface BootArtifactResolver
+{
     Set<Bundle> resolve( ServerHome home, BootArtifact artifact ) throws CannotInstallBootArtifactException;
 
 }

@@ -7,7 +7,8 @@ package org.mosaic.runner;
  *
  * @author arik
  */
-public enum ExitCode {
+public enum ExitCode
+{
 
     /**
      * Indicates that the server was successfully stopped under normal circumstances (user-initiated).
@@ -55,7 +56,8 @@ public enum ExitCode {
      *
      * @param exitCode the exit code to use for terminating the server
      */
-    private ExitCode( int exitCode ) {
+    private ExitCode( int exitCode )
+    {
         this.code = exitCode;
     }
 
@@ -64,7 +66,8 @@ public enum ExitCode {
      *
      * @return the OS exit code
      */
-    public int getCode() {
+    public int getCode( )
+    {
         return this.code;
     }
 }

@@ -25,36 +25,43 @@ import java.util.Set;
  * @author Rob Harrop
  * @author Dave Syer
  */
-public abstract class SystemPropertyUtils {
+public abstract class SystemPropertyUtils
+{
+    private static final PropertyPlaceholderHelper HELPER = new PropertyPlaceholderHelper( );
 
-    private static final PropertyPlaceholderHelper HELPER = new PropertyPlaceholderHelper();
-
-    public static String resolvePlaceholders( String text ) {
+    public static String resolvePlaceholders( String text )
+    {
         PropertyPlaceholderHelper helper = HELPER;
         return helper.replacePlaceholders( text, new SystemPropertyPlaceholderResolver( text ) );
     }
 
-    private static interface PlaceholderResolver {
-
+    private static interface PlaceholderResolver
+    {
         String resolvePlaceholder( String placeholderName );
     }
 
-    private static class SystemPropertyPlaceholderResolver implements PlaceholderResolver {
-
+    private static class SystemPropertyPlaceholderResolver implements PlaceholderResolver
+    {
         private final String text;
 
-        public SystemPropertyPlaceholderResolver( String text ) {
+        public SystemPropertyPlaceholderResolver( String text )
+        {
             this.text = text;
         }
 
-        public String resolvePlaceholder( String placeholderName ) {
-            try {
+        public String resolvePlaceholder( String placeholderName )
+        {
+            try
+            {
                 String propVal = System.getProperty( placeholderName );
-                if( propVal == null ) {
+                if( propVal == null )
+                {
                     propVal = System.getenv( placeholderName );
                 }
                 return propVal;
-            } catch( Throwable ex ) {
+            }
+            catch( Throwable ex )
+            {
                 System.err.println( "Could not resolve placeholder '" + placeholderName + "' in [" +
                                     this.text + "] as system property: " + ex );
                 return null;
@@ -62,8 +69,8 @@ public abstract class SystemPropertyUtils {
         }
     }
 
-    private static class PropertyPlaceholderHelper {
-
+    private static class PropertyPlaceholderHelper
+    {
         private final String placeholderPrefix = "${";
 
         private final String placeholderSuffix = "}";
@@ -74,87 +81,117 @@ public abstract class SystemPropertyUtils {
 
         private final boolean ignoreUnresolvablePlaceholders;
 
-        private PropertyPlaceholderHelper() {
+        private PropertyPlaceholderHelper( )
+        {
             this.ignoreUnresolvablePlaceholders = false;
         }
 
-        private String replacePlaceholders( String value, PlaceholderResolver placeholderResolver ) {
-            return parseStringValue( value, placeholderResolver, new HashSet<String>() );
+        private String replacePlaceholders( String value, PlaceholderResolver placeholderResolver )
+        {
+            return parseStringValue( value, placeholderResolver, new HashSet<String>( ) );
         }
 
         private String parseStringValue( String strVal,
                                          PlaceholderResolver placeholderResolver,
-                                         Set<String> visitedPlaceholders ) {
+                                         Set<String> visitedPlaceholders )
+        {
 
             StringBuilder buf = new StringBuilder( strVal );
 
             int startIndex = strVal.indexOf( this.placeholderPrefix );
-            while( startIndex != -1 ) {
+            while( startIndex != -1 )
+            {
                 int endIndex = findPlaceholderEndIndex( buf, startIndex );
-                if( endIndex != -1 ) {
-                    String placeholder = buf.substring( startIndex + this.placeholderPrefix.length(), endIndex );
-                    if( !visitedPlaceholders.add( placeholder ) ) {
-                        throw new IllegalArgumentException(
-                                "Circular placeholder reference '" + placeholder + "' in property definitions" );
+                if( endIndex != -1 )
+                {
+                    String placeholder = buf.substring( startIndex + this.placeholderPrefix.length( ), endIndex );
+                    if( !visitedPlaceholders.add( placeholder ) )
+                    {
+                        throw new IllegalArgumentException( "Circular placeholder reference '" +
+                                                            placeholder +
+                                                            "' in property definitions" );
                     }
                     placeholder = parseStringValue( placeholder, placeholderResolver, visitedPlaceholders );
                     String propVal = placeholderResolver.resolvePlaceholder( placeholder );
-                    if( propVal == null ) {
+                    if( propVal == null )
+                    {
                         int separatorIndex = placeholder.indexOf( this.valueSeparator );
-                        if( separatorIndex != -1 ) {
+                        if( separatorIndex != -1 )
+                        {
                             String actualPlaceholder = placeholder.substring( 0, separatorIndex );
-                            String defaultValue = placeholder.substring( separatorIndex + this.valueSeparator.length() );
+                            String defaultValue =
+                                    placeholder.substring( separatorIndex + this.valueSeparator.length( ) );
                             propVal = placeholderResolver.resolvePlaceholder( actualPlaceholder );
-                            if( propVal == null ) {
+                            if( propVal == null )
+                            {
                                 propVal = defaultValue;
                             }
                         }
                     }
-                    if( propVal != null ) {
+                    if( propVal != null )
+                    {
                         propVal = parseStringValue( propVal, placeholderResolver, visitedPlaceholders );
-                        buf.replace( startIndex, endIndex + this.placeholderSuffix.length(), propVal );
-                        startIndex = buf.indexOf( this.placeholderPrefix, startIndex + propVal.length() );
-                    } else if( this.ignoreUnresolvablePlaceholders ) {
-                        startIndex = buf.indexOf( this.placeholderPrefix, endIndex + this.placeholderSuffix.length() );
-                    } else {
+                        buf.replace( startIndex, endIndex + this.placeholderSuffix.length( ), propVal );
+                        startIndex = buf.indexOf( this.placeholderPrefix, startIndex + propVal.length( ) );
+                    }
+                    else if( this.ignoreUnresolvablePlaceholders )
+                    {
+                        startIndex = buf.indexOf( this.placeholderPrefix, endIndex + this.placeholderSuffix.length( ) );
+                    }
+                    else
+                    {
                         throw new IllegalArgumentException( "Could not resolve placeholder '" + placeholder + "'" );
                     }
 
                     visitedPlaceholders.remove( placeholder );
-                } else {
+                }
+                else
+                {
                     startIndex = -1;
                 }
             }
 
-            return buf.toString();
+            return buf.toString( );
         }
 
-        private int findPlaceholderEndIndex( CharSequence buf, int startIndex ) {
-            int index = startIndex + this.placeholderPrefix.length();
+        private int findPlaceholderEndIndex( CharSequence buf, int startIndex )
+        {
+            int index = startIndex + this.placeholderPrefix.length( );
             int withinNestedPlaceholder = 0;
-            while( index < buf.length() ) {
-                if( substringMatch( buf, index, this.placeholderSuffix ) ) {
-                    if( withinNestedPlaceholder > 0 ) {
+            while( index < buf.length( ) )
+            {
+                if( substringMatch( buf, index, this.placeholderSuffix ) )
+                {
+                    if( withinNestedPlaceholder > 0 )
+                    {
                         withinNestedPlaceholder--;
-                        index = index + this.placeholderSuffix.length();
-                    } else {
+                        index = index + this.placeholderSuffix.length( );
+                    }
+                    else
+                    {
                         return index;
                     }
-                } else if( substringMatch( buf, index, this.simplePrefix ) ) {
+                }
+                else if( substringMatch( buf, index, this.simplePrefix ) )
+                {
                     withinNestedPlaceholder++;
-                    index = index + this.simplePrefix.length();
-                } else {
+                    index = index + this.simplePrefix.length( );
+                }
+                else
+                {
                     index++;
                 }
             }
             return -1;
         }
 
-
-        private static boolean substringMatch( CharSequence str, int index, CharSequence substring ) {
-            for( int j = 0; j < substring.length(); j++ ) {
+        private static boolean substringMatch( CharSequence str, int index, CharSequence substring )
+        {
+            for( int j = 0; j < substring.length( ); j++ )
+            {
                 int i = index + j;
-                if( i >= str.length() || str.charAt( i ) != substring.charAt( j ) ) {
+                if( i >= str.length( ) || str.charAt( i ) != substring.charAt( j ) )
+                {
                     return false;
                 }
             }
