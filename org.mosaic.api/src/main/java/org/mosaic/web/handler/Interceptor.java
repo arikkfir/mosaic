@@ -7,15 +7,15 @@ import org.mosaic.web.HttpRequest;
  */
 public interface Interceptor
 {
+    interface InterceptorMatch { }
 
-    interface InterceptorMatch
+    interface InterceptorChain
     {
-
+        Object next( ) throws Exception;
     }
 
     InterceptorMatch matches( HttpRequest request );
 
-    //TODO 5/1/12: add chain parameter here
-    Object handle( HttpRequest request, InterceptorMatch match );
+    Object handle( HttpRequest request, InterceptorMatch match, InterceptorChain chain ) throws Exception;
 
 }
