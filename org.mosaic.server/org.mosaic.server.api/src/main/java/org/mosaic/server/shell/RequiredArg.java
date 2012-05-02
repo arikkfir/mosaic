@@ -1,4 +1,4 @@
-package org.mosaic.describe;
+package org.mosaic.server.shell;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
