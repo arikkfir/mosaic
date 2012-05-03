@@ -21,7 +21,7 @@ public class NotFoundHandler implements Handler, Handler.HandlerMatch
     public Object handle( HttpRequest request, HandlerMatch match ) throws Exception
     {
         request.getResponseHeaders().disableCache();
-        request.setResponseStatus( HttpStatus.NOT_FOUND, "Unknown URI" );
+        request.setResponseStatus( HttpStatus.NOT_FOUND, "Unknown URL" );
         return null;
     }
 }
