@@ -29,8 +29,6 @@ public class RequestExecutionPlan implements InterceptorChain
 
     private Iterator<InterceptorEntry> executionIterator;
 
-    // TODO: add marshaller here (MarshallerManager should put the highest-ranking *matching* marshaller here)
-
     public RequestExecutionPlan( HttpRequest request )
     {
         this.request = request;
@@ -52,16 +50,22 @@ public class RequestExecutionPlan implements InterceptorChain
         this.interceptors.add( new InterceptorEntry( ranking, interceptor, match ) );
     }
 
-    public void execute() throws Exception
+    public Object execute() throws Exception
     {
         if( this.handler == null )
         {
             throw new IllegalStateException( "Request execution plan is incomplete! (no handler was set)" );
         }
-
-        Collections.sort( this.interceptors );
-        this.executionIterator = this.interceptors.iterator();
-        next();
+        else if( this.executionIterator != null )
+        {
+            throw new IllegalStateException( "Request execution plan is already executing!" );
+        }
+        else
+        {
+            Collections.sort( this.interceptors );
+            this.executionIterator = this.interceptors.iterator();
+            return next();
+        }
     }
 
     @Override
