@@ -35,6 +35,8 @@ public class HandlersManager extends AbstractMethodEndpointManager
 {
     private static final Logger LOG = LoggerFactory.getLogger( HandlersManager.class );
 
+    private static final Comparator<Integer> HANDLER_COMPARATOR = new NullSafeComparator<>( new ComparableComparator<Integer>(), true );
+
     private NotFoundHandler notFoundHandler;
 
     private List<HandlerEntry> handlers = Collections.emptyList();
@@ -145,7 +147,7 @@ public class HandlersManager extends AbstractMethodEndpointManager
         {
             Integer myRank = ( Integer ) this.ref.getProperty( SERVICE_RANKING );
             Integer thatRank = ( Integer ) o.ref.getProperty( SERVICE_RANKING );
-            return compare( myRank, thatRank, new NullSafeComparator<>( new ComparableComparator<Integer>(), true ) );
+            return compare( myRank, thatRank, HANDLER_COMPARATOR );
         }
     }
 
@@ -181,15 +183,15 @@ public class HandlersManager extends AbstractMethodEndpointManager
         @Override
         public HandlerMatch matches( HttpRequest request )
         {
-            RegexPathMatcher.MatchResult match = accepts( request );
-            if( match != null )
+            if( acceptsHttpMethod( request.getMethod() ) && acceptsRequest( request ) )
             {
-                return new MethodEndpointHandlerMatch( match );
+                RegexPathMatcher.MatchResult matchResult = acceptsPath( request.getUrl().getPath() );
+                if( matchResult != null )
+                {
+                    return new MethodEndpointHandlerMatch( matchResult );
+                }
             }
-            else
-            {
-                return null;
-            }
+            return null;
         }
 
         @Override

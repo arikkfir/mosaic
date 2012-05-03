@@ -103,15 +103,15 @@ public class InterceptorsManager extends AbstractMethodEndpointManager
         @Override
         public InterceptorMatch matches( HttpRequest request )
         {
-            RegexPathMatcher.MatchResult match = accepts( request );
-            if( match != null )
+            if( acceptsHttpMethod( request.getMethod() ) && acceptsRequest( request ) )
             {
-                return new MethodEndpointInterceptorMatch( match );
+                RegexPathMatcher.MatchResult matchResult = acceptsPath( request.getUrl().getPath() );
+                if( matchResult != null )
+                {
+                    return new MethodEndpointInterceptorMatch( matchResult );
+                }
             }
-            else
-            {
-                return null;
-            }
+            return null;
         }
 
         @Override
