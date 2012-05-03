@@ -1,10 +1,13 @@
 package org.mosaic.server.web.dispatcher.impl;
 
+import java.util.LinkedList;
 import java.util.List;
 import org.mosaic.lifecycle.ServiceExport;
 import org.mosaic.server.web.dispatcher.RequestDispatcher;
+import org.mosaic.server.web.dispatcher.impl.handler.MarshallersManager;
 import org.mosaic.util.logging.Trace;
 import org.mosaic.web.HttpRequest;
+import org.mosaic.web.handler.Marshaller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +20,14 @@ public class RequestDispatcherImpl implements RequestDispatcher
 {
     private List<RequestExecutionPlan.RequestExecutionBuilder> planBuilders;
 
+    private MarshallersManager marshallersManager;
+
+    @Autowired
+    public void setMarshallersManager( MarshallersManager marshallersManager )
+    {
+        this.marshallersManager = marshallersManager;
+    }
+
     @Autowired
     public void setPlanBuilders( List<RequestExecutionPlan.RequestExecutionBuilder> planBuilders )
     {
@@ -27,15 +38,57 @@ public class RequestDispatcherImpl implements RequestDispatcher
     @Trace
     public void handle( HttpRequest request )
     {
-        RequestExecutionPlan plan = buildExecutionPlan( request );
+        Object handlerResult;
         try
         {
-            plan.execute();
+            handlerResult = buildExecutionPlan( request ).execute();
         }
         catch( Exception e )
         {
             //TODO: handle error by invoking @ExceptionHandler(s)
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            handlerResult = null;// TODO by arik on 5/4/12: return result from exception handler if any (null otherwise)
+        }
+
+        if( handlerResult != null )
+        {
+            marshallResult( request, handlerResult );
+        }
+        else
+        {
+            // TODO by arik on 5/4/12: log this
+            // handler took care of sending a response to the client - no need to marshall a response
+        }
+    }
+
+    private void marshallResult( HttpRequest request, Object result )
+    {
+        List<Marshaller> invokedMarshallers = new LinkedList<>();
+        while( result != null )
+        {
+            Marshaller marshaller = this.marshallersManager.getMarshaller( request, result );
+            if( marshaller == null )
+            {
+                // TODO by arik on 5/4/12: log this and send error to client
+                return;
+            }
+            else if( invokedMarshallers.contains( marshaller ) )
+            {
+                // TODO by arik on 5/4/12: log this and send error to client
+                return;
+            }
+            else
+            {
+                invokedMarshallers.add( marshaller );
+                try
+                {
+                    result = marshaller.marshall( request, result );
+                }
+                catch( Exception e )
+                {
+                    // TODO by arik on 5/4/12: log this and return error to client if request not committed
+                    return;
+                }
+            }
         }
     }
 
