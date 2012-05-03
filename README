@@ -30,3 +30,5 @@ TODO: create an XML SCHEMA file (XSD) for HTTP application files
     - other HTTP exceptions? (method not allowed?)
 - @Interceptors will intercept URLs
     - before and after the actual handler wrapper (so AccessDeniedException from @Service will not be seen in an interceptor for instance)
+- If no handler matches the URI, use NotFoundHandler
+- If one or more handlers match the URI, but not for the requested HTTP method, use MethodNotAllowedHandler
