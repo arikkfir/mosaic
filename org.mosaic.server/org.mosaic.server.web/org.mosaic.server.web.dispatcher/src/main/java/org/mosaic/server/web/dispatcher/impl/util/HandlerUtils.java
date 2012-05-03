@@ -6,14 +6,14 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import org.mosaic.server.web.dispatcher.impl.handler.parameters.MethodParameterResolver;
-import org.mosaic.web.handler.annotation.Filter;
-import org.mosaic.web.handler.annotation.Secured;
+import org.mosaic.web.handler.annotation.*;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.ParameterNameDiscoverer;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.http.HttpMethod;
 
 import static java.lang.String.format;
 import static org.springframework.core.annotation.AnnotationUtils.findAnnotation;
@@ -65,7 +65,6 @@ public abstract class HandlerUtils
     public static List<MethodParameterResolver.ResolvedParameter> resolveMethodParameters(
             Collection<MethodParameterResolver> resolvers, Method method )
     {
-
         ParameterNameDiscoverer nameDiscoverer = new LocalVariableTableParameterNameDiscoverer();
 
         List<MethodParameterResolver.ResolvedParameter> resolvedParameters = new LinkedList<>();
@@ -93,6 +92,28 @@ public abstract class HandlerUtils
             }
         }
         return resolvedParameters;
+    }
+
+    public static Collection<HttpMethod> resolveHttpMethods( Method method )
+    {
+        Collection<HttpMethod> httpMethods = new LinkedList<>();
+        if( findAnn( method, Get.class ) != null )
+        {
+            httpMethods.add( HttpMethod.GET );
+        }
+        if( findAnn( method, Post.class ) != null )
+        {
+            httpMethods.add( HttpMethod.POST );
+        }
+        if( findAnn( method, Put.class ) != null )
+        {
+            httpMethods.add( HttpMethod.PUT );
+        }
+        if( findAnn( method, Delete.class ) != null )
+        {
+            httpMethods.add( HttpMethod.DELETE );
+        }
+        return httpMethods;
     }
 
     public static <A extends Annotation> A findAnn( Method method, Class<A> type )
