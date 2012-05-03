@@ -2,7 +2,7 @@ package org.mosaic.server.web.dispatcher.impl.handler;
 
 import org.mosaic.web.HttpRequest;
 import org.mosaic.web.handler.Handler;
-import org.springframework.http.HttpStatus;
+import org.mosaic.web.handler.UrlNotAllowedException;
 import org.springframework.stereotype.Component;
 
 /**
@@ -20,8 +20,6 @@ public class NotFoundHandler implements Handler, Handler.HandlerMatch
     @Override
     public Object handle( HttpRequest request, HandlerMatch match ) throws Exception
     {
-        request.getResponseHeaders().disableCache();
-        request.setResponseStatus( HttpStatus.NOT_FOUND, "Unknown URL" );
-        return null;
+        throw new UrlNotAllowedException( request );
     }
 }
