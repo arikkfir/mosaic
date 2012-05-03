@@ -54,6 +54,11 @@ public class RequestExecutionPlan implements InterceptorChain
 
     public void execute() throws Exception
     {
+        if( this.handler == null )
+        {
+            throw new IllegalStateException( "Request execution plan is incomplete! (no handler was set)" );
+        }
+
         Collections.sort( this.interceptors );
         this.executionIterator = this.interceptors.iterator();
         next();
