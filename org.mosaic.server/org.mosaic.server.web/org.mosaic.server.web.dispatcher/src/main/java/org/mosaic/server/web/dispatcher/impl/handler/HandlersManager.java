@@ -30,7 +30,7 @@ import static org.osgi.framework.Constants.SERVICE_RANKING;
  * @author arik
  */
 @Component
-public class HandlersManager extends AbstractRequestExecutionBuilder
+public class HandlersManager extends AbstractMethodEndpointManager
         implements RequestExecutionPlan.RequestExecutionBuilder
 {
     private static final Logger LOG = LoggerFactory.getLogger( HandlersManager.class );

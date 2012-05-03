@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import org.mosaic.lifecycle.MethodEndpointInfo;
 import org.mosaic.server.web.PathParamsAware;
-import org.mosaic.server.web.dispatcher.impl.RequestExecutionPlan;
 import org.mosaic.server.web.dispatcher.impl.handler.parameters.MethodParameterResolver;
 import org.mosaic.server.web.dispatcher.impl.util.RegexPathMatcher;
 import org.mosaic.web.HttpRequest;
@@ -19,7 +18,7 @@ import static org.mosaic.server.web.dispatcher.impl.util.HandlerUtils.*;
 /**
  * @author arik
  */
-public abstract class AbstractRequestExecutionBuilder implements RequestExecutionPlan.RequestExecutionBuilder
+public abstract class AbstractMethodEndpointManager
 {
     private List<MethodParameterResolver> methodParameterResolvers;
 

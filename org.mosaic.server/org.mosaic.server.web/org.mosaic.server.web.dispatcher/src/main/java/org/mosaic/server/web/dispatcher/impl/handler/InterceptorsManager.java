@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
  * @author arik
  */
 @Component
-public class InterceptorsManager extends AbstractRequestExecutionBuilder
+public class InterceptorsManager extends AbstractMethodEndpointManager
         implements RequestExecutionPlan.RequestExecutionBuilder
 {
     private static final Logger LOG = LoggerFactory.getLogger( InterceptorsManager.class );
