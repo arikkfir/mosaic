@@ -9,9 +9,8 @@ import org.osgi.framework.FrameworkUtil;
 /**
  * @author arik
  */
-public class LoggerFactory
+public final class LoggerFactory
 {
-
     private final static Map<String, SoftReference<Logger>> LOGGERS = new ConcurrentHashMap<>( 1500, 0.75f, 32 );
 
     public static Logger getBundleLogger( Class<?> clazz )
@@ -62,5 +61,9 @@ public class LoggerFactory
         Logger wrapper = new Slf4jLoggerWrapper( org.slf4j.LoggerFactory.getLogger( name ) );
         LOGGERS.put( name, new SoftReference<>( wrapper ) );
         return wrapper;
+    }
+
+    private LoggerFactory()
+    {
     }
 }
