@@ -4,6 +4,7 @@ import java.util.LinkedList;
 import java.util.List;
 import org.mosaic.lifecycle.ServiceExport;
 import org.mosaic.server.web.dispatcher.RequestDispatcher;
+import org.mosaic.server.web.dispatcher.impl.handler.ExceptionHandlersManager;
 import org.mosaic.server.web.dispatcher.impl.handler.MarshallersManager;
 import org.mosaic.util.logging.Logger;
 import org.mosaic.util.logging.LoggerFactory;
@@ -27,10 +28,18 @@ public class RequestDispatcherImpl implements RequestDispatcher
 
     private MarshallersManager marshallersManager;
 
+    private ExceptionHandlersManager exceptionHandlersManager;
+
     @Autowired
     public void setMarshallersManager( MarshallersManager marshallersManager )
     {
         this.marshallersManager = marshallersManager;
+    }
+
+    @Autowired
+    public void setExceptionHandlersManager( ExceptionHandlersManager exceptionHandlersManager )
+    {
+        this.exceptionHandlersManager = exceptionHandlersManager;
     }
 
     @Autowired
@@ -43,23 +52,23 @@ public class RequestDispatcherImpl implements RequestDispatcher
     @Trace
     public void handle( HttpRequest request )
     {
-        // execute the request
         Object handlerResult;
         try
         {
+            // execute the request
             handlerResult = buildExecutionPlan( request ).execute();
         }
         catch( Exception e )
         {
-            //TODO: handle error by invoking @ExceptionHandler(s) and take their result into 'handlerResult'
-            handlerResult = null;
+            // handle the exception
+            handlerResult = this.exceptionHandlersManager.handleException( request, e );
         }
 
-        // marshall the response
         if( handlerResult != null )
         {
             try
             {
+                // marshall the response
                 marshallResult( request, handlerResult );
             }
             catch( Exception e )
