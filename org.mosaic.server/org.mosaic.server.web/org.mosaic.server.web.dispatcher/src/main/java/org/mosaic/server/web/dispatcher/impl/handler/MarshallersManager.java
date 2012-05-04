@@ -28,6 +28,8 @@ public class MarshallersManager extends AbstractMethodEndpointManager
 
     private static final Comparator<Integer> MARSHALLER_COMPARATOR = new NullSafeComparator<>( new ComparableComparator<Integer>(), true );
 
+    private static final String HANDLER_RESULT_KEY = Marshaller.class + "#result";
+
     private List<MarshallerEntry> marshallers = Collections.emptyList();
 
     @ServiceBind( filter = "methodEndpointShortType=Marshaller" )
@@ -121,8 +123,6 @@ public class MarshallersManager extends AbstractMethodEndpointManager
     private class MethodEndpointMarshaller extends AbstractMethodEndpointManager.MethodEndpointWrapper
             implements Marshaller, MethodParameterResolver.ResolvedParameter
     {
-        private static final String HANDLER_RESULT_KEY = Marshaller.class + "#result";
-
         private Class<?> marshallableType;
 
         private MethodEndpointMarshaller( MethodEndpointInfo methodEndpointInfo )
