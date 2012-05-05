@@ -13,7 +13,6 @@ import static org.joda.time.format.DateTimeFormat.forPattern;
  */
 public abstract class HttpTime
 {
-
     public static final DateTimeZone ZONE = new FixedDateTimeZone( "GMT", "GMT", 0, 0 );
 
     public static final DateTimeFormatter ANSI_DATE_TIME_FORMATTER = formatter( "EEE MMM dd HH:mm:ss yyyy" );
