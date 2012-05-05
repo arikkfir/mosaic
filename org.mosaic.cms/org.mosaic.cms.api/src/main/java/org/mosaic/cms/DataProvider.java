@@ -1,12 +1,14 @@
 package org.mosaic.cms;
 
 import java.util.Collection;
+import org.mosaic.cms.support.Named;
+import org.mosaic.cms.support.Secured;
 import org.mosaic.util.collection.MapAccessor;
 
 /**
  * @author arik
  */
-public interface DataProvider
+public interface DataProvider extends Named, Secured
 {
     interface Parameters extends MapAccessor<String, String>
     {
