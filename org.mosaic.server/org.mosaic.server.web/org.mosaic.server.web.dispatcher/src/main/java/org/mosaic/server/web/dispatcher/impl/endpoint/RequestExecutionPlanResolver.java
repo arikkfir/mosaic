@@ -1,4 +1,4 @@
-package org.mosaic.server.web.dispatcher.impl.handler.parameters;
+package org.mosaic.server.web.dispatcher.impl.endpoint;
 
 import org.mosaic.server.web.dispatcher.impl.RequestExecutionPlan;
 import org.mosaic.web.HttpRequest;

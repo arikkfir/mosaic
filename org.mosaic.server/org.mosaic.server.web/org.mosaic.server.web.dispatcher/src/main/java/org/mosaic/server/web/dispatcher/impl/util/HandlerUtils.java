@@ -5,7 +5,7 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-import org.mosaic.server.web.dispatcher.impl.handler.parameters.MethodParameterResolver;
+import org.mosaic.server.web.dispatcher.impl.endpoint.MethodParameterResolver;
 import org.mosaic.web.handler.annotation.*;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 import org.springframework.core.MethodParameter;

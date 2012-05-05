@@ -7,6 +7,7 @@ import org.mosaic.lifecycle.ServiceBind;
 import org.mosaic.lifecycle.ServiceUnbind;
 import org.mosaic.security.AccessDeniedException;
 import org.mosaic.server.web.dispatcher.impl.RequestExecutionPlan;
+import org.mosaic.server.web.dispatcher.impl.endpoint.AbstractMethodEndpointManager;
 import org.mosaic.server.web.dispatcher.impl.util.RegexPathMatcher;
 import org.mosaic.util.logging.Logger;
 import org.mosaic.util.logging.LoggerFactory;

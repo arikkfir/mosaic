@@ -1,4 +1,4 @@
-package org.mosaic.server.web.dispatcher.impl.handler;
+package org.mosaic.server.web.dispatcher.impl.endpoint;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import org.mosaic.lifecycle.MethodEndpointInfo;
 import org.mosaic.server.web.PathParamsAware;
-import org.mosaic.server.web.dispatcher.impl.handler.parameters.MethodParameterResolver;
 import org.mosaic.server.web.dispatcher.impl.util.RegexPathMatcher;
 import org.mosaic.web.HttpRequest;
 import org.springframework.beans.factory.annotation.Autowired;

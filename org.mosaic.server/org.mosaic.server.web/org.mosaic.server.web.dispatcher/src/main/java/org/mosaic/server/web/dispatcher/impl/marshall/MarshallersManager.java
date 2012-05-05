@@ -1,10 +1,11 @@
-package org.mosaic.server.web.dispatcher.impl.handler;
+package org.mosaic.server.web.dispatcher.impl.marshall;
 
 import java.util.*;
 import org.mosaic.lifecycle.MethodEndpointInfo;
 import org.mosaic.lifecycle.ServiceBind;
 import org.mosaic.lifecycle.ServiceUnbind;
-import org.mosaic.server.web.dispatcher.impl.handler.parameters.MethodParameterResolver;
+import org.mosaic.server.web.dispatcher.impl.endpoint.AbstractMethodEndpointManager;
+import org.mosaic.server.web.dispatcher.impl.endpoint.MethodParameterResolver;
 import org.mosaic.util.logging.Logger;
 import org.mosaic.util.logging.LoggerFactory;
 import org.mosaic.web.HttpRequest;

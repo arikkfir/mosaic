@@ -5,7 +5,7 @@ import java.util.List;
 import org.mosaic.lifecycle.ServiceExport;
 import org.mosaic.server.web.dispatcher.RequestDispatcher;
 import org.mosaic.server.web.dispatcher.impl.handler.ExceptionHandlersManager;
-import org.mosaic.server.web.dispatcher.impl.handler.MarshallersManager;
+import org.mosaic.server.web.dispatcher.impl.marshall.MarshallersManager;
 import org.mosaic.util.logging.Logger;
 import org.mosaic.util.logging.LoggerFactory;
 import org.mosaic.util.logging.Trace;
