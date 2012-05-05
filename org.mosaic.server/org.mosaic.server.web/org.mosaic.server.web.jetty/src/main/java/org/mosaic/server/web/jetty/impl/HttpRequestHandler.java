@@ -13,6 +13,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -215,7 +216,7 @@ public class HttpRequestHandler extends ContextHandlerCollection
                     dispatcher.handle( Http.request() );
                 }
             }
-            catch( @SuppressWarnings( "CaughtExceptionImmediatelyRethrown" ) IOException | ServletException e )
+            catch( @SuppressWarnings( "CaughtExceptionImmediatelyRethrown" ) IOException | RuntimeIOException | ServletException e )
             {
                 // bubble up I/O or servlet exceptions
                 throw e;
