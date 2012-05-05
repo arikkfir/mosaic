@@ -3,15 +3,18 @@ package org.mosaic.server.web.application.impl;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import javax.xml.parsers.ParserConfigurationException;
 import org.mosaic.security.PermissionPolicy;
+import org.mosaic.util.collection.MapAccessor;
+import org.mosaic.util.collection.MapWrapper;
 import org.mosaic.util.logging.Logger;
 import org.mosaic.web.HttpApplication;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.util.LinkedCaseInsensitiveMap;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
@@ -31,9 +34,9 @@ public class HttpApplicationImpl implements HttpApplication
 
     private final String name;
 
-    private final Map<String, Object> attributes = new ConcurrentSkipListMap<>();
+    private final MapAccessor<String, Object> attributes;
 
-    private Map<String, String> parameters = Collections.emptyMap();
+    private final MapWrapper<String, String> parameters;
 
     private Set<Pattern> virtualHosts;
 
@@ -47,13 +50,16 @@ public class HttpApplicationImpl implements HttpApplication
 
     private long modificationTime;
 
-    public HttpApplicationImpl( Path appFile )
+    public HttpApplicationImpl( Path appFile, ConversionService conversionService )
     {
         this.path = appFile;
 
         String fileName = appFile.getFileName().toString();
         this.name = fileName.substring( 0, fileName.length() - ".xml".length() );
         this.logger = getBundleLogger( HttpApplicationImpl.class, this.name );
+
+        this.parameters = new MapWrapper<>( Collections.<String, String>emptyMap(), conversionService );
+        this.attributes = new MapWrapper<>( new ConcurrentHashMap<String, Object>(), conversionService );
     }
 
     public void refresh()
@@ -129,7 +135,7 @@ public class HttpApplicationImpl implements HttpApplication
     }
 
     @Override
-    public Map<String, String> getParameters()
+    public MapAccessor<String, String> getParameters()
     {
         return this.parameters;
     }
@@ -275,6 +281,36 @@ public class HttpApplicationImpl implements HttpApplication
         return this.attributes.entrySet();
     }
 
+    @Override
+    public Object get( String key, Object defaultValue )
+    {
+        return attributes.get( key, defaultValue );
+    }
+
+    @Override
+    public Object require( String key )
+    {
+        return attributes.require( key );
+    }
+
+    @Override
+    public <T> T get( String key, Class<T> type )
+    {
+        return attributes.get( key, type );
+    }
+
+    @Override
+    public <T> T require( String key, Class<T> type )
+    {
+        return attributes.require( key, type );
+    }
+
+    @Override
+    public <T> T get( String key, Class<T> type, T defaultValue )
+    {
+        return attributes.get( key, type, defaultValue );
+    }
+
     private void parse() throws IOException, SAXException, ParserConfigurationException
     {
         Element appElt = parseDocument( this.path ).getDocumentElement();
@@ -360,7 +396,7 @@ public class HttpApplicationImpl implements HttpApplication
                 params.put( paramElt.getLocalName(), paramElt.getTextContent().trim() );
             }
         }
-        this.parameters = Collections.unmodifiableMap( params );
+        this.parameters.setMap( Collections.unmodifiableMap( params ) );
     }
 
     private static Collection<Role> parseRoles( Element rolesElt )

@@ -1,17 +1,17 @@
 package org.mosaic.web;
 
-import java.util.Map;
 import java.util.Set;
 import org.mosaic.security.PermissionPolicy;
+import org.mosaic.util.collection.MapAccessor;
 
 /**
  * @author arik
  */
-public interface HttpApplication extends Map<String, Object>
+public interface HttpApplication extends MapAccessor<String, Object>
 {
     String getName();
 
-    Map<String, String> getParameters();
+    MapAccessor<String, String> getParameters();
 
     Set<String> getVirtualHosts();
 

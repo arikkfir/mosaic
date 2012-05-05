@@ -17,6 +17,8 @@ import org.mosaic.server.web.application.HttpApplicationManager;
 import org.mosaic.util.logging.Logger;
 import org.mosaic.util.logging.LoggerFactory;
 import org.mosaic.web.HttpApplication;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Component;
 
 import static java.nio.file.Files.exists;
@@ -35,9 +37,17 @@ public class HttpApplicationManagerImpl implements HttpApplicationManager
 
     private final Map<Path, HttpApplicationImpl> applications = new HashMap<>();
 
+    private ConversionService conversionService;
+
     private Home home;
 
     private Scanner scanner;
+
+    @Autowired
+    public void setConversionService( ConversionService conversionService )
+    {
+        this.conversionService = conversionService;
+    }
 
     @ServiceRef
     public void setHome( Home home )
@@ -94,7 +104,7 @@ public class HttpApplicationManagerImpl implements HttpApplicationManager
                     HttpApplicationImpl application = this.applications.get( appFile );
                     if( application == null )
                     {
-                        application = new HttpApplicationImpl( appFile );
+                        application = new HttpApplicationImpl( appFile, this.conversionService );
                         this.applications.put( appFile, application );
                     }
                     application.refresh();
