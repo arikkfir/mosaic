@@ -3,19 +3,19 @@ package org.mosaic.web;
 import java.io.*;
 import java.net.URI;
 import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import org.mosaic.util.collection.MapAccessor;
+import org.mosaic.util.collection.MultiMapAccessor;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 
 /**
  * @author arik
  */
-public interface HttpRequest extends Map<String, Object>
+public interface HttpRequest extends MapAccessor<String, Object>
 {
     HttpApplication getApplication();
 
-    Object getSession();
+    HttpSession getSession();
 
     HttpSession getOrCreateSession();
 
@@ -29,9 +29,9 @@ public interface HttpRequest extends Map<String, Object>
 
     URI getUrl();
 
-    Map<String, List<String>> getQueryParameters();
+    MultiMapAccessor<String, String> getQueryParameters();
 
-    Map<String, String> getPathParameters();
+    MapAccessor<String, String> getPathParameters();
 
     HttpRequestHeaders getRequestHeaders();
 

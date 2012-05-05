@@ -28,6 +28,8 @@ import org.mosaic.server.web.dispatcher.RequestDispatcher;
 import org.mosaic.util.logging.Logger;
 import org.mosaic.util.logging.LoggerFactory;
 import org.mosaic.web.HttpApplication;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Component;
 
 import static org.eclipse.jetty.servlet.ServletContextHandler.SESSIONS;
@@ -55,9 +57,17 @@ public class HttpRequestHandler extends ContextHandlerCollection
         }
     }
 
+    private ConversionService conversionService;
+
     private Map<HttpApplication, ServletContextHandler> applications = new ConcurrentHashMap<>( 10 );
 
     private RequestDispatcher dispatcher;
+
+    @Autowired
+    public void setConversionService( ConversionService conversionService )
+    {
+        this.conversionService = conversionService;
+    }
 
     @ServiceRef( required = false )
     public void setDispatcher( RequestDispatcher dispatcher )
@@ -192,7 +202,7 @@ public class HttpRequestHandler extends ContextHandlerCollection
             try
             {
                 // associate app and request on the thread
-                Http.setRequest( new HttpRequestImpl( this.httpApplication, request, response ) );
+                Http.setRequest( new HttpRequestImpl( this.httpApplication, request, response, conversionService ) );
 
                 // if no dispatcher, send 404; otherwise, pass the torch to the dispatcher
                 RequestDispatcher dispatcher = HttpRequestHandler.this.dispatcher;

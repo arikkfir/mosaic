@@ -10,9 +10,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 import org.mosaic.server.web.PathParamsAware;
+import org.mosaic.util.collection.MapAccessor;
+import org.mosaic.util.collection.MapWrapper;
+import org.mosaic.util.collection.MultiMapAccessor;
+import org.mosaic.util.collection.MultiMapWrapper;
 import org.mosaic.util.logging.Logger;
 import org.mosaic.util.logging.LoggerFactory;
 import org.mosaic.web.*;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 
@@ -25,7 +30,7 @@ import static org.springframework.http.HttpStatus.Series.SERVER_ERROR;
 /**
  * @author arik
  */
-public class HttpRequestImpl extends HashMap<String, Object> implements HttpRequest, PathParamsAware
+public class HttpRequestImpl implements HttpRequest, PathParamsAware
 {
     private static final Logger LOG = LoggerFactory.getLogger( HttpRequestImpl.class );
 
@@ -43,9 +48,11 @@ public class HttpRequestImpl extends HashMap<String, Object> implements HttpRequ
 
     private final URI uri;
 
-    private final Map<String, List<String>> queryParameters;
+    private final MultiMapWrapper<String, String> queryParameters;
 
-    private Map<String, String> pathParameters;
+    private final MapWrapper<String, Object> attributes;
+
+    private final MapWrapper<String, String> pathParameters;
 
     private final HttpRequestHeadersImpl requestHeaders;
 
@@ -53,10 +60,13 @@ public class HttpRequestImpl extends HashMap<String, Object> implements HttpRequ
 
     private final HttpResponseHeadersImpl responseHeaders;
 
-    public HttpRequestImpl( HttpApplication application, HttpServletRequest request, HttpServletResponse response )
-    throws IOException, ServletException
+    public HttpRequestImpl( HttpApplication application,
+                            HttpServletRequest request,
+                            HttpServletResponse response,
+                            ConversionService conversionService ) throws IOException, ServletException
     {
         this.application = application;
+        this.attributes = new MapWrapper<>( new HashMap<String, Object>(), conversionService );
 
         // delegates
         this.request = request;
@@ -70,8 +80,8 @@ public class HttpRequestImpl extends HashMap<String, Object> implements HttpRequ
         this.responseHeaders = new HttpResponseHeadersImpl( this.response );
 
         // query parameters
-        this.queryParameters = unmodifiableMap( listMapFromArrayMap( this.request.getParameterMap() ) );
-        this.pathParameters = Collections.emptyMap();
+        this.queryParameters = new MultiMapWrapper<>( unmodifiableMap( listMapFromArrayMap( this.request.getParameterMap() ) ), conversionService );
+        this.pathParameters = new MapWrapper<>( Collections.<String, String>emptyMap(), conversionService );
 
         // multi-part
         this.parts = new HashMap<>();
@@ -163,13 +173,13 @@ public class HttpRequestImpl extends HashMap<String, Object> implements HttpRequ
     }
 
     @Override
-    public Map<String, List<String>> getQueryParameters()
+    public MultiMapAccessor<String, String> getQueryParameters()
     {
         return this.queryParameters;
     }
 
     @Override
-    public Map<String, String> getPathParameters()
+    public MapAccessor<String, String> getPathParameters()
     {
         return this.pathParameters;
     }
@@ -177,7 +187,7 @@ public class HttpRequestImpl extends HashMap<String, Object> implements HttpRequ
     @Override
     public void setPathParams( Map<String, String> params )
     {
-        this.pathParameters = params;
+        this.pathParameters.setMap( Collections.unmodifiableMap( new HashMap<>( params ) ) );
     }
 
     @Override
@@ -249,6 +259,108 @@ public class HttpRequestImpl extends HashMap<String, Object> implements HttpRequ
     public boolean isCommitted()
     {
         return this.response.isCommitted();
+    }
+
+    @Override
+    public <T> T get( String key, Class<T> type, T defaultValue )
+    {
+        return attributes.get( key, type, defaultValue );
+    }
+
+    @Override
+    public <T> T require( String key, Class<T> type )
+    {
+        return attributes.require( key, type );
+    }
+
+    @Override
+    public <T> T get( String key, Class<T> type )
+    {
+        return attributes.get( key, type );
+    }
+
+    @Override
+    public Object require( String key )
+    {
+        return attributes.require( key );
+    }
+
+    @Override
+    public Object get( String key, Object defaultValue )
+    {
+        return attributes.get( key, defaultValue );
+    }
+
+    @Override
+    public Set<Entry<String, Object>> entrySet()
+    {
+        return attributes.entrySet();
+    }
+
+    @Override
+    public Collection<Object> values()
+    {
+        return attributes.values();
+    }
+
+    @Override
+    public Set<String> keySet()
+    {
+        return attributes.keySet();
+    }
+
+    @Override
+    public void clear()
+    {
+        attributes.clear();
+    }
+
+    @Override
+    public void putAll( Map<? extends String, ?> m )
+    {
+        attributes.putAll( m );
+    }
+
+    @Override
+    public Object remove( Object key )
+    {
+        return attributes.remove( key );
+    }
+
+    @Override
+    public Object put( String key, Object value )
+    {
+        return attributes.put( key, value );
+    }
+
+    @Override
+    public Object get( Object key )
+    {
+        return attributes.get( key );
+    }
+
+    @Override
+    public boolean containsValue( Object value )
+    {
+        return attributes.containsValue( value );
+    }
+
+    @Override
+    public boolean containsKey( Object key )
+    {
+        return attributes.containsKey( key );
+    }
+
+    @Override
+    public boolean isEmpty()
+    {
+        return attributes.isEmpty();
+    }
+
+    @Override
+    public int size()
+    {
+        return attributes.size();
     }
 
     private URI parseRequestUri() throws UnsupportedEncodingException
