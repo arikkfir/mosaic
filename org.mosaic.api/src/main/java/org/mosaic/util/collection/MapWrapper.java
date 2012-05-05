@@ -1,6 +1,7 @@
 package org.mosaic.util.collection;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import org.springframework.core.convert.ConversionService;
@@ -13,9 +14,19 @@ import static java.lang.String.format;
  */
 public class MapWrapper<K, V> implements MapAccessor<K, V>
 {
-    private final Map<K, V> map;
-
     private final ConversionService conversionService;
+
+    private Map<K, V> map;
+
+    public MapWrapper()
+    {
+        this( new HashMap<K, V>() );
+    }
+
+    public MapWrapper( ConversionService conversionService )
+    {
+        this( new HashMap<K, V>(), conversionService );
+    }
 
     public MapWrapper( Map<K, V> map )
     {
@@ -26,6 +37,11 @@ public class MapWrapper<K, V> implements MapAccessor<K, V>
     {
         this.map = map;
         this.conversionService = conversionService;
+    }
+
+    public void setMap( Map<K, V> map )
+    {
+        this.map = map;
     }
 
     @Override
