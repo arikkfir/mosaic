@@ -200,6 +200,12 @@ public class HttpRequestHandler extends ContextHandlerCollection
         private void handleRequest( HttpServletRequest request, HttpServletResponse response )
         throws IOException, ServletException
         {
+            if( Boolean.getBoolean( "skipFavIcon" ) && request.getPathInfo().equals( "/favicon.ico" ) )
+            {
+                response.sendError( HttpServletResponse.SC_NOT_FOUND );
+                return;
+            }
+
             try
             {
                 // associate app and request on the thread
