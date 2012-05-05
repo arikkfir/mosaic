@@ -6,17 +6,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import org.joda.time.DateTime;
+import org.mosaic.util.collection.MultiMapAccessor;
 import org.springframework.http.MediaType;
 
 /**
  * @author arik
  */
-public interface HttpRequestHeaders
+public interface HttpRequestHeaders extends MultiMapAccessor<String, String>
 {
-    String getFirst( String name );
-
-    List<String> get( String name );
-
     List<MediaType> getAccept();
 
     List<Charset> getAcceptCharset();

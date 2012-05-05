@@ -76,7 +76,7 @@ public class HttpRequestImpl implements HttpRequest, PathParamsAware
         put( RESPONSE_ATTR, this.response );
 
         // headers
-        this.requestHeaders = new HttpRequestHeadersImpl( this.request );
+        this.requestHeaders = new HttpRequestHeadersImpl( this.request, conversionService );
         this.responseHeaders = new HttpResponseHeadersImpl( this.response );
 
         // query parameters

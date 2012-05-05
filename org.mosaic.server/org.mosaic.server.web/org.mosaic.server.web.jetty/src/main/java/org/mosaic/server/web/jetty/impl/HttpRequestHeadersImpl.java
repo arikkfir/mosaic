@@ -13,13 +13,13 @@ import java.util.regex.Pattern;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import org.joda.time.DateTime;
-import org.mosaic.server.web.util.HttpTime;
 import org.mosaic.util.collection.MultiMapAccessor;
 import org.mosaic.util.collection.MultiMapWrapper;
 import org.mosaic.util.logging.Logger;
 import org.mosaic.util.logging.LoggerFactory;
 import org.mosaic.web.HttpCookie;
 import org.mosaic.web.HttpRequestHeaders;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.http.MediaType;
 
 import static java.util.Collections.list;
@@ -34,8 +34,6 @@ public class HttpRequestHeadersImpl implements HttpRequestHeaders
     private static final Logger LOG = LoggerFactory.getLogger( HttpRequestHeadersImpl.class );
 
     private static final Pattern QUALITY_PATTERN = Pattern.compile( "q=(?<quality>\\d+(?:\\.\\d+))" );
-
-    private static final Comparator<MediaType> MEDIA_TYPE_COMPARATOR = reverseOrder( new MediaTypeComparator() );
 
     private static final Comparator<OrderedEntry<Charset>> CHARSET_COMPARATOR = reverseOrder( new OrderedEntryComparator<Charset>() );
 
@@ -59,7 +57,7 @@ public class HttpRequestHeadersImpl implements HttpRequestHeaders
                     "X-Mosaic-If-None-Match-Override"
             ) );
 
-    private final Map<String, List<String>> headers;
+    private final MultiMapWrapper<String, String> headers;
 
     private final ArrayList<Locale> locales;
 
@@ -67,7 +65,7 @@ public class HttpRequestHeadersImpl implements HttpRequestHeaders
 
     private final URL referer;
 
-    public HttpRequestHeadersImpl( HttpServletRequest request )
+    public HttpRequestHeadersImpl( HttpServletRequest request, ConversionService conversionService )
     {
         // use the request object directly because it knows to parse the Accept-Language header, and sort
         // the languages according to the sent quality value
@@ -78,7 +76,6 @@ public class HttpRequestHeadersImpl implements HttpRequestHeaders
 
         Map<String, List<String>> headers = new HashMap<>();
         MultiMapAccessor<String, String> hs = new MultiMapWrapper<>( headers );
-
         for( String header : list( request.getHeaderNames() ) )
         {
             // override headers do not stand by themselves - their values must be used under the overridden header name
@@ -119,48 +116,15 @@ public class HttpRequestHeadersImpl implements HttpRequestHeaders
                 }
             }
         }
-        this.headers = Collections.unmodifiableMap( headers );
+        this.headers = new MultiMapWrapper<>( Collections.unmodifiableMap( headers ), conversionService );
         this.referer = buildReferer( request );
-    }
-
-    @Override
-    public String getFirst( String key )
-    {
-        List<String> values = this.headers.get( key );
-        if( values == null || values.isEmpty() )
-        {
-            return null;
-        }
-        else
-        {
-            return values.get( 0 );
-        }
-    }
-
-    @Override
-    public List<String> get( String name )
-    {
-        return this.headers.get( name );
-    }
-
-    private String getFirst( String key, String defaultValue )
-    {
-        String value = getFirst( key );
-        if( value != null )
-        {
-            return value;
-        }
-        else
-        {
-            return defaultValue;
-        }
     }
 
     @Override
     public List<MediaType> getAccept()
     {
         List<MediaType> mediaTypes = parseMediaTypes( getFirst( "Accept", MediaType.ALL.toString() ) );
-        Collections.sort( mediaTypes, MEDIA_TYPE_COMPARATOR );
+        MediaType.sortByQualityValue( mediaTypes );
         return mediaTypes;
     }
 
@@ -250,13 +214,14 @@ public class HttpRequestHeadersImpl implements HttpRequestHeaders
         {
             languages.add( Locale.forLanguageTag( language ) );
         }
+        // TODO by arik on 5/5/12: sort by quality
         return languages;
     }
 
     @Override
     public Long getContentLength()
     {
-        return Long.parseLong( getFirst( "Content-Length" ) );
+        return getFirst( "Content-Length", Long.class );
     }
 
     @Override
@@ -304,7 +269,7 @@ public class HttpRequestHeadersImpl implements HttpRequestHeaders
     @Override
     public DateTime getIfModifiedSince()
     {
-        return HttpTime.parse( getFirst( "If-Modified-Since" ) );
+        return getFirst( "If-Modified-Since", DateTime.class );
     }
 
     @Override
@@ -322,7 +287,7 @@ public class HttpRequestHeadersImpl implements HttpRequestHeaders
     @Override
     public DateTime getIfUnmodifiedSince()
     {
-        return HttpTime.parse( getFirst( "If-Unmodified-Since" ) );
+        return getFirst( "If-Unmodified-Since", DateTime.class );
     }
 
     @Override
@@ -341,6 +306,126 @@ public class HttpRequestHeadersImpl implements HttpRequestHeaders
     public String getUserAgent()
     {
         return getFirst( "User-Agent" );
+    }
+
+    @Override
+    public int size()
+    {
+        return headers.size();
+    }
+
+    @Override
+    public boolean isEmpty()
+    {
+        return headers.isEmpty();
+    }
+
+    @Override
+    public boolean containsKey( Object key )
+    {
+        return headers.containsKey( key );
+    }
+
+    @Override
+    public boolean containsValue( Object value )
+    {
+        return headers.containsValue( value );
+    }
+
+    @Override
+    public List<String> get( Object key )
+    {
+        return headers.get( key );
+    }
+
+    @Override
+    public List<String> put( String key, List<String> value )
+    {
+        return headers.put( key, value );
+    }
+
+    @Override
+    public List<String> replace( String key, String value )
+    {
+        return headers.replace( key, value );
+    }
+
+    @Override
+    public List<String> remove( Object key )
+    {
+        return headers.remove( key );
+    }
+
+    @Override
+    public void putAll( Map<? extends String, ? extends List<String>> m )
+    {
+        headers.putAll( m );
+    }
+
+    @Override
+    public void clear()
+    {
+        headers.clear();
+    }
+
+    @Override
+    public Set<String> keySet()
+    {
+        return headers.keySet();
+    }
+
+    @Override
+    public Collection<List<String>> values()
+    {
+        return headers.values();
+    }
+
+    @Override
+    public Set<Entry<String, List<String>>> entrySet()
+    {
+        return headers.entrySet();
+    }
+
+    @Override
+    public String getFirst( String key )
+    {
+        return headers.getFirst( key );
+    }
+
+    @Override
+    public String getFirst( String key, String defaultValue )
+    {
+        return headers.getFirst( key, defaultValue );
+    }
+
+    @Override
+    public String requireFirst( String key )
+    {
+        return headers.requireFirst( key );
+    }
+
+    @Override
+    public <T> T getFirst( String key, Class<T> type )
+    {
+        return headers.getFirst( key, type );
+    }
+
+    @Override
+    public <T> T requireFirst( String key, Class<T> type )
+    {
+        return headers.requireFirst( key, type );
+    }
+
+    @Override
+    public <T> T getFirst( String key, Class<T> type, T defaultValue )
+    {
+        return headers.getFirst( key, type, defaultValue );
+    }
+
+    @Override
+    public void add( String key, String value )
+    {
+        headers.add( key, value );
     }
 
     private URL buildReferer( HttpServletRequest request )
@@ -388,34 +473,6 @@ public class HttpRequestHeadersImpl implements HttpRequestHeaders
             {
                 LOG.warn( "Could not convert 'Referer' header value '{}' for request '{}' into a URL object: {}", referrer, requestURL, e.getMessage(), e );
                 return null;
-            }
-        }
-    }
-
-    private static class MediaTypeComparator implements Comparator<MediaType>
-    {
-
-        @Override
-        public int compare( MediaType o1, MediaType o2 )
-        {
-            if( o1 == o2 )
-            {
-                return 0;
-            }
-
-            double q1 = o1.getQualityValue();
-            double q2 = o2.getQualityValue();
-            if( q1 == q2 )
-            {
-                return 0;
-            }
-            else if( q1 < q2 )
-            {
-                return -1;
-            }
-            else
-            {
-                return 1;
             }
         }
     }
