@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<application>
+<application display-name="Administration Console">
 
     <virtual-hosts>
         <virtual-host>admin.localhost.infolinks.local</virtual-host>
