@@ -19,7 +19,6 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 import org.mosaic.config.Configuration;
 import org.mosaic.lifecycle.ServiceRef;
 import org.mosaic.util.collection.MapAccessor;
-import org.mosaic.util.collection.MapWrapper;
 import org.mosaic.util.logging.Logger;
 import org.mosaic.util.logging.LoggerFactory;
 import org.mosaic.web.HttpServer;
@@ -37,7 +36,6 @@ import static org.springframework.util.StringUtils.tokenizeToStringArray;
 @Component
 public class HttpServerImpl implements HttpServer
 {
-
     private static final Logger LOG = LoggerFactory.getLogger( HttpServerImpl.class );
 
     private Server jetty;
@@ -73,7 +71,7 @@ public class HttpServerImpl implements HttpServer
         LOG.debug( "Starting Jetty HTTP server" );
         try
         {
-            Server server = createServer( new MapWrapper<>( cfg ) );
+            Server server = createServer( cfg );
             server.start();
             this.jetty = server;
             LOG.info( "Started Jetty HTTP server" );
@@ -91,11 +89,9 @@ public class HttpServerImpl implements HttpServer
         {
             try
             {
-
                 LOG.debug( "Stopping Jetty HTTP server (configuration changed)" );
                 this.jetty.stop();
                 LOG.info( "Stopped Jetty HTTP server (configuration changed)" );
-
             }
             catch( Exception e )
             {
