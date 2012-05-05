@@ -6,7 +6,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import org.mosaic.server.web.dispatcher.impl.endpoint.MethodParameterResolver;
-import org.mosaic.web.handler.annotation.*;
+import org.mosaic.web.annotation.*;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.ParameterNameDiscoverer;

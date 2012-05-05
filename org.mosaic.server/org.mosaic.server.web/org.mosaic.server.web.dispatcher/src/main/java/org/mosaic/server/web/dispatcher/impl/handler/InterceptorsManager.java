@@ -98,7 +98,7 @@ public class InterceptorsManager extends AbstractMethodEndpointManager
     {
         private MethodEndpointInterceptor( MethodEndpointInfo methodEndpointInfo ) throws IllegalStateException
         {
-            super( methodEndpointInfo, org.mosaic.web.handler.annotation.Interceptor.class );
+            super( methodEndpointInfo, org.mosaic.web.annotation.Interceptor.class );
         }
 
         @Override
