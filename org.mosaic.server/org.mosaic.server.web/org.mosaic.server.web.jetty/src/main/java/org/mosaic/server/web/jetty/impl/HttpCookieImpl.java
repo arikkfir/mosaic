@@ -8,7 +8,6 @@ import org.mosaic.web.HttpCookie;
  */
 public class HttpCookieImpl implements HttpCookie
 {
-
     private final Cookie cookie;
 
     public HttpCookieImpl( Cookie cookie )
