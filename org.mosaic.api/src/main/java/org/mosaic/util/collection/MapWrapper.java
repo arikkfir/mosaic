@@ -185,4 +185,9 @@ public class MapWrapper<K, V> implements MapAccessor<K, V>
             return value;
         }
     }
+
+    public ConversionService getConversionService()
+    {
+        return this.conversionService;
+    }
 }
