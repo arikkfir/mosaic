@@ -7,9 +7,9 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.joda.time.DateTime;
-import org.mosaic.server.web.util.HttpTime;
 import org.mosaic.web.HttpCookie;
 import org.mosaic.web.HttpResponseHeaders;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 
@@ -23,9 +23,12 @@ public class HttpResponseHeadersImpl implements HttpResponseHeaders
 {
     private final HttpServletResponse response;
 
-    public HttpResponseHeadersImpl( HttpServletResponse response )
+    private final ConversionService conversionService;
+
+    public HttpResponseHeadersImpl( HttpServletResponse response, ConversionService conversionService )
     {
         this.response = response;
+        this.conversionService = conversionService;
     }
 
     @Override
@@ -46,7 +49,7 @@ public class HttpResponseHeadersImpl implements HttpResponseHeaders
     @Override
     public void setAllow( Collection<HttpMethod> methods )
     {
-        put( "Allow", collectionToCommaDelimitedString( methods ) );
+        replace( "Allow", collectionToCommaDelimitedString( methods ) );
     }
 
     @Override
@@ -58,43 +61,44 @@ public class HttpResponseHeadersImpl implements HttpResponseHeaders
     @Override
     public void setCacheControl( String cacheControl )
     {
-        put( "Cache-Control", cacheControl );
+        replace( "Cache-Control", cacheControl );
     }
 
     @Override
     public Locale getContentLanguage()
     {
-        return new Locale( getFirst( "Content-Language" ) );
+        return getFirst( "Content-Language", Locale.class );
     }
 
     @Override
     public void setContentLanguage( Locale contentLanguage )
     {
-        put( "Content-Language", contentLanguage.toString() );
+        this.response.setLocale( contentLanguage );
     }
 
     @Override
     public Long getContentLength()
     {
-        return Long.parseLong( getFirst( "Content-Length" ) );
+        return getFirst( "Content-Length", Long.class );
     }
 
     @Override
     public void setContentLength( Long contentLength )
     {
-        put( "Content-Length", "" + contentLength );
+        replace( "Content-Length", "" + contentLength );
     }
 
     @Override
     public MediaType getContentType()
     {
-        return MediaType.parseMediaType( getFirst( "Content-Type" ) );
+        String contentType = this.response.getContentType();
+        return contentType == null ? null : MediaType.parseMediaType( contentType );
     }
 
     @Override
     public void setContentType( MediaType contentType )
     {
-        put( "Content-Type", contentType.toString() );
+        this.response.setContentType( contentType.toString() );
     }
 
     @Override
@@ -145,13 +149,13 @@ public class HttpResponseHeadersImpl implements HttpResponseHeaders
     @Override
     public void setETag( String eTag )
     {
-        put( "ETag", eTag );
+        replace( "ETag", eTag );
     }
 
     @Override
     public Long getExpires()
     {
-        return Long.parseLong( getFirst( "Expires" ) );
+        return getFirst( "Expires", Long.class );
     }
 
     @Override
@@ -159,28 +163,23 @@ public class HttpResponseHeadersImpl implements HttpResponseHeaders
     {
         if( secondsFromNow == null )
         {
-
             // null value means that we don't want to send back any cache headers - let the user agent decide for itself
             this.response.setHeader( "Expires", null );
             this.response.setHeader( "Pragma", null );
             this.response.setHeader( "Cache-Control", null );
-
         }
         else if( secondsFromNow <= 0 )
         {
-
             // zero or negative means that we want to completely prevent any user agent/proxy from caching our response
             this.response.setHeader( "Pragma", "no-cache" );
-            this.response.setHeader( "Expires", HttpTime.format( new DateTime() ) );
+            this.response.setHeader( "Expires", this.conversionService.convert( new DateTime(), String.class ) );
             this.response.setHeader( "Cache-Control", "no-cache, no-store" );
-
         }
         else
         {
-
             // any other number means we want to allow caching of this response, but only for the next specified seconds
-            this.response.setHeader( "Expires", HttpTime.format( new DateTime( currentTimeMillis() +
-                                                                               secondsFromNow * 1000l ) ) );
+            long expireSeconds = currentTimeMillis() + secondsFromNow * 1000l;
+            this.response.setHeader( "Expires", this.conversionService.convert( expireSeconds, String.class ) );
             this.response.setHeader( "Cache-Control", "max-age=" + secondsFromNow + ", must-revalidate" );
         }
     }
@@ -188,21 +187,13 @@ public class HttpResponseHeadersImpl implements HttpResponseHeaders
     @Override
     public DateTime getLastModified()
     {
-        String value = getFirst( "Last-Modified" );
-        if( value == null )
-        {
-            return null;
-        }
-        else
-        {
-            return HttpTime.parse( value );
-        }
+        return getFirst( "Last-Modified", DateTime.class );
     }
 
     @Override
     public void setLastModified( DateTime lastModified )
     {
-        put( "Last-Modified", HttpTime.format( lastModified ) );
+        replace( "Last-Modified", this.conversionService.convert( lastModified, String.class ) );
     }
 
     @Override
@@ -233,19 +224,26 @@ public class HttpResponseHeadersImpl implements HttpResponseHeaders
     @Override
     public void setPragma( String pragma )
     {
-        put( "Pragma", pragma );
+        replace( "Pragma", pragma );
     }
 
     @Override
     public Integer getRetryAfter()
     {
-        return Integer.parseInt( getFirst( "Retry-After" ) );
+        return getFirst( "Retry-After", Integer.class );
     }
 
     @Override
     public void setRetryAfter( Integer retryAfter )
     {
-        put( "Retry-After", "" + retryAfter );
+        if( retryAfter != null )
+        {
+            this.response.setIntHeader( "Retry-After", retryAfter );
+        }
+        else
+        {
+            this.response.setHeader( "Retry-After", null );
+        }
     }
 
     @Override
@@ -257,7 +255,7 @@ public class HttpResponseHeadersImpl implements HttpResponseHeaders
     @Override
     public void setServer( String server )
     {
-        put( "Server", server );
+        replace( "Server", server );
     }
 
     @Override
@@ -269,7 +267,7 @@ public class HttpResponseHeadersImpl implements HttpResponseHeaders
     @Override
     public void setWwwAuthenticate( String wwwAuthenticate )
     {
-        put( "WWW-Authenticate", wwwAuthenticate );
+        replace( "WWW-Authenticate", wwwAuthenticate );
     }
 
     @Override
@@ -278,7 +276,86 @@ public class HttpResponseHeadersImpl implements HttpResponseHeaders
         setExpires( 0l );
     }
 
-    private String getFirst( String key )
+    @Override
+    public List<String> replace( String key, String value )
+    {
+        Collection<String> previous = this.response.getHeaders( key );
+        this.response.setHeader( key, value );
+        return new LinkedList<>( previous );
+    }
+
+    @Override
+    public String getFirst( String key, String defaultValue )
+    {
+        String value = this.response.getHeader( key );
+        if( value != null )
+        {
+            return value;
+        }
+        else
+        {
+            return defaultValue;
+        }
+    }
+
+    @Override
+    public String requireFirst( String key )
+    {
+        String value = this.response.getHeader( key );
+        if( value != null )
+        {
+            return value;
+        }
+        else
+        {
+            throw new IllegalArgumentException( String.format( "Header '%s' is not set", key ) );
+        }
+    }
+
+    @Override
+    public <T> T getFirst( String key, Class<T> type )
+    {
+        String value = getFirst( key );
+        if( value != null )
+        {
+            return this.conversionService.convert( value, type );
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    @Override
+    public <T> T requireFirst( String key, Class<T> type )
+    {
+        T value = getFirst( key, type );
+        if( value != null )
+        {
+            return value;
+        }
+        else
+        {
+            throw new IllegalArgumentException( String.format( "Header '%s' is not set", key ) );
+        }
+    }
+
+    @Override
+    public <T> T getFirst( String key, Class<T> type, T defaultValue )
+    {
+        T value = getFirst( key, type );
+        if( value != null )
+        {
+            return value;
+        }
+        else
+        {
+            return defaultValue;
+        }
+    }
+
+    @Override
+    public String getFirst( String key )
     {
         return this.response.getHeader( key );
     }
@@ -287,12 +364,6 @@ public class HttpResponseHeadersImpl implements HttpResponseHeaders
     public void add( String key, String value )
     {
         this.response.addHeader( key, value );
-    }
-
-    @Override
-    public void put( String key, String value )
-    {
-        this.response.setHeader( key, value );
     }
 
     @Override
@@ -359,7 +430,10 @@ public class HttpResponseHeadersImpl implements HttpResponseHeaders
     @Override
     public void clear()
     {
-        throw new UnsupportedOperationException( "Clearing all headers is not supported (too dangerous)" );
+        for( String headerName : this.response.getHeaderNames() )
+        {
+            this.response.setHeader( headerName, null );
+        }
     }
 
     @Override

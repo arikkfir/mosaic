@@ -1,15 +1,18 @@
 package org.mosaic.web;
 
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.Collection;
+import java.util.Locale;
+import java.util.Set;
 import org.joda.time.DateTime;
+import org.mosaic.util.collection.MultiMapAccessor;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 
 /**
  * @author arik
  */
-public interface HttpResponseHeaders extends Map<String, List<String>>
+public interface HttpResponseHeaders extends MultiMapAccessor<String, String>
 {
     Set<HttpMethod> getAllow();
 
@@ -70,8 +73,4 @@ public interface HttpResponseHeaders extends Map<String, List<String>>
     void setWwwAuthenticate( String wwwAuthenticate );
 
     void disableCache();
-
-    void add( String key, String value );
-
-    void put( String key, String value );
 }

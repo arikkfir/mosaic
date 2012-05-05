@@ -77,7 +77,7 @@ public class HttpRequestImpl implements HttpRequest, PathParamsAware
 
         // headers
         this.requestHeaders = new HttpRequestHeadersImpl( this.request, conversionService );
-        this.responseHeaders = new HttpResponseHeadersImpl( this.response );
+        this.responseHeaders = new HttpResponseHeadersImpl( this.response, conversionService );
 
         // query parameters
         this.queryParameters = new MultiMapWrapper<>( unmodifiableMap( listMapFromArrayMap( this.request.getParameterMap() ) ), conversionService );
