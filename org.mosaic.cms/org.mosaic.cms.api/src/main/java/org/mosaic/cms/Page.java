@@ -9,6 +9,8 @@ import org.mosaic.util.collection.MultiMapAccessor;
  */
 public interface Page extends Named, PropertiesProvider, DataContainer, Secured, Filtered
 {
+    Site getSite();
+
     Blueprint getBlueprint();
 
     boolean isEnabled();
