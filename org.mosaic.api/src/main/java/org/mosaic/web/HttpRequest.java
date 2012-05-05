@@ -17,7 +17,7 @@ public interface HttpRequest extends MapAccessor<String, Object>
 
     HttpSession getSession();
 
-    HttpSession getOrCreateSession();
+    Object getOrCreateSession();
 
     boolean isSecure();
 
