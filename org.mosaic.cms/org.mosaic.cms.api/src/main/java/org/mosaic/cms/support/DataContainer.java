@@ -8,5 +8,7 @@ import org.mosaic.cms.DataProvider;
  */
 public interface DataContainer
 {
+    DataProvider getDataProvider( String name );
+
     Map<String, DataProvider> getDataProviders();
 }
