@@ -2,6 +2,8 @@ package org.mosaic.runner;
 
 import org.apache.felix.framework.Felix;
 import org.mosaic.runner.boot.FrameworkBootstrapper;
+import org.mosaic.runner.util.BundleUtils;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,8 +49,24 @@ public class Runner
             this.logger.info( " " );
             this.logger.info( "*************************************************************************" );
             this.logger.info( " Server is running (initialized in {} seconds, or {} milli-seconds)",
-                              startupDurationMillis /
-                              1000, startupDurationMillis );
+                              startupDurationMillis / 1000, startupDurationMillis );
+            Bundle[] bundles = felix.getBundleContext().getBundles();
+            if( bundles != null )
+            {
+                boolean printedHeader = false;
+                for( Bundle bundle : bundles )
+                {
+                    if( bundle.getState() != Bundle.ACTIVE )
+                    {
+                        if( !printedHeader )
+                        {
+                            this.logger.info( " Inactive bundles:" );
+                            printedHeader = true;
+                        }
+                        this.logger.info( "    {}", BundleUtils.toString( bundle ) );
+                    }
+                }
+            }
             this.logger.info( "*************************************************************************" );
             this.logger.info( " " );
         }
