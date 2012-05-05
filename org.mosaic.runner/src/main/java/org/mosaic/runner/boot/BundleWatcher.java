@@ -12,7 +12,7 @@ import org.osgi.framework.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * @author arik
@@ -30,7 +30,7 @@ public class BundleWatcher implements SynchronousBundleListener, Runnable
         this.bundleContext = bundleContext;
         this.watchedLocations = new CopyOnWriteArraySet<>( watchedLocations );
         this.bundleContext.addBundleListener( this );
-        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate( this, 10, 1, SECONDS );
+        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate( this, 10, 500, MILLISECONDS );
     }
 
     @Override
@@ -45,17 +45,21 @@ public class BundleWatcher implements SynchronousBundleListener, Runnable
             if( bundle != null )
             {
                 File file = getBundleLocationAsFile( location );
-                if( file.exists() && file.isFile() && file.lastModified() > bundle.getLastModified() )
+                if( file.exists() && file.isFile() )
                 {
-                    try
+                    long lastMod = file.lastModified();
+                    if( lastMod > bundle.getLastModified() && System.currentTimeMillis() - lastMod > 500 )
                     {
-                        bundle.update();
-                    }
-                    catch( BundleException e )
-                    {
-                        LOG.warn( "Could not update bundle '{}' from '{}'", new Object[] {
-                                BundleUtils.toString( bundle ), location, e
-                        } );
+                        try
+                        {
+                            bundle.update();
+                        }
+                        catch( BundleException e )
+                        {
+                            LOG.warn( "Could not update bundle '{}' from '{}'", new Object[] {
+                                    BundleUtils.toString( bundle ), location, e
+                            } );
+                        }
                     }
                 }
             }
