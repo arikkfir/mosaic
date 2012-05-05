@@ -11,6 +11,8 @@ public interface HttpApplication extends MapAccessor<String, Object>
 {
     String getName();
 
+    String getDisplayName();
+
     MapAccessor<String, String> getParameters();
 
     Set<String> getVirtualHosts();

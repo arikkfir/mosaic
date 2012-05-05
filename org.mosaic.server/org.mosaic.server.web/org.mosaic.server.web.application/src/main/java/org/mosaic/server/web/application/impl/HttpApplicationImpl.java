@@ -16,6 +16,7 @@ import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.util.LinkedCaseInsensitiveMap;
+import org.springframework.util.StringUtils;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
 
@@ -37,6 +38,8 @@ public class HttpApplicationImpl implements HttpApplication
     private final MapAccessor<String, Object> attributes;
 
     private final MapWrapper<String, String> parameters;
+
+    private String displayName;
 
     private Set<Pattern> virtualHosts;
 
@@ -132,6 +135,12 @@ public class HttpApplicationImpl implements HttpApplication
     public String getName()
     {
         return this.name;
+    }
+
+    @Override
+    public String getDisplayName()
+    {
+        return this.displayName;
     }
 
     @Override
@@ -319,6 +328,12 @@ public class HttpApplicationImpl implements HttpApplication
             throw new IllegalArgumentException( "Could not find <application> tag in application file '" +
                                                 this.path +
                                                 "'" );
+        }
+
+        this.displayName = appElt.getAttribute( "display-name" );
+        if( this.displayName == null )
+        {
+            this.displayName = StringUtils.capitalize( this.name );
         }
 
         // parse virtual hosts
