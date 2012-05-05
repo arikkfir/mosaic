@@ -1,12 +1,12 @@
 package org.mosaic.server.web.dispatcher.impl.marshall;
 
 import java.io.IOException;
+import java.io.Writer;
 import java.lang.reflect.Type;
 import javax.annotation.PostConstruct;
 import org.codehaus.jackson.*;
 import org.codehaus.jackson.map.*;
 import org.codehaus.jackson.map.deser.std.StdDeserializer;
-import org.codehaus.jackson.map.exc.UnrecognizedPropertyException;
 import org.codehaus.jackson.map.module.SimpleModule;
 import org.codehaus.jackson.map.ser.std.SerializerBase;
 import org.joda.time.DateMidnight;
@@ -133,59 +133,31 @@ public class JsonMarshaller implements Marshaller
     public Object marshall( HttpRequest request, Object handlerResult ) throws Exception
     {
         JsonFactory jsonFactory = this.objectMapper.getJsonFactory();
-        try
-        {
-            //
-            // JSONP prefix
-            //
-            String jp = request.getQueryParameters().get( "jp" );
-            if( jp != null )
-            {
-                sink.getWriter().write( jp + "(" );
-            }
+        request.getResponseHeaders().setContentType( MediaType.APPLICATION_JSON );
+        Writer writer = request.getResponseWriter();
 
-            //
-            // actual JSON
-            //
-            sink.setContentType( JSON );
-            JsonGenerator generator = jsonFactory.createJsonGenerator( sink.getWriter() ).useDefaultPrettyPrinter();
-            this.objectMapper.writeValue( generator, source );
+        //
+        // JSONP prefix
+        //
+        String jp = request.getQueryParameters().getFirst( "jp" );
+        if( jp != null )
+        {
+            writer.write( jp + "(" );
+        }
 
-            //
-            // JSONP prefix
-            //
-            if( jp != null )
-            {
-                sink.getWriter().write( ")" );
-            }
-        }
-        catch( JsonGenerationException e )
+        //
+        // actual JSON
+        //
+        JsonGenerator generator = jsonFactory.createJsonGenerator( writer ).useDefaultPrettyPrinter();
+        this.objectMapper.writeValue( generator, handlerResult );
+
+        //
+        // JSONP suffix
+        //
+        if( jp != null )
         {
-            throw new HttpMarshallingException( e.getMessage(), e );
+            writer.write( ")" );
         }
-        catch( UnrecognizedPropertyException e )
-        {
-            throw new HttpMarshallingException( e.getMessage(), e );
-        }
-        catch( JsonMappingException e )
-        {
-            throw new HttpMarshallingException( e.getMessage(), e );
-        }
-        catch( JsonParseException e )
-        {
-            throw new HttpMarshallingException( e.getMessage(), e );
-        }
-        catch( JsonProcessingException e )
-        {
-            throw new HttpMarshallingException( e.getMessage(), e );
-        }
-        catch( RuntimeJsonMappingException e )
-        {
-            throw new HttpMarshallingException( e.getMessage(), e );
-        }
-        catch( IOException e )
-        {
-            throw new HttpMarshallingException( e.getMessage(), e );
-        }
+        return null;
     }
 }
