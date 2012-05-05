@@ -1,11 +1,11 @@
 package org.mosaic.config;
 
-import java.util.Map;
+import org.mosaic.util.collection.MapAccessor;
 
 /**
  * @author arik
  */
-public interface Configuration extends Map<String, String>
+public interface Configuration extends MapAccessor<String, String>
 {
     String getName();
 }

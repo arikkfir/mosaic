@@ -24,8 +24,6 @@ import org.mosaic.lifecycle.ServiceRef;
 import org.mosaic.server.shell.impl.auth.UserAuthLocalhostNone;
 import org.mosaic.server.shell.impl.session.MosaicServerSession;
 import org.mosaic.server.shell.impl.session.Session;
-import org.mosaic.util.collection.MapAccessor;
-import org.mosaic.util.collection.MapWrapper;
 import org.mosaic.util.logging.Logger;
 import org.mosaic.util.logging.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +43,7 @@ public class SshServerManager
 
     private Home home;
 
-    private MapAccessor<String, String> configuration;
+    private Configuration configuration;
 
     private SshServer sshServer;
 
@@ -76,7 +74,7 @@ public class SshServerManager
     @ServiceRef( filter = "name=ssh" )
     public void setConfiguration( Configuration configuration ) throws InterruptedException
     {
-        this.configuration = new MapWrapper<>( configuration );
+        this.configuration = configuration;
         if( this.sshServer != null )
         {
             stop();

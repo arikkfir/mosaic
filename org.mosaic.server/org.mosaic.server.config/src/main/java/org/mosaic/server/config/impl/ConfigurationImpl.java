@@ -5,9 +5,11 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.*;
 import org.mosaic.config.Configuration;
+import org.mosaic.util.collection.MapWrapper;
 import org.mosaic.util.logging.Logger;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
+import org.springframework.core.convert.ConversionService;
 
 import static java.nio.file.Files.*;
 import static java.nio.file.StandardOpenOption.READ;
@@ -28,11 +30,11 @@ public class ConfigurationImpl implements Configuration
 
     private ServiceRegistration<Configuration> registration;
 
-    private Map<String, String> values = Collections.emptyMap();
+    private MapWrapper<String, String> values;
 
     private long modificationTime;
 
-    public ConfigurationImpl( BundleContext bundleContext, Path path )
+    public ConfigurationImpl( BundleContext bundleContext, Path path, ConversionService conversionService )
     {
         this.bundleContext = bundleContext;
         this.path = path;
@@ -40,6 +42,7 @@ public class ConfigurationImpl implements Configuration
         String fileName = this.path.getFileName().toString();
         this.name = fileName.substring( 0, fileName.indexOf( '.' ) );
         this.logger = getBundleLogger( ConfigurationManager.class, this.name );
+        this.values = new MapWrapper<>( Collections.<String, String>emptyMap(), conversionService );
     }
 
     @Override
@@ -90,7 +93,7 @@ public class ConfigurationImpl implements Configuration
             if( this.modificationTime > 0 )
             {
                 logger.warn( "Configuration '{}' no longer exists/readable at: {}", this.name, this.path );
-                this.values = Collections.emptyMap();
+                this.values.setMap( Collections.<String, String>emptyMap() );
                 this.modificationTime = 0;
                 unregister();
             }
@@ -115,7 +118,7 @@ public class ConfigurationImpl implements Configuration
                             values.put( propertyName, properties.getProperty( propertyName ) );
                         }
                     }
-                    this.values = values;
+                    this.values.setMap( Collections.unmodifiableMap( values ) );
                     register();
                 }
             }
@@ -127,74 +130,104 @@ public class ConfigurationImpl implements Configuration
     }
 
     @Override
-    public int size()
+    public <T> T get( String key, Class<T> type, T defaultValue )
     {
-        return this.values.size();
+        return values.get( key, type, defaultValue );
     }
 
     @Override
-    public boolean isEmpty()
+    public <T> T require( String key, Class<T> type )
     {
-        return this.values.isEmpty();
+        return values.require( key, type );
     }
 
     @Override
-    public boolean containsKey( Object key )
+    public <T> T get( String key, Class<T> type )
     {
-        return this.values.containsKey( key );
+        return values.get( key, type );
     }
 
     @Override
-    public boolean containsValue( Object value )
+    public String require( String key )
     {
-        return this.values.containsValue( value );
+        return values.require( key );
     }
 
     @Override
-    public String get( Object key )
+    public String get( String key, String defaultValue )
     {
-        return this.values.get( key );
-    }
-
-    @Override
-    public String put( String key, String value )
-    {
-        throw new UnsupportedOperationException( "Configurations cannot be modified" );
-    }
-
-    @Override
-    public String remove( Object key )
-    {
-        throw new UnsupportedOperationException( "Configurations cannot be modified" );
-    }
-
-    @Override
-    public void putAll( Map<? extends String, ? extends String> m )
-    {
-        throw new UnsupportedOperationException( "Configurations cannot be modified" );
-    }
-
-    @Override
-    public void clear()
-    {
-        throw new UnsupportedOperationException( "Configurations cannot be modified" );
-    }
-
-    @Override
-    public Set<String> keySet()
-    {
-        return Collections.unmodifiableSet( this.values.keySet() );
-    }
-
-    @Override
-    public Collection<String> values()
-    {
-        return Collections.unmodifiableCollection( this.values.values() );
+        return values.get( key, defaultValue );
     }
 
     @Override
     public Set<Entry<String, String>> entrySet()
     {
-        return Collections.unmodifiableSet( this.values.entrySet() );
+        return values.entrySet();
+    }
+
+    @Override
+    public Collection<String> values()
+    {
+        return values.values();
+    }
+
+    @Override
+    public Set<String> keySet()
+    {
+        return values.keySet();
+    }
+
+    @Override
+    public void clear()
+    {
+        values.clear();
+    }
+
+    @Override
+    public void putAll( Map<? extends String, ? extends String> m )
+    {
+        values.putAll( m );
+    }
+
+    @Override
+    public String remove( Object key )
+    {
+        return values.remove( key );
+    }
+
+    @Override
+    public String put( String key, String value )
+    {
+        return values.put( key, value );
+    }
+
+    @Override
+    public String get( Object key )
+    {
+        return values.get( key );
+    }
+
+    @Override
+    public boolean containsValue( Object value )
+    {
+        return values.containsValue( value );
+    }
+
+    @Override
+    public boolean containsKey( Object key )
+    {
+        return values.containsKey( key );
+    }
+
+    @Override
+    public boolean isEmpty()
+    {
+        return values.isEmpty();
+    }
+
+    @Override
+    public int size()
+    {
+        return values.size();
     }
 }

@@ -14,6 +14,8 @@ import org.mosaic.lifecycle.ServiceRef;
 import org.mosaic.util.logging.Logger;
 import org.mosaic.util.logging.LoggerFactory;
 import org.osgi.framework.BundleContext;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.stereotype.Component;
 
 import static java.nio.file.Files.exists;
@@ -34,6 +36,8 @@ public class ConfigurationManager
 
     private Home home;
 
+    private ConversionService conversionService;
+
     private ConfigurationManager.Scanner scanner;
 
     private BundleContext bundleContext;
@@ -48,6 +52,12 @@ public class ConfigurationManager
     public void setHome( Home home )
     {
         this.home = home;
+    }
+
+    @Autowired
+    public void setConversionService( ConversionService conversionService )
+    {
+        this.conversionService = conversionService;
     }
 
     @PostConstruct
@@ -81,7 +91,7 @@ public class ConfigurationManager
                 ConfigurationImpl configuration = this.configurations.get( configFile );
                 if( configuration == null )
                 {
-                    configuration = new ConfigurationImpl( this.bundleContext, configFile );
+                    configuration = new ConfigurationImpl( this.bundleContext, configFile, this.conversionService );
                     this.configurations.put( configFile, configuration );
                 }
                 configuration.refresh();
