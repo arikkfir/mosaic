@@ -11,9 +11,9 @@ import static java.lang.String.format;
  */
 public class MultiMapWrapper<K, V> implements MultiMapAccessor<K, V>
 {
-    private final Map<K, List<V>> map;
-
     private final ConversionService conversionService;
+
+    private Map<K, List<V>> map;
 
     public MultiMapWrapper()
     {
@@ -34,6 +34,11 @@ public class MultiMapWrapper<K, V> implements MultiMapAccessor<K, V>
     {
         this.map = map;
         this.conversionService = conversionService;
+    }
+
+    public void setMap( Map<K, List<V>> map )
+    {
+        this.map = map;
     }
 
     @Override
