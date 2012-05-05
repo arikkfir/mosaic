@@ -15,9 +15,19 @@ public class MultiMapWrapper<K, V> implements MultiMapAccessor<K, V>
 
     private final ConversionService conversionService;
 
+    public MultiMapWrapper()
+    {
+        this( new HashMap<K, List<V>>() );
+    }
+
     public MultiMapWrapper( Map<K, List<V>> map )
     {
         this( map, new DefaultFormattingConversionService( true ) );
+    }
+
+    public MultiMapWrapper( ConversionService conversionService )
+    {
+        this( new HashMap<K, List<V>>(), conversionService );
     }
 
     public MultiMapWrapper( Map<K, List<V>> map, ConversionService conversionService )
