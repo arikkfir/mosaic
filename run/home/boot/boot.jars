@@ -12,7 +12,6 @@ file:${project.home}/org.mosaic.server/org.mosaic.server.transaction/target/*.ja
 file:${project.home}/org.mosaic.server/org.mosaic.server.web/org.mosaic.server.web.application/target/*.jar
 file:${project.home}/org.mosaic.server/org.mosaic.server.web/org.mosaic.server.web.dispatcher/target/*.jar
 file:${project.home}/org.mosaic.server/org.mosaic.server.web/org.mosaic.server.web.jetty/target/*.jar
-file:${project.home}/org.mosaic.test/org.mosaic.test.tx/target/*.jar
 
 #
 # Spring Framework bundles required by the mosaic boot bundle (the rest are in the 'server' directory)
