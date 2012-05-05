@@ -1,11 +1,14 @@
 package org.mosaic.server.web.jetty.impl;
 
 import java.io.IOException;
+import java.io.Writer;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.annotation.PostConstruct;
 import javax.servlet.DispatcherType;
+import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -37,6 +40,21 @@ public class HttpRequestHandler extends ContextHandlerCollection
 {
     private static final Logger LOG = LoggerFactory.getLogger( HttpRequestHandler.class );
 
+    private static final NoOpErrorHandler ERROR_HANDLER = new NoOpErrorHandler();
+
+    private static class NoOpErrorHandler extends ErrorHandler
+    {
+        @Override
+        protected void writeErrorPage( HttpServletRequest request,
+                                       Writer writer,
+                                       int code,
+                                       String message,
+                                       boolean showStacks ) throws IOException
+        {
+            // do nothing
+        }
+    }
+
     private Map<HttpApplication, ServletContextHandler> applications = new ConcurrentHashMap<>( 10 );
 
     private RequestDispatcher dispatcher;
@@ -45,6 +63,36 @@ public class HttpRequestHandler extends ContextHandlerCollection
     public void setDispatcher( RequestDispatcher dispatcher )
     {
         this.dispatcher = dispatcher;
+    }
+
+    @PostConstruct
+    public void init()
+    {
+        ServletContextHandler context = new ServletContextHandler( SESSIONS );
+        context.setAliases( false );
+        context.setAllowNullPathInfo( true );
+        context.setCompactPath( true );
+        context.setContextPath( "" );
+        context.setLogger( new Slf4jLog( "org.mosaic.web.app.default" ) );
+        context.setErrorHandler( ERROR_HANDLER );
+
+        // add filters
+        context.setDisplayName( "Default" );
+        context.addFilter( new FilterHolder( new GzipFilter() ), "/*", EnumSet.of( DispatcherType.REQUEST ) );
+
+        // add application filters and servlet
+        Servlet servlet = new HttpServlet()
+        {
+            @Override
+            public void service( HttpServletRequest req, HttpServletResponse resp ) throws ServletException, IOException
+            {
+                resp.sendError( HttpServletResponse.SC_NOT_FOUND, "Unknown host" );
+            }
+        };
+        context.addServlet( new ServletHolder( "MosaicServlet", servlet ), "/*" );
+
+        // add application
+        addHandler( context );
     }
 
     @ServiceBind
@@ -58,8 +106,8 @@ public class HttpRequestHandler extends ContextHandlerCollection
             context.setAllowNullPathInfo( true );
             context.setCompactPath( true );
             context.setContextPath( "" );
-            context.setLogger( new Slf4jLog( ServletContextHandler.class.getName() ) );
-            context.setErrorHandler( new ErrorHandler() );
+            context.setLogger( new Slf4jLog( "org.mosaic.web.app." + application.getName() ) );
+            context.setErrorHandler( ERROR_HANDLER );
 
             // add filters
             context.setDisplayName( application.getName() );
