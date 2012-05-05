@@ -4,31 +4,39 @@ TODO: create an XML SCHEMA file (XSD) for HTTP application files
 
 [ Web support ]
 
-- Handlers implemented with @Service, @Controller or Handler services
+v Handlers implemented with @Service, @Controller or Handler services
 - Handlers can be versioned
     - either by header, or by path prefix
     - version can be inferred from bundle version (<major>.<minor>[.<micro>]) or hard-coded in @Versioned
-- Use @Filter to decide which HttpApp they contribute to
+v Use @Filter to decide which HttpApp they contribute to
 - Security:
     - authentication should be implemented with @UserRepository methods
         - @UserRepository has @Filter to only support certain apps (e.g. "app.params['global.users'] == true")
     - Handlers can throw AccessDeniedException
-- @Service handlers are wrapped in ServiceHandler
+    - think about using Shiro
+o @Service handlers are wrapped in ServiceHandler
     - passes ServiceResponse return values on without modifications
         - except binding errors which ARE added to the response
     - wraps return values from successful invocations into ServiceResponse objects
     - translates AccessDeniedException into a ServiceResponse with "access denied" message
     - translates any other Exception into a ServiceResponse with "internal error" message
-- @Controller handlers are wrapped in a ControllerHandler
-    - currently has no real function
-- @Marshaller handlers will translate return values from other handlers
-    - each @Marshaller needs to declare the java types it supports
-    - support for one or more content types ("Accept" header)
-- @ExceptionHandlers
-    - one that translates AccessDeniedException into HTTP 401/403 errors
-    - one that translates any other exception into HTTP 500 error
-    - other HTTP exceptions? (method not allowed?)
-- @Interceptors will intercept URLs
-    - before and after the actual handler wrapper (so AccessDeniedException from @Service will not be seen in an interceptor for instance)
-- If no handler matches the URI, use NotFoundHandler
+v @Controller handlers are wrapped in a ControllerHandler
+o @Marshaller handlers will translate return values from other handlers
+    v each @Marshaller needs to declare the java types it supports
+    v support for one or more content types ("Accept" header)
+    - create FreemarkerMarshaller that marshalls Template(type=freemarker)
+    - create VelocityMarshaller that marshalls Template(type=velocity)
+    - create ThymaleafMarshaller that marshalls Template(type=thymaleaf)
+    - create a bundle resource marshaller
+v @ExceptionHandlers wrapped in ExceptionHandlerWrapper
+v @Interceptors will intercept URLs
+    v before and after the actual handler wrapper (so AccessDeniedException from @Service will not be seen in an interceptor for instance)
+v If no handler matches the URI, use NotFoundHandler
 - If one or more handlers match the URI, but not for the requested HTTP method, use MethodNotAllowedHandler
+o create CMS framework
+    v create the CMS API
+    v create base CMS model implementation
+    o create CMS model parser
+    o implement the CMS sites manager
+    - create a CMS handler (finds pages and CMS resources)
+    - create a CMS page marshaller
