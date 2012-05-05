@@ -5,7 +5,6 @@ package org.mosaic.security;
  */
 public class RoleCredential implements User.Credential
 {
-
     private final String roleName;
 
     public RoleCredential( String roleName )

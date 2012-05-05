@@ -5,7 +5,6 @@ package org.mosaic.security;
  */
 public class AccessDeniedException extends Exception
 {
-
     public AccessDeniedException()
     {
         super( "Access denied" );

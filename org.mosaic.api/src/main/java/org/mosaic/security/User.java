@@ -1,11 +1,11 @@
 package org.mosaic.security;
 
-import java.util.Map;
+import org.mosaic.util.collection.MapAccessor;
 
 /**
  * @author arik
  */
-public interface User extends Map<String, Object>
+public interface User extends MapAccessor<String, Object>
 {
     interface Credential
     {

@@ -5,6 +5,5 @@ package org.mosaic.security;
  */
 public interface PermissionPolicy
 {
-
     boolean permits( String operation, User.Credential... credentials );
 }
