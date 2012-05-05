@@ -15,7 +15,6 @@ import static java.util.Collections.unmodifiableMap;
  */
 public class HttpPartImpl implements HttpPart
 {
-
     private final Part part;
 
     private final Map<String, List<String>> headers;
