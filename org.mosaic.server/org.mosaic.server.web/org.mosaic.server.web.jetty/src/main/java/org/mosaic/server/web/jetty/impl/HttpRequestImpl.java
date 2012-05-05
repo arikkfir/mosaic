@@ -100,13 +100,13 @@ public class HttpRequestImpl implements HttpRequest, PathParamsAware
     @Override
     public HttpSession getSession()
     {
-        javax.servlet.http.HttpSession session = this.request.getSession();
-        if( session == null )
+        javax.servlet.http.HttpSession servletSession = this.request.getSession();
+        if( servletSession == null )
         {
             return null;
         }
 
-        Object httpSession = session.getAttribute( SESSION_ATTR );
+        Object httpSession = servletSession.getAttribute( SESSION_ATTR );
         if( httpSession instanceof HttpSession )
         {
             return ( HttpSession ) httpSession;
@@ -119,13 +119,27 @@ public class HttpRequestImpl implements HttpRequest, PathParamsAware
     @Override
     public HttpSession getOrCreateSession()
     {
-        HttpSession session = getSession();
-        if( session == null )
+        javax.servlet.http.HttpSession servletSession = this.request.getSession( true );
+        if( servletSession == null )
         {
-            session = new HttpSessionImpl( this.request.getSession( true ) );
-            this.request.setAttribute( SESSION_ATTR, session );
+            throw new IllegalStateException( "Could not create HTTP session - underlying Servlet container refused to create the session" );
         }
-        return session;
+
+        Object httpSession = servletSession.getAttribute( SESSION_ATTR );
+        if( httpSession == null )
+        {
+            httpSession = new HttpSessionImpl( servletSession, this.attributes.getConversionService() );
+            servletSession.setAttribute( SESSION_ATTR, httpSession );
+            return ( HttpSession ) httpSession;
+        }
+        else if( httpSession instanceof HttpSession )
+        {
+            return ( HttpSession ) httpSession;
+        }
+        else
+        {
+            throw new IllegalStateException( String.format( "Illegal type of HTTP session object stored in Servlet session object: %s", httpSession ) );
+        }
     }
 
     @Override

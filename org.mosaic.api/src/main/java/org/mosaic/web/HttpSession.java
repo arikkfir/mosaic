@@ -1,13 +1,13 @@
 package org.mosaic.web;
 
-import java.util.Map;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
+import org.mosaic.util.collection.MapAccessor;
 
 /**
  * @author arik
  */
-public interface HttpSession extends Map<String, Object>
+public interface HttpSession extends MapAccessor<String, Object>
 {
     DateTime getCreationTime();
 
