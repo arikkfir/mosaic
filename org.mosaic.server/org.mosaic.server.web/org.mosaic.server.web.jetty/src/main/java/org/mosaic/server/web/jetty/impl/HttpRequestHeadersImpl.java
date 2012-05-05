@@ -15,6 +15,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.joda.time.DateTime;
 import org.mosaic.server.web.util.HttpTime;
 import org.mosaic.util.collection.MultiMapAccessor;
+import org.mosaic.util.collection.MultiMapWrapper;
 import org.mosaic.util.logging.Logger;
 import org.mosaic.util.logging.LoggerFactory;
 import org.mosaic.web.HttpCookie;
@@ -76,7 +77,7 @@ public class HttpRequestHeadersImpl implements HttpRequestHeaders
         this.cookies = request.getCookies();
 
         Map<String, List<String>> headers = new HashMap<>();
-        MultiMapAccessor<String, String> hs = new MultiMapAccessor<>( headers );
+        MultiMapAccessor<String, String> hs = new MultiMapWrapper<>( headers );
 
         for( String header : list( request.getHeaderNames() ) )
         {

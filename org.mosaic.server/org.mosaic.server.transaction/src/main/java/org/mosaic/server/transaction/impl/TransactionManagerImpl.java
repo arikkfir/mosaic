@@ -13,6 +13,7 @@ import java.util.Properties;
 import javax.sql.DataSource;
 import org.mosaic.server.transaction.TransactionManager;
 import org.mosaic.util.collection.MapAccessor;
+import org.mosaic.util.collection.MapWrapper;
 import org.mosaic.util.logging.Logger;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
@@ -107,7 +108,7 @@ public class TransactionManagerImpl implements TransactionManager, DataSource
                     {
                         properties.load( inputStream );
                     }
-                    register( new MapAccessor<>( mapFrom( properties ) ) );
+                    register( new MapWrapper<>( mapFrom( properties ) ) );
                 }
             }
             catch( IOException e )

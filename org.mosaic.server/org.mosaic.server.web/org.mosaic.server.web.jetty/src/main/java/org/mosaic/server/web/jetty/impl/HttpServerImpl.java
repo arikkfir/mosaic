@@ -19,6 +19,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 import org.mosaic.config.Configuration;
 import org.mosaic.lifecycle.ServiceRef;
 import org.mosaic.util.collection.MapAccessor;
+import org.mosaic.util.collection.MapWrapper;
 import org.mosaic.util.logging.Logger;
 import org.mosaic.util.logging.LoggerFactory;
 import org.mosaic.web.HttpServer;
@@ -72,7 +73,7 @@ public class HttpServerImpl implements HttpServer
         LOG.debug( "Starting Jetty HTTP server" );
         try
         {
-            Server server = createServer( new MapAccessor<>( cfg ) );
+            Server server = createServer( new MapWrapper<>( cfg ) );
             server.start();
             this.jetty = server;
             LOG.info( "Started Jetty HTTP server" );
