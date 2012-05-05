@@ -1,0 +1,74 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.mosaic.poms</groupId>
+        <artifactId>org.mosaic.poms.parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../../org.mosaic.poms/org.mosaic.poms.parent/pom.xml</relativePath>
+    </parent>
+
+    <groupId>org.mosaic.cms</groupId>
+    <artifactId>org.mosaic.cms.sites</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <name>Mosaic :: CMS :: Sites</name>
+    <packaging>bundle</packaging>
+
+    <dependencies>
+        <!-- ============================================================ -->
+        <!-- BND @Version API                                             -->
+        <!-- ============================================================ -->
+        <dependency>
+            <groupId>biz.aQute</groupId>
+            <artifactId>bndlib</artifactId>
+        </dependency>
+        <!-- ============================================================ -->
+        <!-- Mosaic APIs                                                  -->
+        <!-- ============================================================ -->
+        <dependency>
+            <groupId>org.mosaic</groupId>
+            <artifactId>org.mosaic.api</artifactId>
+            <version>[1.0.0-SNAPSHOT,2)</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mosaic.cms</groupId>
+            <artifactId>org.mosaic.cms.api</artifactId>
+            <version>[1.0.0-SNAPSHOT,2)</version>
+        </dependency>
+        <!-- ============================================================ -->
+        <!-- Spring Framework                                             -->
+        <!-- ============================================================ -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>org.springframework.context</artifactId>
+        </dependency>
+        <!-- ============================================================ -->
+        <!-- Joda Time                                                    -->
+        <!-- ============================================================ -->
+        <dependency>
+            <groupId>joda-time</groupId>
+            <artifactId>joda-time</artifactId>
+        </dependency>
+        <!-- ============================================================ -->
+        <!-- OSGi API                                                     -->
+        <!-- ============================================================ -->
+        <dependency>
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.apache.felix.framework</artifactId>
+        </dependency>
+    </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.mosaic.poms</groupId>
+                <artifactId>org.mosaic.poms.bom</artifactId>
+                <version>1.0.0-SNAPSHOT</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+</project>
