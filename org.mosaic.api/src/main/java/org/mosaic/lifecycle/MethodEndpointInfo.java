@@ -9,7 +9,6 @@ import java.lang.reflect.Method;
  */
 public interface MethodEndpointInfo
 {
-
     String TYPE = "methodEndpointType";
 
     String SHORT_TYPE = "methodEndpointShortType";
