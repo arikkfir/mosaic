@@ -58,7 +58,6 @@ public class RequirementFactory
             Class<?> beanClass = SpringUtils.getBeanClass( this.bundle, beanFactory, beanDefinitionName );
             if( beanClass != null )
             {
-
                 // detect service classes for registration
                 ServiceExport exportAnn = beanClass.getAnnotation( ServiceExport.class );
                 if( exportAnn != null )
@@ -70,13 +69,6 @@ public class RequirementFactory
                         rank = rankAnn.value();
                     }
                     requirements.add( new ServiceExportRequirement( this.tracker, beanDefinitionName, exportAnn.value(), rank ) );
-                }
-
-                // detect class endpoints
-                Annotation metaAnnotation = findAnnotationWithMeta( beanClass, ClassEndpointMarker.class );
-                if( metaAnnotation != null )
-                {
-                    requirements.add( new ClassEndpointRequirement( this.tracker, beanDefinitionName, metaAnnotation, beanClass ) );
                 }
 
                 // detect method requirements
@@ -360,27 +352,6 @@ public class RequirementFactory
             }
             return null;
         }
-    }
-
-    private static <T extends Annotation> Annotation findAnnotationWithMeta( Class<?> clazz,
-                                                                             Class<T> metaAnnotationType )
-    {
-        if( clazz.isAnnotationPresent( metaAnnotationType ) )
-        {
-            return clazz.getAnnotation( metaAnnotationType );
-        }
-        else
-        {
-            for( Annotation annotation : clazz.getAnnotations() )
-            {
-                Annotation foundAnnotation = findAnnotationWithMeta( annotation, metaAnnotationType );
-                if( foundAnnotation != null )
-                {
-                    return foundAnnotation;
-                }
-            }
-        }
-        return null;
     }
 
     private static <T extends Annotation> Annotation findAnnotationWithMeta( Method method,
