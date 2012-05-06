@@ -1,7 +1,7 @@
-package org.mosaic.cms.sites.impl.model;
+package org.mosaic.server.cms.impl.model;
 
 import org.mosaic.cms.DataProvider;
-import org.mosaic.cms.sites.impl.DataProviderRegistry;
+import org.mosaic.server.cms.impl.DataProviderRegistry;
 
 /**
  * @author arik

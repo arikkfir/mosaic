@@ -1,4 +1,4 @@
-package org.mosaic.cms.sites.impl;
+package org.mosaic.server.cms.impl;
 
 import org.mosaic.cms.DataProvider;
 import org.springframework.stereotype.Component;

@@ -1,6 +1,5 @@
-package org.mosaic.cms.sites;
+package org.mosaic.cms;
 
-import org.mosaic.cms.Site;
 import org.mosaic.web.HttpApplication;
 
 /**

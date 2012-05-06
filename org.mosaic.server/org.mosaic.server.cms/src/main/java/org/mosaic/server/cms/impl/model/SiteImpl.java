@@ -1,4 +1,4 @@
-package org.mosaic.cms.sites.impl.model;
+package org.mosaic.server.cms.impl.model;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -34,7 +34,7 @@ public class SiteImpl extends BaseModel implements Site
     @Override
     public Collection<Blueprint> getBlueprints()
     {
-        return ( Collection<Blueprint> ) this.blueprints.values();
+        return ( Collection ) this.blueprints.values();
     }
 
     public synchronized void addBlueprint( BlueprintImpl blueprint )
@@ -54,7 +54,7 @@ public class SiteImpl extends BaseModel implements Site
     @Override
     public Collection<Page> getPages()
     {
-        return ( Collection<Page> ) this.pages.values();
+        return ( Collection ) this.pages.values();
     }
 
     public synchronized void addPage( PageImpl page )

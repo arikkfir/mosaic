@@ -1,4 +1,4 @@
-package org.mosaic.cms.sites.impl.model;
+package org.mosaic.server.cms.impl.model;
 
 import org.mosaic.cms.Block;
 

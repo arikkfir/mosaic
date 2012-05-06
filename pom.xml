@@ -18,7 +18,6 @@
 
     <modules>
         <module>org.mosaic.admin</module>
-        <module>org.mosaic.cms</module>
         <module>org.mosaic.poms</module>
         <module>org.mosaic.runner</module>
         <module>org.mosaic.api</module>

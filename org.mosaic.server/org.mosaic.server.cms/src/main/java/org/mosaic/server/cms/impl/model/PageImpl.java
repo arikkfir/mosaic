@@ -1,4 +1,4 @@
-package org.mosaic.cms.sites.impl.model;
+package org.mosaic.server.cms.impl.model;
 
 import java.util.*;
 import org.mosaic.cms.Block;
@@ -92,7 +92,7 @@ public class PageImpl extends BaseModel implements Page
     @Override
     public Collection<Block> getBlocks()
     {
-        return ( Collection<Block> ) this.blocks.values();
+        return ( Collection ) this.blocks.values();
     }
 
     public synchronized void addBlock( BlockImpl block )

@@ -1,4 +1,4 @@
-package org.mosaic.cms.sites.impl.model;
+package org.mosaic.server.cms.impl.model;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -50,7 +50,7 @@ public class BlueprintImpl extends BaseModel implements Blueprint
     @Override
     public Collection<Panel> getPanels()
     {
-        return ( Collection<Panel> ) this.panels.values();
+        return ( Collection ) this.panels.values();
     }
 
     public synchronized void addPanel( PanelImpl panel )

@@ -1,4 +1,4 @@
-package org.mosaic.cms.sites.impl.model;
+package org.mosaic.server.cms.impl.model;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,7 +36,7 @@ public abstract class BaseModel implements DataContainer, Filtered, Named, Prope
     @Override
     public Map<String, DataProvider> getDataProviders()
     {
-        return ( Map<String, DataProvider> ) this.dataProviders;
+        return ( Map ) this.dataProviders;
     }
 
     public synchronized void addDataProvider( DataProviderImpl dataProvider )
