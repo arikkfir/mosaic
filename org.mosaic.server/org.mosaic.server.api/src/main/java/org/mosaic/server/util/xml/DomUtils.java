@@ -1,4 +1,4 @@
-package org.mosaic.server.web.application.impl;
+package org.mosaic.server.util.xml;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,7 +24,6 @@ import org.xml.sax.SAXParseException;
  */
 public abstract class DomUtils
 {
-
     private static final StrictErrorHandler STRICT_ERROR_HANDLER = new StrictErrorHandler();
 
     public static Document parseDocument( Path path ) throws ParserConfigurationException, IOException, SAXException

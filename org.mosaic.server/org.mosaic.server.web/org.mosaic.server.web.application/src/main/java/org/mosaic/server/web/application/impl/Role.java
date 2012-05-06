@@ -1,6 +1,7 @@
 package org.mosaic.server.web.application.impl;
 
 import java.util.*;
+import org.mosaic.server.util.xml.DomUtils;
 import org.w3c.dom.Element;
 
 /**

@@ -21,7 +21,7 @@ import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
 
 import static java.nio.file.Files.*;
-import static org.mosaic.server.web.application.impl.DomUtils.*;
+import static org.mosaic.server.util.xml.DomUtils.*;
 import static org.mosaic.util.logging.LoggerFactory.getBundleLogger;
 
 /**
