@@ -5,21 +5,22 @@ ROAD-MAP
     * [IN-PROGRESS] Handlers
         * Support for `@Service` handlers
             * Auto-translate return values to `ServiceResponse` objects
-            * translates `AccessDeniedException` into a ServiceResponse with "access denied" message
+            * translates `AccessDeniedException` into a `ServiceResponse` with "access denied" message
             * return values implementing `MessageContributor` add messages to the service response
-            * translates ServiceException(s) into a `ServiceResponse` with exception message
-            * translates any other Exception into a `ServiceResponse` with "internal error" message
+            * translates `ServiceException`s into a `ServiceResponse` with exception message
+            * translates any other `Exception` into a `ServiceResponse` with "internal error" message
         * Versioned handlers (either through header and or URL prefix)
         * Return 406 (Method not allowed) in case some handlers match the URL but not the HTTP method
     * Security:
-        * Authentication should be implemented with @UserRepository methods
-            * @UserRepository has @Filter to only support certain apps (e.g. "app.params['global.users'] == true")
-        * Handlers can throw AccessDeniedException
-        * Think about using Apache Shiro
+        * Authentication should be implemented with `@UserRepository` methods
+            * `@UserRepository` has `@Filter` to only support certain apps (e.g. `app.params['global.users'] == true`)
+        * Handlers can throw `AccessDeniedException`
+        * Think about using [Apache Shiro](http://shiro.apache.org)
+        * Weave security checks in `@Secured` into byte-code (same as we did in `@Transactional`)
     * [IN-PROGRESS] Marshalling
-        * Create FreemarkerMarshaller that marshalls Template(type=freemarker)
-        * Create VelocityMarshaller that marshalls Template(type=velocity)
-        * Create ThymaleafMarshaller that marshalls Template(type=thymaleaf)
+        * Create `FreemarkerMarshaller` that marshalls `Template(type=freemarker)`
+        * Create `VelocityMarshaller` that marshalls `Template(type=velocity)`
+        * Create `ThymaleafMarshaller` that marshalls `Template(type=thymaleaf)`
         * Create a bundle resource marshaller
     * [IN-PROGRESS] Content Manager System (CMS)
         * [IN-PROGRESS] Create CMS model parser
