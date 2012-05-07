@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.mosaic.poms</groupId>
     <artifactId>org.mosaic.poms.parent</artifactId>
@@ -37,6 +38,10 @@
                         <Bundle-Vendor>${project.organization.name}</Bundle-Vendor>
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Bundle-Version>${project.version}</Bundle-Version>
+
+                        <!-- specify location of source code for bundle resource watching -->
+                        <Bundle-Resources>${project.basedir}/src/main/resources</Bundle-Resources>
+
                     </instructions>
                 </configuration>
             </plugin>
@@ -111,7 +116,8 @@
                             <rules>
                                 <bannedDependencies>
                                     <searchTransitive>true</searchTransitive>
-                                    <message>Your dependency list contains banned dependencies. Please remove them.</message>
+                                    <message>Your dependency list contains banned dependencies. Please remove them.
+                                    </message>
                                 </bannedDependencies>
                             </rules>
                         </configuration>
