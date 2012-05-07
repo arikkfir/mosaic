@@ -2,7 +2,7 @@ package org.mosaic.server.util.xml;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,15 +28,20 @@ public abstract class DomUtils
 
     public static Document parseDocument( Path path ) throws ParserConfigurationException, IOException, SAXException
     {
+        return parseDocument( path.toUri() );
+    }
+
+    public static Document parseDocument( URI uri ) throws ParserConfigurationException, IOException, SAXException
+    {
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         dbf.setNamespaceAware( true );
 
         DocumentBuilder db = dbf.newDocumentBuilder();
         db.setErrorHandler( STRICT_ERROR_HANDLER );
 
-        try( InputStream in = Files.newInputStream( path ) )
+        try( InputStream in = uri.toURL().openStream() )
         {
-            return db.parse( in, path.toAbsolutePath().toString() );
+            return db.parse( in, uri.toString() );
         }
     }
 
