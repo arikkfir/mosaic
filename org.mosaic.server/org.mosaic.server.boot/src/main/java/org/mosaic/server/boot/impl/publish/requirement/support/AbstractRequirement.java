@@ -13,7 +13,6 @@ import org.springframework.context.ApplicationContext;
  */
 public abstract class AbstractRequirement implements Requirement
 {
-
     private final Logger logger = LoggerFactory.getLogger( getClass() );
 
     private final BundleContext bundleContext;
