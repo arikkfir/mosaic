@@ -4,6 +4,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.net.URL;
 import java.util.*;
 import org.mosaic.lifecycle.*;
 import org.mosaic.server.boot.impl.publish.BundleTracker;
@@ -53,6 +54,8 @@ public class RequirementFactory
         BundleBeanFactory beanFactory = new BundleBeanFactory( this.bundle, this.osgiSpringNamespacePlugin );
 
         List<Requirement> requirements = new LinkedList<>();
+
+        // detect requirement in classes
         for( String beanDefinitionName : beanFactory.getBeanDefinitionNames() )
         {
             Class<?> beanClass = SpringUtils.getBeanClass( this.bundle, beanFactory, beanDefinitionName );
@@ -81,6 +84,15 @@ public class RequirementFactory
                 }
             }
         }
+
+        // detect web capabilities and requirements
+        URL webEntry = this.bundle.getEntry( "/web" );
+        if( webEntry != null )
+        {
+            requirements.add( new WebModuleInfoRequirement( this.tracker, webEntry ) );
+        }
+
+        // sort and return
         Collections.sort( requirements, new RequirementPriorityComparator() );
         return requirements;
     }
