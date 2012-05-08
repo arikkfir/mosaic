@@ -9,7 +9,6 @@ import org.mosaic.Home;
  */
 public class HomeService implements Home
 {
-
     private final Path home;
 
     private final Path boot;
