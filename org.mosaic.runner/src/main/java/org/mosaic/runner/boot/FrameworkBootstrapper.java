@@ -89,7 +89,15 @@ public class FrameworkBootstrapper
             File felixWorkDir = new File( this.home.getWork(), "felix" );
             if( Boolean.getBoolean( "clean" ) && felixWorkDir.exists() )
             {
-                FileUtils.forceDelete( felixWorkDir );
+                FileUtils.forceDelete( this.home.getLogs() );
+                File[] workFiles = felixWorkDir.listFiles();
+                if( workFiles != null )
+                {
+                    for( File workFile : workFiles )
+                    {
+                        FileUtils.forceDelete( workFile );
+                    }
+                }
             }
             felixConfig.put( FelixConstants.FRAMEWORK_STORAGE, felixWorkDir.toString() );
             felixConfig.put( BundleCache.CACHE_BUFSIZE_PROP, ( 1024 * 64 ) + "" );
