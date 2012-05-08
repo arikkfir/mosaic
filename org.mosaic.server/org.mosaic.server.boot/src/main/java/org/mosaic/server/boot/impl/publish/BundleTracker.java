@@ -19,7 +19,6 @@ import org.springframework.beans.factory.config.BeanPostProcessor;
  */
 public class BundleTracker
 {
-
     private static final Logger LOG = LoggerFactory.getLogger( BundleTracker.class );
 
     private final Object lock = new Object();
