@@ -1,6 +1,6 @@
-package org.mosaic.lifecycle;
+package org.mosaic.server.lifecycle;
 
-import java.net.URL;
+import java.io.File;
 import org.springframework.expression.Expression;
 
 /**
@@ -10,5 +10,5 @@ public interface WebModuleInfo
 {
     Expression getApplicationFilter();
 
-    URL getContentUrl();
+    File getContentRoot();
 }

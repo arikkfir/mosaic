@@ -1,9 +1,9 @@
 package org.mosaic.server.web.dispatcher.impl.marshall;
 
 import java.util.*;
-import org.mosaic.lifecycle.MethodEndpointInfo;
 import org.mosaic.lifecycle.ServiceBind;
 import org.mosaic.lifecycle.ServiceUnbind;
+import org.mosaic.server.lifecycle.MethodEndpointInfo;
 import org.mosaic.server.web.dispatcher.impl.endpoint.AbstractMethodEndpointManager;
 import org.mosaic.server.web.dispatcher.impl.endpoint.MethodParameterResolver;
 import org.mosaic.util.logging.Logger;

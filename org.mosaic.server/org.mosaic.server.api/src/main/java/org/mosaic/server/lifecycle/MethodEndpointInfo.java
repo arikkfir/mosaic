@@ -1,4 +1,4 @@
-package org.mosaic.lifecycle;
+package org.mosaic.server.lifecycle;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;

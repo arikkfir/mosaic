@@ -3,9 +3,9 @@ package org.mosaic.server.shell.impl.command;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import org.mosaic.lifecycle.MethodEndpointInfo;
 import org.mosaic.lifecycle.ServiceBind;
 import org.mosaic.lifecycle.ServiceUnbind;
+import org.mosaic.server.lifecycle.MethodEndpointInfo;
 import org.mosaic.server.shell.console.Console;
 import org.springframework.stereotype.Component;
 

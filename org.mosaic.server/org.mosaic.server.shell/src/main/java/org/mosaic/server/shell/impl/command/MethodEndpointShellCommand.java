@@ -11,7 +11,7 @@ import joptsimple.ArgumentAcceptingOptionSpec;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpecBuilder;
-import org.mosaic.lifecycle.MethodEndpointInfo;
+import org.mosaic.server.lifecycle.MethodEndpointInfo;
 import org.mosaic.server.shell.*;
 import org.mosaic.server.shell.console.Console;
 import org.mosaic.util.logging.Logger;

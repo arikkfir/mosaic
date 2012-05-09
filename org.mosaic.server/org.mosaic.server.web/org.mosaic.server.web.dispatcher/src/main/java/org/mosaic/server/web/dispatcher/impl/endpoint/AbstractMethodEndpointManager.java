@@ -6,7 +6,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import org.mosaic.lifecycle.MethodEndpointInfo;
+import org.mosaic.server.lifecycle.MethodEndpointInfo;
 import org.mosaic.server.web.PathParamsAware;
 import org.mosaic.server.web.dispatcher.impl.util.RegexPathMatcher;
 import org.mosaic.web.HttpRequest;
