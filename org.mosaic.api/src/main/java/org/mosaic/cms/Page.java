@@ -1,13 +1,16 @@
 package org.mosaic.cms;
 
 import java.util.Collection;
-import org.mosaic.cms.support.*;
+import org.mosaic.cms.support.DataContainer;
+import org.mosaic.cms.support.Named;
+import org.mosaic.cms.support.PropertiesProvider;
+import org.mosaic.cms.support.Secured;
 import org.mosaic.util.collection.MultiMapAccessor;
 
 /**
  * @author arik
  */
-public interface Page extends Named, PropertiesProvider, DataContainer, Secured, Filtered
+public interface Page extends Named, PropertiesProvider, DataContainer, Secured
 {
     Site getSite();
 
