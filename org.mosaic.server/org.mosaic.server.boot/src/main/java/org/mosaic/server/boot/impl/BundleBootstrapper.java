@@ -33,11 +33,15 @@ public class BundleBootstrapper implements BundleActivator, SynchronousBundleLis
 
     private ServiceRegistration<BundleStatusHelper> helperReg;
 
+    private HomeService homeService;
+
     @Override
     public void start( BundleContext context ) throws Exception
     {
         this.bundleContext = context;
-        this.bundleContext.registerService( Home.class, new HomeService(), null );
+
+        this.homeService = new HomeService();
+        this.bundleContext.registerService( Home.class, this.homeService, null );
 
         this.springNamespacePlugin = new OsgiSpringNamespacePlugin( this.bundleContext );
         this.springNamespacePlugin.open();
@@ -81,6 +85,8 @@ public class BundleBootstrapper implements BundleActivator, SynchronousBundleLis
 
         this.springNamespacePlugin.close();
         this.springNamespacePlugin = null;
+
+        this.homeService = null;
 
         this.bundleContext = null;
     }
@@ -131,7 +137,7 @@ public class BundleBootstrapper implements BundleActivator, SynchronousBundleLis
 
     private void trackBundle( Bundle bundle )
     {
-        BundleTracker tracker = new BundleTracker( bundle, this.springNamespacePlugin );
+        BundleTracker tracker = new BundleTracker( this.homeService, bundle, this.springNamespacePlugin );
         try
         {
             tracker.track();

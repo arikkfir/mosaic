@@ -4,7 +4,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.net.URL;
 import java.util.*;
 import org.mosaic.lifecycle.*;
 import org.mosaic.server.boot.impl.publish.BundleTracker;
@@ -86,10 +85,9 @@ public class RequirementFactory
         }
 
         // detect web capabilities and requirements
-        URL webEntry = this.bundle.getEntry( "/web" );
-        if( webEntry != null )
+        if( this.bundle.getEntry( "/web" ) != null )
         {
-            requirements.add( new WebModuleInfoRequirement( this.tracker, webEntry ) );
+            requirements.add( new WebModuleInfoRequirement( this.tracker ) );
         }
 
         // sort and return

@@ -1,11 +1,14 @@
 package org.mosaic.server.boot.impl.publish.requirement;
 
 import java.io.File;
-import java.net.MalformedURLException;
+import java.io.IOException;
 import java.net.URL;
-import org.mosaic.lifecycle.WebModuleInfo;
+import java.nio.file.Path;
+import java.util.Enumeration;
+import org.apache.commons.io.FileUtils;
 import org.mosaic.server.boot.impl.publish.BundleTracker;
 import org.mosaic.server.boot.impl.publish.requirement.support.AbstractRequirement;
+import org.mosaic.server.lifecycle.WebModuleInfo;
 import org.mosaic.util.logging.Logger;
 import org.mosaic.util.logging.LoggerFactory;
 import org.osgi.framework.Bundle;
@@ -26,11 +29,11 @@ public class WebModuleInfoRequirement extends AbstractRequirement implements Web
 
     private final Expression applicationFilter;
 
-    private final URL contentUrl;
+    private final File contentRoot;
 
     private ServiceRegistration<WebModuleInfo> registration;
 
-    public WebModuleInfoRequirement( BundleTracker tracker, URL contentUrl )
+    public WebModuleInfoRequirement( BundleTracker tracker )
     {
         super( tracker );
 
@@ -39,24 +42,45 @@ public class WebModuleInfoRequirement extends AbstractRequirement implements Web
         String bundleResourcesDir = bundle.getHeaders().get( BUNDLE_RESOURCES_HEADER );
         if( bundleResourcesDir != null )
         {
-            File file = new File( bundleResourcesDir );
-            if( !file.exists() )
+            this.contentRoot = new File( bundleResourcesDir );
+            if( !this.contentRoot.exists() )
             {
                 LOG.warn( "The '{}' header in bundle '{}' does not exist - auto-reload will not happen for this bundle.", BUNDLE_RESOURCES_HEADER, getBundleName() );
             }
-            else
+        }
+        else
+        {
+            Path workDir = tracker.getHome().getWork();
+            File webContentsDir = new File( workDir.toFile(), "web-content" );
+            File resourcesHome = new File( webContentsDir, getBundleName() );
+            LOG.info( "Extracting web content from bundle '{}' to: {}", getBundleName(), resourcesHome );
+            try
             {
-                try
+                if( resourcesHome.exists() )
                 {
-                    contentUrl = file.toURI().toURL();
+                    FileUtils.forceDelete( resourcesHome );
                 }
-                catch( MalformedURLException e )
+                Enumeration<URL> allEntries = getBundleContext().getBundle().findEntries( "/web/", null, true );
+                while( allEntries.hasMoreElements() )
                 {
-                    LOG.warn( "The '{}' header in bundle '{}' contains an illegal URL: {}", BUNDLE_RESOURCES_HEADER, getBundleName(), bundleResourcesDir );
+                    URL entry = allEntries.nextElement();
+                    String path = entry.getPath();
+                    if( path.endsWith( "/" ) )
+                    {
+                        continue;
+                    }
+
+                    File targetFile = new File( resourcesHome, path.substring( "/web/".length() ) );
+                    FileUtils.forceMkdir( targetFile.getParentFile() );
+                    FileUtils.copyURLToFile( entry, targetFile );
                 }
+                this.contentRoot = resourcesHome;
+            }
+            catch( IOException e )
+            {
+                throw new IllegalStateException( String.format( "Cannot extract web content from bundle '%s' to '%s': %s", getBundleName(), resourcesHome, e.getMessage() ), e );
             }
         }
-        this.contentUrl = contentUrl;
 
         String applicationFilter = bundle.getHeaders().get( "Application-Filter" );
         if( applicationFilter == null )
@@ -76,9 +100,9 @@ public class WebModuleInfoRequirement extends AbstractRequirement implements Web
     }
 
     @Override
-    public URL getContentUrl()
+    public File getContentRoot()
     {
-        return contentUrl;
+        return this.contentRoot;
     }
 
     @Override

@@ -1,6 +1,7 @@
 package org.mosaic.server.boot.impl.publish;
 
 import java.util.*;
+import org.mosaic.server.boot.impl.HomeService;
 import org.mosaic.server.boot.impl.publish.requirement.Requirement;
 import org.mosaic.server.boot.impl.publish.requirement.RequirementFactory;
 import org.mosaic.server.boot.impl.publish.spring.BundleApplicationContext;
@@ -23,6 +24,8 @@ public class BundleTracker
 
     private final Object lock = new Object();
 
+    private final HomeService home;
+
     private final Bundle bundle;
 
     private final OsgiSpringNamespacePlugin osgiSpringNamespacePlugin;
@@ -41,11 +44,17 @@ public class BundleTracker
 
     private boolean publishing;
 
-    public BundleTracker( Bundle bundle, OsgiSpringNamespacePlugin osgiSpringNamespacePlugin )
+    public BundleTracker( HomeService home, Bundle bundle, OsgiSpringNamespacePlugin osgiSpringNamespacePlugin )
     {
+        this.home = home;
         this.bundle = bundle;
         this.osgiSpringNamespacePlugin = osgiSpringNamespacePlugin;
         this.requirementFactory = new RequirementFactory( this, this.bundle, this.osgiSpringNamespacePlugin );
+    }
+
+    public HomeService getHome()
+    {
+        return home;
     }
 
     public void track() throws Exception

@@ -4,7 +4,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.mosaic.cms.DataProvider;
-import org.mosaic.cms.support.*;
+import org.mosaic.cms.support.DataContainer;
+import org.mosaic.cms.support.Named;
+import org.mosaic.cms.support.PropertiesProvider;
+import org.mosaic.cms.support.Secured;
 import org.mosaic.util.collection.MapAccessor;
 import org.mosaic.util.collection.MapWrapper;
 import org.springframework.expression.Expression;
@@ -12,11 +15,9 @@ import org.springframework.expression.Expression;
 /**
  * @author arik
  */
-public abstract class BaseModel implements DataContainer, Filtered, Named, PropertiesProvider, Secured
+public abstract class BaseModel implements DataContainer, Named, PropertiesProvider, Secured
 {
     private Map<String, DataProviderImpl> dataProviders = new HashMap<>();
-
-    private Expression filterExpression;
 
     private Expression securityExpression;
 
@@ -47,17 +48,6 @@ public abstract class BaseModel implements DataContainer, Filtered, Named, Prope
     }
 
     @Override
-    public Expression getFilterExpression()
-    {
-        return this.filterExpression;
-    }
-
-    public void setFilterExpression( Expression filterExpression )
-    {
-        this.filterExpression = filterExpression;
-    }
-
-    @Override
     public String getName()
     {
         return this.name;
@@ -66,6 +56,10 @@ public abstract class BaseModel implements DataContainer, Filtered, Named, Prope
     public void setName( String name )
     {
         this.name = name;
+        if( this.displayName == null )
+        {
+            this.displayName = name;
+        }
     }
 
     @Override
