@@ -8,8 +8,8 @@ import java.lang.annotation.Target;
 /**
  * @author arik
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
+@Retention( RetentionPolicy.RUNTIME )
+@Target( { ElementType.METHOD, ElementType.TYPE } )
 public @interface Rank
 {
     int value();

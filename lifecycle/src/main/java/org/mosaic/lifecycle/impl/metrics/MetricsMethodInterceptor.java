@@ -6,6 +6,7 @@ import org.mosaic.lifecycle.Module;
 import org.mosaic.lifecycle.ModuleManager;
 import org.mosaic.lifecycle.annotation.BeanRef;
 import org.mosaic.lifecycle.annotation.Measure;
+import org.mosaic.lifecycle.annotation.Rank;
 import org.mosaic.lifecycle.annotation.Service;
 import org.mosaic.util.weaving.MethodInterceptor;
 import org.mosaic.util.weaving.MethodInvocation;
@@ -14,6 +15,7 @@ import org.mosaic.util.weaving.MethodInvocation;
  * @author arik
  */
 @Service( MethodInterceptor.class )
+@Rank( Integer.MIN_VALUE )
 public class MetricsMethodInterceptor implements MethodInterceptor
 {
     private ModuleManager moduleManager;
