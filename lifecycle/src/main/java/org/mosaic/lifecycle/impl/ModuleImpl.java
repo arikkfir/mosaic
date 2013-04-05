@@ -858,7 +858,7 @@ public class ModuleImpl implements Module
     private class MetricsImpl implements Metrics
     {
         @Nullable
-        private MetricsRegistry metricsRegistry = new MetricsRegistry();
+        private MetricsRegistry metricsRegistry;
 
         @Nullable
         private Cache<MetricName, MetricsTimerImpl> timerCache;
@@ -882,20 +882,21 @@ public class ModuleImpl implements Module
 
         @Nonnull
         @Override
-        public MetricsTimer getTimer( @Nonnull String packageName, @Nonnull String className, @Nonnull String method )
+        public MetricsTimer getTimer( @Nonnull MethodHandle method )
         {
             MetricsRegistry metricsRegistry = this.metricsRegistry;
             Cache<MetricName, MetricsTimerImpl> cache = this.timerCache;
 
             if( metricsRegistry != null && cache != null )
             {
-                MetricsTimerImpl metricsTimer = cache.getIfPresent( new MetricName( packageName, className, method ) );
+                // TODO arik: what should we put in 'scope' (in metric name)?
+                MetricsTimerImpl metricsTimer = cache.getIfPresent( new MetricName( method.getDeclaringClass(), method.getName(), "scope" ) );
                 if( metricsTimer != null )
                 {
                     return metricsTimer;
                 }
             }
-            throw new IllegalStateException( "Could not create metrics timer for '" + packageName + "." + className + ":" + method + "'" );
+            throw new IllegalStateException( "Could not create metrics timer for method '" + method + "'" );
         }
 
         @Nonnull

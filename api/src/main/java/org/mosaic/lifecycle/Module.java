@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.mosaic.util.reflection.MethodHandle;
 
 /**
  * @author arik
@@ -57,7 +58,7 @@ public interface Module
     interface Metrics
     {
         @Nonnull
-        MetricsTimer getTimer( @Nonnull String packageName, @Nonnull String className, @Nonnull String method );
+        MetricsTimer getTimer( @Nonnull MethodHandle method );
 
         @Nonnull
         Collection<? extends MetricsTimer> getTimers();
