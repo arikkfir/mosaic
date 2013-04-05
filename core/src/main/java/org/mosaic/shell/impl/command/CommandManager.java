@@ -263,6 +263,10 @@ public class CommandManager
                 printUsage( console );
                 console.println( e.getMessage() );
             }
+            catch( InsufficientConsoleWidthException e )
+            {
+                console.println( e.getMessage() );
+            }
             catch( Exception e )
             {
                 throw new CommandExecutionException( this.command.getName(), e );

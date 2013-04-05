@@ -11,6 +11,7 @@ import jline.console.ConsoleReader;
 import jline.console.history.History;
 import jline.console.history.PersistentHistory;
 import org.mosaic.shell.Console;
+import org.mosaic.shell.InsufficientConsoleWidthException;
 
 import static com.google.common.base.Strings.repeat;
 import static java.lang.Math.max;
@@ -439,6 +440,10 @@ public class ConsoleImpl implements Console
                 if( length == 0 )
                 {
                     length = terminalWidth - widthSum - 1;
+                    if( length < 0 )
+                    {
+                        throw new InsufficientConsoleWidthException( "Insufficient space on console" );
+                    }
                     this.lengths.set( i, length );
                 }
                 chromeLine.append( '+' ).append( repeat( "-", length ) );

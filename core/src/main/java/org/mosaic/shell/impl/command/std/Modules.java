@@ -19,7 +19,7 @@ import static org.apache.commons.lang3.StringUtils.leftPad;
  * @author arik
  */
 @Bean
-public class Inspect
+public class Modules
 {
     private ModuleManager moduleManager;
 
@@ -29,7 +29,31 @@ public class Inspect
         this.moduleManager = moduleManager;
     }
 
-    @Command(name = "inspect-module", label = "Inspect module(s)", desc = "Inspects and show information about installed modules.")
+    @Command( name = "list-modules", label = "List modules", desc = "List installed modules." )
+    public void listModules( @Nonnull Console console ) throws IOException
+    {
+        Console.TableHeaders table = console.createTable();
+        table.addHeader( "ID", 4 );
+        table.addHeader( "Name" );
+        table.addHeader( "Version", 20 );
+        table.addHeader( "State", 13 );
+        table.addHeader( "Last Update", 30 );
+        table.addHeader( "Services", 7 );
+
+        Console.TablePrinter printer = table.start();
+        for( Module module : this.moduleManager.getModules() )
+        {
+            printer.print( module.getId(),
+                           module.getName(),
+                           module.getVersion(),
+                           module.getState(),
+                           new Date( module.getLastModified() ),
+                           module.getExportedServices().size() );
+        }
+        printer.done();
+    }
+
+    @Command( name = "inspect-module", label = "Inspect module(s)", desc = "Inspects and show information about installed modules." )
     public void inspectModule( @Nonnull Console console,
 
                                @Option @Alias("e") @Desc("use exact matching of module names")
