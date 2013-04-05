@@ -18,7 +18,7 @@ public class PasswordAuthenticator implements org.apache.sshd.server.PasswordAut
 {
     private Map<String, String> shellUsers = Collections.emptyMap();
 
-    @Configurable( "users" )
+    @Configurable("users")
     public void setShellUsers( @Nonnull Map<String, String> shellUsers )
     {
         this.shellUsers = new HashMap<>( shellUsers );

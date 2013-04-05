@@ -134,7 +134,6 @@
                 <include>org.mosaic:lifecycle</include>
                 <include>org.mosaic:core</include>
                 <include>org.mosaic:database</include>
-                <include>org.mosaic:shell</include>
             </includes>
         </dependencySet>
 
