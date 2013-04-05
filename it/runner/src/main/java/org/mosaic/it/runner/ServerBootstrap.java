@@ -1,5 +1,6 @@
 package org.mosaic.it.runner;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.DirectoryStream;
@@ -34,7 +35,9 @@ public class ServerBootstrap
 
         // clean our temp directory just in case
         Path zipDestDir = Files.createTempDirectory( "mosaic" );
-        deleteDirectory( zipDestDir.toFile() );
+        File zipDestDirIoFile = zipDestDir.toFile();
+        zipDestDirIoFile.deleteOnExit();
+        deleteDirectory( zipDestDirIoFile );
         createDirectories( zipDestDir );
 
         // extract the mosaic distribution
