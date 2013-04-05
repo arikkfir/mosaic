@@ -37,6 +37,18 @@
                             <stripVersion>true</stripVersion>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>analyze</id>
+                        <goals>
+                            <goal>analyze-only</goal>
+                        </goals>
+                        <configuration>
+                            <usedDependencies>
+                                <dependency>com.google.code.findbugs:jsr305</dependency>
+                                <dependency>org.slf4j:slf4j-api</dependency>
+                            </usedDependencies>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>
@@ -49,28 +61,15 @@
             <classifier>bin</classifier>
             <type>zip</type>
             <scope>runtime</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.mosaic</groupId>
-                    <artifactId>launcher</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.mosaic</groupId>
-                    <artifactId>api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.mosaic</groupId>
-                    <artifactId>core</artifactId>
-                </exclusion>
-            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.mosaic</groupId>
+            <artifactId>launcher</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.findbugs</groupId>
             <artifactId>jsr305</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
