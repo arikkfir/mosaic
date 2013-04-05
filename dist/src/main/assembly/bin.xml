@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2 http://maven.apache.org/xsd/assembly-1.1.2.xsd">
+
+    <id>bin</id>
+    <formats>
+        <format>tar.bz2</format>
+        <format>tar.gz</format>
+        <format>zip</format>
+    </formats>
+    <baseDirectory>mosaic-${project.version}</baseDirectory>
+
+    <files>
+
+        <!-- ============================================================ -->
+        <!-- Include the version file                                     -->
+        <!-- ============================================================ -->
+        <file>
+            <source>${project.basedir}/src/main/assembly/version</source>
+            <outputDirectory>/</outputDirectory>
+            <fileMode>755</fileMode>
+            <filtered>true</filtered>
+            <lineEnding>unix</lineEnding>
+        </file>
+
+        <!-- ============================================================ -->
+        <!-- Include the info files                                       -->
+        <!-- ============================================================ -->
+        <file>
+            <source>${project.basedir}/src/main/assembly/apps-info.txt</source>
+            <outputDirectory>/apps</outputDirectory>
+            <destName>info.txt</destName>
+            <fileMode>755</fileMode>
+            <filtered>true</filtered>
+            <lineEnding>unix</lineEnding>
+        </file>
+        <file>
+            <source>${project.basedir}/src/main/assembly/etc-info.txt</source>
+            <outputDirectory>/etc</outputDirectory>
+            <destName>info.txt</destName>
+            <fileMode>755</fileMode>
+            <filtered>true</filtered>
+            <lineEnding>unix</lineEnding>
+        </file>
+        <file>
+            <source>${project.basedir}/src/main/assembly/lib-info.txt</source>
+            <outputDirectory>/lib</outputDirectory>
+            <destName>info.txt</destName>
+            <fileMode>755</fileMode>
+            <filtered>true</filtered>
+            <lineEnding>unix</lineEnding>
+        </file>
+
+        <!-- ============================================================ -->
+        <!-- Include the launcher script                                  -->
+        <!-- ============================================================ -->
+        <file>
+            <source>${project.basedir}/src/main/assembly/mosaic.sh</source>
+            <outputDirectory>/bin</outputDirectory>
+            <fileMode>755</fileMode>
+            <filtered>true</filtered>
+            <lineEnding>unix</lineEnding>
+        </file>
+
+    </files>
+
+    <fileSets>
+
+        <!-- ============================================================ -->
+        <!-- Include the informational files                              -->
+        <!-- ============================================================ -->
+        <fileSet>
+            <directory>${project.basedir}</directory>
+            <outputDirectory>/</outputDirectory>
+            <directoryMode>755</directoryMode>
+            <fileMode>644</fileMode>
+            <includes>
+                <include>README*</include>
+                <include>LICENSE*</include>
+                <include>NOTICE*</include>
+                <include>TODO*</include>
+            </includes>
+        </fileSet>
+
+    </fileSets>
+
+    <dependencySets>
+
+        <!-- ============================================================ -->
+        <!-- Include launcher JAR                                         -->
+        <!-- ============================================================ -->
+        <dependencySet>
+            <outputDirectory>/bin</outputDirectory>
+            <outputFileNameMapping>${artifact.artifactId}${dashClassifier?}.${artifact.extension}</outputFileNameMapping>
+            <directoryMode>755</directoryMode>
+            <useProjectArtifact>false</useProjectArtifact>
+            <fileMode>644</fileMode>
+            <useStrictFiltering>true</useStrictFiltering>
+            <useTransitiveDependencies>false</useTransitiveDependencies>
+            <includes>
+                <include>org.mosaic:launcher</include>
+            </includes>
+        </dependencySet>
+
+        <!-- ============================================================ -->
+        <!-- Include 3rd party libraries in the boot dir                  -->
+        <!-- ============================================================ -->
+        <dependencySet>
+            <outputDirectory>/boot/libs</outputDirectory>
+            <directoryMode>755</directoryMode>
+            <useProjectArtifact>false</useProjectArtifact>
+            <fileMode>644</fileMode>
+            <useStrictFiltering>true</useStrictFiltering>
+            <useTransitiveDependencies>true</useTransitiveDependencies>
+            <includes>
+                <include>com.google.guava:guava</include>
+            </includes>
+        </dependencySet>
+
+        <!-- ============================================================ -->
+        <!-- Include mosaic server bundles                                -->
+        <!-- ============================================================ -->
+        <dependencySet>
+            <outputDirectory>/boot/mosaic</outputDirectory>
+            <directoryMode>755</directoryMode>
+            <useProjectArtifact>false</useProjectArtifact>
+            <fileMode>644</fileMode>
+            <useStrictFiltering>true</useStrictFiltering>
+            <useTransitiveDependencies>false</useTransitiveDependencies>
+            <includes>
+                <include>org.mosaic:api</include>
+                <include>org.mosaic:lifecycle</include>
+                <include>org.mosaic:core</include>
+                <include>org.mosaic:database</include>
+                <include>org.mosaic:shell</include>
+            </includes>
+        </dependencySet>
+
+    </dependencySets>
+
+</assembly>

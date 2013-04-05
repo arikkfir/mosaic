@@ -1,0 +1,9 @@
+Place your system and application configuration files in this directory for auto-deployment.
+Configuration files are property files and each file represents a specific configuration (the
+configuration name is the file name excluding the extension).
+
+Configuration files are monitored and installed when added, updated when modified, and uninstalled when deleted.
+
+Configurations are consumed in your bundles using the @Configuration method annotation.
+
+You can delete this file if you wish.

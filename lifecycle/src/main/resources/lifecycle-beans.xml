@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean id="bundleContext"
+          class="org.mosaic.impl.MosaicActivator"
+          factory-method="getBundleContext"/>
+
+    <bean id="conversionService" class="org.mosaic.util.convert.impl.ConversionServiceImpl">
+        <constructor-arg ref="bundleContext"/>
+    </bean>
+
+    <bean id="server" class="org.mosaic.impl.ServerImpl">
+        <constructor-arg ref="bundleContext"/>
+    </bean>
+
+    <bean id="methodHandleFactory" class="org.mosaic.util.reflection.impl.MethodHandleFactoryImpl">
+        <constructor-arg ref="bundleContext"/>
+    </bean>
+
+    <bean id="interceptionWeavingHook" class="org.mosaic.util.weaving.impl.InterceptionWeavingHook">
+        <constructor-arg ref="bundleContext"/>
+    </bean>
+
+    <bean id="weaverSpi" class="org.mosaic.util.weaving.spi.WeaverSpi">
+        <constructor-arg ref="interceptionWeavingHook"/>
+        <constructor-arg ref="methodHandleFactory"/>
+    </bean>
+
+    <bean id="moduleManager" class="org.mosaic.lifecycle.impl.ModuleManagerImpl">
+        <constructor-arg ref="bundleContext"/>
+        <constructor-arg ref="methodHandleFactory"/>
+    </bean>
+
+</beans>

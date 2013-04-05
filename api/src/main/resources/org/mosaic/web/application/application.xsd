@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<xsd:schema xmlns="https://github.com/arikkfir/mosaic/application-5.0.0"
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            targetNamespace="https://github.com/arikkfir/mosaic/application-5.0.0"
+            elementFormDefault="qualified"
+            attributeFormDefault="unqualified">
+
+    <xsd:element name="application" type="applicationType"/>
+
+    <xsd:complexType name="applicationType">
+        <xsd:sequence>
+            <xsd:element type="virtualHostsType" name="virtual-hosts" minOccurs="0" maxOccurs="1"/>
+            <xsd:element type="contentLanguagesType" name="content-languages" minOccurs="0" maxOccurs="1"/>
+            <xsd:element type="pageRefType" name="unknown-url-page" minOccurs="0" maxOccurs="1"/>
+            <xsd:element type="pageRefType" name="internal-error-page" minOccurs="0" maxOccurs="1"/>
+            <xsd:element type="resourceCompressionType" name="resource-compression" minOccurs="0" maxOccurs="1"/>
+            <xsd:element type="parametersType" name="parameters" minOccurs="0" maxOccurs="1"/>
+            <xsd:element type="securityType" name="security" minOccurs="0" maxOccurs="1"/>
+        </xsd:sequence>
+        <xsd:attribute type="xsd:string" name="display-name" use="required"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="pageRefType">
+        <xsd:attribute name="name" type="xsd:string" use="required"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="resourceCompressionType">
+        <xsd:attribute name="enabled" type="xsd:boolean" use="required"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="virtualHostsType">
+        <xsd:sequence>
+            <xsd:element type="xsd:string" name="virtual-host" minOccurs="0" maxOccurs="unbounded"/>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="contentLanguagesType">
+        <xsd:sequence>
+            <xsd:element type="xsd:string" name="language" minOccurs="0" maxOccurs="unbounded"/>
+        </xsd:sequence>
+        <xsd:attribute name="support-uri-selection" type="xsd:boolean" use="optional" default="true"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="parametersType">
+        <xsd:sequence>
+            <xsd:element name="parameter" minOccurs="0" maxOccurs="unbounded">
+                <xsd:complexType mixed="true">
+                    <xsd:attribute type="xsd:string" name="name" use="required"/>
+                </xsd:complexType>
+            </xsd:element>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="securityType">
+        <xsd:sequence>
+            <xsd:element type="addressCollectionType" name="allowed-client-addresses" minOccurs="0" maxOccurs="1"/>
+            <xsd:element type="addressCollectionType" name="restricted-client-addresses" minOccurs="0" maxOccurs="1"/>
+            <xsd:element type="authenticationType" name="authentication" minOccurs="0" maxOccurs="1"/>
+            <xsd:element type="elementWithUriType" name="access-denied" minOccurs="0" maxOccurs="1"/>
+            <xsd:element type="rolesType" name="role-policy" minOccurs="0" maxOccurs="1"/>
+            <xsd:element type="permissionPolicyType" name="permission-policy" minOccurs="0" maxOccurs="1"/>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:simpleType name="authenticatorType">
+        <xsd:restriction base="xsd:string">
+            <xsd:enumeration value="BASIC_AUTH_HEADER"/>
+            <xsd:enumeration value="REMEMBER_ME_COOKIE"/>
+            <xsd:enumeration value="SESSION_COOKIE"/>
+            <xsd:enumeration value="FORM_PAGE"/>
+        </xsd:restriction>
+    </xsd:simpleType>
+
+    <xsd:complexType name="authenticatedResourceType">
+        <xsd:sequence>
+            <xsd:element type="authenticatorType" name="authenticator" minOccurs="0" maxOccurs="unbounded"/>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="authenticationType">
+        <xsd:sequence>
+            <xsd:element type="realmsType" name="realms" minOccurs="0" maxOccurs="1"/>
+            <xsd:element name="default-authenticators" type="authenticatedResourceType" minOccurs="0" maxOccurs="1"/>
+            <xsd:element name="service-authenticators" type="authenticatedResourceType" minOccurs="0" maxOccurs="1"/>
+            <xsd:element name="resources-authenticators" type="authenticatedResourceType" minOccurs="0" maxOccurs="1"/>
+            <xsd:element name="page-authenticators" type="authenticatedResourceType" minOccurs="0" maxOccurs="1"/>
+            <xsd:element type="elementWithUriType" name="form-login" minOccurs="0" maxOccurs="1"/>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="elementWithUriType">
+        <xsd:attribute name="url" type="xsd:string" use="required"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="addressCollectionType">
+        <xsd:sequence>
+            <xsd:element type="xsd:string" name="address" minOccurs="0" maxOccurs="unbounded"/>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="realmsType">
+        <xsd:sequence>
+            <xsd:element type="xsd:string" name="realm" minOccurs="0" maxOccurs="unbounded"/>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="rolesType">
+        <xsd:sequence>
+            <xsd:any namespace="##any" minOccurs="0" maxOccurs="unbounded" processContents="skip"/>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="permissionPolicyType">
+        <xsd:sequence>
+            <xsd:element name="test-if" minOccurs="0" maxOccurs="unbounded">
+                <xsd:complexType>
+                    <xsd:attribute type="xsd:string" name="user" use="required"/>
+                    <xsd:attribute type="xsd:string" name="then-grant" use="required"/>
+                </xsd:complexType>
+            </xsd:element>
+        </xsd:sequence>
+    </xsd:complexType>
+
+</xsd:schema>

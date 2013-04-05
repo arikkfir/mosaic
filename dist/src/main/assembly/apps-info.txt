@@ -1,0 +1,7 @@
+Place your application descriptor files in this directory for auto-deployment. Application
+descriptor files are XML files, and configure your actual applications. Each file represents
+an application, whose name is the actual application name (excluding the extension) and
+contains application configuration and parameters. Application descriptors in this directory
+are monitored and installed when added, updated when modified, and uninstalled when deleted.
+
+You can delete this file if you wish.
