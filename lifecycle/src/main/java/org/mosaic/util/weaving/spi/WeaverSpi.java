@@ -145,6 +145,13 @@ public class WeaverSpi
 
         @Nullable
         @Override
+        public Object proceed() throws Exception
+        {
+            return proceed( this.arguments );
+        }
+
+        @Nullable
+        @Override
         public Object proceed( @Nonnull Object[] arguments ) throws Exception
         {
             if( this.interceptors.hasNext() )

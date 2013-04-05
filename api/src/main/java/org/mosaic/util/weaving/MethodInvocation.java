@@ -19,5 +19,8 @@ public interface MethodInvocation
     Object[] getArguments();
 
     @Nullable
+    Object proceed() throws Exception;
+
+    @Nullable
     Object proceed( @Nonnull Object[] arguments ) throws Exception;
 }
