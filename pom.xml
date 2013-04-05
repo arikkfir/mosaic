@@ -20,7 +20,7 @@
         <module>launcher</module>
         <module>lifecycle</module>
         <module>core</module>
-        <!--<module>it</module>-->
+        <module>it</module>
         <module>dist</module>
     </modules>
 
