@@ -20,7 +20,6 @@
         <module>launcher</module>
         <module>lifecycle</module>
         <module>core</module>
-        <module>database</module>
         <!--<module>it</module>-->
         <module>dist</module>
     </modules>

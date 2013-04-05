@@ -17,10 +17,20 @@
                 <artifactId>maven-bundle-plugin</artifactId>
                 <configuration>
                     <instructions>
-                        <Embed-Dependency>mina-core,sshd-core,jansi,jline,commons-codec,commons-cli,commons-lang3</Embed-Dependency>
+                        <Embed-Dependency>
+                            mina-core,
+                            sshd-core,
+                            jansi,
+                            jline,
+                            commons-codec,
+                            commons-cli,
+                            commons-dbcp,
+                            commons-lang3
+                        </Embed-Dependency>
                         <Embed-Transitive>true</Embed-Transitive>
                         <Import-Package>
                             !com.jcraft*,
+                            !org.apache.commons.pool*,
                             !org.apache.tomcat*,
                             !org.bouncycastle*,
                             *
@@ -53,8 +63,16 @@
             <artifactId>commons-codec</artifactId>
         </dependency>
         <dependency>
+            <groupId>commons-dbcp</groupId>
+            <artifactId>commons-dbcp</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>commons-pool</groupId>
+            <artifactId>commons-pool</artifactId>
         </dependency>
         <dependency>
             <groupId>commons-cli</groupId>
