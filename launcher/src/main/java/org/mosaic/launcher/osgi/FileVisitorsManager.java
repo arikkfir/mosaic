@@ -92,7 +92,7 @@ public class FileVisitorsManager implements Runnable
 
         // schedule a pass every second
         this.scheduler = newSingleThreadScheduledExecutor( new FileVisitorThreadFactory() );
-        this.scheduler.scheduleAtFixedRate( this, 1, 1, SECONDS );
+        this.scheduler.scheduleWithFixedDelay( this, 1, 1, SECONDS );
     }
 
     public void stop()
