@@ -160,4 +160,16 @@ public class ServerBootstrap
         copy( jar, this.home.resolve( "lib" ).resolve( jar.getFileName() ) );
         return this;
     }
+
+    public boolean checkFileExists( @Nonnull String path )
+    {
+        Path file = this.home.resolve( path );
+        return Files.exists( file );
+    }
+
+    public boolean checkFileContents( @Nonnull String path, @Nonnull String content ) throws IOException
+    {
+        Path file = this.home.resolve( path );
+        return Files.exists( file ) && new String( Files.readAllBytes( file ), "UTF-8" ).equals( content );
+    }
 }
