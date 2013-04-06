@@ -20,13 +20,29 @@
         <constructor-arg ref="bundleContext"/>
     </bean>
 
-    <bean id="interceptionWeavingHook" class="org.mosaic.util.weaving.impl.InterceptionWeavingHook">
+    <bean id="metricsSpi" class="org.mosaic.lifecycle.spi.MetricsSpi">
+        <constructor-arg ref="moduleManager"/>
+    </bean>
+
+    <bean id="transactionSpi" class="org.mosaic.database.tx.spi.TransactionSpi">
         <constructor-arg ref="bundleContext"/>
     </bean>
 
-    <bean id="weaverSpi" class="org.mosaic.util.weaving.spi.WeaverSpi">
-        <constructor-arg ref="interceptionWeavingHook"/>
-        <constructor-arg ref="methodHandleFactory"/>
+    <bean id="javassistClassPoolManager" class="org.mosaic.util.weaving.impl.JavassistClassPoolManager"/>
+
+    <bean id="nullabilityWeavingHook" class="org.mosaic.util.weaving.impl.NullabilityWeavingHook">
+        <constructor-arg ref="bundleContext"/>
+        <constructor-arg ref="javassistClassPoolManager"/>
+    </bean>
+
+    <bean id="metricsWeavingHook" class="org.mosaic.lifecycle.impl.metrics.MetricsWeavingHook">
+        <constructor-arg ref="bundleContext"/>
+        <constructor-arg ref="javassistClassPoolManager"/>
+    </bean>
+
+    <bean id="transactionWeavingHook" class="org.mosaic.database.tx.impl.weaving.TransactionWeavingHook">
+        <constructor-arg ref="bundleContext"/>
+        <constructor-arg ref="javassistClassPoolManager"/>
     </bean>
 
     <bean id="moduleManager" class="org.mosaic.lifecycle.impl.ModuleManagerImpl">

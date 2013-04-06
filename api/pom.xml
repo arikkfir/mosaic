@@ -18,6 +18,7 @@
                 <configuration>
                     <instructions>
                         <Mosaic-StartLevel>1</Mosaic-StartLevel>
+                        <Export-Package>{local-packages}</Export-Package>
                     </instructions>
                 </configuration>
             </plugin>

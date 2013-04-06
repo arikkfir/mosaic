@@ -12,11 +12,12 @@ import org.osgi.framework.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.InitializingBean;
 
 /**
  * @author arik
  */
-public class ServerImpl implements Server, DisposableBean
+public class ServerImpl implements Server, InitializingBean, DisposableBean
 {
     private static final Logger LOG = LoggerFactory.getLogger( ServerImpl.class );
 
@@ -52,6 +53,11 @@ public class ServerImpl implements Server, DisposableBean
         String version = System.getProperty( "mosaic.version" ).replace( '-', '.' );
         this.version = new Version( version );
         this.bundleContext = bundleContext;
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception
+    {
         this.serviceRegistration = ServiceUtils.register( bundleContext, Server.class, this );
     }
 

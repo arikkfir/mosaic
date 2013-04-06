@@ -21,6 +21,7 @@ import org.osgi.framework.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.InitializingBean;
 
 import static org.jgrapht.alg.DijkstraShortestPath.findPathBetween;
 import static org.osgi.framework.Constants.OBJECTCLASS;
@@ -28,7 +29,7 @@ import static org.osgi.framework.Constants.OBJECTCLASS;
 /**
  * @author arik
  */
-public class ConversionServiceImpl implements ConversionService, ServiceListener, DisposableBean
+public class ConversionServiceImpl implements ConversionService, ServiceListener, InitializingBean, DisposableBean
 {
     private static final Logger LOG = LoggerFactory.getLogger( ConversionServiceImpl.class );
 
@@ -58,7 +59,11 @@ public class ConversionServiceImpl implements ConversionService, ServiceListener
         this.pathCache = CacheBuilder.newBuilder()
                                      .concurrencyLevel( 50 )
                                      .build();
+    }
 
+    @Override
+    public void afterPropertiesSet() throws Exception
+    {
         if( this.bundleContext != null )
         {
             bundleContext.addServiceListener( this, "(" + OBJECTCLASS + "=" + Converter.class + ")" );

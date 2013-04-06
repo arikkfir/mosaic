@@ -18,6 +18,7 @@ import org.mosaic.util.reflection.MethodParameter;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.ReflectionUtils;
@@ -28,7 +29,7 @@ import static org.springframework.core.annotation.AnnotationUtils.findAnnotation
 /**
  * @author arik
  */
-public class MethodHandleFactoryImpl implements MethodHandleFactory, DisposableBean
+public class MethodHandleFactoryImpl implements MethodHandleFactory, InitializingBean, DisposableBean
 {
     @Nonnull
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
@@ -36,19 +37,27 @@ public class MethodHandleFactoryImpl implements MethodHandleFactory, DisposableB
     @Nonnull
     private final Map<Method, MethodHandleImpl> handlesCacheByMethod = new WeakHashMap<>( 1000 );
 
+    @Nonnull
+    private final BundleContext bundleContext;
+
     @Nullable
     private ServiceRegistration<MethodHandleFactory> serviceRegistration;
 
     public MethodHandleFactoryImpl( @Nonnull BundleContext bundleContext )
     {
-        this.serviceRegistration = ServiceUtils.register( bundleContext, MethodHandleFactory.class, this );
+        this.bundleContext = bundleContext;
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception
+    {
+        this.serviceRegistration = ServiceUtils.register( this.bundleContext, MethodHandleFactory.class, this );
     }
 
     @Override
     public void destroy() throws Exception
     {
         this.serviceRegistration = ServiceUtils.unregister( this.serviceRegistration );
-        this.serviceRegistration = null;
     }
 
     @Override
