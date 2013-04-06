@@ -4,10 +4,10 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.lifecycle.Module;
 import org.mosaic.lifecycle.ModuleManager;
-import org.mosaic.lifecycle.annotation.BeanRef;
 import org.mosaic.lifecycle.annotation.Measure;
 import org.mosaic.lifecycle.annotation.Rank;
 import org.mosaic.lifecycle.annotation.Service;
+import org.mosaic.lifecycle.annotation.ServiceRef;
 import org.mosaic.util.weaving.MethodInterceptor;
 import org.mosaic.util.weaving.MethodInvocation;
 
@@ -20,7 +20,7 @@ public class MetricsMethodInterceptor implements MethodInterceptor
 {
     private ModuleManager moduleManager;
 
-    @BeanRef
+    @ServiceRef
     public void setModuleManager( ModuleManager moduleManager )
     {
         this.moduleManager = moduleManager;
