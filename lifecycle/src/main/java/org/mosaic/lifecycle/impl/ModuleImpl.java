@@ -211,7 +211,14 @@ public class ModuleImpl implements Module
                 final TypeToken<?> type;
                 try
                 {
-                    type = TypeToken.of( this.bundle.loadClass( className ) );
+                    if( className.equals( MethodEndpoint.class.getName() ) )
+                    {
+                        type = TypeToken.of( MethodEndpoint.class );
+                    }
+                    else
+                    {
+                        type = TypeToken.of( this.bundle.loadClass( className ) );
+                    }
                     serviceExports.add( new ServiceExportImpl( type, serviceReference ) );
                 }
                 catch( ClassNotFoundException e )
