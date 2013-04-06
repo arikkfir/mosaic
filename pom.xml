@@ -22,6 +22,7 @@
         <module>core</module>
         <module>it</module>
         <module>dist</module>
+        <module>admin</module>
     </modules>
 
 </project>

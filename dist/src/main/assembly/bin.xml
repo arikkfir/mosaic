@@ -133,6 +133,7 @@
                 <include>org.mosaic:api</include>
                 <include>org.mosaic:lifecycle</include>
                 <include>org.mosaic:core</include>
+                <include>org.mosaic:admin</include>
             </includes>
         </dependencySet>
 

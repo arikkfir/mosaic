@@ -55,6 +55,11 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.mosaic</groupId>
+            <artifactId>admin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>org.springframework.aop</artifactId>
         </dependency>
