@@ -44,30 +44,17 @@ public class TransactionWeavingHook extends BaseWeavingHook
             else if( readOnly || readWrite )
             {
                 // add tx-begin code
-                String beginCode = String.format(
-                        "{                                                                                                          \n" +
-                        "   TransactionSpi.begin( %s, %s );                                                                         \n" +
-                        "}                                                                                                          \n",
-                        ctMethodLongName, readOnly ? "true" : "false"
-                );
+                String beginCode = String.format( "TransactionSpi.begin( %s, %s );", ctMethodLongName, readOnly );
                 beginCode = beginCode.replace( "TransactionSpi", TransactionSpi.class.getName() );
                 ctMethod.insertBefore( beginCode );
 
                 // add tx-apply code
-                String applyCode = String.format(
-                        "{                                                                                                          \n" +
-                        "   TransactionSpi.apply();                                                                                 \n" +
-                        "}                                                                                                          \n"
-                );
+                String applyCode = String.format( "TransactionSpi.apply();" );
                 applyCode = applyCode.replace( "TransactionSpi", TransactionSpi.class.getName() );
                 ctMethod.insertAfter( applyCode );
 
                 // add tx-fail code
-                String failCode = String.format(
-                        "{                                                                                                          \n" +
-                        "   throw TransactionSpi.fail( $e );                                                                        \n" +
-                        "}                                                                                                          \n"
-                );
+                String failCode = String.format( "throw TransactionSpi.fail( $e );" );
                 failCode = failCode.replace( "TransactionSpi", TransactionSpi.class.getName() );
                 ctMethod.addCatch( failCode, findCtClass( wovenClass, Exception.class ), "$e" );
 
