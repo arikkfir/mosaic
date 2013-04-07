@@ -15,20 +15,20 @@ public final class TransactionSpi implements InitializingBean, DisposableBean
 {
     private static TransactionSpi instance;
 
-    @SuppressWarnings( "UnusedDeclaration" )
+    @SuppressWarnings("UnusedDeclaration")
     public static void begin( @Nonnull String name, boolean readOnly )
     {
         getTransactionManager().begin( name, readOnly );
     }
 
-    @SuppressWarnings( "UnusedDeclaration" )
+    @SuppressWarnings("UnusedDeclaration")
     public static void fail( @Nonnull Exception exception ) throws Exception
     {
         throw getTransactionManager().fail( exception );
     }
 
-    @SuppressWarnings( "UnusedDeclaration" )
-    public static void apply()
+    @SuppressWarnings("UnusedDeclaration")
+    public static void apply() throws Exception
     {
         getTransactionManager().apply();
     }

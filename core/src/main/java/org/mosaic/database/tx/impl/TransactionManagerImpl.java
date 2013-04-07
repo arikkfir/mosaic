@@ -17,7 +17,7 @@ import org.slf4j.MarkerFactory;
 /**
  * @author arik
  */
-@Service(TransactionManager.class)
+@Service( TransactionManager.class )
 public class TransactionManagerImpl implements TransactionManager
 {
     public static final Marker TX_MARKER = MarkerFactory.getMarker( "appender:tx" );
@@ -53,7 +53,7 @@ public class TransactionManagerImpl implements TransactionManager
     }
 
     @Override
-    public void apply() throws TransactionCommitException, NoTransactionException
+    public void apply() throws Exception
     {
         getCurrentTransaction().apply();
     }
@@ -128,62 +128,51 @@ public class TransactionManagerImpl implements TransactionManager
             Logger logger = LoggerFactory.getLogger( this.name );
             logger.debug( "Rolling back transaction '{}'", this.name );
 
-            if( this.parent == null )
+            // ignore TransactionCommitException - the 'apply' method already called 'fail' when that happened
+            if( !TransactionCommitException.class.isInstance( exception ) )
             {
-                if( this.listeners != null )
+                if( this.parent == null )
                 {
-                    for( TransactionListener listener : this.listeners )
+                    if( this.listeners != null )
                     {
-                        try
+                        for( TransactionListener listener : this.listeners )
                         {
-                            listener.onTransactionFailure( this, exception );
-                        }
-                        catch( Exception e )
-                        {
-                            logger.warn(
-                                    "Transaction listener '{}' threw an exception while rolling back transaction '{}': {}",
-                                    listener,
-                                    this.name,
-                                    e.getMessage(),
-                                    e
-                            );
+                            try
+                            {
+                                listener.onTransactionFailure( this, exception );
+                            }
+                            catch( Exception e )
+                            {
+                                logger.warn(
+                                        "Transaction listener '{}' threw an exception while rolling back transaction '{}': {}",
+                                        listener,
+                                        this.name,
+                                        e.getMessage(),
+                                        e
+                                );
+                            }
                         }
                     }
-
-                    for( TransactionListener listener : this.listeners )
-                    {
-                        try
-                        {
-                            listener.onTransactionCompletion( this, exception );
-                        }
-                        catch( Exception e )
-                        {
-                            logger.warn(
-                                    "Transaction listener '{}' threw an exception in completion hook of transaction '{}': {}",
-                                    listener,
-                                    this.name,
-                                    e.getMessage(),
-                                    e
-                            );
-                        }
-                    }
+                    notifyCompletion( exception );
+                    transactionHolder.remove();
                 }
-                transactionHolder.remove();
-            }
-            else
-            {
-                transactionHolder.set( this.parent );
+                else
+                {
+                    transactionHolder.set( this.parent );
+                }
             }
             throw exception;
         }
 
-        public void apply()
+        public void apply() throws Exception
         {
             Logger logger = LoggerFactory.getLogger( this.name );
             logger.debug( "Applying transaction '{}'", this.name );
 
             if( this.parent == null )
             {
+                TransactionCommitException exception = null;
+
                 if( this.listeners != null )
                 {
                     for( TransactionListener listener : this.listeners )
@@ -194,35 +183,53 @@ public class TransactionManagerImpl implements TransactionManager
                         }
                         catch( Exception e )
                         {
-                            logger.warn(
-                                    "Transaction listener '{}' threw an exception while applying transaction '{}': {}",
-                                    listener,
-                                    this.name,
-                                    e.getMessage(),
-                                    e
-                            );
+                            if( exception == null )
+                            {
+                                exception = new TransactionCommitException( "Error applying (committing) transaction '" + this.name + "'", this );
+                                exception.addSuppressed( e );
+                            }
                         }
                     }
 
-                    for( TransactionListener listener : this.listeners )
-                    {
-                        try
-                        {
-                            listener.onTransactionCompletion( this, null );
-                        }
-                        catch( Exception e )
-                        {
-                            logger.warn(
-                                    "Transaction listener '{}' threw an exception in completion hook of transaction '{}': {}",
-                                    listener,
-                                    this.name,
-                                    e.getMessage(),
-                                    e
-                            );
-                        }
-                    }
+                }
+
+                if( exception != null )
+                {
+                    // transaction could not applied - one of the listeners threw an exception, so fail instead
+                    // the 'fail' method will remove us from the transactionHolder and notify completion for us
+                    throw fail( exception );
+                }
+                else
+                {
+                    // all is well - notify completion
+                    notifyCompletion( null );
                 }
                 transactionHolder.remove();
+            }
+        }
+
+        private void notifyCompletion( @Nullable Exception exception )
+        {
+            Logger logger = LoggerFactory.getLogger( this.name );
+            if( this.listeners != null )
+            {
+                for( TransactionListener listener : this.listeners )
+                {
+                    try
+                    {
+                        listener.onTransactionCompletion( this, exception );
+                    }
+                    catch( Exception e )
+                    {
+                        logger.warn(
+                                "Transaction listener '{}' threw an exception in completion hook of transaction '{}': {}",
+                                listener,
+                                this.name,
+                                e.getMessage(),
+                                e
+                        );
+                    }
+                }
             }
         }
     }

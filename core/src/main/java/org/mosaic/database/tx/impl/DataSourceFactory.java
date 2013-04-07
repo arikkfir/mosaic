@@ -187,7 +187,7 @@ public class DataSourceFactory
         }
 
         @Override
-        public void onTransactionSuccess( @Nonnull TransactionManager.Transaction transaction )
+        public void onTransactionSuccess( @Nonnull TransactionManager.Transaction transaction ) throws Exception
         {
             Connection connection = this.connectionHolder.get();
             if( connection != null )
@@ -203,43 +203,13 @@ public class DataSourceFactory
             Connection connection = this.connectionHolder.get();
             if( connection != null )
             {
-                org.slf4j.Logger logger = getLogger( transaction.getName() );
-                logger.debug(
-                        TX_MARKER,
-                        "Returning connection from data source '{}' for transaction '{}' to the connection pool (transaction completed)",
-                        this.name,
-                        transaction.getName()
-                );
-
-                try
-                {
-                    connection.close();
-                }
-                catch( Exception e )
-                {
-                    logger.debug(
-                            TX_MARKER,
-                            "Error returning connection from data source '{}' for transaction '{}' to the connection pool, closing it",
-                            this.name,
-                            transaction.getName(),
-                            e
-                    );
-                    rollback( transaction, connection );
-                }
+                close( transaction, connection );
             }
         }
 
-        private void commit( TransactionManager.Transaction transaction, Connection connection )
+        private void commit( TransactionManager.Transaction transaction, Connection connection ) throws Exception
         {
-            boolean readOnly = true;
-            try
-            {
-                readOnly = connection.isReadOnly();
-            }
-            catch( SQLException ignore )
-            {
-            }
-
+            boolean readOnly = connection.isReadOnly();
             if( readOnly )
             {
                 getLogger( transaction.getName() ).debug(
@@ -261,7 +231,6 @@ public class DataSourceFactory
                             transaction.getName()
                     );
                     connection.commit();
-                    connection.prepareCall( "UNLOCK TABLES" ).execute();
                 }
                 catch( Exception e )
                 {
@@ -272,12 +241,12 @@ public class DataSourceFactory
                             transaction.getName(),
                             e
                     );
-                    rollback( transaction, connection );
+                    throw e;
                 }
             }
         }
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         private void rollback( @Nonnull TransactionManager.Transaction transaction, @Nonnull Connection connection )
         {
             try
@@ -289,17 +258,57 @@ public class DataSourceFactory
                         transaction.getName()
                 );
                 connection.rollback();
-                connection.prepareCall( "UNLOCK TABLES" ).execute();
             }
             catch( Exception e )
             {
                 getLogger( transaction.getName() ).warn(
                         TX_MARKER,
-                        "Error rolling back connection from data source '{}' in transaction '{}', connection will be killed (exception below is what failed the rollback)",
+                        "Error rolling back connection from data source '{}' in transaction '{}', connection will be closed (exception below is what failed the rollback)",
                         this.name,
                         transaction.getName(),
                         e
                 );
+                kill( transaction, connection );
+            }
+        }
+
+        private void close( TransactionManager.Transaction transaction, Connection connection )
+        {
+            org.slf4j.Logger logger = getLogger( transaction.getName() );
+            logger.debug(
+                    TX_MARKER,
+                    "Returning connection from data source '{}' for transaction '{}' to the connection pool (transaction completed)",
+                    this.name,
+                    transaction.getName()
+            );
+
+            try
+            {
+                connection.prepareCall( "UNLOCK TABLES" ).execute();
+                connection.close();
+            }
+            catch( Exception e )
+            {
+                logger.debug(
+                        TX_MARKER,
+                        "Error returning connection from data source '{}' for transaction '{}' to the connection pool, closing it",
+                        this.name,
+                        transaction.getName(),
+                        e
+                );
+                kill( transaction, connection );
+            }
+            finally
+            {
+                this.connectionHolder.remove();
+            }
+        }
+
+        @SuppressWarnings( "unchecked" )
+        private void kill( TransactionManager.Transaction transaction, Connection connection )
+        {
+            if( this.connectionPool != null && !this.connectionPool.isClosed() )
+            {
                 try
                 {
                     connectionPool.invalidateObject( connection );
