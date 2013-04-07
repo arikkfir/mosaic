@@ -10,11 +10,7 @@ import java.lang.annotation.Target;
  */
 @Retention( RetentionPolicy.RUNTIME )
 @Target( ElementType.METHOD )
-public @interface Update
+public @interface RowMapperBean
 {
     String value();
-
-    int minAffectedRows() default -1;
-
-    int maxAffectedRows() default -1;
 }

@@ -10,11 +10,9 @@ import java.lang.annotation.Target;
  */
 @Retention( RetentionPolicy.RUNTIME )
 @Target( ElementType.METHOD )
-public @interface Update
+public @interface RowMapperType
 {
-    String value();
+    Class<? extends org.mosaic.database.dao.RowMapper> value();
 
-    int minAffectedRows() default -1;
-
-    int maxAffectedRows() default -1;
+    boolean shareInstance() default true;
 }
