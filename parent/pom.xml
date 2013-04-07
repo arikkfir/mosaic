@@ -24,7 +24,6 @@
                         <configuration>
                             <instructions>
                                 <Bundle-LocalResourcesRoot>file:${basedir}/src/main/resources</Bundle-LocalResourcesRoot>
-                                <Bundle-Vendor>Arik Kfir</Bundle-Vendor>
                             </instructions>
                         </configuration>
                     </plugin>
@@ -49,7 +48,7 @@
                         <!-- Configure standard bundle-related properties -->
                         <Bundle-Name>${project.name}</Bundle-Name>
                         <Bundle-Vendor>${project.organization.name}</Bundle-Vendor>
-                        <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
+                        <Bundle-SymbolicName>${project.groupId}.${project.artifactId}</Bundle-SymbolicName>
                         <Bundle-Version>${project.version}</Bundle-Version>
                         <!-- Detect used packages in Spring XML files -->
                         <_plugin>aQute.lib.spring.SpringComponent</_plugin>
