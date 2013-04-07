@@ -34,6 +34,9 @@ public class MethodHandleFactoryImpl implements MethodHandleFactory, Initializin
     @Nonnull
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
+    /**
+     * @todo replace with guava cache
+     */
     @Nonnull
     private final Map<Method, MethodHandleImpl> handlesCacheByMethod = new WeakHashMap<>( 1000 );
 
@@ -383,6 +386,12 @@ public class MethodHandleFactoryImpl implements MethodHandleFactory, Initializin
                     throw e;
                 }
             }
+        }
+
+        @Override
+        public boolean hasAnnotation( @Nonnull Class<? extends Annotation> type )
+        {
+            return getAnnotation( type ) != null;
         }
 
         @Nonnull

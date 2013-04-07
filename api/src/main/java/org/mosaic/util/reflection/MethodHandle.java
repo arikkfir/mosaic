@@ -83,6 +83,8 @@ public interface MethodHandle
     @Nullable
     Object invoke( @Nullable Object bean, @Nullable Object... args ) throws Exception;
 
+    boolean hasAnnotation( @Nonnull Class<? extends Annotation> type );
+
     interface ParameterResolver
     {
         @Nonnull
