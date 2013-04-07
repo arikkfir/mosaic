@@ -26,6 +26,9 @@ public class JavassistClassPoolManager
             "lifecycle"
     );
 
+    /**
+     * @todo replace with guava cache
+     */
     @Nonnull
     private final Map<BundleWiring, ClassPool> classPools = new WeakHashMap<>( 500 );
 
