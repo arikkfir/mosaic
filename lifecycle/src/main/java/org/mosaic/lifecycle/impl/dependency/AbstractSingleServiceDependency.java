@@ -62,6 +62,7 @@ public abstract class AbstractSingleServiceDependency extends AbstractBeanDepend
     }
 
     @Nonnull
+    @Override
     public final String getBeanName()
     {
         return this.beanName;
@@ -78,6 +79,7 @@ public abstract class AbstractSingleServiceDependency extends AbstractBeanDepend
         }
     }
 
+    @Override
     public final boolean isSatisfied()
     {
         return this.tracker != null && isSatisfiedInternal( this.tracker );
@@ -95,6 +97,7 @@ public abstract class AbstractSingleServiceDependency extends AbstractBeanDepend
         }
     }
 
+    @Nullable
     @Override
     public final Object addingService( @Nonnull ServiceReference<Object> reference )
     {
