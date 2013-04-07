@@ -20,6 +20,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.mosaic.database.dao.annotation.Dao;
 import org.mosaic.lifecycle.*;
 import org.mosaic.lifecycle.annotation.*;
 import org.mosaic.lifecycle.impl.dependency.*;
@@ -33,6 +34,7 @@ import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWiring;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.MethodInvocationException;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.beans.factory.support.BeanDefinitionValidationException;
@@ -298,6 +300,30 @@ public class ModuleImpl implements Module
         catch( Exception e )
         {
             throw new ModuleStopException( this, e.getMessage(), e );
+        }
+    }
+
+    @Nonnull
+    @Override
+    public <T> T getBean( @Nonnull Class<? extends T> type )
+    {
+        if( this.state != ModuleState.ACTIVE )
+        {
+            throw new IllegalStateException( "Module '" + this + "' is not active" );
+        }
+
+        ModuleApplicationContext applicationContext = this.applicationContext;
+        if( applicationContext == null )
+        {
+            throw new IllegalStateException( "Module '" + this + "' has no context" );
+        }
+        try
+        {
+            return applicationContext.getBean( type );
+        }
+        catch( BeansException e )
+        {
+            throw new IllegalArgumentException( "Could not get or find bean of type '" + type.getName() + "' in module '" + this + "': " + e.getMessage(), e );
         }
     }
 
@@ -738,6 +764,13 @@ public class ModuleImpl implements Module
             if( serviceUnbindAnn != null )
             {
                 dependencies.add( new ServiceUnbindDependency( this, serviceUnbindAnn.value(), beanName, methodHandle ) );
+            }
+
+            // detect @ServiceUnbind dependency
+            Dao daoAnn = methodHandle.getAnnotation( Dao.class );
+            if( daoAnn != null )
+            {
+                dependencies.add( new DaoRefDependency( this, beanName, methodHandle, daoAnn.value() ) );
             }
 
             // detect method endpoints

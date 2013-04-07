@@ -1,11 +1,13 @@
 package org.mosaic.database.dao;
 
+import javax.annotation.Nonnull;
+import javax.sql.DataSource;
+
 /**
  * @author arik
  */
 public interface DaoFactory
 {
-    <T> T create( Class<T> type );
-
-    <T> T create( Class<T> type, String secondaryDataSourceNAme );
+    @Nonnull
+    <T> T create( @Nonnull Class<T> type, @Nonnull DataSource dataSource );
 }

@@ -51,6 +51,9 @@ public interface Module
 
     void stop() throws ModuleStopException;
 
+    @Nonnull
+    <T> T getBean( @Nonnull Class<? extends T> type );
+
     @Nullable
     Metrics getMetrics();
 
