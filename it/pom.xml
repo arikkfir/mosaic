@@ -16,8 +16,8 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>runner</module>
-        <module>it01</module>
+        <module>test-module-01</module>
+        <module>tests</module>
     </modules>
 
 </project>
