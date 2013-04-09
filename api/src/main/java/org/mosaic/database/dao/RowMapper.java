@@ -6,7 +6,7 @@ import org.mosaic.util.collect.MapEx;
 /**
  * @author arik
  */
-public interface RowMapper
+public interface RowMapper<T>
 {
-    <T> T map( @Nonnull MapEx<String, Object> row );
+    T map( @Nonnull MapEx<String, Object> row );
 }

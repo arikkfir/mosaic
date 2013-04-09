@@ -13,4 +13,6 @@ import java.lang.annotation.Target;
 public @interface BatchUpdate
 {
     String value();
+
+    int batchSize() default 100;
 }

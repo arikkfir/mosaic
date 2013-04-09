@@ -10,7 +10,9 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface Limit
+public @interface Insert
 {
-    int value() default -1;
+    String schema();
+
+    String table();
 }

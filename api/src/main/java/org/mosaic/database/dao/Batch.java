@@ -1,17 +1,24 @@
 package org.mosaic.database.dao;
 
+import java.sql.SQLException;
 import java.util.Map;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
  * @author arik
  */
-public interface Batch<T>
+public interface Batch
 {
-    Batch<T> set( String name, Object value );
+    @Nonnull
+    Batch set( @Nonnull String name, @Nullable Object value );
 
-    Batch<T> next();
+    @Nonnull
+    Batch next();
 
-    Batch<T> add( Map<String, Object> parameters );
+    @Nonnull
+    Batch add( @Nonnull Map<String, Object> parameters );
 
-    T execute();
+    @Nonnull
+    BatchUpdateResult execute() throws SQLException;
 }
