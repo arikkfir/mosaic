@@ -54,6 +54,9 @@ public interface Module
     @Nonnull
     <T> T getBean( @Nonnull Class<? extends T> type );
 
+    @Nonnull
+    <T> T getBean( @Nonnull String beanName, @Nonnull Class<? extends T> type );
+
     @Nullable
     Metrics getMetrics();
 

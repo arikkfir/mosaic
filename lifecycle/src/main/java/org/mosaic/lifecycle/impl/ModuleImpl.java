@@ -327,6 +327,30 @@ public class ModuleImpl implements Module
         }
     }
 
+    @Nonnull
+    @Override
+    public <T> T getBean( @Nonnull String beanName, @Nonnull Class<? extends T> type )
+    {
+        if( this.state != ModuleState.ACTIVE )
+        {
+            throw new IllegalStateException( "Module '" + this + "' is not active" );
+        }
+
+        ModuleApplicationContext applicationContext = this.applicationContext;
+        if( applicationContext == null )
+        {
+            throw new IllegalStateException( "Module '" + this + "' has no context" );
+        }
+        try
+        {
+            return applicationContext.getBean( beanName, type );
+        }
+        catch( BeansException e )
+        {
+            throw new IllegalArgumentException( "Could not get or find bean of type '" + type.getName() + "' in module '" + this + "': " + e.getMessage(), e );
+        }
+    }
+
     @Nullable
     @Override
     public Metrics getMetrics()
