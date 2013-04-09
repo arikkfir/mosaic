@@ -54,9 +54,14 @@ public class TransactionWeavingHook extends BaseWeavingHook
                 ctMethod.insertAfter( applyCode );
 
                 // add tx-fail code
-                String failCode = String.format( "throw TransactionSpi.fail( $e );" );
+                String failCode = String.format( "TransactionSpi.fail( $e );" +
+                                                 "throw $e;" );
                 failCode = failCode.replace( "TransactionSpi", TransactionSpi.class.getName() );
-                ctMethod.addCatch( failCode, findCtClass( wovenClass, Exception.class ), "$e" );
+                for( CtClass exceptionType : ctMethod.getExceptionTypes() )
+                {
+                    ctMethod.addCatch( failCode, exceptionType, "$e" );
+                }
+                ctMethod.addCatch( failCode, findCtClass( wovenClass, RuntimeException.class ), "$e" );
 
                 // import required packages
                 dynamicImports.put( TransactionSpi.class.getPackage().getName(), "[1,2)" );

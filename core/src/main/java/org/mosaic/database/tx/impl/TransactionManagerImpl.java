@@ -47,13 +47,13 @@ public class TransactionManagerImpl implements TransactionManager
     }
 
     @Override
-    public Exception fail( @Nullable Exception exception ) throws Exception
+    public void fail( @Nullable Exception exception ) throws NoTransactionException
     {
-        throw getCurrentTransaction().fail( exception );
+        getCurrentTransaction().fail( exception );
     }
 
     @Override
-    public void apply() throws Exception
+    public void apply() throws TransactionCommitException
     {
         getCurrentTransaction().apply();
     }
@@ -123,7 +123,7 @@ public class TransactionManagerImpl implements TransactionManager
             }
         }
 
-        public Exception fail( @Nullable Exception exception ) throws Exception
+        public void fail( @Nullable Exception exception )
         {
             Logger logger = LoggerFactory.getLogger( this.name );
             logger.debug( "Rolling back transaction '{}'", this.name );
@@ -161,10 +161,9 @@ public class TransactionManagerImpl implements TransactionManager
                     transactionHolder.set( this.parent );
                 }
             }
-            throw exception;
         }
 
-        public void apply() throws Exception
+        public void apply() throws TransactionCommitException
         {
             Logger logger = LoggerFactory.getLogger( this.name );
             logger.debug( "Applying transaction '{}'", this.name );
@@ -197,7 +196,8 @@ public class TransactionManagerImpl implements TransactionManager
                 {
                     // transaction could not applied - one of the listeners threw an exception, so fail instead
                     // the 'fail' method will remove us from the transactionHolder and notify completion for us
-                    throw fail( exception );
+                    fail( exception );
+                    throw exception;
                 }
                 else
                 {

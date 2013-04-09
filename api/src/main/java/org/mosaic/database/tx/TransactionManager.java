@@ -14,9 +14,9 @@ public interface TransactionManager
     @Nonnull
     Transaction getCurrentTransaction() throws NoTransactionException;
 
-    Exception fail( @Nullable Exception exception ) throws Exception;
+    void fail( @Nullable Exception exception ) throws NoTransactionException;
 
-    void apply() throws Exception;
+    void apply() throws NoTransactionException, TransactionCommitException;
 
     interface TransactionListener
     {

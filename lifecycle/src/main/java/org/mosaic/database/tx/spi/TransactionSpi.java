@@ -2,6 +2,7 @@ package org.mosaic.database.tx.spi;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.mosaic.database.tx.NoTransactionException;
 import org.mosaic.database.tx.TransactionManager;
 import org.osgi.framework.BundleContext;
 import org.osgi.util.tracker.ServiceTracker;
@@ -22,9 +23,9 @@ public final class TransactionSpi implements InitializingBean, DisposableBean
     }
 
     @SuppressWarnings("UnusedDeclaration")
-    public static void fail( @Nonnull Exception exception ) throws Exception
+    public static void fail( @Nonnull Exception exception ) throws NoTransactionException
     {
-        throw getTransactionManager().fail( exception );
+        getTransactionManager().fail( exception );
     }
 
     @SuppressWarnings("UnusedDeclaration")
