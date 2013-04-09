@@ -16,6 +16,7 @@ import org.mosaic.database.dao.annotation.Query;
 import org.mosaic.database.dao.annotation.Update;
 import org.mosaic.database.tx.TransactionManager;
 import org.mosaic.lifecycle.Module;
+import org.mosaic.lifecycle.annotation.BeanRef;
 import org.mosaic.lifecycle.annotation.ModuleRef;
 import org.mosaic.lifecycle.annotation.Service;
 import org.mosaic.lifecycle.annotation.ServiceRef;
@@ -64,7 +65,7 @@ public class DaoFactoryImpl implements DaoFactory
         this.conversionService = conversionService;
     }
 
-    @ServiceRef
+    @BeanRef
     public void setTransactionManager( @Nonnull TransactionManager transactionManager )
     {
         this.transactionManager = transactionManager;
