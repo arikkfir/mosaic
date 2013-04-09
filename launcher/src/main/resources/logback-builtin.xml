@@ -102,6 +102,7 @@
 
     <!-- reduce verbosity of ssh sessions -->
     <logger name="org.mosaic.shell.impl.session.MosaicServerSession" level="WARN"/>
+    <logger name="org.mosaic.lifecycle.impl.ModuleApplicationContext" level="WARN"/>
     <logger name="org.osgi.framework" level="WARN"/>
 
     <!-- disable internal 3rd-party logging statements, they're not interesting -->
