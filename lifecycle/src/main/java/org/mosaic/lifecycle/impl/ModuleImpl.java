@@ -588,7 +588,7 @@ public class ModuleImpl implements Module
     private void onBundleInstall()
     {
         this.state = ModuleState.INSTALLED;
-        LOG.debug( "Installed module '{}'", this );
+        LOG.debug( "Module {} has been INSTALLED", getName() );
         this.moduleManager.notifyModuleInstalled( this );
     }
 
@@ -597,12 +597,12 @@ public class ModuleImpl implements Module
         refreshResourcesCache();
         this.metrics = new MetricsImpl();
         this.state = ModuleState.RESOLVED;
-        LOG.debug( "Resolved module '{}'", this );
+        LOG.debug( "Module {} has been RESOLVED", getName() );
     }
 
     private void onBundleStarting()
     {
-        LOG.debug( "Bootstrapping module '{}'", this );
+        LOG.debug( "Bootstrapping module '{}'", getName() );
         this.state = ModuleState.STARTING;
 
         // add beans to application context, and also populate our dependencies during so
@@ -652,7 +652,7 @@ public class ModuleImpl implements Module
 
     private void onBundleStopping()
     {
-        LOG.debug( "Stopping module '{}'", this );
+        LOG.debug( "Module {} is STOPPING", getName() );
 
         // deactivate
         deactivate();
@@ -668,13 +668,13 @@ public class ModuleImpl implements Module
     private void onBundleStopped()
     {
         this.state = ModuleState.RESOLVED;
-        LOG.info( "Stopped module '{}'", this );
+        LOG.info( "Module {} has been STOPPED", getName() );
     }
 
     private void onBundleUpdated()
     {
         refreshResourcesCache();
-        LOG.debug( "Updated module '{}'", this );
+        LOG.debug( "Module {} has been UPDATED", getName() );
     }
 
     private void onBundleUnresolved()
@@ -686,13 +686,13 @@ public class ModuleImpl implements Module
         }
         this.metrics = null;
         this.state = ModuleState.INSTALLED;
-        LOG.debug( "Unresolved module '{}'", this );
+        LOG.debug( "Module {} has been UNRESOLVED", getName() );
     }
 
     private void onBundleUninstalled()
     {
         this.state = ModuleState.UNINSTALLED;
-        LOG.info( "Uninstalled module '{}'", this );
+        LOG.info( "Module {} has been UNINSTALLED", getName() );
         this.moduleManager.notifyModuleUninstalled( this );
     }
 
