@@ -116,6 +116,7 @@
             <useTransitiveDependencies>true</useTransitiveDependencies>
             <includes>
                 <include>com.google.guava:guava</include>
+                <include>joda-time:joda-time</include>
             </includes>
         </dependencySet>
 
@@ -130,10 +131,10 @@
             <useStrictFiltering>true</useStrictFiltering>
             <useTransitiveDependencies>false</useTransitiveDependencies>
             <includes>
-                <include>org.mosaic:api</include>
-                <include>org.mosaic:lifecycle</include>
-                <include>org.mosaic:core</include>
                 <include>org.mosaic:admin</include>
+                <include>org.mosaic:api</include>
+                <include>org.mosaic:core</include>
+                <include>org.mosaic:lifecycle</include>
             </includes>
         </dependencySet>
 
