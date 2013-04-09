@@ -205,7 +205,7 @@ case "$1" in
         ;;
 
     debug)
-        MOSAIC_DEBUG_JAVA_OPTS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=${MOSAIC_DEBUG_PORT}"
+        MOSAIC_DEBUG_JAVA_OPTS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=${MOSAIC_DEBUG_PORT}"
         start
         ;;
 
