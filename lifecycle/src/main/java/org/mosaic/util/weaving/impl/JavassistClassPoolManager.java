@@ -22,8 +22,8 @@ public class JavassistClassPoolManager
 {
     @Nonnull
     private static final List<String> FORBIDDEN_BUNDLES = asList(
-            "api",
-            "lifecycle"
+            "org.mosaic.api",
+            "org.mosaic.lifecycle"
     );
 
     /**
