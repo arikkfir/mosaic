@@ -1,8 +1,11 @@
 package org.mosaic.util.weaving.impl;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.LoaderClassPath;
@@ -26,11 +29,18 @@ public class JavassistClassPoolManager
             "org.mosaic.lifecycle"
     );
 
-    /**
-     * @todo replace with guava cache
-     */
     @Nonnull
-    private final Map<BundleWiring, ClassPool> classPools = new WeakHashMap<>( 500 );
+    private final Cache<BundleWiring, ClassPool> classPoolsCache;
+
+    public JavassistClassPoolManager()
+    {
+        this.classPoolsCache = CacheBuilder.newBuilder()
+                                           .concurrencyLevel( 3 )
+                                           .expireAfterAccess( 1, TimeUnit.HOURS )
+                                           .initialCapacity( 100 )
+                                           .weakKeys()
+                                           .build();
+    }
 
     @Nullable
     public synchronized CtClass findCtClassFor( @Nonnull WovenClass wovenClass )
@@ -51,6 +61,10 @@ public class JavassistClassPoolManager
             catch( NotFoundException e )
             {
                 throw new WeavingException( "Could not find weaving target class '" + wovenClass.getClassName() + "': " + e.getMessage(), e );
+            }
+            catch( ExecutionException e )
+            {
+                throw new WeavingException( "Could not create class pool for target class '" + wovenClass.getClassName() + "': " + e.getMessage(), e );
             }
         }
     }
@@ -75,6 +89,10 @@ public class JavassistClassPoolManager
             {
                 throw new WeavingException( "Could not find weaving target class '" + wovenClass.getClassName() + "': " + e.getMessage(), e );
             }
+            catch( ExecutionException e )
+            {
+                throw new WeavingException( "Could not create class pool for target class '" + wovenClass.getClassName() + "': " + e.getMessage(), e );
+            }
         }
     }
 
@@ -84,16 +102,18 @@ public class JavassistClassPoolManager
     }
 
     @Nonnull
-    private ClassPool getClassPool( @Nonnull final BundleWiring bundleWiring )
+    private ClassPool getClassPool( @Nonnull final BundleWiring bundleWiring ) throws ExecutionException
     {
-        ClassPool classPool = this.classPools.get( bundleWiring );
-        if( classPool == null )
+        return this.classPoolsCache.get( bundleWiring, new Callable<ClassPool>()
         {
-            classPool = new ClassPool( false );
-            classPool.appendClassPath( new LoaderClassPath( getClass().getClassLoader() ) );
-            classPool.appendClassPath( new LoaderClassPath( bundleWiring.getClassLoader() ) );
-            this.classPools.put( bundleWiring, classPool );
-        }
-        return classPool;
+            @Override
+            public ClassPool call() throws Exception
+            {
+                ClassPool classPool = new ClassPool( false );
+                classPool.appendClassPath( new LoaderClassPath( getClass().getClassLoader() ) );
+                classPool.appendClassPath( new LoaderClassPath( bundleWiring.getClassLoader() ) );
+                return classPool;
+            }
+        } );
     }
 }
