@@ -11,6 +11,7 @@ import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.server.Command;
+import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.UserAuth;
 import org.apache.sshd.server.auth.UserAuthPassword;
 import org.apache.sshd.server.auth.UserAuthPublicKey;
@@ -24,6 +25,7 @@ import org.mosaic.shell.impl.auth.PasswordAuthenticator;
 import org.mosaic.shell.impl.auth.PublicKeyAuthenticator;
 import org.mosaic.shell.impl.auth.UserAuthLocalhostNone;
 import org.mosaic.shell.impl.command.CommandManager;
+import org.mosaic.shell.impl.session.MosaicCommand;
 import org.mosaic.shell.impl.session.MosaicServerSession;
 import org.mosaic.shell.impl.session.MosaicSession;
 import org.slf4j.Logger;
@@ -101,6 +103,14 @@ public class ShellServer
             this.sshServer.setKeyPairProvider( this.keyPairProvider );
             this.sshServer.setPublickeyAuthenticator( this.publicKeyAuthenticator );
             this.sshServer.setSessionFactory( new MosaicSessionFactory() );
+            this.sshServer.setCommandFactory( new CommandFactory()
+            {
+                @Override
+                public Command createCommand( String command )
+                {
+                    return new MosaicCommand( shellCommandsManager, command );
+                }
+            } );
             this.sshServer.start();
 
             // log that we are now started - do not change the message because IntelliJ plugin waits for this to connect!
