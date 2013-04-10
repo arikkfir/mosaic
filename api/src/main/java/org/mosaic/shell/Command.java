@@ -19,5 +19,5 @@ public interface Command
 
     void describe( @Nonnull OptionsBuilder optionsBuilder ) throws CommandDefinitionException;
 
-    void execute( @Nonnull Console console, @Nonnull Options options ) throws Exception;
+    int execute( @Nonnull Console console, @Nonnull Options options ) throws Exception;
 }

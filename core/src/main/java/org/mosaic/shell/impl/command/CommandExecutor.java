@@ -12,7 +12,7 @@ public interface CommandExecutor
     @Nonnull
     Command getCommand();
 
-    void execute( @Nonnull Console console, @Nonnull String... arguments )
+    int execute( @Nonnull Console console, @Nonnull String... arguments )
             throws CommandDefinitionException, IllegalUsageException, CommandExecutionException, IOException;
 
     void printHelp( @Nonnull Console console ) throws CommandDefinitionException, IOException;

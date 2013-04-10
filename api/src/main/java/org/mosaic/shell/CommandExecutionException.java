@@ -7,13 +7,21 @@ import javax.annotation.Nonnull;
  */
 public class CommandExecutionException extends Exception
 {
+    private final int exitCode;
+
     @Nonnull
     private final String command;
 
-    public CommandExecutionException( @Nonnull String command, @Nonnull Throwable cause )
+    public CommandExecutionException( @Nonnull String command, int exitCode, @Nonnull Throwable cause )
     {
         super( cause.getMessage(), cause );
+        this.exitCode = exitCode;
         this.command = command;
+    }
+
+    public int getExitCode()
+    {
+        return exitCode;
     }
 
     @Nonnull

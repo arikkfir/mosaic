@@ -38,31 +38,6 @@ public class MosaicSession implements Command, Runnable, SessionAware
 {
     private static final Logger LOG = LoggerFactory.getLogger( MosaicSession.class );
 
-    private static class LfToCrLfFilterOutputStream extends FilterOutputStream
-    {
-        private boolean lastWasCr;
-
-        public LfToCrLfFilterOutputStream( OutputStream out )
-        {
-            super( out );
-        }
-
-        @Override
-        public void write( int b ) throws IOException
-        {
-            if( !lastWasCr && b == '\n' )
-            {
-                out.write( '\r' );
-                out.write( '\n' );
-            }
-            else
-            {
-                out.write( b );
-            }
-            lastWasCr = b == '\r';
-        }
-    }
-
     @Nonnull
     private final ModuleManager moduleManager;
 
@@ -174,43 +149,22 @@ public class MosaicSession implements Command, Runnable, SessionAware
                 line = line.trim();
                 if( line.length() > 0 )
                 {
-                    String[] tokens = line.split( " " );
-
-                    String[] args;
-                    if( tokens.length == 1 )
+                    try
                     {
-                        args = new String[ 0 ];
+                        this.commandsManager.execute( console, line );
                     }
-                    else
+                    catch( TerminateSessionException e )
                     {
-                        args = new String[ tokens.length - 1 ];
-                        System.arraycopy( tokens, 1, args, 0, args.length );
-                    }
-
-                    CommandExecutor adapter = this.commandsManager.getCommand( tokens[ 0 ] );
-                    if( adapter == null )
-                    {
-                        console.println( "Unknown command: " + tokens[ 0 ] );
-                    }
-                    else
-                    {
-                        try
+                        if( this.session != null )
                         {
-                            adapter.execute( console, args );
+                            this.inputQueueThread.end();
                         }
-                        catch( TerminateSessionException e )
+                    }
+                    catch( Exception e )
+                    {
+                        if( this.running )
                         {
-                            if( this.session != null )
-                            {
-                                this.inputQueueThread.end();
-                            }
-                        }
-                        catch( Exception e )
-                        {
-                            if( this.running )
-                            {
-                                console.printStackTrace( e );
-                            }
+                            console.printStackTrace( e );
                         }
                     }
                 }

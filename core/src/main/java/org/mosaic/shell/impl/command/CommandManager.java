@@ -87,6 +87,34 @@ public class CommandManager
         }
     }
 
+    public int execute( @Nonnull Console console, @Nonnull String line )
+            throws IOException, CommandDefinitionException, IllegalUsageException, CommandExecutionException
+    {
+        String[] tokens = line.split( " " );
+
+        String[] args;
+        if( tokens.length == 1 )
+        {
+            args = new String[ 0 ];
+        }
+        else
+        {
+            args = new String[ tokens.length - 1 ];
+            System.arraycopy( tokens, 1, args, 0, args.length );
+        }
+
+        CommandExecutor adapter = getCommand( tokens[ 0 ] );
+        if( adapter == null )
+        {
+            console.println( "Unknown command: " + tokens[ 0 ] );
+            return 4;
+        }
+        else
+        {
+            return adapter.execute( console, args );
+        }
+    }
+
     @Nullable
     public CommandExecutor getCommand( @Nonnull String name )
     {
@@ -248,7 +276,7 @@ public class CommandManager
         }
 
         @Override
-        public void execute( @Nonnull Console console, @Nonnull String... arguments )
+        public int execute( @Nonnull Console console, @Nonnull String... arguments )
                 throws CommandDefinitionException, IllegalUsageException, CommandExecutionException, IOException
         {
             org.apache.commons.cli.Options cliOptions = getCommandCliOptions();
@@ -256,20 +284,26 @@ public class CommandManager
             {
                 CommandLineParser parser = new PosixParser();
                 final CommandLine cmd = parser.parse( cliOptions, arguments, false );
-                this.command.execute( console, new OptionsImpl( cliOptions, cmd, console ) );
+                return this.command.execute( console, new OptionsImpl( cliOptions, cmd, console ) );
             }
             catch( IllegalUsageException | RequiredOptionMissingException | ParseException e )
             {
                 printUsage( console );
                 console.println( e.getMessage() );
+                return 2;
             }
             catch( InsufficientConsoleWidthException e )
             {
                 console.println( e.getMessage() );
+                return 3;
+            }
+            catch( CommandExecutionException e )
+            {
+                throw e;
             }
             catch( Exception e )
             {
-                throw new CommandExecutionException( this.command.getName(), e );
+                throw new CommandExecutionException( this.command.getName(), 1, e );
             }
         }
 
@@ -571,12 +605,20 @@ public class CommandManager
         }
 
         @Override
-        public void execute( @Nonnull final Console console, @Nonnull final Options options ) throws Exception
+        public int execute( @Nonnull final Console console, @Nonnull final Options options ) throws Exception
         {
             Map<String, Object> resolveContext = new HashMap<>();
             resolveContext.put( "console", console );
             resolveContext.put( "options", options );
-            invoker.resolve( resolveContext ).invoke();
+            Object result = invoker.resolve( resolveContext ).invoke();
+            if( result instanceof Number )
+            {
+                return ( ( Number ) result ).intValue();
+            }
+            else
+            {
+                return 0;
+            }
         }
 
         @Nullable
