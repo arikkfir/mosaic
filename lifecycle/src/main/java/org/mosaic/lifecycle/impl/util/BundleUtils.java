@@ -1,8 +1,10 @@
 package org.mosaic.lifecycle.impl.util;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.Version;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWiring;
 
@@ -11,7 +13,8 @@ import org.osgi.framework.wiring.BundleWiring;
  */
 public abstract class BundleUtils
 {
-    public static Bundle findBundle( BundleContext bundleContext, String symbolicName )
+    @Nullable
+    public static Bundle findBundle( @Nonnull BundleContext bundleContext, @Nonnull String symbolicName )
     {
         for( Bundle bundle : bundleContext.getBundles() )
         {
@@ -24,7 +27,25 @@ public abstract class BundleUtils
         return null;
     }
 
-    public static String toString( Bundle bundle )
+    @Nullable
+    public static Bundle findBundle( @Nonnull BundleContext bundleContext,
+                                     @Nonnull String symbolicName,
+                                     @Nonnull Version version )
+    {
+        for( Bundle bundle : bundleContext.getBundles() )
+        {
+            String sname = bundle.getSymbolicName();
+            Version bversion = bundle.getVersion();
+            if( sname != null && sname.equals( symbolicName ) && bversion.equals( version ) )
+            {
+                return bundle;
+            }
+        }
+        return null;
+    }
+
+    @Nonnull
+    public static String toString( @Nullable Bundle bundle )
     {
         if( bundle == null )
         {
@@ -36,7 +57,8 @@ public abstract class BundleUtils
         }
     }
 
-    public static String toString( BundleWiring wiring )
+    @Nonnull
+    public static String toString( @Nullable BundleWiring wiring )
     {
         if( wiring == null )
         {
@@ -48,7 +70,8 @@ public abstract class BundleUtils
         }
     }
 
-    public static String toString( BundleRevision revision )
+    @Nonnull
+    public static String toString( @Nullable BundleRevision revision )
     {
         if( revision == null )
         {
@@ -60,7 +83,8 @@ public abstract class BundleUtils
         }
     }
 
-    public static String toString( BundleContext bundleContext )
+    @Nonnull
+    public static String toString( @Nullable BundleContext bundleContext )
     {
         if( bundleContext != null )
         {
