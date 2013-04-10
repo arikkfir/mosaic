@@ -1,6 +1,7 @@
 package org.mosaic.shell.impl.command.std;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
@@ -14,6 +15,7 @@ import org.mosaic.shell.annotation.*;
 
 import static org.apache.commons.lang3.StringUtils.capitalize;
 import static org.apache.commons.lang3.StringUtils.leftPad;
+import static org.joda.time.Duration.standardSeconds;
 
 /**
  * @author arik
@@ -21,12 +23,36 @@ import static org.apache.commons.lang3.StringUtils.leftPad;
 @Bean
 public class Modules
 {
+    @Nonnull
     private ModuleManager moduleManager;
 
     @ServiceRef
-    public void setModuleManager( ModuleManager moduleManager )
+    public void setModuleManager( @Nonnull ModuleManager moduleManager )
     {
         this.moduleManager = moduleManager;
+    }
+
+    @Command( name = "install-module", label = "Install module", desc = "Install a new module from a given location." )
+    public int installModule( @Nonnull Console console, @Arguments @Nonnull String... locations )
+            throws IOException
+    {
+        int exitCode = 0;
+        for( String location : locations )
+        {
+            URL url = new URL( location );
+            console.println( "Installing module from '" + url + "'..." );
+            try
+            {
+                Module module = this.moduleManager.installModule( url, standardSeconds( 30 ) );
+                module.waitForActivation( standardSeconds( 30 ) );
+            }
+            catch( Exception e )
+            {
+                console.printStackTrace( "Could not install module from '" + location + "': " + e.getMessage(), e );
+                exitCode = 1;
+            }
+        }
+        return exitCode;
     }
 
     @Command( name = "list-modules", label = "List modules", desc = "List installed modules." )
@@ -56,19 +82,19 @@ public class Modules
     @Command( name = "inspect-module", label = "Inspect module(s)", desc = "Inspects and show information about installed modules." )
     public void inspectModule( @Nonnull Console console,
 
-                               @Option @Alias("e") @Desc("use exact matching of module names")
+                               @Option @Alias( "e" ) @Desc( "use exact matching of module names" )
                                boolean exact,
 
-                               @Option @Alias("h") @Desc("show module headers")
+                               @Option @Alias( "h" ) @Desc( "show module headers" )
                                boolean showHeaders,
 
-                               @Option @Alias("s") @Desc("show module service declarations and usages")
+                               @Option @Alias( "s" ) @Desc( "show module service declarations and usages" )
                                boolean showServices,
 
-                               @Option @Alias("p") @Desc("show module package imports and exports")
+                               @Option @Alias( "p" ) @Desc( "show module package imports and exports" )
                                boolean showPackages,
 
-                               @Option @Alias("c") @Desc("show module content")
+                               @Option @Alias( "c" ) @Desc( "show module content" )
                                boolean showContents,
 
                                @Nonnull @Arguments String... moduleNames ) throws IOException
