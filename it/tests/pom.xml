@@ -51,6 +51,11 @@
                     <!-- integration tests take longer, give them more time to complete -->
                     <forkedProcessTimeoutInSeconds>360</forkedProcessTimeoutInSeconds>
 
+                    <!-- system properties-->
+                    <systemPropertyVariables>
+                        <buildDirectory>${project.build.directory}</buildDirectory>
+                    </systemPropertyVariables>
+
                 </configuration>
             </plugin>
             <plugin>
@@ -130,6 +135,15 @@
         </dependency>
 
         <!-- ======================================================================================================= -->
+        <!-- Communication with the bootstrapped Mosaic server is done via SSH                                       -->
+        <!-- ======================================================================================================= -->
+        <dependency>
+            <groupId>net.schmizz</groupId>
+            <artifactId>sshj</artifactId>
+            <version>[0.8.1]</version>
+        </dependency>
+
+        <!-- ======================================================================================================= -->
         <!-- Required for real usage in server bootstrapping and in the tests code                                   -->
         <!-- ======================================================================================================= -->
         <dependency>
@@ -140,6 +154,10 @@
             <groupId>com.google.code.findbugs</groupId>
             <artifactId>jsr305</artifactId>
         </dependency>
+
+        <!-- ======================================================================================================= -->
+        <!-- The test database used                                                                                  -->
+        <!-- ======================================================================================================= -->
         <dependency>
             <groupId>org.hsqldb</groupId>
             <artifactId>hsqldb</artifactId>

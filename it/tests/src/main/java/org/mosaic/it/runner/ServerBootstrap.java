@@ -1,14 +1,13 @@
 package org.mosaic.it.runner;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.Writer;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -18,6 +17,10 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import net.schmizz.sshj.SSHClient;
+import net.schmizz.sshj.connection.channel.direct.Session;
+import net.schmizz.sshj.transport.verification.PromiscuousVerifier;
+import net.schmizz.sshj.userauth.method.AuthNone;
 import org.apache.commons.io.IOUtils;
 import org.hsqldb.Server;
 import org.hsqldb.persist.HsqlProperties;
@@ -27,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import static java.nio.file.Files.*;
 import static java.nio.file.StandardOpenOption.*;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
 
 /**
@@ -39,6 +43,40 @@ public class ServerBootstrap
     private static final Charset UTF_8 = Charset.forName( "UTF-8" );
 
     private static final String SQL_INIT_01;
+
+    public static class CommandResult
+    {
+        private final int exitCode;
+
+        @Nonnull
+        private final String output;
+
+        public CommandResult( int exitCode, @Nonnull String output )
+        {
+            this.exitCode = exitCode;
+            this.output = output;
+        }
+
+        public CommandResult assertSuccess()
+        {
+            if( this.exitCode != 0 )
+            {
+                throw new IllegalStateException( "Command failed" );
+            }
+            return this;
+        }
+
+        public int getExitCode()
+        {
+            return exitCode;
+        }
+
+        @Nonnull
+        public String getOutput()
+        {
+            return output;
+        }
+    }
 
     static
     {
@@ -72,15 +110,15 @@ public class ServerBootstrap
     public ServerBootstrap() throws IOException, SQLException
     {
         // create a temporary directory to extract the server in
-        this.workDirectory = Files.createTempDirectory( "mosaic" );
-        if( !Boolean.getBoolean( "preserveDatabase" ) )
+        this.workDirectory = Paths.get( System.getProperty( "buildDirectory" ), "mosaic" );
+        if( Boolean.getBoolean( "preserveDatabase" ) )
         {
-            this.workDirectory.toFile().deleteOnExit();
-            System.out.println( "Mosaic runner work directory at '" + this.workDirectory + "' will be DELETED" );
+            LOG.info( "Mosaic runner work directory at '{}' will be PRESERVED", this.workDirectory );
         }
         else
         {
-            System.out.println( "Mosaic runner work directory at '" + this.workDirectory + "' will be PRESERVED" );
+            this.workDirectory.toFile().deleteOnExit();
+            LOG.info( "Mosaic runner work directory at '{}' will be DELETED", this.workDirectory );
         }
         deleteDirectory( this.workDirectory.toFile() );
         createDirectories( this.workDirectory );
@@ -142,15 +180,13 @@ public class ServerBootstrap
     }
 
     @Nonnull
-    public ServerBootstrap deploy( @Nonnull Path jar ) throws IOException
+    public CommandResult deployFile( @Nonnull Path jar ) throws IOException
     {
-        LOG.info( "Deploying module at: {}", jar );
-        copy( jar, this.serverDirectory.resolve( "lib" ).resolve( jar.getFileName() ) );
-        return this;
+        return executeCommand( "org.mosaic.core:install-module " + jar.toUri().toURL() ).assertSuccess();
     }
 
     @Nonnull
-    public ServerBootstrap deployTestModule( @Nonnull String index ) throws IOException
+    public CommandResult deployTestModule( @Nonnull String index ) throws IOException
     {
         String testModuleFileName = "test-module-" + index + ".jar";
         URL testModuleUrl = ServerBootstrap.class.getResource( "/" + testModuleFileName );
@@ -159,27 +195,27 @@ public class ServerBootstrap
             throw new IllegalStateException( "Could not locate test module '" + testModuleFileName + "'" );
         }
 
-        Path dest = this.serverDirectory.resolve( "lib" ).resolve( testModuleFileName );
-        LOG.info( "Deploying test module '{}' to: {}", testModuleFileName, dest );
-        try( InputStream in = testModuleUrl.openStream();
-             OutputStream out = newOutputStream( dest, CREATE, WRITE, TRUNCATE_EXISTING ) )
+        return executeCommand( "org.mosaic.core:install-module " + testModuleUrl ).assertSuccess();
+    }
+
+    @Nonnull
+    public CommandResult executeCommand( @Nonnull String commandLine ) throws IOException
+    {
+        try( SSHClient ssh = new SSHClient() )
         {
-            IOUtils.copy( in, out );
+            ssh.addHostKeyVerifier( new PromiscuousVerifier() );
+            ssh.connect( "localhost", 7553 );
+            ssh.auth( "admin", new AuthNone() );
+            try( Session session = ssh.startSession() )
+            {
+                LOG.info( "Sending SSH command '{}' to Mosaic server...", commandLine );
+                final Session.Command cmd = session.exec( commandLine );
+
+                String out = net.schmizz.sshj.common.IOUtils.readFully( cmd.getInputStream() ).toString();
+                cmd.join( 120, SECONDS );
+                return new CommandResult( cmd.getExitStatus(), out );
+            }
         }
-
-        return this;
-    }
-
-    public boolean checkFileExists( @Nonnull String path )
-    {
-        Path file = this.serverDirectory.resolve( path );
-        return Files.exists( file );
-    }
-
-    public boolean checkFileContents( @Nonnull String path, @Nonnull String content ) throws IOException
-    {
-        Path file = this.serverDirectory.resolve( path );
-        return Files.exists( file ) && new String( Files.readAllBytes( file ), "UTF-8" ).equals( content );
     }
 
     private void startHsqlDatabase() throws IOException
@@ -226,8 +262,10 @@ public class ServerBootstrap
 
     private ServerBootstrap startMosaicServer() throws IOException, InterruptedException
     {
+        String command = Boolean.getBoolean( "debug" ) ? "debug" : "start";
+
         LOG.info( "Starting Mosaic server at: {}", this.serverDirectory );
-        ProcessBuilder builder = new ProcessBuilder( "/bin/sh", this.serverDirectory.resolve( "bin/mosaic.sh" ).toString(), "start" );
+        ProcessBuilder builder = new ProcessBuilder( "/bin/sh", this.serverDirectory.resolve( "bin/mosaic.sh" ).toString(), command );
         builder.directory( this.serverDirectory.toFile() );
         builder.environment().put( "MOSAIC_PID_FILE", this.serverDirectory.resolve( "mosaic.pid" ).toString() );
         builder.environment().put( "MOSAIC_JAVA_OPTS", "-Xms1g -Xmx1g" );
@@ -289,7 +327,7 @@ public class ServerBootstrap
                     Path versionFile = path.resolve( "version" );
                     if( exists( versionFile ) && isRegularFile( versionFile ) && isReadable( versionFile ) )
                     {
-                        LOG.info( "Extracted Mosaic server instance to: {}", this.serverDirectory );
+                        LOG.info( "Extracted Mosaic server instance to: {}", path );
                         return path;
                     }
                 }
