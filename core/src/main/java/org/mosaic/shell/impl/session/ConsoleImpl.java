@@ -432,8 +432,8 @@ public class ConsoleImpl implements Console
             }
 
             this.lineLength++;
-            StringBuilder chromeLine = new StringBuilder( this.lineLength );
-            StringBuilder headerLine = new StringBuilder( this.lineLength );
+            StringBuilder chromeLine = new StringBuilder( 1000 );
+            StringBuilder headerLine = new StringBuilder( 1000 );
             for( int i = 0; i < this.titles.size(); i++ )
             {
                 int length = this.lengths.get( i );
