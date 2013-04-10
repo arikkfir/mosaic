@@ -1,11 +1,19 @@
 package org.mosaic.lifecycle.impl;
 
+import com.google.common.io.ByteStreams;
+import com.google.common.io.Files;
+import java.io.*;
+import java.net.URL;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.joda.time.Duration;
+import org.mosaic.Server;
 import org.mosaic.lifecycle.*;
 import org.mosaic.lifecycle.impl.util.ServiceUtils;
 import org.mosaic.util.reflection.impl.MethodHandleFactoryImpl;
@@ -17,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 
+import static java.lang.System.currentTimeMillis;
 import static java.util.Collections.unmodifiableCollection;
 
 /**
@@ -33,6 +42,9 @@ public class ModuleManagerImpl implements ModuleManager, SynchronousBundleListen
     private final BundleContext bundleContext;
 
     @Nonnull
+    private final Server server;
+
+    @Nonnull
     private final MethodHandleFactoryImpl methodHandleFactory;
 
     @Nonnull
@@ -42,9 +54,11 @@ public class ModuleManagerImpl implements ModuleManager, SynchronousBundleListen
     private ServiceRegistration<ModuleManager> moduleManagerRegistration;
 
     public ModuleManagerImpl( @Nonnull BundleContext bundleContext,
+                              @Nonnull Server server,
                               @Nonnull MethodHandleFactoryImpl methodHandleFactory )
     {
         this.bundleContext = bundleContext;
+        this.server = server;
         this.methodHandleFactory = methodHandleFactory;
         this.moduleListeners = new ServiceTracker<>( bundleContext, ModuleListener.class, new ServiceTrackerCustomizer<ModuleListener, ModuleListener>()
         {
@@ -159,6 +173,20 @@ public class ModuleManagerImpl implements ModuleManager, SynchronousBundleListen
         return null;
     }
 
+    @Nullable
+    @Override
+    public Module getModule( @Nonnull String name, @Nonnull String version )
+    {
+        for( ModuleImpl module : this.modules.values() )
+        {
+            if( name.equals( module.getBundle().getSymbolicName() ) && version.equals( module.getVersion() ) )
+            {
+                return module;
+            }
+        }
+        return null;
+    }
+
     @Override
     @Nullable
     public Module getModuleFor( @Nonnull Object target )
@@ -172,6 +200,64 @@ public class ModuleManagerImpl implements ModuleManager, SynchronousBundleListen
         {
             return getModule( bundle.getBundleId() );
         }
+    }
+
+    @Nonnull
+    @Override
+    public Module installModule( @Nonnull URL url, @Nonnull Duration timeout ) throws IOException, InterruptedException
+    {
+        long start = currentTimeMillis();
+        long duration = timeout.getMillis();
+
+        // download URL to a temporary file
+        File tempFile = File.createTempFile( "mosaic.deploy.module", ".jar" );
+        try( InputStream in = url.openStream();
+             OutputStream out = new FileOutputStream( tempFile, false ) )
+        {
+            LOG.info( "Reading module from '{}'..." );
+            ByteStreams.copy( in, out );
+        }
+
+        // read and parse manifest
+        JarFile jarFile = new JarFile( tempFile );
+        Manifest manifest = jarFile.getManifest();
+        if( manifest == null )
+        {
+            throw new IllegalArgumentException( "Location '" + url + "' is not a Mosaic module - does not contain a manifest file" );
+        }
+
+        // extract bundle symbolic name
+        String symbolicName = manifest.getMainAttributes().getValue( "Bundle-SymbolicName" );
+        if( symbolicName == null )
+        {
+            throw new IllegalArgumentException( "Location '" + url + "' is not a Mosaic module - manifest does not contain the 'Bundle-SymbolicName' header" );
+        }
+
+        // extract bundle version
+        String version = manifest.getMainAttributes().getValue( "Bundle-Version" );
+        if( version == null )
+        {
+            throw new IllegalArgumentException( "Location '" + url + "' is not a Mosaic module - manifest does not contain the 'Bundle-Version' header" );
+        }
+
+        // copy jar to lib directory
+        File moduleFile = this.server.getLib().resolve( symbolicName + ".jar" ).toFile();
+        Files.copy( tempFile, moduleFile );
+
+        // now wait until the module is really installed
+        Module module;
+        do
+        {
+            module = getModule( symbolicName, version );
+            if( module != null )
+            {
+                return module;
+            }
+            Thread.sleep( 500 );
+        } while( start + duration < currentTimeMillis() );
+
+        // module not found and the timeout has passed - throw an exception
+        throw new IllegalStateException( "Module from '" + url + "' has not been installed due to unknown reason" );
     }
 
     @Nonnull

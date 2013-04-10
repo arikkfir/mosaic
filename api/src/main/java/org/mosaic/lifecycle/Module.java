@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.joda.time.Duration;
 
 /**
  * @author arik
@@ -29,6 +30,8 @@ public interface Module
 
     @Nonnull
     ModuleState getState();
+
+    void waitForActivation( @Nonnull Duration timeout ) throws InterruptedException;
 
     long getLastModified();
 

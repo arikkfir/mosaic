@@ -47,6 +47,7 @@
 
     <bean id="moduleManager" class="org.mosaic.lifecycle.impl.ModuleManagerImpl">
         <constructor-arg ref="bundleContext"/>
+        <constructor-arg ref="server"/>
         <constructor-arg ref="methodHandleFactory"/>
     </bean>
 

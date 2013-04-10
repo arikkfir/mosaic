@@ -20,6 +20,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.joda.time.Duration;
 import org.mosaic.database.dao.annotation.Dao;
 import org.mosaic.lifecycle.*;
 import org.mosaic.lifecycle.annotation.*;
@@ -40,6 +41,7 @@ import org.springframework.beans.TypeMismatchException;
 import org.springframework.beans.factory.support.BeanDefinitionValidationException;
 import org.springframework.util.ReflectionUtils;
 
+import static java.lang.System.currentTimeMillis;
 import static java.lang.reflect.Modifier.*;
 import static org.mosaic.util.reflection.impl.AnnotationUtils.getAnnotation;
 import static org.springframework.util.ReflectionUtils.getUniqueDeclaredMethods;
@@ -173,6 +175,27 @@ public class ModuleImpl implements Module
     public ModuleState getState()
     {
         return this.state;
+    }
+
+    @Override
+    public void waitForActivation( @Nonnull Duration timeout ) throws InterruptedException
+    {
+        long start = currentTimeMillis();
+        long duration = timeout.getMillis();
+
+        ModuleState state;
+        do
+        {
+            state = getState();
+            if( state == ModuleState.ACTIVE )
+            {
+                return;
+            }
+            Thread.sleep( 500 );
+        } while( start + duration < currentTimeMillis() );
+
+        // module not found and the timeout has passed - throw an exception
+        throw new IllegalStateException( "Module '" + this + "' has not been activated within " + timeout );
     }
 
     @Override
