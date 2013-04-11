@@ -13,8 +13,7 @@ import org.mosaic.lifecycle.annotation.ServiceRef;
 import org.mosaic.shell.Console;
 import org.mosaic.shell.annotation.*;
 
-import static org.apache.commons.lang3.StringUtils.capitalize;
-import static org.apache.commons.lang3.StringUtils.leftPad;
+import static com.google.common.base.Strings.padStart;
 import static org.joda.time.Duration.standardSeconds;
 
 /**
@@ -32,7 +31,7 @@ public class Modules
         this.moduleManager = moduleManager;
     }
 
-    @Command( name = "install-module", label = "Install module", desc = "Install a new module from a given location." )
+    @Command(name = "install-module", label = "Install module", desc = "Install a new module from a given location.")
     public int installModule( @Nonnull Console console, @Arguments @Nonnull String... locations )
             throws IOException
     {
@@ -55,7 +54,7 @@ public class Modules
         return exitCode;
     }
 
-    @Command( name = "list-modules", label = "List modules", desc = "List installed modules." )
+    @Command(name = "list-modules", label = "List modules", desc = "List installed modules.")
     public void listModules( @Nonnull Console console ) throws IOException
     {
         Console.TableHeaders table = console.createTable();
@@ -79,22 +78,22 @@ public class Modules
         printer.done();
     }
 
-    @Command( name = "inspect-module", label = "Inspect module(s)", desc = "Inspects and show information about installed modules." )
+    @Command(name = "inspect-module", label = "Inspect module(s)", desc = "Inspects and show information about installed modules.")
     public void inspectModule( @Nonnull Console console,
 
-                               @Option @Alias( "e" ) @Desc( "use exact matching of module names" )
+                               @Option @Alias("e") @Desc("use exact matching of module names")
                                boolean exact,
 
-                               @Option @Alias( "h" ) @Desc( "show module headers" )
+                               @Option @Alias("h") @Desc("show module headers")
                                boolean showHeaders,
 
-                               @Option @Alias( "s" ) @Desc( "show module service declarations and usages" )
+                               @Option @Alias("s") @Desc("show module service declarations and usages")
                                boolean showServices,
 
-                               @Option @Alias( "p" ) @Desc( "show module package imports and exports" )
+                               @Option @Alias("p") @Desc("show module package imports and exports")
                                boolean showPackages,
 
-                               @Option @Alias( "c" ) @Desc( "show module content" )
+                               @Option @Alias("c") @Desc("show module content")
                                boolean showContents,
 
                                @Nonnull @Arguments String... moduleNames ) throws IOException
@@ -136,12 +135,12 @@ public class Modules
     {
         console.println();
         console.println( "GENERAL INFORMATION" );
-        console.print( 8, leftPad( "ID", 30 ) ).print( ": " ).println( module.getId() );
-        console.print( 8, leftPad( "Name", 30 ) ).print( ": " ).println( module.getName() );
-        console.print( 8, leftPad( "Version", 30 ) ).print( ": " ).println( module.getVersion() );
-        console.print( 8, leftPad( "Location", 30 ) ).print( ": " ).println( module.getPath() );
-        console.print( 8, leftPad( "State", 30 ) ).print( ": " ).println( capitalize( module.getState().name().toLowerCase() ) );
-        console.print( 8, leftPad( "Modification time", 30 ) ).print( ": " ).println( new Date( module.getLastModified() ) );
+        console.print( 8, padStart( "ID", 30, ' ' ) ).print( ": " ).println( module.getId() );
+        console.print( 8, padStart( "Name", 30, ' ' ) ).print( ": " ).println( module.getName() );
+        console.print( 8, padStart( "Version", 30, ' ' ) ).print( ": " ).println( module.getVersion() );
+        console.print( 8, padStart( "Location", 30, ' ' ) ).print( ": " ).println( module.getPath() );
+        console.print( 8, padStart( "State", 30, ' ' ) ).print( ": " ).println( module.getState().name() );
+        console.print( 8, padStart( "Modification time", 30, ' ' ) ).print( ": " ).println( new Date( module.getLastModified() ) );
     }
 
     private void displayModuleHeaders( @Nonnull Console console, @Nonnull Module module ) throws IOException
@@ -153,7 +152,7 @@ public class Modules
             String headerName = entry.getKey();
             if( !"Import-Package".equals( headerName ) && !"Ignore-Package".equals( headerName ) )
             {
-                console.print( 8, leftPad( headerName, 30 ) ).print( ": " ).println( entry.getValue() );
+                console.print( 8, padStart( headerName, 30, ' ' ) ).print( ": " ).println( entry.getValue() );
             }
         }
     }
@@ -172,7 +171,7 @@ public class Modules
             for( Map.Entry<String, Object> entry : export.getProperties().entrySet() )
             {
                 String propertyName = entry.getKey();
-                console.print( 10, leftPad( propertyName, 30 ) ).print( ": " ).println( entry.getValue() );
+                console.print( 10, padStart( propertyName, 30, ' ' ) ).print( ": " ).println( entry.getValue() );
             }
 
             Collection<Module> consumers = export.getConsumers();

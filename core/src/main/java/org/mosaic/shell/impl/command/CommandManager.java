@@ -13,6 +13,7 @@ import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import org.apache.commons.cli.*;
+import org.apache.commons.lang3.ArrayUtils;
 import org.mosaic.lifecycle.MethodEndpoint;
 import org.mosaic.lifecycle.annotation.*;
 import org.mosaic.shell.Command;
@@ -27,7 +28,6 @@ import org.mosaic.util.reflection.MethodParameter;
 import static com.google.common.collect.Collections2.transform;
 import static java.util.Arrays.asList;
 import static java.util.regex.Pattern.quote;
-import static org.apache.commons.lang3.StringUtils.splitByCharacterTypeCamelCase;
 
 /**
  * @author arik
@@ -35,6 +35,47 @@ import static org.apache.commons.lang3.StringUtils.splitByCharacterTypeCamelCase
 @Bean
 public class CommandManager
 {
+    private static String[] splitByCharacterType( String str, boolean camelCase )
+    {
+        if( str == null )
+        {
+            return null;
+        }
+        if( str.length() == 0 )
+        {
+            return ArrayUtils.EMPTY_STRING_ARRAY;
+        }
+        char[] c = str.toCharArray();
+        List<String> list = new ArrayList<>();
+        int tokenStart = 0;
+        int currentType = Character.getType( c[ tokenStart ] );
+        for( int pos = tokenStart + 1; pos < c.length; pos++ )
+        {
+            int type = Character.getType( c[ pos ] );
+            if( type == currentType )
+            {
+                continue;
+            }
+            if( camelCase && type == Character.LOWERCASE_LETTER && currentType == Character.UPPERCASE_LETTER )
+            {
+                int newTokenStart = pos - 1;
+                if( newTokenStart != tokenStart )
+                {
+                    list.add( new String( c, tokenStart, newTokenStart - tokenStart ) );
+                    tokenStart = newTokenStart;
+                }
+            }
+            else
+            {
+                list.add( new String( c, tokenStart, pos - tokenStart ) );
+                tokenStart = pos;
+            }
+            currentType = type;
+        }
+        list.add( new String( c, tokenStart, c.length - tokenStart ) );
+        return list.toArray( new String[ list.size() ] );
+    }
+
     @Nonnull
     private ConversionService conversionService;
 
@@ -48,7 +89,7 @@ public class CommandManager
     }
 
     @ServiceBind
-    public void addCommand( @Nonnull MethodEndpoint endpoint, @ServiceProperty(ServiceProperties.ID) long id )
+    public void addCommand( @Nonnull MethodEndpoint endpoint, @ServiceProperty( ServiceProperties.ID ) long id )
     {
         Map<Long, CommandExecutor> commands = this.commands;
         if( commands != null && endpoint.getType().annotationType().equals( org.mosaic.shell.annotation.Command.class ) )
@@ -58,7 +99,7 @@ public class CommandManager
     }
 
     @ServiceUnbind
-    public void removeCommand( @Nonnull MethodEndpoint endpoint, @ServiceProperty(ServiceProperties.ID) long id )
+    public void removeCommand( @Nonnull MethodEndpoint endpoint, @ServiceProperty( ServiceProperties.ID ) long id )
     {
         Map<Long, CommandExecutor> commands = this.commands;
         if( commands != null && endpoint.getType().annotationType().equals( org.mosaic.shell.annotation.Command.class ) )
@@ -68,7 +109,7 @@ public class CommandManager
     }
 
     @ServiceBind
-    public void addCommand( @Nonnull Command command, @ServiceProperty(ServiceProperties.ID) long id )
+    public void addCommand( @Nonnull Command command, @ServiceProperty( ServiceProperties.ID ) long id )
     {
         Map<Long, CommandExecutor> commands = this.commands;
         if( commands != null )
@@ -78,7 +119,7 @@ public class CommandManager
     }
 
     @ServiceUnbind
-    public void removeCommand( Command command, @ServiceProperty(ServiceProperties.ID) long id )
+    public void removeCommand( Command command, @ServiceProperty( ServiceProperties.ID ) long id )
     {
         Map<Long, CommandExecutor> commands = this.commands;
         if( commands != null )
@@ -235,7 +276,7 @@ public class CommandManager
     private String getLongOptionNameForParameter( MethodParameter parameter )
     {
         StringBuilder buf = new StringBuilder( 100 );
-        for( String token : splitByCharacterTypeCamelCase( parameter.getName() ) )
+        for( String token : splitByCharacterType( parameter.getName(), true ) )
         {
             if( buf.length() > 0 )
             {

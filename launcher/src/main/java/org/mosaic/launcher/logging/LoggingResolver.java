@@ -9,6 +9,7 @@ import ch.qos.logback.core.status.StatusChecker;
 import ch.qos.logback.core.util.StatusPrinter;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import javax.annotation.Nonnull;
@@ -18,7 +19,6 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import static ch.qos.logback.core.status.StatusUtil.filterStatusListByTimeThreshold;
-import static org.apache.commons.io.FileUtils.cleanDirectory;
 import static org.mosaic.launcher.SystemError.bootstrapError;
 import static org.mosaic.launcher.home.HomeResolver.getWelcomeLines;
 
@@ -33,9 +33,12 @@ public class LoggingResolver
         if( Boolean.getBoolean( "dev" ) )
         {
             System.out.println( "Cleaning logs directory..." );
-            try
+            try( DirectoryStream<Path> stream = Files.newDirectoryStream( HomeResolver.logs ) )
             {
-                cleanDirectory( HomeResolver.logs.toFile() );
+                for( Path path : stream )
+                {
+                    deletePath( path );
+                }
             }
             catch( IOException e )
             {
@@ -80,6 +83,25 @@ public class LoggingResolver
             buffer.append( line ).append( '\n' );
         }
         LoggerFactory.getLogger( "org.mosaic" ).info( "\n\n" + buffer + "\n\n" );
+    }
+
+    private static void deletePath( @Nonnull Path path ) throws IOException
+    {
+        try( DirectoryStream<Path> stream = Files.newDirectoryStream( path ) )
+        {
+            for( Path child : stream )
+            {
+                if( Files.isDirectory( child ) )
+                {
+                    LoggingResolver.deletePath( child );
+                }
+                else
+                {
+                    Files.delete( child );
+                }
+            }
+        }
+        Files.delete( path );
     }
 
     private static void applyBuiltinLogbackConfiguration( @Nonnull LoggerContext lc,
