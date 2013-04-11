@@ -13,7 +13,6 @@ import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import org.apache.commons.cli.*;
-import org.apache.commons.lang3.ArrayUtils;
 import org.mosaic.lifecycle.MethodEndpoint;
 import org.mosaic.lifecycle.annotation.*;
 import org.mosaic.shell.Command;
@@ -35,6 +34,8 @@ import static java.util.regex.Pattern.quote;
 @Bean
 public class CommandManager
 {
+    private static final String[] EMPTY_STRING_ARRAY = new String[ 0 ];
+
     private static String[] splitByCharacterType( String str, boolean camelCase )
     {
         if( str == null )
@@ -43,7 +44,7 @@ public class CommandManager
         }
         if( str.length() == 0 )
         {
-            return ArrayUtils.EMPTY_STRING_ARRAY;
+            return EMPTY_STRING_ARRAY;
         }
         char[] c = str.toCharArray();
         List<String> list = new ArrayList<>();

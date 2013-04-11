@@ -1,5 +1,6 @@
 package org.mosaic.it.runner;
 
+import com.google.common.io.Resources;
 import java.io.IOException;
 import java.io.Writer;
 import java.net.URL;
@@ -21,7 +22,6 @@ import net.schmizz.sshj.SSHClient;
 import net.schmizz.sshj.connection.channel.direct.Session;
 import net.schmizz.sshj.transport.verification.PromiscuousVerifier;
 import net.schmizz.sshj.userauth.method.AuthNone;
-import org.apache.commons.io.IOUtils;
 import org.hsqldb.Database;
 import org.hsqldb.Server;
 import org.hsqldb.persist.HsqlProperties;
@@ -95,7 +95,7 @@ public class ServerBootstrap
         }
         try
         {
-            SQL_INIT_01 = IOUtils.toString( sql01Url, "UTF-8" );
+            SQL_INIT_01 = Resources.toString( sql01Url, Charset.forName( "UTF-8" ) );
         }
         catch( IOException e )
         {
