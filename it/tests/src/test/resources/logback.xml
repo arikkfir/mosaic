@@ -30,5 +30,6 @@
     </root>
 
     <logger name="hsqldb" level="WARN"/>
+    <logger name="net.schmizz.sshj" level="WARN"/>
 
 </configuration>

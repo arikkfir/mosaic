@@ -4,8 +4,6 @@ import javax.annotation.Nonnull;
 import org.junit.Test;
 import org.mosaic.it.runner.ServerBootstrap;
 
-import static java.util.regex.Pattern.quote;
-
 /**
  * @author arik
  */
@@ -41,6 +39,16 @@ public class ShellCommandsTests extends BaseServerTest
                 serverBootstrap.deployTestModule( "01" );
             }
         } );
+        doWithServer( new ServerRunnable()
+        {
+            @Override
+            public void run( @Nonnull ServerBootstrap serverBootstrap ) throws Exception
+            {
+                serverBootstrap.deployTestModule( "01" );
+                ServerBootstrap.CommandResult result = serverBootstrap.executeCommand( "test-module-01:checkServerInjected" );
+                assertEquals( "Server service not injected properly", 0, result.getExitCode() );
+            }
+        } );
     }
 
     @Test
@@ -52,15 +60,21 @@ public class ShellCommandsTests extends BaseServerTest
             public void run( @Nonnull ServerBootstrap serverBootstrap ) throws Exception
             {
                 String output = serverBootstrap.executeCommand( "org.mosaic.core:list-modules" ).getOutput();
-                assertTrue( "Help not printed fully or not at all", output.matches( "\\b" + quote( "org.mosaic.api" ) + "\\b" ) );
-                assertTrue( "Help not printed fully or not at all", output.matches( "\\b" + quote( "org.mosaic.lifecycle" ) + "\\b" ) );
-                assertTrue( "Help not printed fully or not at all", output.matches( "\\b" + quote( "org.mosaic.core" ) + "\\b" ) );
+                System.out.println( "List modules output:" );
+                System.out.println( output );
+
+                assertTrue( "Mosaic API bundle not found", output.contains( "org.mosaic.api" ) );
+                assertTrue( "Mosaic lifecycle bundle not found", output.contains( "org.mosaic.lifecycle" ) );
+                assertTrue( "Mosaic core bundle not found", output.contains( "org.mosaic.core" ) );
 
                 serverBootstrap.deployTestModule( "01" );
-                assertTrue( "Help not printed fully or not at all", output.matches( "\\b" + quote( "org.mosaic.api" ) + "\\b" ) );
-                assertTrue( "Help not printed fully or not at all", output.matches( "\\b" + quote( "org.mosaic.lifecycle" ) + "\\b" ) );
-                assertTrue( "Help not printed fully or not at all", output.matches( "\\b" + quote( "org.mosaic.core" ) + "\\b" ) );
-                assertTrue( "Help not printed fully or not at all", output.matches( "\\b" + quote( "test-module-01" ) + "\\b" ) );
+                output = serverBootstrap.executeCommand( "org.mosaic.core:list-modules" ).getOutput();
+                System.out.println( "List modules output (after deployment):" );
+                System.out.println( output );
+                assertTrue( "Mosaic API bundle not found", output.contains( "org.mosaic.api" ) );
+                assertTrue( "Mosaic lifecycle bundle not found", output.contains( "org.mosaic.lifecycle" ) );
+                assertTrue( "Mosaic core bundle not found", output.contains( "org.mosaic.core" ) );
+                assertTrue( "Test module 01 bundle not found", output.contains( "test-module-01" ) );
             }
         } );
     }

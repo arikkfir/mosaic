@@ -22,6 +22,7 @@ import net.schmizz.sshj.connection.channel.direct.Session;
 import net.schmizz.sshj.transport.verification.PromiscuousVerifier;
 import net.schmizz.sshj.userauth.method.AuthNone;
 import org.apache.commons.io.IOUtils;
+import org.hsqldb.Database;
 import org.hsqldb.Server;
 import org.hsqldb.persist.HsqlProperties;
 import org.hsqldb.server.ServerAcl;
@@ -49,11 +50,15 @@ public class ServerBootstrap
         private final int exitCode;
 
         @Nonnull
+        private final String commandLine;
+
+        @Nonnull
         private final String output;
 
-        public CommandResult( int exitCode, @Nonnull String output )
+        public CommandResult( int exitCode, @Nonnull String commandLine, @Nonnull String output )
         {
             this.exitCode = exitCode;
+            this.commandLine = commandLine;
             this.output = output;
         }
 
@@ -61,7 +66,10 @@ public class ServerBootstrap
         {
             if( this.exitCode != 0 )
             {
-                throw new IllegalStateException( "Command failed" );
+                throw new IllegalStateException( "Command failed: " + commandLine + "\n" +
+                                                 "==================================================================\n" +
+                                                 this.output + "\n" +
+                                                 "==================================================================\n" );
             }
             return this;
         }
@@ -95,11 +103,13 @@ public class ServerBootstrap
         }
     }
 
+    private final boolean preserveWorkDir = Boolean.getBoolean( "preserveWorkDir" );
+
     @Nonnull
     private final Path workDirectory;
 
     @Nonnull
-    private final Path globalDatabaseDirectory;
+    private final Path databaseDirectory;
 
     @Nonnull
     private final Path serverDirectory;
@@ -109,36 +119,75 @@ public class ServerBootstrap
 
     public ServerBootstrap() throws IOException, SQLException
     {
-        // create a temporary directory to extract the server in
-        this.workDirectory = Paths.get( System.getProperty( "buildDirectory" ), "mosaic" );
-        if( Boolean.getBoolean( "preserveDatabase" ) )
-        {
-            LOG.info( "Mosaic runner work directory at '{}' will be PRESERVED", this.workDirectory );
-        }
-        else
-        {
-            this.workDirectory.toFile().deleteOnExit();
-            LOG.info( "Mosaic runner work directory at '{}' will be DELETED", this.workDirectory );
-        }
-        deleteDirectory( this.workDirectory.toFile() );
-        createDirectories( this.workDirectory );
+        LOG.info( "" );
+        LOG.info( "" );
 
-        // initialize database directory
-        this.globalDatabaseDirectory = this.workDirectory.resolve( "databases/main" );
+        // initialize our work directories
+        this.workDirectory = createTempDirectory( Paths.get( System.getProperty( "user.dir" ) ), "mosaic" );
+        this.databaseDirectory = this.workDirectory.resolve( "database" );
+        deleteDirectory( this.workDirectory.toFile() );
+
+        LOG.info( "===================================================================================================" );
+        LOG.info( "Mosaic bootstrap work directory is at: {}", this.workDirectory );
+        LOG.info( "Mosaic database directory is at:       {}", this.databaseDirectory );
 
         // extract the mosaic distribution
         this.serverDirectory = extractServer();
-
-        // tells HSQLDB *not* to reconfigure log4j etc
-        System.setProperty( "hsqldb.reconfig_logging", "false" );
+        LOG.info( "Extracted Mosaic server instance to:   {}", this.serverDirectory );
     }
 
     @Nonnull
     public ServerBootstrap start() throws IOException, InterruptedException, SQLException
     {
         startHsqlDatabase();
-        initializeHsqlDatabase();
-        startMosaicServer();
+        try
+        {
+            initializeHsqlDatabase();
+        }
+        catch( Exception e )
+        {
+            stopHsqlDatabase();
+            throw e;
+        }
+
+        try
+        {
+            startMosaicServer();
+        }
+        catch( Exception e )
+        {
+            stopHsqlDatabase();
+            throw e;
+        }
+        return this;
+    }
+
+    @Nonnull
+    public ServerBootstrap shutdown() throws InterruptedException, IOException
+    {
+        try
+        {
+            stopMosaicServer();
+        }
+        catch( Exception e )
+        {
+            LOG.error( "Could not shutdown Mosaic server: {}", e.getMessage(), e );
+        }
+
+        try
+        {
+            stopHsqlDatabase();
+        }
+        catch( Exception e )
+        {
+            LOG.error( "Could not shutdown HSQL database: {}", e.getMessage(), e );
+        }
+
+        if( !this.preserveWorkDir )
+        {
+            LOG.info( "Deleting work directory..." );
+            deleteDirectory( this.workDirectory.toFile() );
+        }
         return this;
     }
 
@@ -156,26 +205,6 @@ public class ServerBootstrap
         {
             databaseProperties.store( writer, "Created automatically by Mosaic runner module for integration tests" );
         }
-        return this;
-    }
-
-    @Nonnull
-    public ServerBootstrap shutdown() throws InterruptedException, IOException
-    {
-        LOG.info( "Stopping Mosaic server..." );
-        ProcessBuilder builder = new ProcessBuilder( "/bin/sh", this.serverDirectory.resolve( "bin/mosaic.sh" ).toString(), "stop" );
-        builder.directory( this.serverDirectory.toFile() );
-        builder.environment().put( "MOSAIC_PID_FILE", this.serverDirectory.resolve( "mosaic.pid" ).toString() );
-        builder.environment().put( "MOSAIC_JAVA_OPTS", "-Xms1g -Xmx1g" );
-        builder.start().waitFor();
-
-        LOG.info( "Stopping database server..." );
-        if( this.databaseServer != null )
-        {
-            this.databaseServer.shutdown();
-        }
-        this.databaseServer = null;
-
         return this;
     }
 
@@ -213,7 +242,7 @@ public class ServerBootstrap
 
                 String out = net.schmizz.sshj.common.IOUtils.readFully( cmd.getInputStream() ).toString();
                 cmd.join( 120, SECONDS );
-                return new CommandResult( cmd.getExitStatus(), out );
+                return new CommandResult( cmd.getExitStatus(), commandLine, out );
             }
         }
     }
@@ -222,7 +251,7 @@ public class ServerBootstrap
     {
         LOG.info( "Starting HSQL database server..." );
         HsqlProperties p = new HsqlProperties();
-        p.setProperty( "server.database.0", "file:" + this.globalDatabaseDirectory );
+        p.setProperty( "server.database.0", "file:" + this.databaseDirectory.resolve( "main" ) );
         p.setProperty( "server.dbname.0", "main" );
         p.setProperty( "server.silent", "false" );
         p.setProperty( "server.remote_open", "true" );
@@ -242,8 +271,12 @@ public class ServerBootstrap
         {
             throw new IllegalStateException( "Could not initialize/create HSQL database: " + e.getMessage(), e );
         }
-        server.setLogWriter( null ); // can use custom writer
-        server.setErrWriter( null ); // can use custom writer
+
+        if( !Boolean.getBoolean( "hsqlLog" ) )
+        {
+            server.setLogWriter( null );
+            server.setErrWriter( null );
+        }
         server.start();
         this.databaseServer = server;
     }
@@ -260,16 +293,26 @@ public class ServerBootstrap
         }
     }
 
-    private ServerBootstrap startMosaicServer() throws IOException, InterruptedException
+    private void stopHsqlDatabase()
     {
-        String command = Boolean.getBoolean( "debug" ) ? "debug" : "start";
+        LOG.info( "Stopping database server..." );
+        if( this.databaseServer != null )
+        {
+            this.databaseServer.shutdownWithCatalogs( Database.CLOSEMODE_NORMAL );
+        }
+        this.databaseServer = null;
+    }
 
-        LOG.info( "Starting Mosaic server at: {}", this.serverDirectory );
-        ProcessBuilder builder = new ProcessBuilder( "/bin/sh", this.serverDirectory.resolve( "bin/mosaic.sh" ).toString(), command );
+    private Process startMosaicServer() throws IOException, InterruptedException
+    {
+        LOG.info( "Starting Mosaic server...", this.serverDirectory );
+        ProcessBuilder builder = new ProcessBuilder( "/bin/sh", this.serverDirectory.resolve( "bin/mosaic.sh" ).toString(), "start" );
         builder.directory( this.serverDirectory.toFile() );
         builder.environment().put( "MOSAIC_PID_FILE", this.serverDirectory.resolve( "mosaic.pid" ).toString() );
         builder.environment().put( "MOSAIC_JAVA_OPTS", "-Xms1g -Xmx1g" );
-        builder.start();
+        builder.redirectErrorStream( true );
+        builder.redirectOutput( ProcessBuilder.Redirect.INHERIT );
+        Process process = builder.start();
 
         // wait until it fully starts or aborts
         long start = System.currentTimeMillis();
@@ -283,13 +326,27 @@ public class ServerBootstrap
                 String contents = new String( readAllBytes( globalLogFile ), "UTF-8" );
                 if( contents.contains( "Mosaic server is running " ) )
                 {
-                    return this;
+                    return process;
                 }
             }
         }
 
         // failed to start?
+        process.destroy();
+        process.waitFor();
         throw new IllegalStateException( "Mosaic server did not seem to start! (log file did not contain the line 'Mosaic server is running')" );
+    }
+
+    private void stopMosaicServer() throws InterruptedException, IOException
+    {
+        LOG.info( "Stopping Mosaic server..." );
+        ProcessBuilder builder = new ProcessBuilder( "/bin/sh", this.serverDirectory.resolve( "bin/mosaic.sh" ).toString(), "stop" );
+        builder.directory( this.serverDirectory.toFile() );
+        builder.environment().put( "MOSAIC_PID_FILE", this.serverDirectory.resolve( "mosaic.pid" ).toString() );
+        builder.environment().put( "MOSAIC_JAVA_OPTS", "-Xms1g -Xmx1g" );
+        builder.redirectErrorStream( true );
+        builder.redirectOutput( ProcessBuilder.Redirect.INHERIT );
+        builder.start().waitFor();
     }
 
     private Path extractServer() throws IOException
@@ -327,7 +384,6 @@ public class ServerBootstrap
                     Path versionFile = path.resolve( "version" );
                     if( exists( versionFile ) && isRegularFile( versionFile ) && isReadable( versionFile ) )
                     {
-                        LOG.info( "Extracted Mosaic server instance to: {}", path );
                         return path;
                     }
                 }
