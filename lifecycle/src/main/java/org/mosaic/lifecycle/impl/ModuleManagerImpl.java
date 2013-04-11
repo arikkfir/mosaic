@@ -2,6 +2,7 @@ package org.mosaic.lifecycle.impl;
 
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
+import com.google.common.io.Flushables;
 import java.io.*;
 import java.net.URL;
 import java.util.Collection;
@@ -214,8 +215,9 @@ public class ModuleManagerImpl implements ModuleManager, SynchronousBundleListen
         try( InputStream in = url.openStream();
              OutputStream out = new FileOutputStream( tempFile, false ) )
         {
-            LOG.info( "Reading module from '{}'..." );
+            LOG.info( "Reading module from '{}'...", url );
             ByteStreams.copy( in, out );
+            Flushables.flush( out, false );
         }
 
         // read and parse manifest
@@ -254,10 +256,10 @@ public class ModuleManagerImpl implements ModuleManager, SynchronousBundleListen
                 return module;
             }
             Thread.sleep( 500 );
-        } while( start + duration < currentTimeMillis() );
+        } while( start + duration > currentTimeMillis() );
 
         // module not found and the timeout has passed - throw an exception
-        throw new IllegalStateException( "Module from '" + url + "' has not been installed due to unknown reason" );
+        throw new IllegalStateException( "Module from '" + url + "' has not been installed due to unknown reason (could not find module named '" + symbolicName + ":" + version + ")" );
     }
 
     @Nonnull

@@ -192,7 +192,7 @@ public class ModuleImpl implements Module
                 return;
             }
             Thread.sleep( 500 );
-        } while( start + duration < currentTimeMillis() );
+        } while( start + duration > currentTimeMillis() );
 
         // module not found and the timeout has passed - throw an exception
         throw new IllegalStateException( "Module '" + this + "' has not been activated within " + timeout );
