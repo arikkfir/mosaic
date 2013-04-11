@@ -62,7 +62,6 @@
                             !org.codehaus.groovy*,
                             !org.hibernate.validator*,
                             !org.jgraph*,
-                            !org.joda*,
                             !org.jruby*,
                             !org.omg.CORBA*,
                             !org.quartz*,
@@ -101,6 +100,10 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>joda-time</groupId>
+            <artifactId>joda-time</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
