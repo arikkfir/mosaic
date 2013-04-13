@@ -23,13 +23,15 @@ import org.mosaic.lifecycle.annotation.Service;
 import org.mosaic.lifecycle.annotation.ServiceRef;
 import org.mosaic.security.User;
 import org.mosaic.security.credentials.Password;
+import org.mosaic.security.credentials.PublicKeys;
 import org.mosaic.security.localusers.LocalUser;
 import org.mosaic.security.realm.MutableUser;
 import org.mosaic.security.realm.Realm;
 import org.mosaic.util.io.FileVisitorAdapter;
+import org.mosaic.util.xml.impl.StrictErrorHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.*;
+import org.xml.sax.SAXException;
 
 /**
  * @author arik
@@ -39,16 +41,12 @@ public class LocalUsersRealm extends FileVisitorAdapter implements Realm, Servic
 {
     private static final Logger LOG = LoggerFactory.getLogger( LocalUsersRealm.class );
 
-    private static final StrictErrorHandler STRICT_ERROR_HANDLER = new StrictErrorHandler();
-
-    private static final LocalUsersRealmEntityResolver LOCAL_USERS_REALM_ENTITY_RESOLVER = new LocalUsersRealmEntityResolver();
-
     private static final Schema USERS_SCHEMA;
 
     static
     {
         SchemaFactory schemaFactory = SchemaFactory.newInstance( XMLConstants.W3C_XML_SCHEMA_NS_URI );
-        schemaFactory.setErrorHandler( STRICT_ERROR_HANDLER );
+        schemaFactory.setErrorHandler( StrictErrorHandler.INSTANCE );
         try
         {
             USERS_SCHEMA = schemaFactory.newSchema( LocalUser.class.getResource( "users.xsd" ) );
@@ -56,37 +54,6 @@ public class LocalUsersRealm extends FileVisitorAdapter implements Realm, Servic
         catch( SAXException e )
         {
             throw new IllegalStateException( "Could not find 'users.xsd' schema resource in Mosaic API bundle: " + e.getMessage(), e );
-        }
-    }
-
-    private static class StrictErrorHandler implements ErrorHandler
-    {
-        @Override
-        public void warning( SAXParseException exception ) throws SAXException
-        {
-            throw exception;
-        }
-
-        @Override
-        public void error( SAXParseException exception ) throws SAXException
-        {
-            throw exception;
-        }
-
-        @Override
-        public void fatalError( SAXParseException exception ) throws SAXException
-        {
-            throw exception;
-        }
-    }
-
-    private static class LocalUsersRealmEntityResolver implements EntityResolver
-    {
-        @Override
-        public InputSource resolveEntity( String publicId, String systemId ) throws SAXException, IOException
-        {
-            LOG.info( "Resolving public ID '{} with system ID '{}'" );
-            return null;
         }
     }
 
@@ -128,6 +95,12 @@ public class LocalUsersRealm extends FileVisitorAdapter implements Realm, Servic
             user.addCredential( userInfo.password );
         }
 
+        // add public keys credentials if the local user has one
+        if( userInfo.publicKeys != null )
+        {
+            user.addCredential( userInfo.publicKeys );
+        }
+
         // add local user's roles
         for( String role : userInfo.roles )
         {
@@ -142,7 +115,10 @@ public class LocalUsersRealm extends FileVisitorAdapter implements Realm, Servic
     @Override
     public DP[] getServiceProperties()
     {
-        return new DP[] { DP.dp( "root", this.server.getEtc().resolve( "users.xml" ) ) };
+        return new DP[] {
+                DP.dp( "root", this.server.getEtc().resolve( "users.xml" ) ),
+                DP.dp( "name", "local" )
+        };
     }
 
     @Override
@@ -150,8 +126,7 @@ public class LocalUsersRealm extends FileVisitorAdapter implements Realm, Servic
     {
         Digester digester = new Digester();
         digester.setClassLoader( getClass().getClassLoader() );
-        digester.setEntityResolver( LOCAL_USERS_REALM_ENTITY_RESOLVER );
-        digester.setErrorHandler( STRICT_ERROR_HANDLER );
+        digester.setErrorHandler( StrictErrorHandler.INSTANCE );
         digester.setLogger( LogFactory.getLog( getClass().getName() + ".digester" ) );
         digester.setNamespaceAware( true );
         digester.setSAXLogger( LogFactory.getLog( getClass().getName() + ".sax" ) );
@@ -164,6 +139,7 @@ public class LocalUsersRealm extends FileVisitorAdapter implements Realm, Servic
         digester.addCallMethod( "users/user/password", "setPassword", 2 );
         digester.addCallParam( "users/user/password", 0, "value" );
         digester.addCallParam( "users/user/password", 0, "encryption" );
+        digester.addBeanPropertySetter( "users/user/public-keys", "publicKeys" );
         digester.addCallMethod( "users/user/roles/role", "addRole", 1 );
         digester.addCallParam( "users/user/roles/role", 0 );
         digester.addSetNext( "users/user", "addUser" );
@@ -226,6 +202,9 @@ public class LocalUsersRealm extends FileVisitorAdapter implements Realm, Servic
         @Nullable
         private Password password;
 
+        @Nullable
+        private PublicKeys publicKeys;
+
         @Nonnull
         private Set<String> roles = new HashSet<>();
 
@@ -245,6 +224,23 @@ public class LocalUsersRealm extends FileVisitorAdapter implements Realm, Servic
         private void setPassword( @Nonnull String password, @Nonnull String encryption )
         {
             this.password = new PasswordImpl( password, PasswordEncryption.valueOf( encryption.toUpperCase() ) );
+        }
+
+        @SuppressWarnings( "UnusedDeclaration" )
+        private void setPublicKeys( @Nullable String publicKeys ) throws IOException
+        {
+            if( publicKeys == null || publicKeys.trim().isEmpty() )
+            {
+                this.publicKeys = null;
+            }
+            else
+            {
+                AuthorizedKeys authorizedKeys = new AuthorizedKeys( publicKeys );
+                if( !authorizedKeys.getKeys().isEmpty() )
+                {
+                    this.publicKeys = authorizedKeys;
+                }
+            }
         }
     }
 }

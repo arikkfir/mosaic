@@ -9,26 +9,25 @@
  * Contributors:
  *     Gunnar Wagenknecht - initial API and implementation
  */
-package org.mosaic.shell.impl.auth;
+package org.mosaic.security.localusers.impl;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
+import java.security.interfaces.DSAPublicKey;
+import java.security.interfaces.RSAPublicKey;
 import java.security.spec.DSAPublicKeySpec;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.apache.mina.util.Base64;
+import org.mosaic.security.credentials.PublicKeys;
 
 /**
  * Copied from Eclipse git bundle to enable Rinku SSH shell. Many thanks to the bright people, Gunnar in particular as
@@ -36,7 +35,7 @@ import org.apache.mina.util.Base64;
  *
  * @author Gunnar Wagenknecht
  */
-public class AuthorizedKeys
+public class AuthorizedKeys implements PublicKeys
 {
     private static final String PREFIX_KEY_TYPE = "ssh-";
 
@@ -81,10 +80,10 @@ public class AuthorizedKeys
     @Nonnull
     private final List<PublicKey> keys;
 
-    public AuthorizedKeys( @Nonnull Path authorizedKeysFile ) throws IOException
+    public AuthorizedKeys( @Nonnull String authorizedPublicKeys ) throws IOException
     {
         List<PublicKey> keys = new ArrayList<>();
-        try( Scanner scanner = new Scanner( authorizedKeysFile ) )
+        try( Scanner scanner = new Scanner( authorizedPublicKeys ) )
         {
             // configure to read line by line
             scanner.useDelimiter( NEWLINE );
@@ -118,18 +117,71 @@ public class AuthorizedKeys
         this.keys = Collections.unmodifiableList( keys );
     }
 
+    @Override
+    public Iterator<PublicKey> iterator()
+    {
+        return this.keys.iterator();
+    }
+
     @Nonnull
     public List<PublicKey> getKeys()
     {
         return keys;
     }
 
-    @Nonnull
-    private BigInteger readBigInteger( @Nonnull ByteBuffer buffer )
+    @Override
+    public boolean authorizedFor( @Nonnull PublicKey key ) throws IOException
     {
-        byte[] bytes = new byte[ buffer.getInt() ];
-        buffer.get( bytes );
-        return new BigInteger( bytes );
+        for( PublicKey authorizedKey : this.keys )
+        {
+            if( isSameKey( authorizedKey, key ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isSameKey( PublicKey k1, PublicKey k2 ) throws IOException
+    {
+        if( ( k1 instanceof DSAPublicKey ) && ( k2 instanceof DSAPublicKey ) )
+        {
+            return isSameDSAKey( ( DSAPublicKey ) k1, ( DSAPublicKey ) k2 );
+        }
+        else if( ( k1 instanceof RSAPublicKey ) && ( k2 instanceof RSAPublicKey ) )
+        {
+            return isSameRSAKey( ( RSAPublicKey ) k1, ( RSAPublicKey ) k2 );
+        }
+        else
+        {
+            throw new IOException( "Unsupported key types detected! (" + k1 + " and " + k2 + ")" );
+        }
+    }
+
+    private boolean isSameRSAKey( RSAPublicKey k1, RSAPublicKey k2 )
+    {
+        return k1.getPublicExponent().equals( k2.getPublicExponent() ) && k1.getModulus().equals( k2.getModulus() );
+    }
+
+    @SuppressWarnings( "SimplifiableIfStatement" )
+    private boolean isSameDSAKey( DSAPublicKey k1, DSAPublicKey k2 )
+    {
+        if( !k1.getY().equals( k2.getY() ) )
+        {
+            return false;
+        }
+        else if( !k1.getParams().getG().equals( k2.getParams().getG() ) )
+        {
+            return false;
+        }
+        else if( !k1.getParams().getP().equals( k2.getParams().getP() ) )
+        {
+            return false;
+        }
+        else
+        {
+            return k1.getParams().getQ().equals( k2.getParams().getQ() );
+        }
     }
 
     @Nonnull
@@ -202,6 +254,14 @@ public class AuthorizedKeys
             default:
                 throw new IOException( "not implemented: " + type );
         }
+    }
+
+    @Nonnull
+    private BigInteger readBigInteger( @Nonnull ByteBuffer buffer )
+    {
+        byte[] bytes = new byte[ buffer.getInt() ];
+        buffer.get( bytes );
+        return new BigInteger( bytes );
     }
 
     private String readString( @Nonnull ByteBuffer buffer )
