@@ -1,27 +1,22 @@
 package org.mosaic.security;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.mosaic.util.collect.MapEx;
 
 /**
  * @author arik
  */
-public interface User extends Map<String, Object>
+public interface User extends MapEx<String, Object>
 {
     @Nonnull
     String getName();
 
     @Nonnull
     Set<String> getRoles();
-
-    @Nonnull
-    Set<Principal> getPrincipals();
-
-    @Nonnull
-    Map<String, Principal> getPrincipalsMap();
 
     boolean is( @Nonnull String type );
 
@@ -35,11 +30,14 @@ public interface User extends Map<String, Object>
     <T extends Principal> T requirePrincipal( @Nonnull Class<T> type );
 
     @Nonnull
-    List<Object> getCredentials();
+    Map<String, Principal> getPrincipals();
 
     @Nullable
     <T> T getCredential( @Nonnull Class<T> type );
 
     @Nonnull
     <T> T requireCredential( @Nonnull Class<T> type );
+
+    @Nonnull
+    Collection<Object> getCredentials();
 }

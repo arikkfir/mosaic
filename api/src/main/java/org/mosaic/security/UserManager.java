@@ -9,9 +9,6 @@ import javax.annotation.Nullable;
 public interface UserManager
 {
     @Nullable
-    User loadUser( @Nonnull String userName );
-
-    @Nullable
     User loadUser( @Nonnull String realmName, @Nonnull String userName );
 
     @Nonnull

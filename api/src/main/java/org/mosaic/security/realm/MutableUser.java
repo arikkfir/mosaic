@@ -10,9 +10,6 @@ import org.mosaic.security.User;
 public interface MutableUser extends User
 {
     @Nonnull
-    MutableUser setName( @Nonnull String name );
-
-    @Nonnull
     MutableUser addRole( @Nonnull String role );
 
     @Nonnull

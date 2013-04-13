@@ -10,5 +10,5 @@ public interface Realm
     @Nonnull
     String getName();
 
-    boolean loadUser( @Nonnull MutableUser user, @Nonnull String userName );
+    boolean loadUser( @Nonnull MutableUser user );
 }
