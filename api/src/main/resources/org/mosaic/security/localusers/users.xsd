@@ -16,7 +16,8 @@
 
     <xsd:complexType name="userType">
         <xsd:sequence>
-            <xsd:element type="passwordType" name="password" minOccurs="1" maxOccurs="1"/>
+            <xsd:element type="passwordType" name="password" minOccurs="0" maxOccurs="1"/>
+            <xsd:element type="xsd:string" name="public-keys" minOccurs="0" maxOccurs="1"/>
             <xsd:element type="rolesType" name="roles" minOccurs="0" maxOccurs="1"/>
         </xsd:sequence>
         <xsd:attribute name="name" type="xsd:string" use="required"/>
