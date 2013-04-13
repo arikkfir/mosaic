@@ -3,6 +3,7 @@ package org.mosaic.util.collect;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import org.mosaic.util.convert.ConversionService;
 
 import static java.lang.String.format;
@@ -50,7 +51,7 @@ public class LinkedHashMapEx<K, V> extends LinkedHashMap<K, V> implements MapEx<
     }
 
     @Override
-    public V get( K key, V defaultValue )
+    public V get( @Nonnull K key, @Nullable V defaultValue )
     {
         V value = get( key );
         if( value == null )
@@ -63,8 +64,9 @@ public class LinkedHashMapEx<K, V> extends LinkedHashMap<K, V> implements MapEx<
         }
     }
 
+    @Nonnull
     @Override
-    public V require( K key )
+    public V require( @Nonnull K key )
     {
         V value = get( key );
         if( value == null )
@@ -78,7 +80,7 @@ public class LinkedHashMapEx<K, V> extends LinkedHashMap<K, V> implements MapEx<
     }
 
     @Override
-    public <T> T get( K key, Class<T> type )
+    public <T> T get( @Nonnull K key, @Nonnull Class<T> type )
     {
         V value = get( key );
         if( value == null )
@@ -95,8 +97,9 @@ public class LinkedHashMapEx<K, V> extends LinkedHashMap<K, V> implements MapEx<
         }
     }
 
+    @Nonnull
     @Override
-    public <T> T require( K key, Class<T> type )
+    public <T> T require( @Nonnull K key, @Nonnull Class<T> type )
     {
         T value = get( key, type );
         if( value == null )
@@ -110,7 +113,7 @@ public class LinkedHashMapEx<K, V> extends LinkedHashMap<K, V> implements MapEx<
     }
 
     @Override
-    public <T> T get( K key, Class<T> type, T defaultValue )
+    public <T> T get( @Nonnull K key, @Nonnull Class<T> type, @Nullable T defaultValue )
     {
         T value = get( key, type );
         if( value == null )

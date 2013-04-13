@@ -3,6 +3,7 @@ package org.mosaic.util.collect;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import org.mosaic.util.convert.ConversionService;
 
 import static java.lang.String.format;
@@ -41,7 +42,7 @@ public class HashMapEx<K, V> extends HashMap<K, V> implements MapEx<K, V>
     }
 
     @Override
-    public V get( K key, V defaultValue )
+    public V get( @Nonnull K key, @Nullable V defaultValue )
     {
         V value = get( key );
         if( value == null )
@@ -54,8 +55,9 @@ public class HashMapEx<K, V> extends HashMap<K, V> implements MapEx<K, V>
         }
     }
 
+    @Nonnull
     @Override
-    public V require( K key )
+    public V require( @Nonnull K key )
     {
         V value = get( key );
         if( value == null )
@@ -69,7 +71,7 @@ public class HashMapEx<K, V> extends HashMap<K, V> implements MapEx<K, V>
     }
 
     @Override
-    public <T> T get( K key, Class<T> type )
+    public <T> T get( @Nonnull K key, @Nonnull Class<T> type )
     {
         V value = get( key );
         if( value == null )
@@ -86,8 +88,9 @@ public class HashMapEx<K, V> extends HashMap<K, V> implements MapEx<K, V>
         }
     }
 
+    @Nonnull
     @Override
-    public <T> T require( K key, Class<T> type )
+    public <T> T require( @Nonnull K key, @Nonnull Class<T> type )
     {
         T value = get( key, type );
         if( value == null )
@@ -101,7 +104,7 @@ public class HashMapEx<K, V> extends HashMap<K, V> implements MapEx<K, V>
     }
 
     @Override
-    public <T> T get( K key, Class<T> type, T defaultValue )
+    public <T> T get( @Nonnull K key, @Nonnull Class<T> type, @Nullable T defaultValue )
     {
         T value = get( key, type );
         if( value == null )
