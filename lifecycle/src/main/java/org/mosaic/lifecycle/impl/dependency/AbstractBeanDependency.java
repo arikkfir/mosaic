@@ -1,9 +1,9 @@
 package org.mosaic.lifecycle.impl.dependency;
 
-import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.lifecycle.annotation.ServiceProperty;
+import org.mosaic.util.collect.MapEx;
 import org.mosaic.util.reflection.MethodHandle;
 import org.mosaic.util.reflection.MethodParameter;
 import org.osgi.framework.ServiceReference;
@@ -17,12 +17,12 @@ public abstract class AbstractBeanDependency extends AbstractDependency
     {
         @Nullable
         @Override
-        public Object resolve( @Nonnull MethodParameter parameter, @Nonnull Map<String, Object> resolveContext )
+        public Object resolve( @Nonnull MethodParameter parameter, @Nonnull MapEx<String, Object> resolveContext )
         {
             final ServiceProperty annotation = parameter.getAnnotation( ServiceProperty.class );
             if( annotation != null )
             {
-                ServiceReference<?> serviceReference = ( ServiceReference<?> ) resolveContext.get( "serviceReference" );
+                ServiceReference<?> serviceReference = resolveContext.get( "serviceReference", ServiceReference.class );
                 if( serviceReference != null )
                 {
                     String propertyName = annotation.value();
@@ -45,7 +45,7 @@ public abstract class AbstractBeanDependency extends AbstractDependency
     {
         @Nullable
         @Override
-        public Object resolve( @Nonnull MethodParameter parameter, @Nonnull Map<String, Object> resolveContext )
+        public Object resolve( @Nonnull MethodParameter parameter, @Nonnull MapEx<String, Object> resolveContext )
         {
             return resolveContext.get( "service" );
         }

@@ -6,6 +6,7 @@ import java.util.*;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.lifecycle.impl.ModuleImpl;
+import org.mosaic.util.collect.MapEx;
 import org.mosaic.util.pair.ImmutableComparablePair;
 import org.mosaic.util.pair.Pair;
 import org.mosaic.util.reflection.MethodHandle;
@@ -37,7 +38,7 @@ public class ServiceRefsDependency extends AbstractBeanDependency implements Ser
     {
         @Nullable
         @Override
-        public Object resolve( @Nonnull MethodParameter parameter, @Nonnull Map<String, Object> resolveContext )
+        public Object resolve( @Nonnull MethodParameter parameter, @Nonnull MapEx<String, Object> resolveContext )
         {
             return resolveContext.get( "services" );
         }

@@ -18,6 +18,7 @@
 
     <bean id="methodHandleFactory" class="org.mosaic.util.reflection.impl.MethodHandleFactoryImpl">
         <constructor-arg ref="bundleContext"/>
+        <constructor-arg ref="conversionService"/>
     </bean>
 
     <bean id="metricsSpi" class="org.mosaic.lifecycle.spi.MetricsSpi">

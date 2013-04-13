@@ -10,7 +10,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.lifecycle.impl.util.ServiceUtils;
+import org.mosaic.util.collect.HashMapEx;
 import org.mosaic.util.collect.MapEx;
+import org.mosaic.util.convert.ConversionService;
 import org.mosaic.util.pair.MutablePair;
 import org.mosaic.util.reflection.MethodHandle;
 import org.mosaic.util.reflection.MethodHandleFactory;
@@ -46,9 +48,13 @@ public class MethodHandleFactoryImpl implements MethodHandleFactory, Initializin
     @Nullable
     private ServiceRegistration<MethodHandleFactory> serviceRegistration;
 
-    public MethodHandleFactoryImpl( @Nonnull BundleContext bundleContext )
+    @Nonnull
+    private ConversionService conversionService;
+
+    public MethodHandleFactoryImpl( @Nonnull BundleContext bundleContext, @Nonnull ConversionService conversionService )
     {
         this.bundleContext = bundleContext;
+        this.conversionService = conversionService;
     }
 
     @Override
@@ -429,6 +435,15 @@ public class MethodHandleFactoryImpl implements MethodHandleFactory, Initializin
             @Override
             public Invocation resolve( @Nonnull Map<String, Object> resolveContext )
             {
+                MapEx<String, Object> context;
+                if( resolveContext instanceof MapEx )
+                {
+                    context = ( MapEx<String, Object> ) resolveContext;
+                }
+                else
+                {
+                    context = new HashMapEx<>( resolveContext, conversionService );
+                }
                 Object[] arguments = new Object[ parameters.size() ];
                 for( int i = 0; i < parameters.size(); i++ )
                 {
@@ -440,7 +455,7 @@ public class MethodHandleFactoryImpl implements MethodHandleFactory, Initializin
                     {
                         try
                         {
-                            Object argument = resolver.resolve( parameter, resolveContext );
+                            Object argument = resolver.resolve( parameter, context );
                             if( argument != ParameterResolver.SKIP )
                             {
                                 // resolved a value for this parameter

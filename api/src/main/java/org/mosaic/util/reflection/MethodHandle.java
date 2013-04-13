@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.mosaic.util.collect.MapEx;
 
 /**
  * @author arik
@@ -91,7 +92,7 @@ public interface MethodHandle
         Object SKIP = new Object();
 
         @Nullable
-        Object resolve( @Nonnull MethodParameter parameter, @Nonnull Map<String, Object> resolveContext );
+        Object resolve( @Nonnull MethodParameter parameter, @Nonnull MapEx<String, Object> resolveContext );
     }
 
     interface Invoker

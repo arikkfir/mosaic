@@ -25,6 +25,7 @@ import org.mosaic.lifecycle.MethodEndpoint;
 import org.mosaic.lifecycle.ServicePropertiesProvider;
 import org.mosaic.lifecycle.annotation.*;
 import org.mosaic.util.collect.HashMapEx;
+import org.mosaic.util.collect.MapEx;
 import org.mosaic.util.convert.ConversionService;
 import org.mosaic.util.reflection.MethodHandle;
 import org.mosaic.util.reflection.MethodParameter;
@@ -36,7 +37,7 @@ import static com.google.common.collect.Multimaps.synchronizedMultimap;
 /**
  * @author arik
  */
-@Service(FileVisitor.class)
+@Service( FileVisitor.class )
 public class ConfigurationManager implements FileVisitor<Path>, ServicePropertiesProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger( ConfigurationManager.class );
@@ -86,7 +87,7 @@ public class ConfigurationManager implements FileVisitor<Path>, ServicePropertie
         this.configurations = null;
     }
 
-    @ServiceBind(updates = false)
+    @ServiceBind( updates = false )
     public void addConfigurable( @Nonnull MethodEndpoint endpoint, @Nullable @ServiceProperty String type )
     {
         Multimap<String, MethodEndpoint> endpoints = this.endpoints;
@@ -195,7 +196,7 @@ public class ConfigurationManager implements FileVisitor<Path>, ServicePropertie
                 @Nullable
                 @Override
                 public Object resolve( @Nonnull MethodParameter parameter,
-                                       @Nonnull Map<String, Object> resolveContext )
+                                       @Nonnull MapEx<String, Object> resolveContext )
                 {
                     if( parameter.isMapEx() )
                     {

@@ -20,6 +20,7 @@ import org.mosaic.shell.*;
 import org.mosaic.shell.Options;
 import org.mosaic.shell.annotation.*;
 import org.mosaic.shell.annotation.Option;
+import org.mosaic.util.collect.MapEx;
 import org.mosaic.util.convert.ConversionService;
 import org.mosaic.util.reflection.MethodHandle;
 import org.mosaic.util.reflection.MethodParameter;
@@ -665,10 +666,10 @@ public class CommandManager
 
         @Nullable
         @Override
-        public Object resolve( @Nonnull MethodParameter parameter, @Nonnull Map<String, Object> resolveContext )
+        public Object resolve( @Nonnull MethodParameter parameter, @Nonnull MapEx<String, Object> resolveContext )
         {
-            Options options = ( Options ) resolveContext.get( "options" );
-            Console console = ( Console ) resolveContext.get( "console" );
+            Options options = resolveContext.get( "options", Options.class );
+            Console console = resolveContext.get( "console", Console.class );
 
             TypeToken<?> type = parameter.getType();
             if( type.isAssignableFrom( Console.class ) )
