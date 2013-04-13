@@ -12,20 +12,20 @@ public interface UserManager
     User loadUser( @Nonnull String realmName, @Nonnull String userName );
 
     @Nonnull
-    LoginScope getScope();
+    User getAnonymousUser();
 
     @Nonnull
     User getUser();
 
-    @Nonnull
-    User login( @Nonnull User user, @Nonnull LoginScope scope );
+    void setUser( @Nonnull User user );
 
-    void logout();
+    void setUserScope( @Nullable UserScope userScope );
 
-    enum LoginScope
+    interface UserScope
     {
-        REQUEST,
-        SESSION,
-        REMEMBER_ME
+        @Nullable
+        User getUser();
+
+        void setUser( @Nonnull User user );
     }
 }
