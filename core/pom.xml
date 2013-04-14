@@ -33,6 +33,8 @@
                         <Embed-Transitive>true</Embed-Transitive>
                         <Import-Package>
                             !com.jcraft*,
+                            !net.sf.cglib*,
+                            !org.apache.commons.beanutils*,
                             !org.apache.commons.pool*,
                             !org.apache.tomcat*,
                             !org.bouncycastle*,
