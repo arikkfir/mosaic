@@ -87,17 +87,13 @@ public class LoggingResolver
 
     private static void deletePath( @Nonnull Path path ) throws IOException
     {
-        try( DirectoryStream<Path> stream = Files.newDirectoryStream( path ) )
+        if( Files.isDirectory( path ) )
         {
-            for( Path child : stream )
+            try( DirectoryStream<Path> stream = Files.newDirectoryStream( path ) )
             {
-                if( Files.isDirectory( child ) )
+                for( Path child : stream )
                 {
                     LoggingResolver.deletePath( child );
-                }
-                else
-                {
-                    Files.delete( child );
                 }
             }
         }
