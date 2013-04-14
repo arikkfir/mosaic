@@ -4,7 +4,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.apache.sshd.server.session.ServerSession;
 import org.mosaic.lifecycle.annotation.Bean;
-import org.mosaic.lifecycle.annotation.ServiceRef;
+import org.mosaic.lifecycle.annotation.BeanRef;
 import org.mosaic.security.User;
 import org.mosaic.security.UserManager;
 import org.mosaic.security.credentials.Password;
@@ -18,7 +18,7 @@ public class PasswordAuthenticator implements org.apache.sshd.server.PasswordAut
     @Nonnull
     private UserManager userManager;
 
-    @ServiceRef
+    @BeanRef
     public void setUserManager( @Nonnull UserManager userManager )
     {
         this.userManager = userManager;

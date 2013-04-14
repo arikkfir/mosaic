@@ -6,7 +6,7 @@ import javax.annotation.Nonnull;
 import org.apache.sshd.server.PublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 import org.mosaic.lifecycle.annotation.Bean;
-import org.mosaic.lifecycle.annotation.ServiceRef;
+import org.mosaic.lifecycle.annotation.BeanRef;
 import org.mosaic.security.User;
 import org.mosaic.security.UserManager;
 import org.mosaic.security.credentials.PublicKeys;
@@ -24,7 +24,7 @@ public class PublicKeyAuthenticator implements PublickeyAuthenticator
     @Nonnull
     private UserManager userManager;
 
-    @ServiceRef
+    @BeanRef
     public void setUserManager( @Nonnull UserManager userManager )
     {
         this.userManager = userManager;
