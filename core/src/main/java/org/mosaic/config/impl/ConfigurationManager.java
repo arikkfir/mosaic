@@ -10,7 +10,6 @@ import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
@@ -27,6 +26,7 @@ import org.mosaic.lifecycle.annotation.*;
 import org.mosaic.util.collect.HashMapEx;
 import org.mosaic.util.collect.MapEx;
 import org.mosaic.util.convert.ConversionService;
+import org.mosaic.util.io.FileVisitorAdapter;
 import org.mosaic.util.reflection.MethodHandle;
 import org.mosaic.util.reflection.MethodParameter;
 import org.slf4j.Logger;
@@ -38,7 +38,7 @@ import static com.google.common.collect.Multimaps.synchronizedMultimap;
  * @author arik
  */
 @Service( FileVisitor.class )
-public class ConfigurationManager implements FileVisitor<Path>, ServicePropertiesProvider
+public class ConfigurationManager extends FileVisitorAdapter implements ServicePropertiesProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger( ConfigurationManager.class );
 
@@ -70,7 +70,10 @@ public class ConfigurationManager implements FileVisitor<Path>, ServicePropertie
     @Override
     public DP[] getServiceProperties()
     {
-        return new DP[] { DP.dp( "root", this.server.getEtc().toString() ) };
+        return new DP[] {
+                DP.dp( "root", this.server.getEtc() ),
+                DP.dp( "pattern", "**/*.properties" )
+        };
     }
 
     @PostConstruct
@@ -126,64 +129,71 @@ public class ConfigurationManager implements FileVisitor<Path>, ServicePropertie
     }
 
     @Override
-    public FileVisitResult preVisitDirectory( Path dir, BasicFileAttributes attrs ) throws IOException
-    {
-        return FileVisitResult.CONTINUE;
-    }
-
-    @Override
-    public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException
+    protected FileVisitResult onFileModified( @Nonnull Path file,
+                                              @SuppressWarnings( "UnusedParameters" ) @Nonnull BasicFileAttributes attrs )
+            throws IOException
     {
         Map<String, Properties> configurations = this.configurations;
-        if( configurations != null )
-        {
-            String fileName = file.getFileName().toString();
-            if( fileName.toLowerCase().endsWith( ".properties" ) )
-            {
-                // this is a configuration file - load the configuration data
-                final Properties properties = new Properties();
-                properties.load( new ByteArrayInputStream( Files.readAllBytes( file ) ) );
-
-                // store (possibly replace previous) configuration in memory
-                String configurationName = fileName.substring( 0, fileName.length() - ".properties".length() );
-                configurations.put( configurationName, properties );
-
-                // notify interested endpoints
-                Multimap<String, MethodEndpoint> endpoints = this.endpoints;
-                if( endpoints != null )
-                {
-                    Collection<MethodEndpoint> interestedEndpoints = endpoints.get( configurationName );
-                    for( MethodEndpoint endpoint : interestedEndpoints )
-                    {
-                        notifyConfigurable( properties, endpoint );
-                    }
-                }
-            }
-            return FileVisitResult.CONTINUE;
-        }
-        else
+        if( configurations == null )
         {
             return FileVisitResult.TERMINATE;
         }
-    }
 
-    @Override
-    public FileVisitResult visitFileFailed( Path file, IOException exc ) throws IOException
-    {
-        if( exc != null )
+        // load configuration data
+        final Properties properties = new Properties();
+        properties.load( new ByteArrayInputStream( Files.readAllBytes( file ) ) );
+
+        // store (possibly replace previous) configuration in memory
+        String fileName = file.getFileName().toString();
+        String configurationName = fileName.substring( 0, fileName.length() - ".properties".length() );
+        configurations.put( configurationName, properties );
+
+        // notify interested endpoints
+        Multimap<String, MethodEndpoint> endpoints = this.endpoints;
+        if( endpoints != null )
         {
-            LOG.error( "Could not process configuration file at '{}': {}", file, exc.getMessage(), exc );
+            for( MethodEndpoint endpoint : endpoints.get( configurationName ) )
+            {
+                notifyConfigurable( properties, endpoint );
+            }
         }
-        else
-        {
-            LOG.error( "Could not process configuration file at '{}': unspecified error", file );
-        }
+
         return FileVisitResult.CONTINUE;
     }
 
     @Override
-    public FileVisitResult postVisitDirectory( Path dir, IOException exc ) throws IOException
+    protected FileVisitResult onFileDeleted( @Nonnull Path file ) throws IOException
     {
+        Map<String, Properties> configurations = this.configurations;
+        if( configurations == null )
+        {
+            return FileVisitResult.TERMINATE;
+        }
+
+        // store (possibly replace previous) configuration in memory
+        String fileName = file.getFileName().toString();
+        String configurationName = fileName.substring( 0, fileName.length() - ".properties".length() );
+        configurations.remove( configurationName );
+
+        // notify interested endpoints
+        Multimap<String, MethodEndpoint> endpoints = this.endpoints;
+        if( endpoints != null )
+        {
+            final Properties emptyProperties = new Properties();
+            for( MethodEndpoint endpoint : endpoints.get( configurationName ) )
+            {
+                notifyConfigurable( emptyProperties, endpoint );
+            }
+        }
+
+        return FileVisitResult.CONTINUE;
+    }
+
+    @Override
+    protected FileVisitResult onError( @Nonnull Path file,
+                                       @Nonnull IOException exception ) throws IOException
+    {
+        LOG.error( "Could not process configuration file at '{}': {}", file, exception.getMessage(), exception );
         return FileVisitResult.CONTINUE;
     }
 
