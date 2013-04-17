@@ -14,8 +14,6 @@ import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
-import org.apache.commons.digester3.Digester;
-import org.apache.commons.logging.LogFactory;
 import org.mosaic.Server;
 import org.mosaic.lifecycle.DP;
 import org.mosaic.lifecycle.ServicePropertiesProvider;
@@ -28,6 +26,7 @@ import org.mosaic.security.localusers.LocalUser;
 import org.mosaic.security.realm.MutableUser;
 import org.mosaic.security.realm.Realm;
 import org.mosaic.util.io.FileVisitorAdapter;
+import org.mosaic.util.xml.impl.Digester;
 import org.mosaic.util.xml.impl.StrictErrorHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -116,23 +115,18 @@ public class LocalUsersRealm extends FileVisitorAdapter implements Realm, Servic
     public DP[] getServiceProperties()
     {
         return new DP[] {
-                DP.dp( "root", this.server.getEtc().resolve( "users.xml" ) ),
-                DP.dp( "name", "local" )
+                DP.dp( "name", "local" ),
+                DP.dp( "root", this.server.getEtc() ),
+                DP.dp( "pattern", "users.xml" )
         };
     }
 
     @Override
-    public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException
+    protected FileVisitResult onFileModified( @Nonnull Path file, @Nonnull BasicFileAttributes attrs )
+            throws IOException
     {
-        Digester digester = new Digester();
-        digester.setClassLoader( getClass().getClassLoader() );
-        digester.setErrorHandler( StrictErrorHandler.INSTANCE );
-        digester.setLogger( LogFactory.getLog( getClass().getName() + ".digester" ) );
-        digester.setNamespaceAware( true );
-        digester.setSAXLogger( LogFactory.getLog( getClass().getName() + ".sax" ) );
-        digester.setUseContextClassLoader( false );
-        digester.setXMLSchema( USERS_SCHEMA );
-
+        Digester digester = new Digester( getClass(), USERS_SCHEMA );
+        digester.setRuleNamespaceURI( "https://github.com/arikkfir/mosaic/users-1.0.0" );
         digester.addObjectCreate( "users", Users.class );
         digester.addObjectCreate( "users/user", UserInfo.class );
         digester.addSetProperties( "users/user", "name", "name" );
@@ -149,8 +143,15 @@ public class LocalUsersRealm extends FileVisitorAdapter implements Realm, Servic
         }
         catch( SAXException e )
         {
-            LOG.error( "Error parsing '{}': {}", file, e.getMessage(), e );
+            LOG.error( "Error parsing local users realm users at '{}': {}", file, e.getMessage(), e );
         }
+        return FileVisitResult.CONTINUE;
+    }
+
+    @Override
+    protected FileVisitResult onFileDeleted( @Nonnull Path file ) throws IOException
+    {
+        this.users = new Users();
         return FileVisitResult.CONTINUE;
     }
 
