@@ -21,6 +21,10 @@
         <constructor-arg ref="conversionService"/>
     </bean>
 
+    <bean id="expressionParser" class="org.mosaic.util.expression.impl.ExpressionParserImpl">
+        <constructor-arg ref="bundleContext"/>
+    </bean>
+
     <bean id="metricsSpi" class="org.mosaic.lifecycle.spi.MetricsSpi">
         <constructor-arg ref="moduleManager"/>
     </bean>
