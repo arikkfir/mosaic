@@ -6,6 +6,8 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import org.apache.felix.framework.Felix;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -30,7 +32,7 @@ public class BundlesInstaller implements FileVisitor<Path>
 
     private static final String MOSAIC_START_LEVEL = "Mosaic-StartLevel";
 
-    public static void watchDirectory( Path directory )
+    public static void watchDirectory( @Nonnull Path directory )
     {
         Felix felix = FelixResolver.felix;
         if( felix != null )
@@ -42,7 +44,8 @@ public class BundlesInstaller implements FileVisitor<Path>
         }
     }
 
-    private static String toString( Bundle bundle )
+    @Nonnull
+    private static String toString( @Nullable Bundle bundle )
     {
         if( bundle == null )
         {
@@ -56,36 +59,44 @@ public class BundlesInstaller implements FileVisitor<Path>
 
     private static class BundleLocationCache
     {
+        @Nonnull
         private final Path path;
 
         private long readTime;
 
+        @Nullable
         private Set<Path> targets;
 
-        private BundleLocationCache( Path path, long readTime )
+        private BundleLocationCache( @Nonnull Path path, long readTime )
         {
             this.path = path;
             this.readTime = readTime;
         }
     }
 
+    @Nonnull
     private final Map<Path, BundleLocationCache> fileLocationCache = new HashMap<>();
 
+    @Nonnull
     private final Map<Path, Long> fileFailures = new HashMap<>();
 
+    @Nonnull
     private final Path root;
 
+    @Nullable
     private Collection<Bundle> bundlesToStart;
 
     private boolean bundlesWereUninstalled;
 
-    public BundlesInstaller( Path root )
+    public BundlesInstaller( @Nonnull Path root )
     {
         this.root = root;
     }
 
+    @Nonnull
     @Override
-    public FileVisitResult preVisitDirectory( Path dir, BasicFileAttributes attrs ) throws IOException
+    public FileVisitResult preVisitDirectory( @Nullable Path dir, @Nullable BasicFileAttributes attrs )
+            throws IOException
     {
         // is this the scan initialization?
         if( dir != null )
@@ -96,13 +107,20 @@ public class BundlesInstaller implements FileVisitor<Path>
         {
             this.bundlesToStart = new LinkedList<>();
             this.bundlesWereUninstalled = false;
-            return null;
+            return FileVisitResult.CONTINUE;
         }
     }
 
+    @Nonnull
     @Override
-    public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException
+    public FileVisitResult visitFile( @Nonnull Path file, @Nullable BasicFileAttributes attrs ) throws IOException
     {
+        if( attrs == null )
+        {
+            // file was deleted; this will be handled by post directory handler
+            return FileVisitResult.CONTINUE;
+        }
+
         String lowerCasedFileName = file.getFileName().toString().toLowerCase();
         if( lowerCasedFileName.endsWith( ".jar" ) )
         {
@@ -115,22 +133,17 @@ public class BundlesInstaller implements FileVisitor<Path>
         return FileVisitResult.CONTINUE;
     }
 
+    @Nonnull
     @Override
-    public FileVisitResult visitFileFailed( Path file, IOException exc ) throws IOException
+    public FileVisitResult visitFileFailed( @Nonnull Path file, @Nonnull IOException exc ) throws IOException
     {
-        if( exc != null )
-        {
-            LOG.warn( "Error while visiting file at '{}': {}", file, exc.getMessage(), exc );
-        }
-        else
-        {
-            LOG.warn( "Unknown error while visiting file at '{}'", file );
-        }
+        LOG.warn( "Error while installing module at '{}': {}", file, exc.getMessage(), exc );
         return FileVisitResult.CONTINUE;
     }
 
+    @Nonnull
     @Override
-    public FileVisitResult postVisitDirectory( Path dir, IOException exc ) throws IOException
+    public FileVisitResult postVisitDirectory( @Nullable Path dir, @Nullable IOException exc ) throws IOException
     {
         if( dir != null )
         {
@@ -178,27 +191,31 @@ public class BundlesInstaller implements FileVisitor<Path>
                 {
                     for( BundleLocationCache cache : jarCollectionsToRemove )
                     {
-                        for( Path jar : cache.targets )
+                        Set<Path> targets = cache.targets;
+                        if( targets != null )
                         {
-                            boolean referenced = false;
-                            for( BundleLocationCache validCache : this.fileLocationCache.values() )
+                            for( Path jar : targets )
                             {
-                                if( validCache.targets.contains( jar ) )
+                                boolean referenced = false;
+                                for( BundleLocationCache validCache : this.fileLocationCache.values() )
                                 {
-                                    // jar is still referenced from any other jar collection - do not uninstall it
-                                    referenced = true;
-                                    break;
-                                }
-                            }
-                            if( !referenced && !jar.startsWith( this.root ) )
-                            {
-                                Bundle bundle = felix.getBundleContext().getBundle( jar.toString() );
-                                if( bundle != null )
-                                {
-                                    LOG.debug( "Bundle '{}' no longer referenced by {} or any other jars file - uninstalling it", toString( bundle ), cache.path );
-                                    if( uninstallBundle( bundle ) )
+                                    if( validCache.targets.contains( jar ) )
                                     {
-                                        this.bundlesWereUninstalled = true;
+                                        // jar is still referenced from any other jar collection - do not uninstall it
+                                        referenced = true;
+                                        break;
+                                    }
+                                }
+                                if( !referenced && !jar.startsWith( this.root ) )
+                                {
+                                    Bundle bundle = felix.getBundleContext().getBundle( jar.toString() );
+                                    if( bundle != null )
+                                    {
+                                        LOG.debug( "Bundle '{}' no longer referenced by {} or any other jars file - uninstalling it", toString( bundle ), cache.path );
+                                        if( uninstallBundle( bundle ) )
+                                        {
+                                            this.bundlesWereUninstalled = true;
+                                        }
                                     }
                                 }
                             }
@@ -258,8 +275,13 @@ public class BundlesInstaller implements FileVisitor<Path>
         }
     }
 
-    private void handleJarFile( Path sourceFile ) throws IOException
+    private void handleJarFile( @Nonnull Path sourceFile ) throws IOException
     {
+        if( this.bundlesToStart == null )
+        {
+            throw new IllegalStateException();
+        }
+
         // check whether we need to install a new bundle or update an existing bundle
         Felix felix = FelixResolver.felix;
         if( felix != null )
@@ -302,7 +324,7 @@ public class BundlesInstaller implements FileVisitor<Path>
         }
     }
 
-    private void handleJarsFile( Path file ) throws IOException
+    private void handleJarsFile( @Nonnull Path file ) throws IOException
     {
         // obtain list of installed bundles specified in this file from previous runs
         Set<Path> oldTargets = null;
@@ -320,7 +342,7 @@ public class BundlesInstaller implements FileVisitor<Path>
         {
             for( Path oldTarget : oldTargets )
             {
-                if( !updatedTargets.contains( oldTarget ) )
+                if( updatedTargets == null || !updatedTargets.contains( oldTarget ) )
                 {
                     Felix felix = FelixResolver.felix;
                     if( felix != null )
@@ -340,16 +362,20 @@ public class BundlesInstaller implements FileVisitor<Path>
         }
 
         // install new bundles
-        for( Path target : updatedTargets )
+        if( updatedTargets != null )
         {
-            if( exists( target ) )
+            for( Path target : updatedTargets )
             {
-                handleJarFile( target );
+                if( exists( target ) )
+                {
+                    handleJarFile( target );
+                }
             }
         }
     }
 
-    private Set<Path> readJarsFileTargets( Path file ) throws IOException
+    @Nullable
+    private Set<Path> readJarsFileTargets( @Nonnull Path file ) throws IOException
     {
         long fileModificationTime = getLastModifiedTime( file ).toMillis();
 
@@ -430,7 +456,8 @@ public class BundlesInstaller implements FileVisitor<Path>
         return cache.targets;
     }
 
-    private Bundle installBundle( Path file )
+    @Nullable
+    private Bundle installBundle( @Nonnull Path file )
     {
         Felix felix = FelixResolver.felix;
         if( felix != null )
@@ -451,7 +478,7 @@ public class BundlesInstaller implements FileVisitor<Path>
         return null;
     }
 
-    private boolean stopAndUpdateBundle( Bundle bundle, Path file )
+    private boolean stopAndUpdateBundle( @Nonnull Bundle bundle, @Nonnull Path file )
     {
         if( "Mosaic".equalsIgnoreCase( bundle.getHeaders().get( BUNDLE_VENDOR ) ) )
         {
@@ -479,7 +506,7 @@ public class BundlesInstaller implements FileVisitor<Path>
         }
     }
 
-    private void startBundle( Bundle bundle )
+    private void startBundle( @Nonnull Bundle bundle )
     {
         try
         {
@@ -499,7 +526,7 @@ public class BundlesInstaller implements FileVisitor<Path>
         }
     }
 
-    private boolean uninstallBundle( Bundle bundle )
+    private boolean uninstallBundle( @Nonnull Bundle bundle )
     {
         if( "Mosaic".equalsIgnoreCase( bundle.getHeaders().get( BUNDLE_VENDOR ) ) )
         {
@@ -523,7 +550,7 @@ public class BundlesInstaller implements FileVisitor<Path>
         }
     }
 
-    private void updateBundleStartLevel( Bundle bundle )
+    private void updateBundleStartLevel( @Nonnull Bundle bundle )
     {
         String startLevelValue = bundle.getHeaders().get( MOSAIC_START_LEVEL );
         if( startLevelValue != null )
