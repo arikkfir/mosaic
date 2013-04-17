@@ -141,7 +141,7 @@ public class ConversionServiceImpl implements ConversionService, ServiceListener
                 }
             }
         }
-        throw new ConversionException( "no conversion path found", sourceTypeToken, targetTypeToken, source );
+        throw new ConversionException( "no conversion path found", sourceTypeToken, targetTypeToken );
     }
 
     @Nonnull
