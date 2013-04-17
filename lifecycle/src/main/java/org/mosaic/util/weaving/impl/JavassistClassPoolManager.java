@@ -1,9 +1,9 @@
 package org.mosaic.util.weaving.impl;
 
-import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import javassist.ClassPool;
@@ -30,7 +30,7 @@ public class JavassistClassPoolManager
     );
 
     @Nonnull
-    private final Cache<BundleWiring, ClassPool> classPoolsCache;
+    private final LoadingCache<BundleWiring, ClassPool> classPoolsCache;
 
     public JavassistClassPoolManager()
     {
@@ -39,7 +39,17 @@ public class JavassistClassPoolManager
                                            .expireAfterAccess( 1, TimeUnit.HOURS )
                                            .initialCapacity( 100 )
                                            .weakKeys()
-                                           .build();
+                                           .build( new CacheLoader<BundleWiring, ClassPool>()
+                                           {
+                                               @Override
+                                               public ClassPool load( BundleWiring key ) throws Exception
+                                               {
+                                                   ClassPool classPool = new ClassPool( false );
+                                                   classPool.appendClassPath( new LoaderClassPath( getClass().getClassLoader() ) );
+                                                   classPool.appendClassPath( new LoaderClassPath( key.getClassLoader() ) );
+                                                   return classPool;
+                                               }
+                                           } );
     }
 
     @Nullable
@@ -56,7 +66,7 @@ public class JavassistClassPoolManager
         {
             try
             {
-                return getClassPool( bundleWiring ).get( wovenClass.getClassName() );
+                return this.classPoolsCache.get( bundleWiring ).get( wovenClass.getClassName() );
             }
             catch( NotFoundException e )
             {
@@ -83,7 +93,7 @@ public class JavassistClassPoolManager
         {
             try
             {
-                return getClassPool( bundleWiring ).get( className );
+                return this.classPoolsCache.get( bundleWiring ).get( className );
             }
             catch( NotFoundException e )
             {
@@ -99,21 +109,5 @@ public class JavassistClassPoolManager
     private boolean shouldWeaveBundle( BundleWiring bundleWiring )
     {
         return bundleWiring.getBundle().getBundleId() != 0 && !FORBIDDEN_BUNDLES.contains( bundleWiring.getBundle().getSymbolicName() );
-    }
-
-    @Nonnull
-    private ClassPool getClassPool( @Nonnull final BundleWiring bundleWiring ) throws ExecutionException
-    {
-        return this.classPoolsCache.get( bundleWiring, new Callable<ClassPool>()
-        {
-            @Override
-            public ClassPool call() throws Exception
-            {
-                ClassPool classPool = new ClassPool( false );
-                classPool.appendClassPath( new LoaderClassPath( getClass().getClassLoader() ) );
-                classPool.appendClassPath( new LoaderClassPath( bundleWiring.getClassLoader() ) );
-                return classPool;
-            }
-        } );
     }
 }
