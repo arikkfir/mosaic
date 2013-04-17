@@ -1,7 +1,8 @@
 package org.mosaic.lifecycle.impl;
 
-import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.reflect.TypeToken;
 import com.yammer.metrics.core.MetricName;
 import com.yammer.metrics.core.MetricsRegistry;
@@ -15,7 +16,6 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
@@ -585,7 +585,7 @@ public class ModuleImpl implements Module
     @Override
     public String toString()
     {
-        return "Module[" + this.bundle.getSymbolicName() + "-" + this.bundle.getVersion() + " -> " + this.bundle.getBundleId() + "]";
+        return "Module[" + this.bundle.getSymbolicName() + "-" + this.bundle.getVersion() + " -> " + this.bundle.getBundleId() + " | " + getState() + "]";
     }
 
     private void refreshResourcesCache()
@@ -949,7 +949,7 @@ public class ModuleImpl implements Module
         private MetricsRegistry metricsRegistry;
 
         @Nullable
-        private Cache<MetricName, MetricsTimerImpl> timerCache;
+        private LoadingCache<MetricName, MetricsTimerImpl> timerCache;
 
         private MetricsImpl()
         {
@@ -957,7 +957,15 @@ public class ModuleImpl implements Module
             this.timerCache = CacheBuilder.newBuilder()
                                           .initialCapacity( 1000 )
                                           .concurrencyLevel( 20 )
-                                          .build();
+                                          .build( new CacheLoader<MetricName, MetricsTimerImpl>()
+                                          {
+                                              @Override
+                                              public MetricsTimerImpl load( MetricName key ) throws Exception
+                                              {
+                                                  Timer timer = metricsRegistry.newTimer( key, TimeUnit.MILLISECONDS, TimeUnit.SECONDS );
+                                                  return new MetricsTimerImpl( key, timer );
+                                              }
+                                          } );
         }
 
         @Nonnull
@@ -965,22 +973,14 @@ public class ModuleImpl implements Module
         public MetricsTimer getTimer( @Nonnull String group, @Nonnull String type, @Nonnull String name )
         {
             final MetricsRegistry metricsRegistry = this.metricsRegistry;
-            Cache<MetricName, MetricsTimerImpl> cache = this.timerCache;
+            LoadingCache<MetricName, MetricsTimerImpl> cache = this.timerCache;
 
             if( metricsRegistry != null && cache != null )
             {
                 final MetricName key = new MetricName( group, type, name );
                 try
                 {
-                    return cache.get( key, new Callable<MetricsTimerImpl>()
-                    {
-                        @Override
-                        public MetricsTimerImpl call() throws Exception
-                        {
-                            Timer timer = metricsRegistry.newTimer( key, TimeUnit.MILLISECONDS, TimeUnit.SECONDS );
-                            return new MetricsTimerImpl( key, timer );
-                        }
-                    } );
+                    return cache.get( key );
                 }
                 catch( ExecutionException e )
                 {
@@ -994,7 +994,7 @@ public class ModuleImpl implements Module
         @Override
         public Collection<? extends MetricsTimer> getTimers()
         {
-            Cache<MetricName, MetricsTimerImpl> cache = this.timerCache;
+            LoadingCache<MetricName, MetricsTimerImpl> cache = this.timerCache;
             if( cache != null )
             {
                 return cache.asMap().values();
@@ -1011,7 +1011,7 @@ public class ModuleImpl implements Module
             }
             this.metricsRegistry = null;
 
-            Cache<MetricName, MetricsTimerImpl> cache = this.timerCache;
+            LoadingCache<MetricName, MetricsTimerImpl> cache = this.timerCache;
             if( cache != null )
             {
                 cache.invalidateAll();
