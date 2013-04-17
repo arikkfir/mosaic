@@ -4,8 +4,6 @@
 DROP SCHEMA IF EXISTS "mosaic";
 CREATE SCHEMA "mosaic";
 
--- TODO: create standard mosaic database objects
-
 -- *********************************************
 -- THE "it" SCHEMA
 -- *********************************************
