@@ -1,10 +1,7 @@
 package org.mosaic.launcher.osgi;
 
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.FileVisitor;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -46,7 +43,7 @@ public class FileVisitorsManager implements Runnable
 
         @SuppressWarnings("NullableProblems")
         @Override
-        public Thread newThread( Runnable r )
+        public Thread newThread( @Nonnull Runnable r )
         {
             Thread t = new Thread( r, "FileScanner-" + index.incrementAndGet() );
             t.setPriority( Thread.MIN_PRIORITY );
@@ -129,19 +126,26 @@ public class FileVisitorsManager implements Runnable
 
     private class FileVisitorAdapter implements Runnable, FileVisitor<Path>
     {
+        @Nullable
         private final Path root;
 
+        @Nullable
+        private final PathMatcher matcher;
+
+        @Nonnull
         private final ServiceReference<FileVisitor<Path>> reference;
 
+        @Nullable
         private final Map<Path, Long> knownFiles;
 
         private final boolean skipSvn;
 
         private final boolean skipHidden;
 
+        @Nullable
         private FileVisitor<Path> visitor;
 
-        private FileVisitorAdapter( ServiceReference<FileVisitor<Path>> reference )
+        private FileVisitorAdapter( @Nonnull ServiceReference<FileVisitor<Path>> reference )
         {
             this.reference = reference;
 
@@ -150,12 +154,25 @@ public class FileVisitorsManager implements Runnable
             if( rootValue != null )
             {
                 this.root = Paths.get( rootValue.toString() );
+
+                // if we also have a pattern, create a matcher for it
+                Object patternValue = reference.getProperty( "pattern" );
+                if( patternValue != null )
+                {
+                    this.matcher = this.root.getFileSystem().getPathMatcher( "glob:" + patternValue.toString().trim() );
+                }
+                else
+                {
+                    this.matcher = null;
+                }
             }
             else
             {
                 this.root = null;
+                this.matcher = null;
                 LOG.warn( "File visitor service '{}' does not have the 'root' service property - it will not be activated", this.reference );
             }
+
 
             // determine whether service needs modification filtering
             Object modOnlyValue = reference.getProperty( "modificationsOnly" );
@@ -221,7 +238,7 @@ public class FileVisitorsManager implements Runnable
 
                         // notify visitor that the scanning has completed; we do this by calling 'postVisitDirectory'
                         // with a null Path object.. again - not the nicest trick but...
-                        postVisitDirectory( null, null );
+                        this.visitor.postVisitDirectory( null, null );
                     }
                     catch( IOException e )
                     {
@@ -229,7 +246,7 @@ public class FileVisitorsManager implements Runnable
                         // 'postVisitDirectory' with a null Path object and the exception.
                         try
                         {
-                            postVisitDirectory( null, e );
+                            this.visitor.postVisitDirectory( null, e );
                         }
                         catch( IOException e1 )
                         {
@@ -246,10 +263,21 @@ public class FileVisitorsManager implements Runnable
             }
         }
 
+        @Nonnull
         @Override
-        public FileVisitResult preVisitDirectory( Path dir, BasicFileAttributes attrs ) throws IOException
+        public FileVisitResult preVisitDirectory( @SuppressWarnings("NullableProblems")
+                                                  @Nonnull
+                                                  Path dir,
+
+                                                  @SuppressWarnings("NullableProblems")
+                                                  @Nonnull
+                                                  BasicFileAttributes attrs ) throws IOException
         {
-            if( this.skipSvn && dir.getFileName().toString().equalsIgnoreCase( ".svn" ) )
+            if( this.visitor == null )
+            {
+                return FileVisitResult.TERMINATE;
+            }
+            else if( this.skipSvn && dir.getFileName().toString().equalsIgnoreCase( ".svn" ) )
             {
                 return FileVisitResult.SKIP_SUBTREE;
             }
@@ -263,12 +291,29 @@ public class FileVisitorsManager implements Runnable
             }
         }
 
+        @Nonnull
         @Override
-        public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException
+        public FileVisitResult visitFile( @Nonnull
+                                          Path file,
+
+                                          @SuppressWarnings("NullableProblems")
+                                          @Nonnull
+                                          BasicFileAttributes attrs ) throws IOException
         {
+            if( this.visitor == null || this.root == null )
+            {
+                // should not happen
+                return FileVisitResult.TERMINATE;
+            }
+            else if( this.matcher != null && !this.matcher.matches( this.root.relativize( file ) ) )
+            {
+                // file does not match glob pattern
+                return FileVisitResult.CONTINUE;
+            }
+
+            // if this service does not need modification tracking - just delegate and return
             if( this.knownFiles == null )
             {
-                // this service does not need modification tracking - just delegate and return
                 return this.visitor.visitFile( file, attrs );
             }
 
@@ -300,19 +345,36 @@ public class FileVisitorsManager implements Runnable
             return FileVisitResult.CONTINUE;
         }
 
+        @Nonnull
         @Override
-        public FileVisitResult visitFileFailed( Path file, IOException exc ) throws IOException
+        public FileVisitResult visitFileFailed( @Nonnull Path file, @Nonnull IOException exc ) throws IOException
         {
-            return this.visitor.visitFileFailed( file, exc );
+            if( this.visitor == null )
+            {
+                return FileVisitResult.TERMINATE;
+            }
+            else
+            {
+                return this.visitor.visitFileFailed( file, exc );
+            }
         }
 
+        @Nonnull
         @Override
-        public FileVisitResult postVisitDirectory( Path dir, IOException exc ) throws IOException
+        public FileVisitResult postVisitDirectory( @Nonnull Path dir, @Nullable IOException exc ) throws IOException
         {
-            return this.visitor.postVisitDirectory( dir, exc );
+            if( this.visitor == null )
+            {
+                return FileVisitResult.TERMINATE;
+            }
+            else
+            {
+                return this.visitor.postVisitDirectory( dir, exc );
+            }
         }
 
-        private FileVisitor<Path> getFileVisitor( ServiceReference<FileVisitor<Path>> reference )
+        @Nullable
+        private FileVisitor<Path> getFileVisitor( @Nonnull ServiceReference<FileVisitor<Path>> reference )
         {
             if( bundleContext != null )
             {
@@ -333,7 +395,7 @@ public class FileVisitorsManager implements Runnable
             return null;
         }
 
-        private void ungetFileVisitor( ServiceReference<FileVisitor<Path>> reference )
+        private void ungetFileVisitor( @Nonnull ServiceReference<FileVisitor<Path>> reference )
         {
             if( bundleContext != null )
             {
@@ -351,7 +413,7 @@ public class FileVisitorsManager implements Runnable
     private class FileVisitorCustomizer implements ServiceTrackerCustomizer<FileVisitor<Path>, FileVisitorAdapter>
     {
         @Override
-        public FileVisitorAdapter addingService( ServiceReference<FileVisitor<Path>> reference )
+        public FileVisitorAdapter addingService( @Nonnull ServiceReference<FileVisitor<Path>> reference )
         {
             FileVisitorAdapter adapter = new FileVisitorAdapter( reference );
             try
@@ -367,14 +429,15 @@ public class FileVisitorsManager implements Runnable
         }
 
         @Override
-        public void modifiedService( ServiceReference<FileVisitor<Path>> reference, FileVisitorAdapter service )
+        public void modifiedService( @Nonnull ServiceReference<FileVisitor<Path>> reference,
+                                     @Nonnull FileVisitorAdapter service )
         {
             // no-op
         }
 
         @Override
-        public void removedService( ServiceReference<FileVisitor<Path>> reference,
-                                    FileVisitorAdapter service )
+        public void removedService( @Nonnull ServiceReference<FileVisitor<Path>> reference,
+                                    @Nonnull FileVisitorAdapter service )
         {
             // no-op
         }
