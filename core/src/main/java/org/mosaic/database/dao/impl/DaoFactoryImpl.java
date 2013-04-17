@@ -1,12 +1,12 @@
 package org.mosaic.database.dao.impl;
 
-import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.*;
-import java.util.concurrent.Callable;
 import javax.annotation.Nonnull;
 import javax.annotation.PreDestroy;
 import javax.sql.DataSource;
@@ -21,17 +21,19 @@ import org.mosaic.lifecycle.annotation.ModuleRef;
 import org.mosaic.lifecycle.annotation.Service;
 import org.mosaic.lifecycle.annotation.ServiceRef;
 import org.mosaic.util.convert.ConversionService;
+import org.mosaic.util.pair.ImmutableComparablePair;
+import org.mosaic.util.pair.Pair;
 import org.mosaic.util.reflection.MethodHandle;
 import org.mosaic.util.reflection.MethodHandleFactory;
 
 /**
  * @author arik
  */
-@Service(DaoFactory.class)
+@Service( DaoFactory.class )
 public class DaoFactoryImpl implements DaoFactory
 {
     @Nonnull
-    private final Cache<Class<?>, Object> daoCache;
+    private final LoadingCache<Pair<Class<?>, DataSource>, Object> daoCache;
 
     @Nonnull
     private Module module;
@@ -50,7 +52,30 @@ public class DaoFactoryImpl implements DaoFactory
         this.daoCache = CacheBuilder.newBuilder()
                                     .initialCapacity( 1000 )
                                     .concurrencyLevel( 20 )
-                                    .build();
+                                    .build( new CacheLoader<Pair<Class<?>, DataSource>, Object>()
+                                    {
+                                        @Override
+                                        public Object load( Pair<Class<?>, DataSource> key ) throws Exception
+                                        {
+                                            Class<?> type = key.getKey();
+                                            if( type == null )
+                                            {
+                                                throw new IllegalArgumentException( "Class must not be null" );
+                                            }
+
+                                            DataSource dataSource = key.getValue();
+                                            if( dataSource == null )
+                                            {
+                                                throw new IllegalArgumentException( "Data source must not be null" );
+                                            }
+
+                                            return Proxy.newProxyInstance(
+                                                    type.getClassLoader(),
+                                                    new Class<?>[] { type },
+                                                    new DaoInvocationHandler( type, dataSource )
+                                            );
+                                        }
+                                    } );
     }
 
     @ModuleRef
@@ -89,18 +114,7 @@ public class DaoFactoryImpl implements DaoFactory
     {
         try
         {
-            return type.cast( this.daoCache.get( type, new Callable<Object>()
-            {
-                @Override
-                public Object call() throws Exception
-                {
-                    return Proxy.newProxyInstance(
-                            type.getClassLoader(),
-                            new Class<?>[] { type },
-                            new DaoInvocationHandler( type, dataSource )
-                    );
-                }
-            } ) );
+            return type.cast( this.daoCache.get( ImmutableComparablePair.<Class<?>, DataSource>of( type, dataSource ) ) );
         }
         catch( Exception e )
         {
