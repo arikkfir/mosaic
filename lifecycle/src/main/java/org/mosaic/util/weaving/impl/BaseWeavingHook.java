@@ -1,14 +1,18 @@
 package org.mosaic.util.weaving.impl;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import javassist.CannotCompileException;
 import javassist.CtClass;
+import javassist.NotFoundException;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.lifecycle.impl.util.ServiceUtils;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.framework.hooks.weaving.WeavingException;
 import org.osgi.framework.hooks.weaving.WeavingHook;
 import org.osgi.framework.hooks.weaving.WovenClass;
 import org.springframework.beans.factory.DisposableBean;
@@ -18,7 +22,6 @@ import static java.lang.String.format;
 
 /**
  * @author arik
- * @todo framework still starts even after weaving hooks fail
  */
 public abstract class BaseWeavingHook implements WeavingHook, InitializingBean, DisposableBean
 {
@@ -85,6 +88,14 @@ public abstract class BaseWeavingHook implements WeavingHook, InitializingBean, 
                 wovenClass.setBytes( ctClass.toBytecode() );
             }
         }
+        catch( CannotCompileException e )
+        {
+            throw new IllegalStateException( "Could not weave target class '" + wovenClass.getClassName() + "': " + e.getMessage(), e );
+        }
+        catch( NotFoundException | ClassNotFoundException | IOException e )
+        {
+            throw new WeavingException( "Could not weave target class '" + wovenClass.getClassName() + "': " + e.getMessage(), e );
+        }
         catch( Exception e )
         {
             throw new IllegalStateException( "Could not weave target class '" + wovenClass.getClassName() + "': " + e.getMessage(), e );
@@ -94,11 +105,6 @@ public abstract class BaseWeavingHook implements WeavingHook, InitializingBean, 
     protected final CtClass findCtClass( @Nonnull WovenClass wovenClass, @Nonnull Class<?> type )
     {
         return this.classPoolManager.findCtClassFor( wovenClass, type.getName() );
-    }
-
-    protected final CtClass findCtClass( @Nonnull WovenClass wovenClass, @Nonnull String type )
-    {
-        return this.classPoolManager.findCtClassFor( wovenClass, type );
     }
 
     protected abstract void weave( @Nonnull WovenClass wovenClass,
