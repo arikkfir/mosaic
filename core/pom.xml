@@ -10,6 +10,7 @@
     <version>1.0.0-SNAPSHOT</version>
     <packaging>bundle</packaging>
     <name>Mosaic :: Core</name>
+    <url>https://github.com/arikkfir/mosaic/core/</url>
     <build>
         <plugins>
             <plugin>

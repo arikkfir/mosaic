@@ -10,6 +10,7 @@
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Mosaic :: Distribution</name>
+    <url>https://github.com/arikkfir/mosaic/dist/</url>
     <build>
         <finalName>mosaic-${project.version}</finalName>
         <plugins>

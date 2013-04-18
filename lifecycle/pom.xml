@@ -10,6 +10,7 @@
     <version>1.0.0-SNAPSHOT</version>
     <packaging>bundle</packaging>
     <name>Mosaic :: Lifecycle</name>
+    <url>https://github.com/arikkfir/mosaic/lifecycle/</url>
     <build>
         <plugins>
             <plugin>

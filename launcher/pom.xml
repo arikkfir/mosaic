@@ -10,6 +10,7 @@
     <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>Mosaic :: Launcher</name>
+    <url>https://github.com/arikkfir/mosaic/launcher/</url>
     <build>
         <resources>
             <resource>
