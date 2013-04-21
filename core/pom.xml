@@ -11,6 +11,14 @@
     <packaging>bundle</packaging>
     <name>Mosaic :: Core</name>
     <url>https://github.com/arikkfir/mosaic/core/</url>
+    <distributionManagement>
+        <site>
+            <id>github</id>
+            <name>GitHub</name>
+            <url>file:///var/www/html/mosaic/core</url>
+        </site>
+    </distributionManagement>
+
     <build>
         <plugins>
             <plugin>

@@ -12,6 +12,14 @@
     <packaging>bundle</packaging>
     <name>Mosaic :: IT :: Test Module 01</name>
     <url>https://github.com/arikkfir/mosaic/it/test-module-01/</url>
+    <distributionManagement>
+        <site>
+            <id>github</id>
+            <name>GitHub</name>
+            <url>file:///var/www/html/mosaic/it/test-module-01</url>
+        </site>
+    </distributionManagement>
+
     <build>
         <finalName>${project.artifactId}</finalName>
         <plugins>

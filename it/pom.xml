@@ -15,6 +15,13 @@
     <name>Mosaic :: IT</name>
     <packaging>pom</packaging>
     <url>https://github.com/arikkfir/mosaic/it/</url>
+    <distributionManagement>
+        <site>
+            <id>github</id>
+            <name>GitHub</name>
+            <url>file:///var/www/html/mosaic/it</url>
+        </site>
+    </distributionManagement>
 
     <modules>
         <module>test-module-01</module>

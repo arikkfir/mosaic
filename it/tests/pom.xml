@@ -12,6 +12,14 @@
     <packaging>jar</packaging>
     <name>Mosaic :: IT :: Tests</name>
     <url>https://github.com/arikkfir/mosaic/it/tests/</url>
+    <distributionManagement>
+        <site>
+            <id>github</id>
+            <name>GitHub</name>
+            <url>file:///var/www/html/mosaic/it/tests</url>
+        </site>
+    </distributionManagement>
+
     <build>
         <finalName>${project.artifactId}</finalName>
         <resources>
