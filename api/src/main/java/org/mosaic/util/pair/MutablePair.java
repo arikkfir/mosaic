@@ -20,18 +20,6 @@ public class MutablePair<L, R> extends Pair<L, R>
     }
 
     @Override
-    public void setLeft( @Nullable L left )
-    {
-        super.setLeft( left );
-    }
-
-    @Override
-    public void setRight( @Nullable R right )
-    {
-        super.setRight( right );
-    }
-
-    @Override
     @Nullable
     public R setValue( R value )
     {
