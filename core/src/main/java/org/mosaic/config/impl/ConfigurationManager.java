@@ -37,7 +37,7 @@ import static com.google.common.collect.Multimaps.synchronizedMultimap;
 /**
  * @author arik
  */
-@Service( FileVisitor.class )
+@Service(FileVisitor.class)
 public class ConfigurationManager extends FileVisitorAdapter implements ServicePropertiesProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger( ConfigurationManager.class );
@@ -90,25 +90,22 @@ public class ConfigurationManager extends FileVisitorAdapter implements ServiceP
         this.configurations = null;
     }
 
-    @ServiceBind( updates = false )
+    @ServiceBind(updates = false)
     public void addConfigurable( @Nonnull MethodEndpoint endpoint, @Nullable @ServiceProperty String type )
     {
         Multimap<String, MethodEndpoint> endpoints = this.endpoints;
-        if( endpoints != null )
+        if( endpoints != null && Configurable.class.getName().equals( type ) )
         {
-            if( Configurable.class.getName().equals( type ) )
-            {
-                Configurable ann = ( Configurable ) endpoint.getType();
-                endpoints.put( ann.value(), endpoint );
+            Configurable ann = ( Configurable ) endpoint.getType();
+            endpoints.put( ann.value(), endpoint );
 
-                Map<String, Properties> configurations = this.configurations;
-                if( configurations != null )
+            Map<String, Properties> configurations = this.configurations;
+            if( configurations != null )
+            {
+                Properties properties = configurations.get( ann.value() );
+                if( properties != null )
                 {
-                    Properties properties = configurations.get( ann.value() );
-                    if( properties != null )
-                    {
-                        notifyConfigurable( properties, endpoint );
-                    }
+                    notifyConfigurable( properties, endpoint );
                 }
             }
         }
@@ -118,19 +115,16 @@ public class ConfigurationManager extends FileVisitorAdapter implements ServiceP
     public void removeConfigurable( @Nonnull MethodEndpoint endpoint, @Nullable @ServiceProperty String type )
     {
         Multimap<String, MethodEndpoint> endpoints = this.endpoints;
-        if( endpoints != null )
+        if( endpoints != null && Configurable.class.getName().equals( type ) )
         {
-            if( Configurable.class.getName().equals( type ) )
-            {
-                Configurable ann = ( Configurable ) endpoint.getType();
-                endpoints.remove( ann.value(), endpoint );
-            }
+            Configurable ann = ( Configurable ) endpoint.getType();
+            endpoints.remove( ann.value(), endpoint );
         }
     }
 
     @Override
     protected FileVisitResult onFileModified( @Nonnull Path file,
-                                              @SuppressWarnings( "UnusedParameters" ) @Nonnull BasicFileAttributes attrs )
+                                              @SuppressWarnings("UnusedParameters") @Nonnull BasicFileAttributes attrs )
             throws IOException
     {
         Map<String, Properties> configurations = this.configurations;
