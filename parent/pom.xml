@@ -646,10 +646,8 @@
                 <configuration>
                     <targetJdk>1.7</targetJdk>
                     <rulesets>
-                        <!-- Two rule sets that come bundled with PMD -->
                         <ruleset>https://github.com/arikkfir/mosaic/tree/master/src/pmd/rulesets/java/basic.xml</ruleset>
-                        <!--<ruleset>/rulesets/braces.xml</ruleset>-->
-                        <!--<ruleset>/rulesets/naming.xml</ruleset>-->
+                        <ruleset>https://github.com/arikkfir/mosaic/tree/master/src/pmd/rulesets/xml/basic.xml</ruleset>
                     </rulesets>
                 </configuration>
                 <reportSets>
