@@ -1,6 +1,11 @@
 package org.mosaic.shell.impl.session;
 
-import java.io.*;
+import com.google.common.io.Closeables;
+import com.google.common.io.Flushables;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import jline.console.ConsoleReader;
@@ -12,8 +17,6 @@ import org.apache.sshd.server.session.ServerSession;
 import org.mosaic.shell.CommandExecutionException;
 import org.mosaic.shell.TerminateSessionException;
 import org.mosaic.shell.impl.command.CommandManager;
-
-import static java.util.Arrays.asList;
 
 /**
  * @author arik
@@ -93,6 +96,7 @@ public class MosaicCommand implements Command, SessionAware
             }
             catch( TerminateSessionException ignore )
             {
+                // we can ignore this since the command already finished, we can gracefuly exit
             }
             catch( CommandExecutionException e )
             {
@@ -116,28 +120,14 @@ public class MosaicCommand implements Command, SessionAware
         }
     }
 
+    @SuppressWarnings( "deprecation" )
     @Override
     public void destroy()
     {
-        for( Flushable flushable : asList( out, err ) )
-        {
-            try
-            {
-                flushable.flush();
-            }
-            catch( IOException ignore )
-            {
-            }
-        }
-        for( Closeable closeable : asList( in, out, err ) )
-        {
-            try
-            {
-                closeable.close();
-            }
-            catch( IOException ignore )
-            {
-            }
-        }
+        Flushables.flushQuietly( out );
+        Flushables.flushQuietly( err );
+        Closeables.closeQuietly( in );
+        Closeables.closeQuietly( out );
+        Closeables.closeQuietly( err );
     }
 }

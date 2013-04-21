@@ -2,7 +2,11 @@ package org.mosaic.shell.impl.session;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
-import java.io.*;
+import com.google.common.io.Closeables;
+import com.google.common.io.Flushables;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,7 +33,6 @@ import org.slf4j.LoggerFactory;
 
 import static com.google.common.collect.Collections2.filter;
 import static com.google.common.collect.Collections2.transform;
-import static java.util.Arrays.asList;
 
 /**
  * @author arik
@@ -113,13 +116,12 @@ public class MosaicSession implements Command, Runnable, SessionAware
         // create the console reader used for interacting with the user
         try
         {
-            String username = this.session == null ? "anonymous" : this.session.getUsername();
-            Path historyFile = Paths.get( System.getProperty( "mosaic.home.work" ), "history", username );
+            Path historyFile = Paths.get( System.getProperty( "mosaic.home.work" ), "history", getUsername() );
             this.history = new FileHistory( historyFile.toFile() );
 
             this.consoleReader = new ConsoleReader( new PipeInputStream( this.inputQueueThread.getBufferedInputQueue() ), this.out, new SessionTerminal( env ) );
             this.consoleReader.setHistory( history );
-            this.consoleReader.setPrompt( "[" + username + "@" + InetAddress.getLocalHost().getHostName() + "]$ " );
+            this.consoleReader.setPrompt( "[" + getUsername() + "@" + InetAddress.getLocalHost().getHostName() + "]$ " );
             this.consoleReader.addCompleter( new CommandCompleter() );
 
         }
@@ -132,6 +134,11 @@ public class MosaicSession implements Command, Runnable, SessionAware
         this.consoleThread = new Thread( this, "SSHD/console" );
         this.consoleThread.setDaemon( true );
         this.consoleThread.start();
+    }
+
+    private String getUsername()
+    {
+        return this.session == null ? "anonymous" : this.session.getUsername();
     }
 
     @Override
@@ -175,8 +182,9 @@ public class MosaicSession implements Command, Runnable, SessionAware
             {
                 this.history.flush();
             }
-            catch( IOException ignore )
+            catch( IOException e )
             {
+                LOG.warn( "Could not save shell command history for user '{}': {}", getUsername(), e.getMessage(), e );
             }
 
         }
@@ -198,12 +206,14 @@ public class MosaicSession implements Command, Runnable, SessionAware
                 }
                 catch( IOException ignore )
                 {
+                    // ignore failure to close since this is the finally clause - we don't want to mask the actual exception if there was any
                 }
             }
         }
 
     }
 
+    @SuppressWarnings( "deprecation" )
     @Override
     public void destroy()
     {
@@ -211,26 +221,11 @@ public class MosaicSession implements Command, Runnable, SessionAware
         this.consoleThread.interrupt();
         this.inputQueueThread.interrupt();
 
-        for( Flushable flushable : asList( out, err ) )
-        {
-            try
-            {
-                flushable.flush();
-            }
-            catch( IOException ignore )
-            {
-            }
-        }
-        for( Closeable closeable : asList( in, out, err ) )
-        {
-            try
-            {
-                closeable.close();
-            }
-            catch( IOException ignore )
-            {
-            }
-        }
+        Flushables.flushQuietly( out );
+        Flushables.flushQuietly( err );
+        Closeables.closeQuietly( in );
+        Closeables.closeQuietly( out );
+        Closeables.closeQuietly( err );
 
         if( this.exitCallback != null )
         {

@@ -405,6 +405,7 @@ public class FileVisitorsManager implements Runnable
                 }
                 catch( Exception ignore )
                 {
+                    // does not matter if failed
                 }
             }
         }

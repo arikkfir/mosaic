@@ -233,6 +233,7 @@ public class Modules
             }
             catch( NumberFormatException ignore )
             {
+                // module name is not a module ID - ignore it
             }
         }
         return false;

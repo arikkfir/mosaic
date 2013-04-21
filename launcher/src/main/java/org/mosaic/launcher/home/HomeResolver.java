@@ -209,8 +209,9 @@ public class HomeResolver
                 }
                 return lines;
             }
-            catch( IOException ignore )
+            catch( IOException e )
             {
+                throw bootstrapError( "Incomplete Mosaic installation - could not read from 'logo.txt' file." );
             }
         }
         return Collections.emptyList();

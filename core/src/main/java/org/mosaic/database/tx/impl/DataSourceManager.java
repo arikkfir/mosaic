@@ -141,6 +141,7 @@ public class DataSourceManager extends ModuleListenerAdapter implements JdbcDriv
                 }
                 catch( SQLException ignore )
                 {
+                    // if driver fails, just treat this as if the driver rejected it and move to the next driver
                 }
             }
         }

@@ -98,7 +98,7 @@ public class AuthorizedKeys implements PublicKeys
                 String line = scanner.next().trim();
 
                 // ignore blank line and comments
-                if( ( line.length() == 0 ) || ( line.charAt( 0 ) == '#' ) )
+                if( line.length() == 0 || line.charAt( 0 ) == '#' )
                 {
                     continue;
                 }
@@ -144,11 +144,11 @@ public class AuthorizedKeys implements PublicKeys
 
     private boolean isSameKey( PublicKey k1, PublicKey k2 ) throws IOException
     {
-        if( ( k1 instanceof DSAPublicKey ) && ( k2 instanceof DSAPublicKey ) )
+        if( k1 instanceof DSAPublicKey && k2 instanceof DSAPublicKey )
         {
             return isSameDSAKey( ( DSAPublicKey ) k1, ( DSAPublicKey ) k2 );
         }
-        else if( ( k1 instanceof RSAPublicKey ) && ( k2 instanceof RSAPublicKey ) )
+        else if( k1 instanceof RSAPublicKey && k2 instanceof RSAPublicKey )
         {
             return isSameRSAKey( ( RSAPublicKey ) k1, ( RSAPublicKey ) k2 );
         }

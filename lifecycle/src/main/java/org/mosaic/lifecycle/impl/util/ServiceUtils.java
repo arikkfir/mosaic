@@ -119,6 +119,7 @@ public abstract class ServiceUtils
             }
             catch( Exception ignore )
             {
+                // ignore this - does not matter
             }
         }
         return null;

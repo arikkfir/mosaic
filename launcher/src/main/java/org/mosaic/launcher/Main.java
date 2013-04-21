@@ -169,8 +169,9 @@ public class Main
                     {
                         bundleContext.getBundle( 0 ).stop( 0 );
                     }
-                    catch( BundleException ignore )
+                    catch( BundleException e )
                     {
+                        printEmphasizedErrorMessage( "Failed to shutdown OSGi container: {}", e.getMessage(), e );
                     }
                     break;
                 }

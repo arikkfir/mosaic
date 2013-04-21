@@ -760,8 +760,9 @@ public class ModuleImpl implements Module
                         }
                         componentClasses.add( clazz );
                     }
-                    catch( ClassNotFoundException | NoClassDefFoundError ignore )
+                    catch( ClassNotFoundException | NoClassDefFoundError e )
                     {
+                        LOG.warn( "Could not read or parse class '{}' from module '{}': {}", path, this, e.getMessage(), e );
                     }
                 }
             }

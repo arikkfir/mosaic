@@ -43,7 +43,7 @@ public class UserAuthLocalhostNone implements UserAuth
         {
             InetSocketAddress inetAddress = ( InetSocketAddress ) remoteAddress;
             String hostAddress = inetAddress.getAddress().getHostAddress();
-            return hostAddress.equals( "127.0.0.1" ) || hostAddress.equals( "0:0:0:0:0:0:0:1" );
+            return hostAddress.equals( "127.0.0.1" ) || hostAddress.equals( "0:0:0:0:0:0:0:1" ); // NOPMD - it's ok to hard-code localhost address
         }
         return false;
     }
