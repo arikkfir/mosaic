@@ -224,7 +224,7 @@ public class JdbcTemplate
             @Override
             public Result processStatement( @Nonnull PreparedStatement stmt ) throws SQLException
             {
-                try( ResultSet rs = stmt.executeQuery() )
+                try( ResultSet rs = stmt.executeQuery() ) //NOPMD - the ResultSetProcessor handles this
                 {
                     return processor.processResultSet( rs );
                 }
@@ -519,13 +519,13 @@ public class JdbcTemplate
             {
                 stmt.setTime( index, ( Time ) value );
             }
-            else if( value instanceof java.sql.Date )
+            else if( value instanceof java.sql.Date ) // NOPMD - using fully qualified class name for clarity
             {
-                stmt.setDate( index, ( java.sql.Date ) value );
+                stmt.setDate( index, ( java.sql.Date ) value ); // NOPMD - using fully qualified class name for clarity
             }
-            else if( value instanceof java.util.Date )
+            else if( value instanceof java.util.Date ) // NOPMD - using fully qualified class name for clarity
             {
-                java.util.Date date = ( java.util.Date ) value;
+                java.util.Date date = ( java.util.Date ) value; // NOPMD - using fully qualified class name for clarity
                 stmt.setTimestamp( index, new Timestamp( date.getTime() ) );
             }
             else if( value instanceof DateTime )
@@ -536,13 +536,13 @@ public class JdbcTemplate
             else if( value instanceof LocalDate )
             {
                 LocalDate localDate = ( LocalDate ) value;
-                java.util.Date judate = localDate.toDate();
-                stmt.setDate( index, new java.sql.Date( judate.getTime() ) );
+                java.util.Date judate = localDate.toDate(); // NOPMD - using fully qualified class name for clarity
+                stmt.setDate( index, new java.sql.Date( judate.getTime() ) ); // NOPMD - using fully qualified class name for clarity
             }
             else if( value instanceof LocalDateTime )
             {
                 LocalDateTime localDate = ( LocalDateTime ) value;
-                java.util.Date judate = localDate.toDate();
+                java.util.Date judate = localDate.toDate(); // NOPMD - using fully qualified class name for clarity
                 stmt.setTimestamp( index, new Timestamp( judate.getTime() ) );
             }
             else
