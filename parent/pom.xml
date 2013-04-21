@@ -647,7 +647,7 @@
                     <targetJdk>1.7</targetJdk>
                     <rulesets>
                         <!-- Two rule sets that come bundled with PMD -->
-                        <ruleset>/rulesets/basic.xml</ruleset>
+                        <ruleset>/rulesets/java/basic.xml</ruleset>
                         <!--<ruleset>/rulesets/braces.xml</ruleset>-->
                         <!--<ruleset>/rulesets/naming.xml</ruleset>-->
                     </rulesets>
