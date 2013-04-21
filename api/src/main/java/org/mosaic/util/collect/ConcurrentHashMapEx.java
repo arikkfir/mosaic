@@ -11,6 +11,7 @@ import static java.lang.String.format;
 /**
  * @author arik
  */
+@SuppressWarnings( "CPD-START" )
 public class ConcurrentHashMapEx<K, V> extends ConcurrentHashMap<K, V> implements MapEx<K, V>
 {
     @Nonnull

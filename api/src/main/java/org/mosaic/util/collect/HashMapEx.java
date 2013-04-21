@@ -11,6 +11,7 @@ import static java.lang.String.format;
 /**
  * @author arik
  */
+@SuppressWarnings( "CPD-START" )
 public class HashMapEx<K, V> extends HashMap<K, V> implements MapEx<K, V>
 {
     @Nonnull
