@@ -9,7 +9,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import javax.annotation.Nonnull;
@@ -22,8 +21,10 @@ import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.session.ServerSession;
+import org.mosaic.Server;
 import org.mosaic.lifecycle.Module;
 import org.mosaic.lifecycle.ModuleManager;
+import org.mosaic.lifecycle.annotation.ServiceRef;
 import org.mosaic.shell.Console;
 import org.mosaic.shell.TerminateSessionException;
 import org.mosaic.shell.impl.command.CommandExecutor;
@@ -46,6 +47,9 @@ public class MosaicSession implements Command, Runnable, SessionAware
 
     @Nonnull
     private final CommandManager commandsManager;
+
+    @Nonnull
+    private Server server;
 
     private InputStream in;
 
@@ -71,6 +75,12 @@ public class MosaicSession implements Command, Runnable, SessionAware
     {
         this.moduleManager = moduleManager;
         this.commandsManager = commandsManager;
+    }
+
+    @ServiceRef
+    public void setServer( @Nonnull Server server )
+    {
+        this.server = server;
     }
 
     @Override
@@ -116,7 +126,7 @@ public class MosaicSession implements Command, Runnable, SessionAware
         // create the console reader used for interacting with the user
         try
         {
-            Path historyFile = Paths.get( System.getProperty( "mosaic.home.work" ), "history", getUsername() );
+            Path historyFile = this.server.getWork().resolve( "shell-history" ).resolve( getUsername() );
             this.history = new FileHistory( historyFile.toFile() );
 
             this.consoleReader = new ConsoleReader( new PipeInputStream( this.inputQueueThread.getBufferedInputQueue() ), this.out, new SessionTerminal( env ) );
@@ -134,11 +144,6 @@ public class MosaicSession implements Command, Runnable, SessionAware
         this.consoleThread = new Thread( this, "SSHD/console" );
         this.consoleThread.setDaemon( true );
         this.consoleThread.start();
-    }
-
-    private String getUsername()
-    {
-        return this.session == null ? "anonymous" : this.session.getUsername();
     }
 
     @Override
@@ -234,6 +239,11 @@ public class MosaicSession implements Command, Runnable, SessionAware
 
         this.inputQueueThread.end();
         this.inputQueueThread = null;
+    }
+
+    private String getUsername()
+    {
+        return this.session == null ? "anonymous" : this.session.getUsername();
     }
 
     private void printWelcomeMessage( Console console ) throws IOException
