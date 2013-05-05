@@ -1,8 +1,6 @@
 package org.mosaic.security.localusers.impl;
 
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.FileVisitor;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
@@ -14,18 +12,16 @@ import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
-import org.mosaic.Server;
-import org.mosaic.lifecycle.DP;
-import org.mosaic.lifecycle.ServicePropertiesProvider;
+import org.mosaic.filewatch.FileWatcher;
+import org.mosaic.filewatch.WatchEvent;
+import org.mosaic.filewatch.WatchRoot;
 import org.mosaic.lifecycle.annotation.Service;
-import org.mosaic.lifecycle.annotation.ServiceRef;
 import org.mosaic.security.User;
 import org.mosaic.security.credentials.Password;
 import org.mosaic.security.credentials.PublicKeys;
 import org.mosaic.security.localusers.LocalUser;
 import org.mosaic.security.realm.MutableUser;
 import org.mosaic.security.realm.Realm;
-import org.mosaic.util.io.FileVisitorAdapter;
 import org.mosaic.util.xml.impl.Digester;
 import org.mosaic.util.xml.impl.StrictErrorHandler;
 import org.slf4j.Logger;
@@ -35,8 +31,9 @@ import org.xml.sax.SAXException;
 /**
  * @author arik
  */
-@Service( { Realm.class, FileVisitor.class } )
-public class LocalUsersRealm extends FileVisitorAdapter implements Realm, ServicePropertiesProvider
+@Service(value = Realm.class,
+         properties = @Service.P(key = "name", value = "local"))
+public class LocalUsersRealm implements Realm
 {
     private static final Logger LOG = LoggerFactory.getLogger( LocalUsersRealm.class );
 
@@ -57,16 +54,7 @@ public class LocalUsersRealm extends FileVisitorAdapter implements Realm, Servic
     }
 
     @Nonnull
-    private Server server;
-
-    @Nonnull
     private Users users = new Users();
-
-    @ServiceRef
-    public void setServer( @Nonnull Server server )
-    {
-        this.server = server;
-    }
 
     @Nonnull
     @Override
@@ -110,20 +98,10 @@ public class LocalUsersRealm extends FileVisitorAdapter implements Realm, Servic
         return true;
     }
 
-    @Nonnull
-    @Override
-    public DP[] getServiceProperties()
-    {
-        return new DP[] {
-                DP.dp( "name", "local" ),
-                DP.dp( "root", this.server.getEtc() ),
-                DP.dp( "pattern", "users.xml" )
-        };
-    }
-
-    @Override
-    protected FileVisitResult onFileModified( @Nonnull Path file, @Nonnull BasicFileAttributes attrs )
-            throws IOException
+    @FileWatcher(root = WatchRoot.ETC,
+                 pattern = "users.xml",
+                 event = { WatchEvent.FILE_ADDED, WatchEvent.FILE_MODIFIED })
+    public void onFileModified( @Nonnull Path file, @Nonnull BasicFileAttributes attrs ) throws IOException
     {
         Digester digester = new Digester( getClass(), USERS_SCHEMA );
         digester.setRuleNamespaceURI( "https://github.com/arikkfir/mosaic/users-1.0.0" );
@@ -145,14 +123,14 @@ public class LocalUsersRealm extends FileVisitorAdapter implements Realm, Servic
         {
             LOG.error( "Error parsing local users realm users at '{}': {}", file, e.getMessage(), e );
         }
-        return FileVisitResult.CONTINUE;
     }
 
-    @Override
-    protected FileVisitResult onFileDeleted( @Nonnull Path file ) throws IOException
+    @FileWatcher(root = WatchRoot.ETC,
+                 pattern = "users.xml",
+                 event = WatchEvent.FILE_DELETED)
+    public void onFileDeleted( @Nonnull Path file ) throws IOException
     {
         this.users = new Users();
-        return FileVisitResult.CONTINUE;
     }
 
     private class Users
@@ -160,7 +138,7 @@ public class LocalUsersRealm extends FileVisitorAdapter implements Realm, Servic
         @Nonnull
         private final Map<String, UserInfo> users = new HashMap<>();
 
-        @SuppressWarnings( "UnusedDeclaration" )
+        @SuppressWarnings("UnusedDeclaration")
         public void addUser( @Nonnull UserInfo user )
         {
             if( this.users.containsKey( user.name ) )
@@ -209,25 +187,25 @@ public class LocalUsersRealm extends FileVisitorAdapter implements Realm, Servic
         @Nonnull
         private Set<String> roles = new HashSet<>();
 
-        @SuppressWarnings( "UnusedDeclaration" )
+        @SuppressWarnings("UnusedDeclaration")
         public void addRole( @Nonnull String role )
         {
             this.roles.add( role );
         }
 
-        @SuppressWarnings( "UnusedDeclaration" )
+        @SuppressWarnings("UnusedDeclaration")
         private void setName( @Nonnull String name )
         {
             this.name = name;
         }
 
-        @SuppressWarnings( "UnusedDeclaration" )
+        @SuppressWarnings("UnusedDeclaration")
         private void setPassword( @Nonnull String password, @Nonnull String encryption )
         {
             this.password = new PasswordImpl( password, PasswordEncryption.valueOf( encryption.toUpperCase() ) );
         }
 
-        @SuppressWarnings( "UnusedDeclaration" )
+        @SuppressWarnings("UnusedDeclaration")
         private void setPublicKeys( @Nullable String publicKeys ) throws IOException
         {
             if( publicKeys == null || publicKeys.trim().isEmpty() )

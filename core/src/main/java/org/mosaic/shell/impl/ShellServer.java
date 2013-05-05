@@ -16,6 +16,7 @@ import org.apache.sshd.server.UserAuth;
 import org.apache.sshd.server.auth.UserAuthPassword;
 import org.apache.sshd.server.auth.UserAuthPublicKey;
 import org.apache.sshd.server.session.SessionFactory;
+import org.mosaic.Server;
 import org.mosaic.lifecycle.ModuleManager;
 import org.mosaic.lifecycle.annotation.Bean;
 import org.mosaic.lifecycle.annotation.BeanRef;
@@ -54,6 +55,8 @@ public class ShellServer
 
     private PublicKeyAuthenticator publicKeyAuthenticator;
 
+    private Server server;
+
     private SshServer sshServer;
 
     private CommandManager shellCommandsManager;
@@ -64,6 +67,12 @@ public class ShellServer
     public void setKeyPairProvider( KeyPairProvider keyPairProvider )
     {
         this.keyPairProvider = keyPairProvider;
+    }
+
+    @ServiceRef
+    public void setServer( Server server )
+    {
+        this.server = server;
     }
 
     @ServiceRef
@@ -161,7 +170,7 @@ public class ShellServer
         @Override
         public Command create()
         {
-            return new MosaicSession( moduleManager, shellCommandsManager );
+            return new MosaicSession( server, moduleManager, shellCommandsManager );
         }
     }
 }

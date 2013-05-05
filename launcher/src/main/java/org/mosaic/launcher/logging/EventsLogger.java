@@ -2,6 +2,7 @@ package org.mosaic.launcher.logging;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -9,30 +10,32 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class EventsLogger
 {
+    private static final Logger LOG = LoggerFactory.getLogger( "org.osgi.framework" );
+
     public static void printEmphasizedInfoMessage( @Nonnull String message, @Nullable Object... args )
     {
-        LoggerFactory.getLogger( "org.osgi.framework" ).info( "" );
-        LoggerFactory.getLogger( "org.osgi.framework" ).info( "*****************************************************************************************" );
-        LoggerFactory.getLogger( "org.osgi.framework" ).info( message, args );
-        LoggerFactory.getLogger( "org.osgi.framework" ).info( "*****************************************************************************************" );
-        LoggerFactory.getLogger( "org.osgi.framework" ).info( "" );
+        LOG.info( "" );
+        LOG.info( "*****************************************************************************************" );
+        LOG.info( message, args );
+        LOG.info( "*****************************************************************************************" );
+        LOG.info( "" );
     }
 
     public static void printEmphasizedWarnMessage( @Nonnull String message, @Nullable Object... args )
     {
-        LoggerFactory.getLogger( "org.osgi.framework" ).warn( "" );
-        LoggerFactory.getLogger( "org.osgi.framework" ).warn( "*****************************************************************************************" );
-        LoggerFactory.getLogger( "org.osgi.framework" ).warn( message, args );
-        LoggerFactory.getLogger( "org.osgi.framework" ).warn( "*****************************************************************************************" );
-        LoggerFactory.getLogger( "org.osgi.framework" ).warn( "" );
+        LOG.warn( "" );
+        LOG.warn( "*****************************************************************************************" );
+        LOG.warn( message, args );
+        LOG.warn( "*****************************************************************************************" );
+        LOG.warn( "" );
     }
 
     public static void printEmphasizedErrorMessage( @Nonnull String message, @Nullable Object... args )
     {
-        LoggerFactory.getLogger( "org.osgi.framework" ).error( "" );
-        LoggerFactory.getLogger( "org.osgi.framework" ).error( "*****************************************************************************************" );
-        LoggerFactory.getLogger( "org.osgi.framework" ).error( message, args );
-        LoggerFactory.getLogger( "org.osgi.framework" ).error( "*****************************************************************************************" );
-        LoggerFactory.getLogger( "org.osgi.framework" ).error( "" );
+        LOG.error( "" );
+        LOG.error( "*****************************************************************************************" );
+        LOG.error( message, args );
+        LOG.error( "*****************************************************************************************" );
+        LOG.error( "" );
     }
 }

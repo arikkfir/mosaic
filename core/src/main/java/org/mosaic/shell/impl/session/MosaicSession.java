@@ -24,7 +24,6 @@ import org.apache.sshd.server.session.ServerSession;
 import org.mosaic.Server;
 import org.mosaic.lifecycle.Module;
 import org.mosaic.lifecycle.ModuleManager;
-import org.mosaic.lifecycle.annotation.ServiceRef;
 import org.mosaic.shell.Console;
 import org.mosaic.shell.TerminateSessionException;
 import org.mosaic.shell.impl.command.CommandExecutor;
@@ -71,16 +70,13 @@ public class MosaicSession implements Command, Runnable, SessionAware
 
     private FileHistory history;
 
-    public MosaicSession( @Nonnull ModuleManager moduleManager, @Nonnull CommandManager commandsManager )
-    {
-        this.moduleManager = moduleManager;
-        this.commandsManager = commandsManager;
-    }
-
-    @ServiceRef
-    public void setServer( @Nonnull Server server )
+    public MosaicSession( @Nonnull Server server,
+                          @Nonnull ModuleManager moduleManager,
+                          @Nonnull CommandManager commandsManager )
     {
         this.server = server;
+        this.moduleManager = moduleManager;
+        this.commandsManager = commandsManager;
     }
 
     @Override
@@ -167,7 +163,7 @@ public class MosaicSession implements Command, Runnable, SessionAware
                     }
                     catch( TerminateSessionException e )
                     {
-                        if( this.session != null )
+                        if( this.session != null && this.inputQueueThread != null )
                         {
                             this.inputQueueThread.end();
                         }
@@ -218,13 +214,19 @@ public class MosaicSession implements Command, Runnable, SessionAware
 
     }
 
-    @SuppressWarnings( "deprecation" )
+    @SuppressWarnings("deprecation")
     @Override
     public void destroy()
     {
         this.running = false;
-        this.consoleThread.interrupt();
-        this.inputQueueThread.interrupt();
+        if( this.consoleThread != null )
+        {
+            this.consoleThread.interrupt();
+        }
+        if( this.inputQueueThread != null )
+        {
+            this.inputQueueThread.interrupt();
+        }
 
         Flushables.flushQuietly( out );
         Flushables.flushQuietly( err );
@@ -237,7 +239,10 @@ public class MosaicSession implements Command, Runnable, SessionAware
             this.exitCallback.onExit( 0 );
         }
 
-        this.inputQueueThread.end();
+        if( this.inputQueueThread != null )
+        {
+            this.inputQueueThread.end();
+        }
         this.inputQueueThread = null;
     }
 

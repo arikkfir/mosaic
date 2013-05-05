@@ -1,5 +1,0 @@
-Place your bundle files in this directory for auto-deployment. Bundle JARs in
-this directory are monitored and installed when added, updated when modified,
-and uninstalled when deleted.
-
-You can delete this file if you wish.

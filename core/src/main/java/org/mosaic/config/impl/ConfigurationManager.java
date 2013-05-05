@@ -5,8 +5,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -18,15 +16,14 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import org.mosaic.Server;
-import org.mosaic.lifecycle.DP;
+import org.mosaic.filewatch.FileWatcher;
+import org.mosaic.filewatch.WatchEvent;
+import org.mosaic.filewatch.WatchRoot;
 import org.mosaic.lifecycle.MethodEndpoint;
-import org.mosaic.lifecycle.ServicePropertiesProvider;
 import org.mosaic.lifecycle.annotation.*;
 import org.mosaic.util.collect.HashMapEx;
 import org.mosaic.util.collect.MapEx;
 import org.mosaic.util.convert.ConversionService;
-import org.mosaic.util.io.FileVisitorAdapter;
 import org.mosaic.util.reflection.MethodHandle;
 import org.mosaic.util.reflection.MethodParameter;
 import org.slf4j.Logger;
@@ -37,13 +34,13 @@ import static com.google.common.collect.Multimaps.synchronizedMultimap;
 /**
  * @author arik
  */
-@Service(FileVisitor.class)
-public class ConfigurationManager extends FileVisitorAdapter implements ServicePropertiesProvider
+@Bean
+public class ConfigurationManager
 {
     private static final Logger LOG = LoggerFactory.getLogger( ConfigurationManager.class );
 
     @Nonnull
-    private Server server;
+    private final Map<String, Properties> configurations = new ConcurrentHashMap<>( 50 );
 
     @Nonnull
     private ConversionService conversionService;
@@ -51,35 +48,15 @@ public class ConfigurationManager extends FileVisitorAdapter implements ServiceP
     @Nullable
     private Multimap<String, MethodEndpoint> endpoints;
 
-    @Nullable
-    private Map<String, Properties> configurations;
-
-    @ServiceRef
-    public void setServer( @Nonnull Server server )
-    {
-        this.server = server;
-    }
-
     @ServiceRef
     public void setConversionService( @Nonnull ConversionService conversionService )
     {
         this.conversionService = conversionService;
     }
 
-    @Nonnull
-    @Override
-    public DP[] getServiceProperties()
-    {
-        return new DP[] {
-                DP.dp( "root", this.server.getEtc() ),
-                DP.dp( "pattern", "**/*.properties" )
-        };
-    }
-
     @PostConstruct
     public void init()
     {
-        this.configurations = new ConcurrentHashMap<>( 50 );
         this.endpoints = synchronizedMultimap( ArrayListMultimap.<String, MethodEndpoint>create() );
     }
 
@@ -87,7 +64,6 @@ public class ConfigurationManager extends FileVisitorAdapter implements ServiceP
     public void destory()
     {
         this.endpoints = null;
-        this.configurations = null;
     }
 
     @ServiceBind(updates = false)
@@ -99,14 +75,10 @@ public class ConfigurationManager extends FileVisitorAdapter implements ServiceP
             Configurable ann = ( Configurable ) endpoint.getType();
             endpoints.put( ann.value(), endpoint );
 
-            Map<String, Properties> configurations = this.configurations;
-            if( configurations != null )
+            Properties properties = this.configurations.get( ann.value() );
+            if( properties != null )
             {
-                Properties properties = configurations.get( ann.value() );
-                if( properties != null )
-                {
-                    notifyConfigurable( properties, endpoint );
-                }
+                notifyConfigurable( properties, endpoint );
             }
         }
     }
@@ -122,17 +94,11 @@ public class ConfigurationManager extends FileVisitorAdapter implements ServiceP
         }
     }
 
-    @Override
-    protected FileVisitResult onFileModified( @Nonnull Path file,
-                                              @SuppressWarnings("UnusedParameters") @Nonnull BasicFileAttributes attrs )
-            throws IOException
+    @FileWatcher(root = WatchRoot.ETC,
+                 pattern = "**/*.properties",
+                 event = { WatchEvent.FILE_ADDED, WatchEvent.FILE_MODIFIED })
+    public void onFileModified( @Nonnull Path file, @Nonnull BasicFileAttributes attrs ) throws IOException
     {
-        Map<String, Properties> configurations = this.configurations;
-        if( configurations == null )
-        {
-            return FileVisitResult.TERMINATE;
-        }
-
         // load configuration data
         final Properties properties = new Properties();
         properties.load( new ByteArrayInputStream( Files.readAllBytes( file ) ) );
@@ -140,7 +106,7 @@ public class ConfigurationManager extends FileVisitorAdapter implements ServiceP
         // store (possibly replace previous) configuration in memory
         String fileName = file.getFileName().toString();
         String configurationName = fileName.substring( 0, fileName.length() - ".properties".length() );
-        configurations.put( configurationName, properties );
+        this.configurations.put( configurationName, properties );
 
         // notify interested endpoints
         Multimap<String, MethodEndpoint> endpoints = this.endpoints;
@@ -151,23 +117,17 @@ public class ConfigurationManager extends FileVisitorAdapter implements ServiceP
                 notifyConfigurable( properties, endpoint );
             }
         }
-
-        return FileVisitResult.CONTINUE;
     }
 
-    @Override
-    protected FileVisitResult onFileDeleted( @Nonnull Path file ) throws IOException
+    @FileWatcher(root = WatchRoot.ETC,
+                 pattern = "**/*.properties",
+                 event = WatchEvent.FILE_DELETED)
+    public void onFileDeleted( @Nonnull Path file ) throws IOException
     {
-        Map<String, Properties> configurations = this.configurations;
-        if( configurations == null )
-        {
-            return FileVisitResult.TERMINATE;
-        }
-
         // store (possibly replace previous) configuration in memory
         String fileName = file.getFileName().toString();
         String configurationName = fileName.substring( 0, fileName.length() - ".properties".length() );
-        configurations.remove( configurationName );
+        this.configurations.remove( configurationName );
 
         // notify interested endpoints
         Multimap<String, MethodEndpoint> endpoints = this.endpoints;
@@ -179,16 +139,6 @@ public class ConfigurationManager extends FileVisitorAdapter implements ServiceP
                 notifyConfigurable( emptyProperties, endpoint );
             }
         }
-
-        return FileVisitResult.CONTINUE;
-    }
-
-    @Override
-    protected FileVisitResult onError( @Nonnull Path file,
-                                       @Nonnull IOException exception ) throws IOException
-    {
-        LOG.error( "Could not process configuration file at '{}': {}", file, exception.getMessage(), exception );
-        return FileVisitResult.CONTINUE;
     }
 
     private void notifyConfigurable( final Properties properties, MethodEndpoint endpoint )

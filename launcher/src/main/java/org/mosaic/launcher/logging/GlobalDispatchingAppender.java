@@ -5,11 +5,10 @@ import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.AppenderBase;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.StringTokenizer;
 import javax.annotation.Nonnull;
-import org.apache.commons.lang3.text.StrTokenizer;
 import org.slf4j.Marker;
 
-import static org.apache.commons.lang3.text.StrMatcher.*;
 import static org.mosaic.launcher.logging.AppenderRegistry.*;
 
 /**
@@ -36,18 +35,6 @@ public class GlobalDispatchingAppender<E extends ILoggingEvent> extends Appender
         protected StringBuilder initialValue()
         {
             return new StringBuilder( 100 );
-        }
-    };
-
-    private final ThreadLocal<StrTokenizer> tokenizers = new ThreadLocal<StrTokenizer>()
-    {
-        @Override
-        protected StrTokenizer initialValue()
-        {
-            return new StrTokenizer().setDelimiterMatcher( commaMatcher() )
-                                     .setIgnoreEmptyTokens( true )
-                                     .setQuoteMatcher( doubleQuoteMatcher() )
-                                     .setTrimmerMatcher( trimMatcher() );
         }
     };
 
@@ -82,11 +69,10 @@ public class GlobalDispatchingAppender<E extends ILoggingEvent> extends Appender
         addAppendersFromMarker( buffer, event );
 
         // tokenize appender names
-        StrTokenizer tokenizer = this.tokenizers.get();
-        tokenizer.reset( buffer.toString() );
+        StringTokenizer tokenizer = new StringTokenizer( buffer.toString(), ",", false );
 
         // if no tokens available, then no specific appender has been requested; send to default appender
-        if( !tokenizer.hasNext() )
+        if( !tokenizer.hasMoreTokens() )
         {
             AppenderRegistry.getDefaultAppender().doAppend( event );
         }
@@ -97,9 +83,13 @@ public class GlobalDispatchingAppender<E extends ILoggingEvent> extends Appender
             appenders.clear();
 
             // start iterating the appender names, find the appender for each and send the event to it if it wasn't used yet for this specific event
-            while( tokenizer.hasNext() )
+            while( tokenizer.hasMoreTokens() )
             {
-                String token = tokenizer.next();
+                String token = tokenizer.nextToken();
+                if( token.trim().isEmpty() )
+                {
+                    continue;
+                }
 
                 // if the "dev" system property was given, then the default appender is "CONSOLE".
                 // BUT do not do this if we're in a job - to avoid polluting the console...

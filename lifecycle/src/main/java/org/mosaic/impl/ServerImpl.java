@@ -25,22 +25,22 @@ public class ServerImpl implements Server, InitializingBean, DisposableBean
     private final Version version;
 
     @Nonnull
-    private final Path home = Paths.get( System.getProperty( "mosaic.home" ) );
+    private final Path home;
 
     @Nonnull
-    private final Path apps = Paths.get( System.getProperty( "mosaic.home.apps" ) );
+    private final Path apps;
 
     @Nonnull
-    private final Path etc = Paths.get( System.getProperty( "mosaic.home.etc" ) );
+    private final Path etc;
 
     @Nonnull
-    private final Path lib = Paths.get( System.getProperty( "mosaic.home.lib" ) );
+    private final Path lib;
 
     @Nonnull
-    private final Path logs = Paths.get( System.getProperty( "mosaic.home.logs" ) );
+    private final Path logs;
 
     @Nonnull
-    private final Path work = Paths.get( System.getProperty( "mosaic.home.work" ) );
+    private final Path work;
 
     @Nonnull
     private final BundleContext bundleContext;
@@ -50,9 +50,14 @@ public class ServerImpl implements Server, InitializingBean, DisposableBean
 
     public ServerImpl( @Nonnull BundleContext bundleContext )
     {
-        String version = System.getProperty( "mosaic.version" ).replace( '-', '.' );
-        this.version = new Version( version );
         this.bundleContext = bundleContext;
+        this.home = Paths.get( this.bundleContext.getProperty( "mosaic.home" ) );
+        this.apps = Paths.get( this.bundleContext.getProperty( "mosaic.home.apps" ) );
+        this.etc = Paths.get( this.bundleContext.getProperty( "mosaic.home.etc" ) );
+        this.lib = Paths.get( this.bundleContext.getProperty( "mosaic.home.lib" ) );
+        this.logs = Paths.get( this.bundleContext.getProperty( "mosaic.home.logs" ) );
+        this.work = Paths.get( this.bundleContext.getProperty( "mosaic.home.work" ) );
+        this.version = new Version( this.bundleContext.getProperty( "mosaic.version" ).replace( '-', '.' ) );
     }
 
     @Override

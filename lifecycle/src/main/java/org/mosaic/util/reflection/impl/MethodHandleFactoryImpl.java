@@ -1,12 +1,14 @@
 package org.mosaic.util.reflection.impl;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.reflect.TypeToken;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.lifecycle.impl.util.ServiceUtils;
@@ -33,17 +35,85 @@ import static org.springframework.core.annotation.AnnotationUtils.findAnnotation
  */
 public class MethodHandleFactoryImpl implements MethodHandleFactory, InitializingBean, DisposableBean
 {
-    @Nonnull
-    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    private static class MethodSignatureKey
+    {
+        @Nonnull
+        private final Class<?> declaringClass;
 
-    /**
-     * @todo replace with guava cache
-     */
-    @Nonnull
-    private final Map<Method, MethodHandleImpl> handlesCacheByMethod = new WeakHashMap<>( 1000 );
+        @Nonnull
+        private final String methodName;
+
+        @Nonnull
+        private final Class<?>[] argumentTypesArray;
+
+        @Nonnull
+        private final List<Class<?>> argumentTypes;
+
+        private MethodSignatureKey( @Nonnull Class<?> declaringClass,
+                                    @Nonnull String methodName,
+                                    @Nonnull Class<?>... argumentTypes )
+        {
+            this.declaringClass = declaringClass;
+            this.methodName = methodName;
+            this.argumentTypesArray = argumentTypes;
+            this.argumentTypes = Arrays.asList( argumentTypes );
+        }
+
+        @SuppressWarnings("RedundantIfStatement")
+        @Override
+        public boolean equals( Object o )
+        {
+            if( this == o )
+            {
+                return true;
+            }
+            if( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            MethodSignatureKey that = ( MethodSignatureKey ) o;
+            if( !argumentTypes.equals( that.argumentTypes ) )
+            {
+                return false;
+            }
+            else if( !declaringClass.equals( that.declaringClass ) )
+            {
+                return false;
+            }
+            else if( !methodName.equals( that.methodName ) )
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = declaringClass.hashCode();
+            result = 31 * result + methodName.hashCode();
+            result = 31 * result + argumentTypes.hashCode();
+            return result;
+        }
+
+        private Method findMethod()
+        {
+            return ReflectionUtils.findMethod( this.declaringClass, this.methodName, this.argumentTypesArray );
+        }
+    }
 
     @Nonnull
     private final BundleContext bundleContext;
+
+    @Nonnull
+    private final LoadingCache<Method, MethodHandleImpl> methodHandlesCache;
+
+    @Nonnull
+    private final LoadingCache<MethodSignatureKey, Method> methodSignaturesCache;
 
     @Nullable
     private ServiceRegistration<MethodHandleFactory> serviceRegistration;
@@ -55,6 +125,34 @@ public class MethodHandleFactoryImpl implements MethodHandleFactory, Initializin
     {
         this.bundleContext = bundleContext;
         this.conversionService = conversionService;
+        this.methodHandlesCache = CacheBuilder.newBuilder()
+                                              .concurrencyLevel( 100 )
+                                              .expireAfterAccess( 1, TimeUnit.HOURS )
+                                              .initialCapacity( 1000 )
+                                              .maximumSize( 10000 )
+                                              .weakKeys()
+                                              .build( new CacheLoader<Method, MethodHandleImpl>()
+                                              {
+                                                  @Override
+                                                  public MethodHandleImpl load( Method key ) throws Exception
+                                                  {
+                                                      return new MethodHandleImpl( key );
+                                                  }
+                                              } );
+        this.methodSignaturesCache = CacheBuilder.newBuilder()
+                                                 .concurrencyLevel( 100 )
+                                                 .expireAfterAccess( 1, TimeUnit.HOURS )
+                                                 .initialCapacity( 1000 )
+                                                 .maximumSize( 10000 )
+                                                 .weakKeys()
+                                                 .build( new CacheLoader<MethodSignatureKey, Method>()
+                                                 {
+                                                     @Override
+                                                     public Method load( MethodSignatureKey key ) throws Exception
+                                                     {
+                                                         return key.findMethod();
+                                                     }
+                                                 } );
     }
 
     @Override
@@ -75,8 +173,7 @@ public class MethodHandleFactoryImpl implements MethodHandleFactory, Initializin
                                           @Nonnull String methodName,
                                           @Nonnull Class<?>... argumentTypes )
     {
-        // TODO arik: cache by signature to save reflection search of method
-        Method method = ReflectionUtils.findMethod( clazz, methodName, argumentTypes );
+        Method method = this.methodSignaturesCache.getUnchecked( new MethodSignatureKey( clazz, methodName, argumentTypes ) );
         if( method == null )
         {
             return null;
@@ -91,33 +188,7 @@ public class MethodHandleFactoryImpl implements MethodHandleFactory, Initializin
     @Override
     public MethodHandle findMethodHandle( @Nonnull Method method )
     {
-        // see if we have a cached handle for the method - we do that while holding a read lock to prevent updates while we do it
-        this.lock.readLock().lock();
-        MethodHandleImpl handle = this.handlesCacheByMethod.get( method );
-        this.lock.readLock().unlock();
-
-        // if we have a cached handle - return that
-        if( handle != null )
-        {
-            return handle;
-        }
-
-        // no cache - create a new handle while holding the write-lock, thus ensuring we have exclusive access to the map
-        this.lock.writeLock().lock();
-        try
-        {
-            handle = this.handlesCacheByMethod.get( method );
-            if( handle == null )
-            {
-                handle = new MethodHandleImpl( method );
-                this.handlesCacheByMethod.put( method, handle );
-            }
-        }
-        finally
-        {
-            this.lock.writeLock().unlock();
-        }
-        return handle;
+        return this.methodHandlesCache.getUnchecked( method );
     }
 
     private class MethodParameterImpl implements MethodParameter

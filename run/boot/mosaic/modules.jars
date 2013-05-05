@@ -1,5 +1,0 @@
-../../../api/target/api-${mosaic.version}.jar
-../../../lifecycle/target/lifecycle-${mosaic.version}.jar
-../../../core/target/core-${mosaic.version}.jar
-../../../database/target/database-${mosaic.version}.jar
-../../../shell/target/shell-${mosaic.version}.jar

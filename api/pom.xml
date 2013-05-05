@@ -26,7 +26,7 @@
                 <artifactId>maven-bundle-plugin</artifactId>
                 <configuration>
                     <instructions>
-                        <Mosaic-StartLevel>1</Mosaic-StartLevel>
+                        <!-- since we don't have any impl or internal packages - just export everything -->
                         <Export-Package>{local-packages}</Export-Package>
                     </instructions>
                 </configuration>
@@ -45,10 +45,6 @@
         <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
         </dependency>
         <dependency>
             <groupId>biz.aQute</groupId>

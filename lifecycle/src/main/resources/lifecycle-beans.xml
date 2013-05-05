@@ -56,4 +56,16 @@
         <constructor-arg ref="methodHandleFactory"/>
     </bean>
 
+    <bean id="bundlesManager" class="org.mosaic.filewatch.impl.manager.BundlesManager">
+        <constructor-arg ref="bundleContext"/>
+        <constructor-arg ref="server"/>
+    </bean>
+
+    <bean id="fileWatchersManager" class="org.mosaic.filewatch.impl.manager.FileWatchersManager">
+        <constructor-arg ref="bundleContext"/>
+        <constructor-arg ref="server"/>
+        <constructor-arg ref="bundlesManager"/>
+        <constructor-arg ref="conversionService"/>
+    </bean>
+
 </beans>

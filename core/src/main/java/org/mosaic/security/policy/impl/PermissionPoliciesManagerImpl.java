@@ -4,10 +4,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.FileVisitor;
 import java.nio.file.Path;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -18,16 +15,15 @@ import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import org.apache.commons.digester3.ObjectCreateRule;
 import org.apache.commons.digester3.Rule;
-import org.mosaic.Server;
-import org.mosaic.lifecycle.DP;
-import org.mosaic.lifecycle.ServicePropertiesProvider;
+import org.mosaic.filewatch.FileWatcher;
+import org.mosaic.filewatch.WatchEvent;
+import org.mosaic.filewatch.WatchRoot;
 import org.mosaic.lifecycle.annotation.Service;
 import org.mosaic.lifecycle.annotation.ServiceRef;
 import org.mosaic.security.policy.Permission;
 import org.mosaic.security.policy.PermissionPoliciesManager;
 import org.mosaic.security.policy.PermissionPolicy;
 import org.mosaic.util.expression.ExpressionParser;
-import org.mosaic.util.io.FileVisitorAdapter;
 import org.mosaic.util.xml.impl.Digester;
 import org.mosaic.util.xml.impl.StrictErrorHandler;
 import org.slf4j.Logger;
@@ -38,9 +34,8 @@ import org.xml.sax.SAXException;
 /**
  * @author arik
  */
-@Service( { PermissionPoliciesManager.class, FileVisitor.class } )
-public class PermissionPoliciesManagerImpl extends FileVisitorAdapter
-        implements PermissionPoliciesManager, ServicePropertiesProvider
+@Service(PermissionPoliciesManager.class)
+public class PermissionPoliciesManagerImpl implements PermissionPoliciesManager
 {
     private static final Logger LOG = LoggerFactory.getLogger( PermissionPoliciesManagerImpl.class );
 
@@ -67,9 +62,6 @@ public class PermissionPoliciesManagerImpl extends FileVisitorAdapter
     private final LoadingCache<String, Permission> permissionsCache;
 
     @Nonnull
-    private Server server;
-
-    @Nonnull
     private ExpressionParser expressionParser;
 
     public PermissionPoliciesManagerImpl()
@@ -88,12 +80,6 @@ public class PermissionPoliciesManagerImpl extends FileVisitorAdapter
                                                 }
                                             } );
         this.permissionsCache.cleanUp();
-    }
-
-    @ServiceRef
-    public void setServer( @Nonnull Server server )
-    {
-        this.server = server;
     }
 
     @ServiceRef
@@ -116,20 +102,13 @@ public class PermissionPoliciesManagerImpl extends FileVisitorAdapter
         return this.permissionPolicies.get( name );
     }
 
-    @Nonnull
-    @Override
-    public DP[] getServiceProperties()
-    {
-        return new DP[] {
-                DP.dp( "root", this.server.getEtc() ),
-                DP.dp( "pattern", "permission-policies/**/*.xml" )
-        };
-    }
-
-    @Override
-    protected FileVisitResult onFileModified( @Nonnull Path file,
-                                              @Nonnull BasicFileAttributes attrs )
-            throws IOException
+    @FileWatcher(root = WatchRoot.ETC,
+                 pattern = "permission-policies/**/*.xml",
+                 event = {
+                         WatchEvent.FILE_ADDED,
+                         WatchEvent.FILE_MODIFIED
+                 })
+    public void onFileModified( @Nonnull Path file ) throws IOException
     {
         String fileName = file.getFileName().toString();
         String name = fileName.substring( 0, fileName.lastIndexOf( '.' ) );
@@ -162,16 +141,16 @@ public class PermissionPoliciesManagerImpl extends FileVisitorAdapter
             LOG.error( "Error parsing permission policy at '{}': {}", file, e.getMessage(), e );
             this.permissionPolicies.remove( name );
         }
-        return FileVisitResult.CONTINUE;
     }
 
-    @Override
-    protected FileVisitResult onFileDeleted( @Nonnull Path file ) throws IOException
+    @FileWatcher(root = WatchRoot.ETC,
+                 pattern = "permission-policies/**/*.xml",
+                 event = WatchEvent.FILE_DELETED)
+    public void onFileDeleted( @Nonnull Path file ) throws IOException
     {
         String fileName = file.getFileName().toString();
         String name = fileName.substring( 0, fileName.lastIndexOf( '.' ) );
         this.permissionPolicies.remove( name );
-        return FileVisitResult.CONTINUE;
     }
 
     private ObjectCreateRule createNewRoleRule()

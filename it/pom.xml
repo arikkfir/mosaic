@@ -24,8 +24,9 @@
     </distributionManagement>
 
     <modules>
-        <module>test-module-01</module>
-        <module>tests</module>
+        <module>runner</module>
+        <!--<module>test-module-01</module>-->
+        <!--<module>tests</module>-->
     </modules>
 
 </project>

@@ -27,7 +27,6 @@
                 <configuration>
                     <instructions>
                         <Bundle-Activator>org.mosaic.impl.MosaicActivator</Bundle-Activator>
-                        <Mosaic-StartLevel>1</Mosaic-StartLevel>
                         <Embed-Dependency>
                             javassist,
                             jgrapht,
@@ -101,6 +100,10 @@
             <groupId>org.javassist</groupId>
             <artifactId>javassist</artifactId>
             <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>javax.mail</groupId>
+            <artifactId>mail</artifactId>
         </dependency>
         <dependency>
             <groupId>com.google.code.findbugs</groupId>
