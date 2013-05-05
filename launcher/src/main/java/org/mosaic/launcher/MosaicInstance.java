@@ -190,9 +190,11 @@ public class MosaicInstance
         startFelix();
         try
         {
+            installMosaicBundle( "jcl-over-slf4j", "jcl" );
+            installMosaicBundle( "log4j-over-slf4j", "log4j" );
             installMosaicBundle( "guava" );
             installMosaicBundle( "mail" );
-            installMosaicBundle( "joda-time" );
+            installMosaicBundle( "joda-time", "jodaTime" );
             installMosaicBundle( "api" );
             installMosaicBundle( "lifecycle" );
             installMosaicBundle( "core" );
@@ -295,6 +297,12 @@ public class MosaicInstance
 
             // disable logback packaging source calculation (causes problems when bundles disappear, on felix shutdown, etc)
             lc.setPackagingDataEnabled( false );
+
+            // apply our properties on the logger context so we can use them in logback*.xml files
+            for( String propertyName : this.properties.stringPropertyNames() )
+            {
+                lc.putProperty( propertyName, this.properties.getProperty( propertyName ) );
+            }
 
             // apply built-in & user-customizable configurations
             AppenderRegistry appenderRegistry = new AppenderRegistry();
@@ -418,9 +426,14 @@ public class MosaicInstance
 
     private void installMosaicBundle( @Nonnull String fileName )
     {
+        installMosaicBundle( fileName, fileName );
+    }
+
+    private void installMosaicBundle( @Nonnull String fileName, @Nonnull String propertyName )
+    {
         Path bundlePath;
 
-        String location = this.properties.getProperty( "mosaic.boot." + fileName );
+        String location = this.properties.getProperty( "mosaic.boot." + propertyName );
         if( location == null )
         {
             bundlePath = this.home.resolve( "boot" ).resolve( fileName ).normalize().toAbsolutePath();

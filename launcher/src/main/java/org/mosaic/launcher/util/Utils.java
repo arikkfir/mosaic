@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import org.mosaic.launcher.MosaicBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +27,37 @@ public final class Utils
     private static final Logger LOG = LoggerFactory.getLogger( Utils.class );
 
     private static final String XX_USE_SPLIT_VERIFIER = "-XX:-UseSplitVerifier";
+
+    @Nonnull
+    public static String getArtifactVersion( @Nonnull String groupId,
+                                             @Nonnull String artifactId,
+                                             @Nonnull String defaultVersion )
+    {
+        String version = getArtifactVersion( groupId, artifactId );
+        return version == null ? defaultVersion : version;
+    }
+
+    @Nullable
+    public static String getArtifactVersion( @Nonnull String groupId, @Nonnull String artifactId )
+    {
+        URL propertiesUrl = Utils.class.getResource( String.format( "/META-INF/maven/%s/%s/pom.properties", groupId, artifactId ) );
+        if( propertiesUrl == null )
+        {
+            return null;
+        }
+
+        Properties properties = new Properties();
+        try( InputStream is = propertiesUrl.openStream() )
+        {
+            properties.load( is );
+            return properties.getProperty( "version" );
+        }
+        catch( IOException e )
+        {
+            LOG.warn( "Could not discover version of artifact '{}:{}': {}", groupId, artifactId, e.getMessage(), e );
+            return null;
+        }
+    }
 
     @Nonnull
     public static URL requireClasspathResource( @Nonnull Properties properties,

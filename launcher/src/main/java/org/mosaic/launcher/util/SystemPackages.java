@@ -63,23 +63,11 @@ public final class SystemPackages
                     switch( propertyName )
                     {
                         case "javax.annotation.version":
-                            // TODO arik: discover annotations version here
-                            version = "2.0.1";
-                            break;
-
-                        case "log4j.version":
-                            // TODO arik: discover log4j version here
-                            version = "1.2.17";
+                            version = Utils.getArtifactVersion( "com.google.code.findbugs", "jsr305", "2.0.1" );
                             break;
 
                         case "slf4j.version":
-                            // TODO arik: discover slf4j version here
                             version = "1.7.1";
-                            break;
-
-                        case "jcl.version":
-                            // TODO arik: discover apache-commons-logging version here
-                            version = "1.1.1";
                             break;
 
                         default:
