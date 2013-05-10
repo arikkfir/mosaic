@@ -88,23 +88,6 @@
         </fileSet>
     </fileSets>
 
-    <dependencySets>
-        <dependencySet>
-            <includes>
-                <include>org.slf4j:jcl-over-slf4j</include>
-                <include>org.slf4j:log4j-over-slf4j</include>
-                <include>javax.mail:mail</include>
-            </includes>
-            <directoryMode>755</directoryMode>
-            <fileMode>644</fileMode>
-            <outputDirectory>/boot</outputDirectory>
-            <outputFileNameMapping>${artifact.artifactId}.${artifact.extension}</outputFileNameMapping>
-            <unpack>false</unpack>
-            <useProjectArtifact>false</useProjectArtifact>
-            <useStrictFiltering>true</useStrictFiltering>
-        </dependencySet>
-    </dependencySets>
-
     <moduleSets>
         <moduleSet>
             <includes>
@@ -129,15 +112,6 @@
                 <outputDirectory>/boot</outputDirectory>
                 <fileMode>644</fileMode>
                 <directoryMode>755</directoryMode>
-                <dependencySets>
-                    <dependencySet>
-                        <includes>
-                            <include>com.google.guava:guava</include>
-                            <include>joda-time:joda-time</include>
-                        </includes>
-                        <outputFileNameMapping>${artifact.artifactId}.${artifact.extension}</outputFileNameMapping>
-                    </dependencySet>
-                </dependencySets>
                 <unpack>false</unpack>
                 <outputFileNameMapping>${artifact.artifactId}.${artifact.extension}</outputFileNameMapping>
             </binaries>
