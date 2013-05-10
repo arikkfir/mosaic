@@ -29,7 +29,9 @@
                         <Bundle-Activator>org.mosaic.impl.MosaicActivator</Bundle-Activator>
                         <Embed-Dependency>
                             javassist,
+                            jcl-over-slf4j,
                             jgrapht,
+                            log4j-over-slf4j,
                             metrics-core,
                             com.springsource.org.aopalliance,
                             org.springframework.aop,
@@ -63,7 +65,6 @@
                             !net.sf.jasperreports*,
                             !org.apache.commons.collections*,
                             !org.apache.commons.pool*,
-                            !org.apache.log4j*,
                             !org.apache.tools.ant*,
                             !org.apache.velocity*,
                             !org.aspectj*,
@@ -143,6 +144,14 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jcl-over-slf4j</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.felix</groupId>
