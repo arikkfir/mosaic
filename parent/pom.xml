@@ -361,6 +361,7 @@
                         <threadCount>1</threadCount>
                         <forkedProcessTimeoutInSeconds>360</forkedProcessTimeoutInSeconds>
                         <reuseForks>false</reuseForks>
+                        <argLine>-XX:-UseSplitVerifier</argLine>
 
                         <!-- reporting form -->
                         <runOrder>alphabetical</runOrder>
