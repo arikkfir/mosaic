@@ -449,6 +449,7 @@ public class MosaicInstance
             verifyInstallableBundle( fileName, bundlePath );
         }
 
+        String versionedFilename = fileName + "-" + this.version + ".jar";
         if( bundlePath == null )
         {
             String delim = System.getProperty( "path.separator" );
@@ -461,7 +462,7 @@ public class MosaicInstance
                     bundlePath = Paths.get( item );
                     if( bundlePath.endsWith( "target/classes" ) )
                     {
-                        bundlePath = bundlePath.getParent().resolve( fileName + "-" + this.version + ".jar" );
+                        bundlePath = bundlePath.getParent().resolve( versionedFilename );
                     }
                     verifyInstallableBundle( fileName, bundlePath );
                     break;
@@ -471,7 +472,7 @@ public class MosaicInstance
 
         if( bundlePath == null )
         {
-            bundlePath = this.home.resolve( "boot" ).resolve( fileName ).normalize().toAbsolutePath();
+            bundlePath = this.home.resolve( "boot" ).resolve( versionedFilename ).normalize().toAbsolutePath();
             verifyInstallableBundle( fileName, bundlePath );
         }
 
