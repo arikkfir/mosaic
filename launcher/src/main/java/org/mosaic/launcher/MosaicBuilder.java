@@ -33,10 +33,25 @@ public class MosaicBuilder
     public MosaicBuilder( @Nonnull Properties properties )
     {
         this.properties = new Properties( properties );
-        this.properties.setProperty( "user.home", this.properties.getProperty( "user.home" ) );
-        this.properties.setProperty( "user.dir", this.properties.getProperty( "user.dir" ) );
+
+        String userHome = this.properties.getProperty( "user.home" );
+        if( userHome == null )
+        {
+            userHome = System.getProperty( "user.home" );
+            this.properties.setProperty( "user.home", userHome );
+        }
+
+        String userDir = this.properties.getProperty( "user.dir" );
+        if( userDir == null )
+        {
+            userDir = System.getProperty( "user.dir" );
+            this.properties.setProperty( "user.dir", userDir );
+        }
+
+        this.properties.setProperty( "user.home", userHome );
+        this.properties.setProperty( "user.dir", userDir );
         this.properties.setProperty( "mosaic.version", VERSION );
-        this.properties.setProperty( "mosaic.home", resolveMosaicHome( this.properties ).toString() );
+        this.properties.setProperty( "mosaic.home", resolveMosaicHome().toString() );
     }
 
     public MosaicBuilder setApps( @Nonnull Path apps )
@@ -74,21 +89,21 @@ public class MosaicBuilder
         return new MosaicInstance( this.properties );
     }
 
-    private Path resolveMosaicHome( Properties properties )
+    private Path resolveMosaicHome()
     {
         Path home;
-        if( properties.containsKey( "mosaic.home" ) )
+        if( this.properties.containsKey( "mosaic.home" ) )
         {
-            home = Paths.get( properties.getProperty( "mosaic.home" ) );
+            home = Paths.get( this.properties.getProperty( "mosaic.home" ) );
             if( !home.isAbsolute() )
             {
-                home = Paths.get( properties.getProperty( "user.dir" ) ).resolve( home );
+                home = Paths.get( this.properties.getProperty( "user.dir" ) ).resolve( home );
             }
             home = home.normalize().toAbsolutePath();
         }
         else
         {
-            home = Paths.get( properties.getProperty( "user.dir" ) ).normalize().toAbsolutePath();
+            home = Paths.get( this.properties.getProperty( "user.dir" ) ).normalize().toAbsolutePath();
         }
         if( !exists( home ) )
         {
