@@ -67,6 +67,26 @@ public final class Header
         // unify header and logo lines
         StringBuilder buffer = new StringBuilder( 5000 );
         buffer.append( "\n\n**********************************************************************************************************************\n" );
+
+        if( mosaic.isDevMode() )
+        {
+            buffer.append( "Mosaic properties:\n" );
+            Properties properties = mosaic.getProperties();
+
+            List<String> propertyNames = new ArrayList<>( properties.stringPropertyNames() );
+            Collections.sort( propertyNames );
+
+            for( String propertyName : propertyNames )
+            {
+                buffer.append( propertyName );
+                for( int i = propertyName.length(); i < 30; i++ )
+                {
+                    buffer.append( '.' );
+                }
+                buffer.append( properties.getProperty( propertyName ) ).append( "\n" );
+            }
+            buffer.append( "--------------------------------------------------------------------------------------------------------\n" );
+        }
         int i = 0;
         while( i < logoLines.size() || i < infoLines.size() )
         {
