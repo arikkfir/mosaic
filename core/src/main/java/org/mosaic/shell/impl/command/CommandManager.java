@@ -37,6 +37,8 @@ public class CommandManager
 {
     private static final String[] EMPTY_STRING_ARRAY = new String[ 0 ];
 
+    private static final CommandExecutorComparator COMMAND_EXECUTOR_COMPARATOR = new CommandExecutorComparator();
+
     private static String[] splitByCharacterType( String str, boolean camelCase )
     {
         if( str == null )
@@ -78,6 +80,15 @@ public class CommandManager
         return list.toArray( new String[ list.size() ] );
     }
 
+    private static class CommandExecutorComparator implements Comparator<CommandExecutor>
+    {
+        @Override
+        public int compare( CommandExecutor o1, CommandExecutor o2 )
+        {
+            return o1.getCommand().getName().compareTo( o2.getCommand().getName() );
+        }
+    }
+
     @Nonnull
     private ConversionService conversionService;
 
@@ -91,7 +102,7 @@ public class CommandManager
     }
 
     @ServiceBind
-    public void addCommand( @Nonnull MethodEndpoint endpoint, @ServiceProperty( ServiceProperties.ID ) long id )
+    public void addCommand( @Nonnull MethodEndpoint endpoint, @ServiceProperty(ServiceProperties.ID) long id )
     {
         Map<Long, CommandExecutor> commands = this.commands;
         if( commands != null && endpoint.getType().annotationType().equals( org.mosaic.shell.annotation.Command.class ) )
@@ -101,7 +112,7 @@ public class CommandManager
     }
 
     @ServiceUnbind
-    public void removeCommand( @Nonnull MethodEndpoint endpoint, @ServiceProperty( ServiceProperties.ID ) long id )
+    public void removeCommand( @Nonnull MethodEndpoint endpoint, @ServiceProperty(ServiceProperties.ID) long id )
     {
         Map<Long, CommandExecutor> commands = this.commands;
         if( commands != null && endpoint.getType().annotationType().equals( org.mosaic.shell.annotation.Command.class ) )
@@ -111,7 +122,7 @@ public class CommandManager
     }
 
     @ServiceBind
-    public void addCommand( @Nonnull Command command, @ServiceProperty( ServiceProperties.ID ) long id )
+    public void addCommand( @Nonnull Command command, @ServiceProperty(ServiceProperties.ID) long id )
     {
         Map<Long, CommandExecutor> commands = this.commands;
         if( commands != null )
@@ -121,7 +132,7 @@ public class CommandManager
     }
 
     @ServiceUnbind
-    public void removeCommand( Command command, @ServiceProperty( ServiceProperties.ID ) long id )
+    public void removeCommand( Command command, @ServiceProperty(ServiceProperties.ID) long id )
     {
         Map<Long, CommandExecutor> commands = this.commands;
         if( commands != null )
@@ -204,7 +215,7 @@ public class CommandManager
     @Nonnull
     public Set<CommandExecutor> getCommandExecutors()
     {
-        Set<CommandExecutor> commands = new HashSet<>();
+        Set<CommandExecutor> commands = new TreeSet<>( COMMAND_EXECUTOR_COMPARATOR );
         if( this.commands != null )
         {
             commands.addAll( this.commands.values() );
