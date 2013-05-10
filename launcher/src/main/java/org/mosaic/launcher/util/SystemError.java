@@ -43,5 +43,11 @@ public class SystemError
             super( message, cause );
             this.arguments = arguments;
         }
+
+        @Nonnull
+        public Object[] getArguments()
+        {
+            return arguments;
+        }
     }
 }
