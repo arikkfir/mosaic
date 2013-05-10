@@ -113,7 +113,7 @@
                 <fileMode>644</fileMode>
                 <directoryMode>755</directoryMode>
                 <unpack>false</unpack>
-                <outputFileNameMapping>${artifact.artifactId}.${artifact.extension}</outputFileNameMapping>
+                <includeDependencies>false</includeDependencies>
             </binaries>
         </moduleSet>
         <moduleSet>
@@ -126,7 +126,6 @@
                 <directoryMode>755</directoryMode>
                 <includeDependencies>false</includeDependencies>
                 <unpack>false</unpack>
-                <outputFileNameMapping>${artifact.artifactId}.${artifact.extension}</outputFileNameMapping>
             </binaries>
         </moduleSet>
     </moduleSets>
