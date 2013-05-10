@@ -42,7 +42,7 @@ public final class SystemPackages
         URL sysPkgResource = SystemPackages.class.getResource( path );
         if( sysPkgResource == null )
         {
-            throw bootstrapError( "Could not find system packages file at '%s' - cannot boot server", path );
+            throw bootstrapError( "Could not find system packages file at '{}' - cannot boot server", path );
         }
 
         Properties tempProperties = new Properties();
@@ -70,8 +70,24 @@ public final class SystemPackages
                             version = "1.7.1";
                             break;
 
+                        case "guava.version":
+                            version = "14.0.0.rc3";
+                            break;
+
+                        case "joda.version":
+                            version = "2.1";
+                            break;
+
+                        case "javax.activation.version":
+                            version = "1.1";
+                            break;
+
+                        case "javax.mail.version":
+                            version = "1.4.7";
+                            break;
+
                         default:
-                            throw bootstrapError( "Unknown version property '%s' under package '%s'", propertyName, packageName );
+                            throw bootstrapError( "Unknown version property '{}' under package '{}'", propertyName, packageName );
                     }
                 }
                 properties.put( packageName, version );
@@ -79,7 +95,7 @@ public final class SystemPackages
         }
         catch( IOException e )
         {
-            throw bootstrapError( "Cannot read system packages from '%s': %s", e, sysPkgResource, e.getMessage() );
+            throw bootstrapError( "Cannot read system packages from '{}': {}", sysPkgResource, e.getMessage(), e );
         }
     }
 

@@ -5,9 +5,6 @@ import java.nio.file.Paths;
 import java.util.Properties;
 import javax.annotation.Nonnull;
 
-import static java.nio.file.Files.exists;
-import static java.nio.file.Files.isDirectory;
-import static org.mosaic.launcher.util.SystemError.bootstrapError;
 import static org.mosaic.launcher.util.Utils.assertJvmSplitVerifierIsUsed;
 import static org.mosaic.launcher.util.Utils.discoverMosaicVersion;
 
@@ -32,7 +29,8 @@ public class MosaicBuilder
 
     public MosaicBuilder( @Nonnull Properties properties )
     {
-        this.properties = new Properties( properties );
+        this.properties = new Properties();
+        this.properties.putAll( properties );
 
         String userHome = this.properties.getProperty( "user.home" );
         if( userHome == null )
@@ -104,14 +102,6 @@ public class MosaicBuilder
         else
         {
             home = Paths.get( this.properties.getProperty( "user.dir" ) ).normalize().toAbsolutePath();
-        }
-        if( !exists( home ) )
-        {
-            throw bootstrapError( "Mosaic home directory at '%s' does not exist.", home );
-        }
-        else if( !isDirectory( home ) )
-        {
-            throw bootstrapError( "Path for Mosaic home directory at '%s' is not a directory.", home );
         }
         return home;
     }

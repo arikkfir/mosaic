@@ -66,11 +66,12 @@ public final class Header
 
         // unify header and logo lines
         StringBuilder buffer = new StringBuilder( 5000 );
-        buffer.append( "\n\n**********************************************************************************************************************\n" );
+        buffer.append( "\n\n**********************************************************************************************************************\n\n" );
 
-        if( mosaic.isDevMode() )
+        if( "true".equalsIgnoreCase( mosaic.getProperties().getProperty( "showProperties" ) ) )
         {
-            buffer.append( "Mosaic properties:\n" );
+            buffer.append( "Mosaic properties: (new-lines are escaped)\n" );
+            buffer.append( "-----------------------------------------------------------------\n" );
             Properties properties = mosaic.getProperties();
 
             List<String> propertyNames = new ArrayList<>( properties.stringPropertyNames() );
@@ -78,14 +79,14 @@ public final class Header
 
             for( String propertyName : propertyNames )
             {
-                buffer.append( propertyName );
+                buffer.append( "    " ).append( propertyName );
                 for( int i = propertyName.length(); i < 30; i++ )
                 {
                     buffer.append( '.' );
                 }
-                buffer.append( properties.getProperty( propertyName ) ).append( "\n" );
+                buffer.append( properties.getProperty( propertyName ).replace( "\n", "\\n" ) ).append( "\n" );
             }
-            buffer.append( "--------------------------------------------------------------------------------------------------------\n" );
+            buffer.append( "\n--------------------------------------------------------------------------------------------------------\n\n" );
         }
         int i = 0;
         while( i < logoLines.size() || i < infoLines.size() )
@@ -100,7 +101,7 @@ public final class Header
             buffer.append( logoLine ).append( infoLine ).append( "\n" );
             i++;
         }
-        buffer.append( "**********************************************************************************************************************\n\n\n" );
+        buffer.append( "\n**********************************************************************************************************************\n" );
 
         LOG.warn( buffer.toString(),
                   mosaic.getVersion(),

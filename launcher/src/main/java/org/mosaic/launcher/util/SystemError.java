@@ -2,45 +2,46 @@ package org.mosaic.launcher.util;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author arik
  */
 public class SystemError
 {
-    @Nonnull
-    public static BootstrapException bootstrapError( @Nonnull String message, @Nullable Object... args )
-    {
-        return new BootstrapException( String.format( message, args ) );
-    }
+    private static final Logger LOG = LoggerFactory.getLogger( SystemError.class );
 
     @Nonnull
-    public static BootstrapException bootstrapError( @Nonnull String message,
-                                                     @Nonnull Throwable cause,
-                                                     @Nullable Object... args )
+    public static BootstrapException bootstrapError( @Nonnull String message, @Nonnull Object... args )
     {
-        return new BootstrapException( String.format( message, args ), cause );
+        return new BootstrapException( message, null, args );
     }
 
     public static void handle( @Nonnull Throwable e )
     {
-        System.err.printf( "%s\n", e.getMessage() );
-        if( Boolean.getBoolean( "showErrors" ) )
+        Object[] arguments;
+        if( e instanceof BootstrapException )
         {
-            e.printStackTrace();
+            BootstrapException be = ( BootstrapException ) e;
+            arguments = be.arguments;
         }
+        else
+        {
+            arguments = new Object[] { e };
+        }
+        LOG.error( e.getMessage(), arguments );
     }
 
     public static class BootstrapException extends RuntimeException
     {
-        private BootstrapException( @Nonnull String message )
-        {
-            super( message );
-        }
+        @Nonnull
+        private final Object[] arguments;
 
-        private BootstrapException( @Nonnull String message, @Nonnull Throwable cause )
+        private BootstrapException( @Nonnull String message, @Nullable Throwable cause, @Nonnull Object[] arguments )
         {
             super( message, cause );
+            this.arguments = arguments;
         }
     }
 }

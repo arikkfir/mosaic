@@ -20,6 +20,10 @@
     </distributionManagement>
 
     <profiles>
+
+        <!-- only activated in intellij, so that these modules are in launcher's classpath
+             this will make Intellij compile them before running. They are not really used
+             by the launcher -->
         <profile>
             <id>intellij</id>
             <dependencies>
@@ -27,25 +31,21 @@
                     <groupId>org.mosaic</groupId>
                     <artifactId>api</artifactId>
                     <version>${project.version}</version>
-                    <scope>provided</scope>
                 </dependency>
                 <dependency>
                     <groupId>org.mosaic</groupId>
                     <artifactId>core</artifactId>
                     <version>${project.version}</version>
-                    <scope>provided</scope>
                 </dependency>
                 <dependency>
                     <groupId>org.mosaic</groupId>
                     <artifactId>lifecycle</artifactId>
                     <version>${project.version}</version>
-                    <scope>provided</scope>
                 </dependency>
                 <dependency>
                     <groupId>org.mosaic</groupId>
                     <artifactId>admin</artifactId>
                     <version>${project.version}</version>
-                    <scope>provided</scope>
                 </dependency>
             </dependencies>
         </profile>
@@ -69,14 +69,6 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <artifactSet>
-                                <includes>
-                                    <include>org.apache.felix:org.apache.felix.framework</include>
-                                    <include>com.google.code.findbugs:jsr305</include>
-                                    <include>org.slf4j:*</include>
-                                    <include>ch.qos.logback:*</include>
-                                </includes>
-                            </artifactSet>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer"/>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer"/>
@@ -99,6 +91,18 @@
         <dependency>
             <groupId>com.google.code.findbugs</groupId>
             <artifactId>jsr305</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>joda-time</groupId>
+            <artifactId>joda-time</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>javax.mail</groupId>
+            <artifactId>mail</artifactId>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

@@ -8,11 +8,13 @@ import ch.qos.logback.core.status.Status;
 import ch.qos.logback.core.status.StatusChecker;
 import ch.qos.logback.core.util.StatusPrinter;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.StringTokenizer;
 import javax.annotation.Nonnull;
 import org.apache.felix.framework.Felix;
 import org.apache.felix.framework.cache.BundleCache;
@@ -22,10 +24,7 @@ import org.mosaic.launcher.logging.LogbackBuiltinConfigurator;
 import org.mosaic.launcher.logging.LogbackRestrictedConfigurator;
 import org.mosaic.launcher.util.SystemError;
 import org.mosaic.launcher.util.Utils;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleException;
-import org.osgi.framework.FrameworkEvent;
-import org.osgi.framework.FrameworkListener;
+import org.osgi.framework.*;
 import org.osgi.framework.startlevel.FrameworkStartLevel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,6 +118,12 @@ public class MosaicInstance
         return version;
     }
 
+    @Nonnull
+    public Properties getProperties()
+    {
+        return properties;
+    }
+
     public boolean isDevMode()
     {
         return devMode;
@@ -190,11 +195,6 @@ public class MosaicInstance
         startFelix();
         try
         {
-            installMosaicBundle( "jcl-over-slf4j", "jcl" );
-            installMosaicBundle( "log4j-over-slf4j", "log4j" );
-            installMosaicBundle( "guava" );
-            installMosaicBundle( "mail" );
-            installMosaicBundle( "joda-time", "jodaTime" );
             installMosaicBundle( "api" );
             installMosaicBundle( "lifecycle" );
             installMosaicBundle( "core" );
@@ -253,15 +253,24 @@ public class MosaicInstance
             if( this.devMode )
             {
                 LOG.warn( "Cleaning logs directory..." );
-                Utils.deleteContents( this.logs );
+                if( exists( this.logs ) )
+                {
+                    Utils.deleteContents( this.logs );
+                }
 
                 LOG.warn( "Cleaning work directory..." );
-                Utils.deleteContents( this.work );
+                if( exists( this.work ) )
+                {
+                    Utils.deleteContents( this.work );
+                }
             }
             else
             {
                 // not dev mode - just clean felix storage directory
-                Utils.deletePath( this.felixWork );
+                if( exists( this.felixWork ) )
+                {
+                    Utils.deletePath( this.felixWork );
+                }
             }
         }
         catch( BootstrapException e )
@@ -270,7 +279,7 @@ public class MosaicInstance
         }
         catch( Exception e )
         {
-            throw bootstrapError( "Could not clean temporary work directories: %s", e, e.getMessage() );
+            throw bootstrapError( "Could not clean temporary work directories: {}", e.getMessage(), e );
         }
 
         try
@@ -283,7 +292,7 @@ public class MosaicInstance
         }
         catch( IOException e )
         {
-            throw bootstrapError( "Could not create server home directories: %s", e, e.getMessage() );
+            throw bootstrapError( "Could not create server home directories: {}", e.getMessage(), e );
         }
     }
 
@@ -319,7 +328,7 @@ public class MosaicInstance
         }
         catch( Exception e )
         {
-            throw bootstrapError( "Could not initialize Mosaic logging framework: %s", e, e.getMessage() );
+            throw bootstrapError( "Could not initialize Mosaic logging framework: {}", e.getMessage(), e );
         }
     }
 
@@ -335,7 +344,7 @@ public class MosaicInstance
         }
         catch( JoranException e )
         {
-            throw bootstrapError( "Error while applying built-in Logback configuration: %s", e, e.getMessage() );
+            throw bootstrapError( "Error while applying built-in Logback configuration: {}", e.getMessage(), e );
         }
     }
 
@@ -354,7 +363,7 @@ public class MosaicInstance
             }
             catch( JoranException e )
             {
-                throw SystemError.bootstrapError( "Error while applying Logback configuration in '%s': %s", e, logbackConfigFile, e.getMessage() );
+                throw SystemError.bootstrapError( "Error while applying Logback configuration in '{}': {}", logbackConfigFile, e.getMessage(), e );
             }
         }
     }
@@ -420,7 +429,7 @@ public class MosaicInstance
         catch( Exception e )
         {
             stop();
-            throw bootstrapError( "Could not initialize OSGi container: " + e.getMessage(), e );
+            throw bootstrapError( "Could not initialize OSGi container: {}", e.getMessage(), e );
         }
     }
 
@@ -431,41 +440,67 @@ public class MosaicInstance
 
     private void installMosaicBundle( @Nonnull String fileName, @Nonnull String propertyName )
     {
-        Path bundlePath;
+        Path bundlePath = null;
 
         String location = this.properties.getProperty( "mosaic.boot." + propertyName );
-        if( location == null )
-        {
-            bundlePath = this.home.resolve( "boot" ).resolve( fileName ).normalize().toAbsolutePath();
-        }
-        else
+        if( location != null )
         {
             bundlePath = this.home.resolve( location ).normalize().toAbsolutePath();
+            verifyInstallableBundle( fileName, bundlePath );
         }
 
-        if( !exists( bundlePath ) )
+        if( bundlePath == null )
         {
-            throw bootstrapError( "Could not find boot bundle '%s' at '%s'", fileName, bundlePath );
-        }
-        else if( !isRegularFile( bundlePath ) )
-        {
-            throw bootstrapError( "Boot bundle at '%s' is not a file", bundlePath );
-        }
-        else if( !isReadable( bundlePath ) )
-        {
-            throw bootstrapError( "Boot bundle at '%s' is not readable", bundlePath );
-        }
-        else
-        {
-            try
+            String delim = System.getProperty( "path.separator" );
+            StringTokenizer tokenizer = new StringTokenizer( ManagementFactory.getRuntimeMXBean().getClassPath(), delim, false );
+            while( tokenizer.hasMoreTokens() )
             {
-                Bundle bundle = this.felix.getBundleContext().installBundle( location, newInputStream( bundlePath, READ ) );
-                bundle.start();
+                String item = tokenizer.nextToken();
+                if( item.contains( "/" + fileName ) )
+                {
+                    bundlePath = Paths.get( item );
+                    if( bundlePath.endsWith( "target/classes" ) )
+                    {
+                        bundlePath = bundlePath.getParent().resolve( fileName + "-" + this.version + ".jar" );
+                    }
+                    verifyInstallableBundle( fileName, bundlePath );
+                    break;
+                }
             }
-            catch( Exception e )
-            {
-                throw bootstrapError( "Could not install boot bundle at '%s': %s", e, location, e.getMessage() );
-            }
+        }
+
+        if( bundlePath == null )
+        {
+            bundlePath = this.home.resolve( "boot" ).resolve( fileName ).normalize().toAbsolutePath();
+            verifyInstallableBundle( fileName, bundlePath );
+        }
+
+        String bundleLocation = bundlePath.toString();
+        try
+        {
+            BundleContext bc = this.felix.getBundleContext();
+            Bundle bundle = bc.installBundle( bundleLocation, newInputStream( bundlePath, READ ) );
+            bundle.start();
+        }
+        catch( Exception e )
+        {
+            throw bootstrapError( "Could not install boot bundle at '{}': {}", bundleLocation, e.getMessage(), e );
+        }
+    }
+
+    private void verifyInstallableBundle( @Nonnull String name, @Nonnull Path file )
+    {
+        if( !exists( file ) )
+        {
+            throw bootstrapError( "Could not find bundle '{}' at '{}'", name, file );
+        }
+        else if( !isRegularFile( file ) )
+        {
+            throw bootstrapError( "Bundle at '{}' is not a file", file );
+        }
+        else if( !isReadable( file ) )
+        {
+            throw bootstrapError( "Bundle at '{}' is not readable", file );
         }
     }
 

@@ -70,15 +70,15 @@ public final class Utils
             Path filePath = Paths.get( pathOverride );
             if( !Files.exists( filePath ) )
             {
-                throw bootstrapError( "Path '%s' does not exist", pathOverride );
+                throw bootstrapError( "Path '{}' does not exist", pathOverride );
             }
             else if( !Files.isRegularFile( filePath ) )
             {
-                throw bootstrapError( "Path '%s' is not a file", pathOverride );
+                throw bootstrapError( "Path '{}' is not a file", pathOverride );
             }
             else if( !Files.isReadable( filePath ) )
             {
-                throw bootstrapError( "Path '%s' is not readable", pathOverride );
+                throw bootstrapError( "Path '{}' is not readable", pathOverride );
             }
             else
             {
@@ -88,7 +88,7 @@ public final class Utils
                 }
                 catch( MalformedURLException e )
                 {
-                    throw bootstrapError( "Could not convert path '%s' to a URL: %s", e, filePath, e.getMessage() );
+                    throw bootstrapError( "Could not convert path '{}' to a URL: {}", filePath, e.getMessage(), e );
                 }
             }
         }
@@ -97,7 +97,7 @@ public final class Utils
             URL url = MosaicBuilder.class.getResource( path );
             if( url == null )
             {
-                throw bootstrapError( "Could not find classpath resource '%s'", path );
+                throw bootstrapError( "Could not find classpath resource '{}'", path );
             }
             else
             {
@@ -121,7 +121,7 @@ public final class Utils
                 "The JVM split verifier is required to enable bytecode \n" +
                 "weaving by the Mosaic server.\n" +
                 "Please provide the argument to the JVM command line:\n" +
-                "    java ... %s ...",
+                "    java ... {} ...",
                 XX_USE_SPLIT_VERIFIER
         );
     }
@@ -144,7 +144,7 @@ public final class Utils
         }
         catch( IOException e )
         {
-            throw bootstrapError( "Could not read from '%s': %s", e, mosaicPropertiesResource, e.getMessage() );
+            throw bootstrapError( "Could not read from '{}': {}", mosaicPropertiesResource, e.getMessage(), e );
         }
     }
 
@@ -159,7 +159,7 @@ public final class Utils
         }
         catch( IOException e )
         {
-            throw bootstrapError( "Could not delete contents of directory at '" + path + "': " + e.getMessage(), e );
+            throw bootstrapError( "Could not delete contents of directory at '{}': {}", path, e.getMessage(), e );
         }
     }
 
@@ -196,12 +196,12 @@ public final class Utils
             }
             catch( IOException e )
             {
-                throw bootstrapError( "Could not create directory at '%s': %s", e, dir, e.getMessage() );
+                throw bootstrapError( "Could not create directory at '{}': {}", dir, e.getMessage(), e );
             }
         }
         else if( !isDirectory( dir ) )
         {
-            throw bootstrapError( "Path at '%s' is not a directory", dir );
+            throw bootstrapError( "Path at '{}' is not a directory", dir );
         }
 
         properties.setProperty( "mosaic.home." + name, dir.toString() );
