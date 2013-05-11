@@ -102,7 +102,7 @@ public class CommandManager
     }
 
     @ServiceBind
-    public void addCommand( @Nonnull MethodEndpoint endpoint, @ServiceProperty(ServiceProperties.ID) long id )
+    public void addCommand( @Nonnull MethodEndpoint endpoint, @ServiceProperty( ServiceProperties.ID ) long id )
     {
         Map<Long, CommandExecutor> commands = this.commands;
         if( commands != null && endpoint.getType().annotationType().equals( org.mosaic.shell.annotation.Command.class ) )
@@ -112,7 +112,7 @@ public class CommandManager
     }
 
     @ServiceUnbind
-    public void removeCommand( @Nonnull MethodEndpoint endpoint, @ServiceProperty(ServiceProperties.ID) long id )
+    public void removeCommand( @Nonnull MethodEndpoint endpoint, @ServiceProperty( ServiceProperties.ID ) long id )
     {
         Map<Long, CommandExecutor> commands = this.commands;
         if( commands != null && endpoint.getType().annotationType().equals( org.mosaic.shell.annotation.Command.class ) )
@@ -122,7 +122,7 @@ public class CommandManager
     }
 
     @ServiceBind
-    public void addCommand( @Nonnull Command command, @ServiceProperty(ServiceProperties.ID) long id )
+    public void addCommand( @Nonnull Command command, @ServiceProperty( ServiceProperties.ID ) long id )
     {
         Map<Long, CommandExecutor> commands = this.commands;
         if( commands != null )
@@ -132,7 +132,7 @@ public class CommandManager
     }
 
     @ServiceUnbind
-    public void removeCommand( Command command, @ServiceProperty(ServiceProperties.ID) long id )
+    public void removeCommand( Command command, @ServiceProperty( ServiceProperties.ID ) long id )
     {
         Map<Long, CommandExecutor> commands = this.commands;
         if( commands != null )
@@ -174,12 +174,22 @@ public class CommandManager
     {
         if( this.commands != null )
         {
+            Set<CommandExecutor> candidates = new HashSet<>();
             for( CommandExecutor command : this.commands.values() )
             {
-                if( command.getCommand().getName().equals( name ) )
+                String commandName = command.getCommand().getName();
+                if( commandName.equals( name ) )
                 {
                     return command;
                 }
+                else if( commandName.endsWith( ":" + name ) )
+                {
+                    candidates.add( command );
+                }
+            }
+            if( candidates.size() == 1 )
+            {
+                return candidates.iterator().next();
             }
         }
         return null;
