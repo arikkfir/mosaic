@@ -1,6 +1,9 @@
 package org.mosaic.it.tests;
 
+import javax.annotation.Nonnull;
 import org.junit.Test;
+import org.mosaic.it.runner.CallableWithMosaic;
+import org.mosaic.it.runner.MosaicRunner;
 
 /**
  * @author arik
@@ -10,7 +13,7 @@ public class ShellCommandsTests extends BaseTests
     @Test
     public void testHelp() throws Exception
     {
-        String output = runner().runSingleCommand( "org.mosaic.core:help" ).assertSuccess().getOutput();
+        String output = runner().runSingleCommand( "help" ).assertSuccess().getOutput();
         assertTrue( "Help not printed fully or not at all", output.contains( "org.mosaic.core:metrics" ) );
         assertTrue( "Help not printed fully or not at all", output.contains( "org.mosaic.core:help" ) );
         assertTrue( "Help not printed fully or not at all", output.contains( "org.mosaic.core:restart-server" ) );
@@ -19,30 +22,20 @@ public class ShellCommandsTests extends BaseTests
         assertTrue( "Help not printed fully or not at all", output.contains( "org.mosaic.core:shutdown-server" ) );
     }
 
-/*
     @Test
     public void testDeployModule() throws Exception
     {
-        doWithServer( new ServerRunnable()
+        runner().runOnServer( new CallableWithMosaic<Object>()
         {
             @Override
-            public void run( @Nonnull ServerBootstrap serverBootstrap ) throws Exception
+            public Object run( @Nonnull MosaicRunner runner ) throws Exception
             {
-                serverBootstrap.deployTestModule( "01" );
-            }
-        } );
-        doWithServer( new ServerRunnable()
-        {
-            @Override
-            public void run( @Nonnull ServerBootstrap serverBootstrap ) throws Exception
-            {
-                serverBootstrap.deployTestModule( "01" );
-                ServerBootstrap.CommandResult result = serverBootstrap.executeCommand( "test-module-01:checkServerInjected" );
-                assertEquals( "Server service not injected properly", 0, result.getExitCode() );
+                runner.deployModule( "module01" );
+                runner.runCommand( "checkServerInjected" ).assertSuccess().getOutput();
+                return null;
             }
         } );
     }
-*/
 
 /*
     @Test

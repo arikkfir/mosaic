@@ -10,7 +10,7 @@ import org.mosaic.shell.annotation.Command;
 /**
  * @author arik
  */
-@SuppressWarnings({ "FieldCanBeLocal", "UnusedDeclaration" })
+@SuppressWarnings( { "FieldCanBeLocal", "UnusedDeclaration" } )
 @Bean
 public class BeanWithServerRef
 {
@@ -23,7 +23,7 @@ public class BeanWithServerRef
     }
 
     @Command
-    public int checkServerInjected()
+    public int checkServerInjected() throws IOException
     {
         return this.server != null ? 0 : 1;
     }

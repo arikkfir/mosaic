@@ -126,42 +126,27 @@ public class MosaicRunner
         } );
     }
 
-    public void deployModule( @Nonnull String name ) throws IOException
+    public CommandResult deployModule( @Nonnull String name ) throws IOException
     {
-        Path targetDir;
+        Path src = this.modulesExtractor.getModule( name );
 
         if( this.mosaic == null )
         {
-            targetDir = this.mosaicDirectory.resolve( "lib" );
+            Path target = this.mosaicDirectory.resolve( "lib" ).resolve( src.getFileName() );
+            copy( src, target, ATOMIC_MOVE, REPLACE_EXISTING, COPY_ATTRIBUTES );
+            return null;
         }
         else
         {
-            targetDir = this.mosaic.getLib();
-            // TODO arik: do this via ssh command
+            return runCommand( "install-module file:" + src ).assertSuccess();
         }
-
-        Path src = this.modulesExtractor.getModule( name );
-        Path target = targetDir.resolve( src.getFileName() );
-        copy( src, target, ATOMIC_MOVE, REPLACE_EXISTING, COPY_ATTRIBUTES );
     }
 
     public <T> T runOnServer( @Nonnull CallableWithMosaic<T> callable ) throws Exception
     {
-        start();
-        try
+        try( MosaicInstance mosaic = start() )
         {
             return callable.run( this );
-        }
-        finally
-        {
-            try
-            {
-                stop();
-            }
-            catch( Exception e )
-            {
-                LOG.error( "Could not stop Mosaic server: {}", e.getMessage(), e );
-            }
         }
     }
 }

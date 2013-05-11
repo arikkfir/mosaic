@@ -51,7 +51,7 @@ public class ModulesExtractor
         Path jarFile;
         try
         {
-            jarFile = Files.createTempFile( key, ".jar" );
+            jarFile = createTempFile( key, ".jar" );
         }
         catch( IOException e )
         {
