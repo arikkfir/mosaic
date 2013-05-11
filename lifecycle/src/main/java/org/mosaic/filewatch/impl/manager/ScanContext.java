@@ -15,7 +15,7 @@ public class ScanContext
 
     public ScanContext( @Nonnull ConversionService conversionService )
     {
-        this.attributes = new HashMapEx<String, Object>( conversionService );
+        this.attributes = new HashMapEx<>( conversionService );
     }
 
     @Nonnull
