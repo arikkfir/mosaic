@@ -11,13 +11,6 @@
     <packaging>bundle</packaging>
     <name>Mosaic :: Lifecycle</name>
     <url>https://github.com/arikkfir/mosaic/lifecycle/</url>
-    <distributionManagement>
-        <site>
-            <id>github</id>
-            <name>GitHub</name>
-            <url>file:///var/www/html/mosaic/lifecycle</url>
-        </site>
-    </distributionManagement>
 
     <build>
         <plugins>

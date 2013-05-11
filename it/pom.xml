@@ -11,13 +11,6 @@
     <packaging>jar</packaging>
     <name>Mosaic :: Integration Tests</name>
     <url>https://github.com/arikkfir/mosaic/it/</url>
-    <distributionManagement>
-        <site>
-            <id>github</id>
-            <name>GitHub</name>
-            <url>file:///var/www/html/mosaic/it</url>
-        </site>
-    </distributionManagement>
 
     <build>
         <finalName>${project.artifactId}</finalName>

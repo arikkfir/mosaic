@@ -11,13 +11,6 @@
     <packaging>bundle</packaging>
     <name>Mosaic :: Admin</name>
     <url>https://github.com/arikkfir/mosaic/amin/</url>
-    <distributionManagement>
-        <site>
-            <id>github</id>
-            <name>GitHub</name>
-            <url>file:///var/www/html/mosaic/admin</url>
-        </site>
-    </distributionManagement>
 
     <dependencies>
         <dependency>
