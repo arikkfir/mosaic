@@ -136,6 +136,12 @@ public class MethodEndpointRegistrar extends AbstractRegistrar implements Method
         return properties.toArray( new DP[ properties.size() ] );
     }
 
+    @Override
+    public String toString()
+    {
+        return "MethodEndpoint[" + this.methodHandle + " in bean '" + this.beanName + "']";
+    }
+
     private class InvokerImpl implements Invoker
     {
         @Nonnull
