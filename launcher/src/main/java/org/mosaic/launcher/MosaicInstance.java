@@ -7,6 +7,7 @@ import ch.qos.logback.core.status.ErrorStatus;
 import ch.qos.logback.core.status.Status;
 import ch.qos.logback.core.status.StatusChecker;
 import ch.qos.logback.core.util.StatusPrinter;
+import java.io.Closeable;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Path;
@@ -45,7 +46,7 @@ import static org.mosaic.launcher.util.Utils.resolveDirectoryInHome;
 /**
  * @author arik
  */
-public class MosaicInstance
+public class MosaicInstance implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger( MosaicInstance.class );
 
@@ -208,6 +209,12 @@ public class MosaicInstance
         // done!
         MosaicInstance.this.initializationFinishTime = currentTimeMillis();
         printEmphasizedWarnMessage( "Mosaic server is running (initialized in {})", getInitializationTime() );
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        stop();
     }
 
     public void stop()
