@@ -653,7 +653,7 @@ public class ModuleImpl implements Module
             }
 
             // iterate class methods for dependencies
-            detectBeanDependencies( beanName, componentClass, this.dependencies, this.registrars );
+            detectBeanRelationships( beanName, componentClass, this.dependencies, this.registrars );
         }
     }
 
@@ -770,10 +770,10 @@ public class ModuleImpl implements Module
         return componentClasses;
     }
 
-    private void detectBeanDependencies( @Nonnull String beanName,
-                                         @Nonnull Class<?> componentClass,
-                                         @Nonnull List<AbstractDependency> dependencies,
-                                         @Nonnull List<AbstractRegistrar> registrars )
+    private void detectBeanRelationships( @Nonnull String beanName,
+                                          @Nonnull Class<?> componentClass,
+                                          @Nonnull List<AbstractDependency> dependencies,
+                                          @Nonnull List<AbstractRegistrar> registrars )
     {
         for( Method method : getUniqueDeclaredMethods( componentClass ) )
         {
