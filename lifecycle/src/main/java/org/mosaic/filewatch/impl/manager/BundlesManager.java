@@ -1,5 +1,11 @@
 package org.mosaic.filewatch.impl.manager;
 
+import com.google.common.io.ByteStreams;
+import com.google.common.io.Flushables;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
@@ -18,6 +24,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.nio.file.Files.*;
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
+import static java.nio.file.StandardOpenOption.WRITE;
 import static org.springframework.util.SystemPropertyUtils.resolvePlaceholders;
 
 /**
@@ -53,6 +61,24 @@ public class BundlesManager extends AbstractFileWatcherAdapter
     {
         this.bundleContext = bundleContext;
         this.server = server;
+    }
+
+    @Nonnull
+    public synchronized Bundle installModule( @Nonnull URL url ) throws IOException, BundleException
+    {
+        // download URL to a temporary file
+        Path tempFile = createTempFile( "mosaic.deploy.module", ".jar" );
+        try( InputStream in = url.openStream();
+             OutputStream out = newOutputStream( tempFile, TRUNCATE_EXISTING, WRITE ) )
+        {
+            LOG.info( "Reading module from '{}'...", url );
+            ByteStreams.copy( in, out );
+            Flushables.flush( out, false );
+        }
+
+        Bundle bundle = installBundle( tempFile );
+        bundle.start();
+        return bundle;
     }
 
     @Override
@@ -94,10 +120,10 @@ public class BundlesManager extends AbstractFileWatcherAdapter
     }
 
     @Override
-    protected void notify( @Nonnull ScanContext context,
-                           @Nonnull WatchEvent event,
-                           @Nullable Path path,
-                           @Nullable BasicFileAttributes attrs )
+    protected synchronized void notify( @Nonnull ScanContext context,
+                                        @Nonnull WatchEvent event,
+                                        @Nullable Path path,
+                                        @Nullable BasicFileAttributes attrs )
     {
         if( event == WatchEvent.SCAN_STARTING )
         {
@@ -146,7 +172,7 @@ public class BundlesManager extends AbstractFileWatcherAdapter
 
     private void handleScanFinished( ScanContext context )
     {
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         final List<Bundle> bundlesToStart = context.getAttributes().require( "bundlesToStart", List.class );
         final Boolean bundlesWereUninstalled = context.getAttributes().require( "bundlesWereUninstalled", Boolean.class );
 
@@ -241,14 +267,14 @@ public class BundlesManager extends AbstractFileWatcherAdapter
 
     private void handleJarFileAddedOrModified( @Nonnull ScanContext context, @Nonnull Path path )
     {
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         List<Bundle> bundlesToStart = context.getAttributes().require( "bundlesToStart", List.class );
 
         // check whether we need to install a new bundle or update an existing bundle
         Bundle bundle = this.bundleContext.getBundle( path.toString() );
         if( bundle == null )
         {
-            bundle = installBundle( path );
+            bundle = installBundleNoError( path );
             if( bundle != null )
             {
                 // installed successfully - remember it for later so we will try to start it
@@ -309,17 +335,23 @@ public class BundlesManager extends AbstractFileWatcherAdapter
     }
 
     @Nullable
-    private Bundle installBundle( @Nonnull Path file )
+    private Bundle installBundleNoError( @Nonnull Path file )
     {
         try
         {
-            return this.bundleContext.installBundle( file.toString(), newInputStream( file ) );
+            return installBundle( file );
         }
         catch( Exception e )
         {
             LOG.error( "Could not install bundle from '{}': {}", file, e.getMessage(), e );
             return null;
         }
+    }
+
+    @Nonnull
+    private Bundle installBundle( Path file ) throws BundleException, IOException
+    {
+        return this.bundleContext.installBundle( file.toString(), newInputStream( file ) );
     }
 
     private boolean uninstallBundle( @Nonnull Bundle bundle )

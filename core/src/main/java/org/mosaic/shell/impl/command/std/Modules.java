@@ -42,8 +42,7 @@ public class Modules
             console.println( "Installing module from '" + url + "'..." );
             try
             {
-                Module module = this.moduleManager.installModule( url, standardSeconds( 30 ) );
-                module.waitForActivation( standardSeconds( 30 ) );
+                this.moduleManager.installModule( url ).waitForActivation( standardSeconds( 30 ) );
             }
             catch( Exception e )
             {

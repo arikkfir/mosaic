@@ -1,20 +1,14 @@
 package org.mosaic.lifecycle.impl;
 
-import com.google.common.io.ByteStreams;
-import com.google.common.io.Files;
-import com.google.common.io.Flushables;
-import java.io.*;
+import java.io.IOException;
 import java.net.URL;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.jar.JarFile;
-import java.util.jar.Manifest;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.joda.time.Duration;
-import org.mosaic.Server;
+import org.mosaic.filewatch.impl.manager.BundlesManager;
 import org.mosaic.lifecycle.*;
 import org.mosaic.lifecycle.impl.util.ServiceUtils;
 import org.mosaic.util.reflection.impl.MethodHandleFactoryImpl;
@@ -26,7 +20,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 
-import static java.lang.System.currentTimeMillis;
 import static java.util.Collections.unmodifiableCollection;
 
 /**
@@ -43,23 +36,23 @@ public class ModuleManagerImpl implements ModuleManager, SynchronousBundleListen
     private final BundleContext bundleContext;
 
     @Nonnull
-    private final Server server;
-
-    @Nonnull
     private final MethodHandleFactoryImpl methodHandleFactory;
 
     @Nonnull
     private final ServiceTracker<ModuleListener, ModuleListener> moduleListeners;
 
+    @Nonnull
+    private final BundlesManager bundlesManager;
+
     @Nullable
     private ServiceRegistration<ModuleManager> moduleManagerRegistration;
 
     public ModuleManagerImpl( @Nonnull BundleContext bundleContext,
-                              @Nonnull Server server,
-                              @Nonnull MethodHandleFactoryImpl methodHandleFactory )
+                              @Nonnull MethodHandleFactoryImpl methodHandleFactory,
+                              @Nonnull BundlesManager bundlesManager )
     {
         this.bundleContext = bundleContext;
-        this.server = server;
+        this.bundlesManager = bundlesManager;
         this.methodHandleFactory = methodHandleFactory;
         this.moduleListeners = new ServiceTracker<>( bundleContext, ModuleListener.class, new ServiceTrackerCustomizer<ModuleListener, ModuleListener>()
         {
@@ -101,6 +94,8 @@ public class ModuleManagerImpl implements ModuleManager, SynchronousBundleListen
     @Override
     public void afterPropertiesSet() throws Exception
     {
+        this.moduleListeners.open();
+
         for( Bundle bundle : bundleContext.getBundles() )
         {
             ModuleImpl module = new ModuleImpl( this, this.methodHandleFactory, bundle );
@@ -128,7 +123,6 @@ public class ModuleManagerImpl implements ModuleManager, SynchronousBundleListen
             }
         }
 
-        this.moduleListeners.open();
         this.bundleContext.addBundleListener( this );
         this.moduleManagerRegistration = ServiceUtils.register( bundleContext, ModuleManager.class, this );
     }
@@ -190,76 +184,47 @@ public class ModuleManagerImpl implements ModuleManager, SynchronousBundleListen
 
     @Override
     @Nullable
-    public Module getModuleFor( @Nonnull Object target )
+    public Module getModuleFor( @Nullable Object target )
     {
-        Bundle bundle = FrameworkUtil.getBundle( target instanceof Class ? ( Class<?> ) target : target.getClass() );
-        if( bundle == null )
+        if( target == null )
         {
             return null;
         }
+        else if( target instanceof Bundle )
+        {
+            return getModule( ( ( Bundle ) target ).getBundleId() );
+        }
+        else if( target instanceof Class )
+        {
+            return getModuleFor( FrameworkUtil.getBundle( ( Class<?> ) target ) );
+        }
         else
         {
-            return getModule( bundle.getBundleId() );
+            return getModuleFor( target.getClass() );
         }
     }
 
     @Nonnull
     @Override
-    public Module installModule( @Nonnull URL url, @Nonnull Duration timeout ) throws IOException, InterruptedException
+    public Module installModule( @Nonnull URL url ) throws IOException, ModuleInstallException
     {
-        long start = currentTimeMillis();
-        long duration = timeout.getMillis();
-
-        // download URL to a temporary file
-        File tempFile = File.createTempFile( "mosaic.deploy.module", ".jar" );
-        try( InputStream in = url.openStream();
-             OutputStream out = new FileOutputStream( tempFile, false ) )
+        try
         {
-            LOG.info( "Reading module from '{}'...", url );
-            ByteStreams.copy( in, out );
-            Flushables.flush( out, false );
-        }
-
-        // read and parse manifest
-        JarFile jarFile = new JarFile( tempFile );
-        Manifest manifest = jarFile.getManifest();
-        if( manifest == null )
-        {
-            throw new IllegalArgumentException( "Location '" + url + "' is not a Mosaic module - does not contain a manifest file" );
-        }
-
-        // extract bundle symbolic name
-        String symbolicName = manifest.getMainAttributes().getValue( "Bundle-SymbolicName" );
-        if( symbolicName == null )
-        {
-            throw new IllegalArgumentException( "Location '" + url + "' is not a Mosaic module - manifest does not contain the 'Bundle-SymbolicName' header" );
-        }
-
-        // extract bundle version
-        String version = manifest.getMainAttributes().getValue( "Bundle-Version" );
-        if( version == null )
-        {
-            throw new IllegalArgumentException( "Location '" + url + "' is not a Mosaic module - manifest does not contain the 'Bundle-Version' header" );
-        }
-
-        // copy jar to lib directory
-        File moduleFile = this.server.getLib().resolve( symbolicName + ".jar" ).toFile();
-        Files.copy( tempFile, moduleFile );
-
-        // now wait until the module is really installed
-        Module module;
-        do
-        {
-            module = getModule( symbolicName, version );
-            if( module != null )
+            Bundle bundle = this.bundlesManager.installModule( url );
+            Module module = getModuleFor( bundle );
+            if( module == null )
+            {
+                throw new ModuleInstallException( url.toExternalForm(), "internal error occurred" );
+            }
+            else
             {
                 return module;
             }
-            Thread.sleep( 500 );
-        } while( start + duration > currentTimeMillis() );
-
-        // module not found and the timeout has passed - throw an exception
-        throw new IllegalStateException( "Module from '" + url + "' has not been installed due to unknown reason (could not find module named '" + symbolicName + ":" + version + ")" );
+        }
+        catch( BundleException e )
+        {
+            throw new ModuleInstallException( url.toExternalForm(), e );
+        }
     }
 
     @Nonnull

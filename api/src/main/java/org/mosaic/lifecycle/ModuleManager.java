@@ -5,7 +5,6 @@ import java.net.URL;
 import java.util.Collection;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.joda.time.Duration;
 
 /**
  * @author arik
@@ -28,5 +27,5 @@ public interface ModuleManager
     Module getModuleFor( @Nonnull Object target );
 
     @Nonnull
-    Module installModule( @Nonnull URL url, @Nonnull Duration timeout ) throws IOException, InterruptedException;
+    Module installModule( @Nonnull URL url ) throws IOException, ModuleInstallException;
 }
