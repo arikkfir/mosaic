@@ -13,7 +13,7 @@ public class ShellCommandsTests extends BaseTests
     @Test
     public void testHelp() throws Exception
     {
-        String output = runner().runSingleCommand( "help" ).assertSuccess().getOutput();
+        String output = this.runner.runSingleCommand( "help" ).assertSuccess().getOutput();
         assertTrue( "Help not printed fully or not at all", output.contains( "org.mosaic.core:metrics" ) );
         assertTrue( "Help not printed fully or not at all", output.contains( "org.mosaic.core:help" ) );
         assertTrue( "Help not printed fully or not at all", output.contains( "org.mosaic.core:restart-server" ) );
@@ -25,7 +25,7 @@ public class ShellCommandsTests extends BaseTests
     @Test
     public void testDeployModule() throws Exception
     {
-        runner().runOnServer( new CallableWithMosaic<Object>()
+        this.runner.runOnServer( new CallableWithMosaic<Object>()
         {
             @Override
             public Object run( @Nonnull MosaicRunner runner ) throws Exception

@@ -1,7 +1,9 @@
 package org.mosaic.it.tests;
 
 import java.io.IOException;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.mosaic.it.runner.MosaicRunner;
 
 /**
@@ -9,8 +11,18 @@ import org.mosaic.it.runner.MosaicRunner;
  */
 public abstract class BaseTests extends Assert
 {
-    protected final MosaicRunner runner() throws IOException
+    protected MosaicRunner runner;
+
+    @Before
+    public void setupMosaicRunner() throws IOException
     {
-        return new MosaicRunner().onDevelopmentMode();
+        this.runner = new MosaicRunner();
+    }
+
+    @After
+    public void tearDownMosaicRunner() throws IOException
+    {
+        this.runner.stop();
+        this.runner = null;
     }
 }
