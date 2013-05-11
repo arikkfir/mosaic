@@ -79,7 +79,7 @@ public class MosaicActivator implements BundleActivator
             copy( in, bundleFile, REPLACE_EXISTING );
         }
 
-        bc.installBundle( bundleFile.toUri().toString() );
+        bc.installBundle( bundleFile.toUri().toString() ).start();
     }
 
     @Nonnull
