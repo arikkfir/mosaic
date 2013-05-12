@@ -200,7 +200,7 @@ public class Modules
 
         console.println();
         console.println( "IMPORTED SERVICES" );
-        Collection<Module.ServiceExport> importedServices = module.getExportedServices();
+        Collection<Module.ServiceExport> importedServices = module.getImportedServices();
         for( Module.ServiceExport export : importedServices )
         {
             console.println( 8, "----------------------------------------------------------------------------------" );
