@@ -229,29 +229,27 @@ public class ModuleImpl implements Module
         }
 
         Collection<ServiceExport> serviceExports = new LinkedList<>();
-        for( final ServiceReference<?> serviceReference : registeredServices )
+        for( ServiceReference<?> serviceReference : registeredServices )
         {
-            String[] classNames = ( String[] ) serviceReference.getProperty( Constants.OBJECTCLASS );
-            for( String className : classNames )
-            {
-                final TypeToken<?> type;
-                try
-                {
-                    if( className.equals( MethodEndpoint.class.getName() ) )
-                    {
-                        type = TypeToken.of( MethodEndpoint.class );
-                    }
-                    else
-                    {
-                        type = TypeToken.of( this.bundle.loadClass( className ) );
-                    }
-                    serviceExports.add( new ServiceExportImpl( type, serviceReference ) );
-                }
-                catch( ClassNotFoundException e )
-                {
-                    throw new IllegalStateException( "Could not load service type '" + className + "': " + e.getMessage(), e );
-                }
-            }
+            addServiceExportsFromServiceReference( serviceExports, serviceReference );
+        }
+        return serviceExports;
+    }
+
+    @Nonnull
+    @Override
+    public Collection<ServiceExport> getImportedServices()
+    {
+        ServiceReference<?>[] importedServices = this.bundle.getServicesInUse();
+        if( importedServices == null )
+        {
+            return Collections.emptyList();
+        }
+
+        Collection<ServiceExport> serviceExports = new LinkedList<>();
+        for( ServiceReference<?> serviceReference : importedServices )
+        {
+            addServiceExportsFromServiceReference( serviceExports, serviceReference );
         }
         return serviceExports;
     }
@@ -586,6 +584,32 @@ public class ModuleImpl implements Module
     public String toString()
     {
         return "Module[" + this.bundle.getSymbolicName() + "-" + this.bundle.getVersion() + " -> " + this.bundle.getBundleId() + " | " + getState() + "]";
+    }
+
+    private void addServiceExportsFromServiceReference( @Nonnull Collection<ServiceExport> serviceExports,
+                                                        @Nonnull ServiceReference<?> serviceReference )
+    {
+        String[] classNames = ( String[] ) serviceReference.getProperty( Constants.OBJECTCLASS );
+        for( String className : classNames )
+        {
+            final TypeToken<?> type;
+            try
+            {
+                if( className.equals( MethodEndpoint.class.getName() ) )
+                {
+                    type = TypeToken.of( MethodEndpoint.class );
+                }
+                else
+                {
+                    type = TypeToken.of( this.bundle.loadClass( className ) );
+                }
+                serviceExports.add( new ServiceExportImpl( type, serviceReference ) );
+            }
+            catch( ClassNotFoundException e )
+            {
+                throw new IllegalStateException( "Could not load service type '" + className + "': " + e.getMessage(), e );
+            }
+        }
     }
 
     private void refreshResourcesCache()

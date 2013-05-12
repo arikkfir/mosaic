@@ -48,6 +48,9 @@ public interface Module
     Collection<ServiceExport> getExportedServices();
 
     @Nonnull
+    Collection<ServiceExport> getImportedServices();
+
+    @Nonnull
     <T> ServiceExport exportService( @Nonnull Class<? super T> type, T service, @Nonnull DP... properties );
 
     void start() throws ModuleStartException;
