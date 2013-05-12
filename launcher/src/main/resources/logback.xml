@@ -31,5 +31,6 @@
     </root>
 
     <logger name="net.schmizz.sshj" level="WARN"/>
+    <logger name="com.google.common.io.Closeables" level="OFF"/>
 
 </configuration>
