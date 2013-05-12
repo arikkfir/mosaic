@@ -16,9 +16,9 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import org.mosaic.filewatch.FileWatcher;
 import org.mosaic.filewatch.WatchEvent;
 import org.mosaic.filewatch.WatchRoot;
+import org.mosaic.filewatch.annotation.FileWatcher;
 import org.mosaic.lifecycle.MethodEndpoint;
 import org.mosaic.lifecycle.annotation.*;
 import org.mosaic.util.collect.HashMapEx;
@@ -66,7 +66,7 @@ public class ConfigurationManager
         this.endpoints = null;
     }
 
-    @ServiceBind(updates = false)
+    @ServiceBind( updates = false )
     public void addConfigurable( @Nonnull MethodEndpoint endpoint, @Nullable @ServiceProperty String type )
     {
         Multimap<String, MethodEndpoint> endpoints = this.endpoints;
@@ -94,9 +94,9 @@ public class ConfigurationManager
         }
     }
 
-    @FileWatcher(root = WatchRoot.ETC,
-                 pattern = "**/*.properties",
-                 event = { WatchEvent.FILE_ADDED, WatchEvent.FILE_MODIFIED })
+    @FileWatcher( root = WatchRoot.ETC,
+                  pattern = "**/*.properties",
+                  event = { WatchEvent.FILE_ADDED, WatchEvent.FILE_MODIFIED } )
     public void onFileModified( @Nonnull Path file, @Nonnull BasicFileAttributes attrs ) throws IOException
     {
         // load configuration data
@@ -119,9 +119,9 @@ public class ConfigurationManager
         }
     }
 
-    @FileWatcher(root = WatchRoot.ETC,
-                 pattern = "**/*.properties",
-                 event = WatchEvent.FILE_DELETED)
+    @FileWatcher( root = WatchRoot.ETC,
+                  pattern = "**/*.properties",
+                  event = WatchEvent.FILE_DELETED )
     public void onFileDeleted( @Nonnull Path file ) throws IOException
     {
         // store (possibly replace previous) configuration in memory
