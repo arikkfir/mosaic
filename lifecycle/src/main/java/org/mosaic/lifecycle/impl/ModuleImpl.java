@@ -31,7 +31,10 @@ import org.mosaic.lifecycle.impl.registrar.MethodEndpointRegistrar;
 import org.mosaic.util.reflection.MethodHandle;
 import org.mosaic.util.reflection.impl.MethodHandleFactoryImpl;
 import org.osgi.framework.*;
+import org.osgi.framework.namespace.PackageNamespace;
+import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleRevision;
+import org.osgi.framework.wiring.BundleWire;
 import org.osgi.framework.wiring.BundleWiring;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +47,7 @@ import org.springframework.util.ReflectionUtils;
 import static java.lang.System.currentTimeMillis;
 import static java.lang.reflect.Modifier.*;
 import static org.mosaic.util.reflection.impl.AnnotationUtils.getAnnotation;
+import static org.osgi.framework.namespace.PackageNamespace.PACKAGE_NAMESPACE;
 import static org.springframework.util.ReflectionUtils.getUniqueDeclaredMethods;
 
 /**
@@ -252,6 +256,45 @@ public class ModuleImpl implements Module
             addServiceExportsFromServiceReference( serviceImports, serviceReference );
         }
         return serviceImports;
+    }
+
+    @Nonnull
+    @Override
+    public Collection<PackageExport> getExportedPackages()
+    {
+        BundleRevision revision = this.bundle.adapt( BundleRevision.class );
+        List<BundleCapability> packageCapabilities = revision.getDeclaredCapabilities( PACKAGE_NAMESPACE );
+        if( packageCapabilities.isEmpty() )
+        {
+            return Collections.emptyList();
+        }
+
+
+        Collection<PackageExport> packageExports = new LinkedList<>();
+        for( BundleCapability capability : packageCapabilities )
+        {
+            packageExports.add( new PackageExportImpl( capability ) );
+        }
+        return packageExports;
+    }
+
+    @Nonnull
+    @Override
+    public Collection<PackageExport> getImportedPackages()
+    {
+        BundleRevision revision = this.bundle.adapt( BundleRevision.class );
+        List<BundleWire> importedPackageWires = revision.getWiring().getRequiredWires( PACKAGE_NAMESPACE );
+        if( importedPackageWires.isEmpty() )
+        {
+            return Collections.emptyList();
+        }
+
+        Collection<PackageExport> packageImports = new LinkedList<>();
+        for( BundleWire wire : importedPackageWires )
+        {
+            packageImports.add( new PackageExportImpl( wire.getCapability() ) );
+        }
+        return packageImports;
     }
 
     @Nonnull
@@ -1130,6 +1173,48 @@ public class ModuleImpl implements Module
         public void unregister()
         {
             this.serviceRegistration.unregister();
+        }
+    }
+
+    private class PackageExportImpl implements PackageExport
+    {
+        @Nonnull
+        private final BundleCapability capability;
+
+        private PackageExportImpl( @Nonnull BundleCapability capability )
+        {
+            this.capability = capability;
+        }
+
+        @Nonnull
+        @Override
+        public Module getProvider()
+        {
+            Module module = moduleManager.getModuleFor( this.capability.getRevision() );
+            if( module == null )
+            {
+                throw new IllegalStateException( "Could not find module for capability: " + this.capability );
+            }
+            else
+            {
+                return module;
+            }
+        }
+
+        @Nonnull
+        @Override
+        public String getPackageName()
+        {
+            Object packageName = this.capability.getAttributes().get( PACKAGE_NAMESPACE );
+            return packageName == null ? "unknown" : packageName.toString();
+        }
+
+        @Nonnull
+        @Override
+        public String getVersion()
+        {
+            Object version = this.capability.getAttributes().get( PackageNamespace.CAPABILITY_VERSION_ATTRIBUTE );
+            return version == null ? "0.0.0" : version.toString();
         }
     }
 }

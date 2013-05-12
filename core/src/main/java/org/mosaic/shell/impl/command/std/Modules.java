@@ -242,7 +242,21 @@ public class Modules
 
     private void displayModulePackages( @Nonnull Console console, @Nonnull Module module ) throws IOException
     {
-        // TODO arik: implement displayModulePackages([console, module])
+        console.println();
+        console.println( "EXPORTED PACKAGES" );
+        Collection<Module.PackageExport> exportedPackages = module.getExportedPackages();
+        for( Module.PackageExport export : exportedPackages )
+        {
+            console.println( 8, export.getPackageName() + " (" + export.getVersion() + ")" );
+        }
+
+        console.println();
+        console.println( "IMPORTED PACKAGES" );
+        Collection<Module.PackageExport> importedPackages = module.getImportedPackages();
+        for( Module.PackageExport export : importedPackages )
+        {
+            console.println( 8, export.getPackageName() + " (" + export.getVersion() + ") from " + export.getProvider() );
+        }
     }
 
     private void displayModuleContents( @Nonnull Console console, @Nonnull Module module ) throws IOException

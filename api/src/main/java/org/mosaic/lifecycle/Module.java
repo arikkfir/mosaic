@@ -51,6 +51,12 @@ public interface Module
     Collection<ServiceExport> getImportedServices();
 
     @Nonnull
+    Collection<PackageExport> getExportedPackages();
+
+    @Nonnull
+    Collection<PackageExport> getImportedPackages();
+
+    @Nonnull
     <T> ServiceExport exportService( @Nonnull Class<? super T> type, T service, @Nonnull DP... properties );
 
     void start() throws ModuleStartException;
@@ -125,5 +131,17 @@ public interface Module
         boolean isRegistered();
 
         void unregister();
+    }
+
+    interface PackageExport
+    {
+        @Nonnull
+        Module getProvider();
+
+        @Nonnull
+        String getPackageName();
+
+        @Nonnull
+        String getVersion();
     }
 }
