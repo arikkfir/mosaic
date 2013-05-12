@@ -13,6 +13,8 @@ import org.mosaic.lifecycle.*;
 import org.mosaic.lifecycle.impl.util.ServiceUtils;
 import org.mosaic.util.reflection.impl.MethodHandleFactoryImpl;
 import org.osgi.framework.*;
+import org.osgi.framework.wiring.BundleRevision;
+import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.util.tracker.ServiceTracker;
 import org.osgi.util.tracker.ServiceTrackerCustomizer;
 import org.slf4j.Logger;
@@ -184,19 +186,28 @@ public class ModuleManagerImpl implements ModuleManager, SynchronousBundleListen
 
     @Override
     @Nullable
-    public Module getModuleFor( @Nullable Object target )
+    public Module getModuleFor( @Nonnull Object target )
     {
-        if( target == null )
+        if( target instanceof Bundle )
         {
-            return null;
-        }
-        else if( target instanceof Bundle )
-        {
-            return getModule( ( ( Bundle ) target ).getBundleId() );
+            Bundle bundle = ( Bundle ) target;
+            return getModule( bundle.getBundleId() );
         }
         else if( target instanceof Class )
         {
-            return getModuleFor( FrameworkUtil.getBundle( ( Class<?> ) target ) );
+            Class<?> clazz = ( Class<?> ) target;
+            Bundle bundle = FrameworkUtil.getBundle( clazz );
+            return getModuleFor( bundle );
+        }
+        else if( target instanceof BundleRevision )
+        {
+            BundleRevision revision = ( BundleRevision ) target;
+            return getModule( revision.getBundle().getBundleId() );
+        }
+        else if( target instanceof BundleWiring )
+        {
+            BundleWiring wiring = ( BundleWiring ) target;
+            return getModule( wiring.getBundle().getBundleId() );
         }
         else
         {
@@ -210,8 +221,7 @@ public class ModuleManagerImpl implements ModuleManager, SynchronousBundleListen
     {
         try
         {
-            Bundle bundle = this.bundlesManager.installModule( url );
-            Module module = getModuleFor( bundle );
+            Module module = getModuleFor( this.bundlesManager.installModule( url ) );
             if( module == null )
             {
                 throw new ModuleInstallException( url.toExternalForm(), "internal error occurred" );
