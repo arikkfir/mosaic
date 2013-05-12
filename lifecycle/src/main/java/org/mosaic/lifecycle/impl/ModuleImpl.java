@@ -246,12 +246,12 @@ public class ModuleImpl implements Module
             return Collections.emptyList();
         }
 
-        Collection<ServiceExport> serviceExports = new LinkedList<>();
+        Collection<ServiceExport> serviceImports = new LinkedList<>();
         for( ServiceReference<?> serviceReference : importedServices )
         {
-            addServiceExportsFromServiceReference( serviceExports, serviceReference );
+            addServiceExportsFromServiceReference( serviceImports, serviceReference );
         }
-        return serviceExports;
+        return serviceImports;
     }
 
     @Nonnull
@@ -269,12 +269,9 @@ public class ModuleImpl implements Module
             }
         }
 
-        // register
+        // register & return
         ServiceRegistration<? super T> sr = this.bundle.getBundleContext().registerService( type, service, dict );
-
-        // return service registration wrapper
-        ServiceReference<? super T> ref = sr.getReference();
-        return new ServiceExportImpl( TypeToken.of( type ), ref );
+        return new ServiceExportImpl( TypeToken.of( type ), sr );
     }
 
     @Nullable
@@ -1068,6 +1065,13 @@ public class ModuleImpl implements Module
             {
                 throw new IllegalStateException( "Could not obtain OSGi service registration from a service reference '" + serviceReference + "':" + e.getMessage(), e );
             }
+        }
+
+        public ServiceExportImpl( TypeToken<?> type, ServiceRegistration<?> serviceRegistration )
+        {
+            this.type = type;
+            this.serviceRegistration = serviceRegistration;
+            this.serviceReference = serviceRegistration.getReference();
         }
 
         @Nonnull
