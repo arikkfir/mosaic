@@ -35,6 +35,7 @@ import static ch.qos.logback.core.status.StatusUtil.filterStatusListByTimeThresh
 import static java.lang.System.currentTimeMillis;
 import static java.nio.file.Files.*;
 import static java.nio.file.StandardOpenOption.READ;
+import static java.util.Arrays.asList;
 import static org.mosaic.launcher.logging.EventsLogger.printEmphasizedWarnMessage;
 import static org.mosaic.launcher.util.Header.printHeader;
 import static org.mosaic.launcher.util.SystemError.BootstrapException;
@@ -51,6 +52,10 @@ public class MosaicInstance implements Closeable
     private static final Logger LOG = LoggerFactory.getLogger( MosaicInstance.class );
 
     private static final Integer FELIX_CACHE_BUFSIZE = 1024 * 64;
+
+    private static final Logger OSGI_SVC_LOG = LoggerFactory.getLogger( "org.osgi.service" );
+
+    private static final Logger OSGI_FRWK_LOG = LoggerFactory.getLogger( "org.osgi.framework" );
 
     @Nonnull
     private final Properties properties;
@@ -405,10 +410,6 @@ public class MosaicInstance implements Closeable
         felixConfig.put( FelixConstants.FRAMEWORK_BEGINNING_STARTLEVEL, "1" );                          // the framework should start at start-level 1
         felixConfig.put( FelixConstants.BUNDLE_STARTLEVEL_PROP, "1" );                                  // boot bundles should start at start-level 1 as well (will be modified later for app bundles)
         felixConfig.put( FelixConstants.FRAMEWORK_SYSTEMPACKAGES_EXTRA, getExtraSystemPackages() );     // extra packages exported by system bundle
-        //        felixConfig.put( FelixConstants.IMPLICIT_BOOT_DELEGATION_PROP, "false" );                       // disable auto-boot delegation
-
-        //        felixConfig.put( FelixConstants.FRAMEWORK_BOOTDELEGATION,
-        //                         SystemPackages.getSystemPackagesSpecWithoutVersions() );                       // extra packages exported by boot delegation
         try
         {
             // initialize felix
@@ -421,6 +422,7 @@ public class MosaicInstance implements Closeable
 
             // add a framework listener which logs framework lifecycle events
             this.felix.getBundleContext().addFrameworkListener( new LoggingFrameworkListener() );
+            this.felix.getBundleContext().addServiceListener( new LoggingFrameworkListener() );
 
             // install a shutdown hook to ensure we close the server when the JVM process dies
             Runtime.getRuntime().addShutdownHook( this.mosaicShutdownHook );
@@ -596,7 +598,7 @@ public class MosaicInstance implements Closeable
         }
     }
 
-    private class LoggingFrameworkListener implements FrameworkListener
+    private class LoggingFrameworkListener implements FrameworkListener, ServiceListener
     {
         @Override
         public void frameworkEvent( @Nonnull FrameworkEvent event )
@@ -607,22 +609,54 @@ public class MosaicInstance implements Closeable
             switch( event.getType() )
             {
                 case FrameworkEvent.INFO:
-                    LOG.warn( "OSGi framework informational has occurred: {}", throwableMsg, throwable );
+                    OSGI_FRWK_LOG.warn( "OSGi framework informational has occurred: {}", throwableMsg, throwable );
                     break;
 
                 case FrameworkEvent.WARNING:
-                    LOG.warn( "OSGi framework warning has occurred: {}", throwableMsg, throwable );
+                    OSGI_FRWK_LOG.warn( "OSGi framework warning has occurred: {}", throwableMsg, throwable );
                     break;
 
                 case FrameworkEvent.ERROR:
                     Bundle bundle = event.getBundle();
                     String bstr = bundle == null ? "unknown" : bundle.getSymbolicName() + "-" + bundle.getVersion() + "[" + bundle.getBundleId() + "]";
-                    LOG.error( "OSGi framework error for/from bundle '{}' has occurred:", bstr, throwable );
+                    OSGI_FRWK_LOG.error( "OSGi framework error for/from bundle '{}' has occurred:", bstr, throwable );
                     break;
 
                 case FrameworkEvent.STARTLEVEL_CHANGED:
-                    LOG.info( "OSGi framework start level has been changed to: {}", event.getBundle().adapt( FrameworkStartLevel.class ).getStartLevel() );
+                    OSGI_FRWK_LOG.info( "OSGi framework start level has been changed to: {}", event.getBundle().adapt( FrameworkStartLevel.class ).getStartLevel() );
                     break;
+            }
+        }
+
+        @Override
+        public void serviceChanged( ServiceEvent event )
+        {
+            if( OSGI_SVC_LOG.isTraceEnabled() )
+            {
+                ServiceReference<?> sr = event.getServiceReference();
+                Bundle bundle = sr.getBundle();
+                switch( event.getType() )
+                {
+                    case ServiceEvent.REGISTERED:
+                        OSGI_SVC_LOG.trace(
+                                "OSGi service of type '{}' registered from '{}-{}[{}]'",
+                                asList( ( String[] ) sr.getProperty( Constants.OBJECTCLASS ) ),
+                                bundle.getSymbolicName(),
+                                bundle.getVersion(),
+                                bundle.getBundleId()
+                        );
+                        break;
+
+                    case ServiceEvent.UNREGISTERING:
+                        OSGI_SVC_LOG.trace(
+                                "OSGi service of type '{}' from from '{}-{}[{}]' was unregistered",
+                                asList( ( String[] ) sr.getProperty( Constants.OBJECTCLASS ) ),
+                                bundle.getSymbolicName(),
+                                bundle.getVersion(),
+                                bundle.getBundleId()
+                        );
+                        break;
+                }
             }
         }
     }
