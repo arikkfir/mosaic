@@ -2,9 +2,6 @@
 
 <configuration>
 
-    <!--<logger name="org.mosaic" level="TRACE"/>-->
-    <!--<logger name="org.mosaic.lifecycle.impl.ModuleImpl" level="INFO"/>-->
-    <logger name="org.mosaic.lifecycle.impl.ModuleApplicationContext" level="WARN"/>
-    <!--<logger name="org.mosaic.shell.impl.session.MosaicServerSession" level="WARN"/>-->
+    <logger name="org.osgi.service" level="OFF"/>
 
 </configuration>
