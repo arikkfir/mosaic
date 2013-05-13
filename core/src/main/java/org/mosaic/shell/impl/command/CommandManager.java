@@ -101,28 +101,28 @@ public class CommandManager
         this.conversionService = conversionService;
     }
 
-    @ServiceBind
-    public void addCommand( @Nonnull MethodEndpoint endpoint, @ServiceProperty( ServiceProperties.ID ) long id )
+    @MethodEndpointBind( org.mosaic.shell.annotation.Command.class )
+    public void addCommand( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
     {
         Map<Long, CommandExecutor> commands = this.commands;
-        if( commands != null && endpoint.getType().annotationType().equals( org.mosaic.shell.annotation.Command.class ) )
+        if( commands != null )
         {
             this.commands.put( id, new StandardCommandExecutor( new MethodEndpointCommandAdapter( endpoint ) ) );
         }
     }
 
-    @ServiceUnbind
-    public void removeCommand( @Nonnull MethodEndpoint endpoint, @ServiceProperty( ServiceProperties.ID ) long id )
+    @MethodEndpointUnbind( org.mosaic.shell.annotation.Command.class )
+    public void removeCommand( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
     {
         Map<Long, CommandExecutor> commands = this.commands;
-        if( commands != null && endpoint.getType().annotationType().equals( org.mosaic.shell.annotation.Command.class ) )
+        if( commands != null )
         {
             this.commands.remove( id );
         }
     }
 
     @ServiceBind
-    public void addCommand( @Nonnull Command command, @ServiceProperty( ServiceProperties.ID ) long id )
+    public void addCommand( @Nonnull Command command, @ServiceId long id )
     {
         Map<Long, CommandExecutor> commands = this.commands;
         if( commands != null )
@@ -132,7 +132,7 @@ public class CommandManager
     }
 
     @ServiceUnbind
-    public void removeCommand( Command command, @ServiceProperty( ServiceProperties.ID ) long id )
+    public void removeCommand( Command command, @ServiceId long id )
     {
         Map<Long, CommandExecutor> commands = this.commands;
         if( commands != null )
@@ -689,8 +689,8 @@ public class CommandManager
         @Override
         public Object resolve( @Nonnull MethodParameter parameter, @Nonnull MapEx<String, Object> resolveContext )
         {
-            Options options = resolveContext.get( "options", Options.class );
-            Console console = resolveContext.get( "console", Console.class );
+            Options options = resolveContext.require( "options", Options.class );
+            Console console = resolveContext.require( "console", Console.class );
 
             TypeToken<?> type = parameter.getType();
             if( type.isAssignableFrom( Console.class ) )

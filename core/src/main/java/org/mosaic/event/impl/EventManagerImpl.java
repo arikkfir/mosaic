@@ -53,13 +53,13 @@ public class EventManagerImpl implements EventManager
         this.conversionService = conversionService;
     }
 
-    @ServiceBind( "(type=org.mosaic.event.annotation.Subscribe)" )
+    @MethodEndpointBind( Subscribe.class )
     public void addEventSubscriber( @ServiceId long id, @Nonnull MethodEndpoint endpoint )
     {
         this.listeners.put( id, new EventListenerImpl( endpoint ) );
     }
 
-    @ServiceUnbind( "(type=org.mosaic.event.annotation.Subscribe)" )
+    @MethodEndpointUnbind( Subscribe.class )
     public void removeEventSubscriber( @ServiceId long id, @Nonnull MethodEndpoint endpoint )
     {
         this.listeners.remove( id );

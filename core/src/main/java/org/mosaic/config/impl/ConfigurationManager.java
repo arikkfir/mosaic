@@ -66,11 +66,11 @@ public class ConfigurationManager
         this.endpoints = null;
     }
 
-    @ServiceBind( updates = false )
-    public void addConfigurable( @Nonnull MethodEndpoint endpoint, @Nullable @ServiceProperty String type )
+    @MethodEndpointBind( Configurable.class )
+    public void addConfigurable( @Nonnull MethodEndpoint endpoint )
     {
         Multimap<String, MethodEndpoint> endpoints = this.endpoints;
-        if( endpoints != null && Configurable.class.getName().equals( type ) )
+        if( endpoints != null )
         {
             Configurable ann = ( Configurable ) endpoint.getType();
             endpoints.put( ann.value(), endpoint );
@@ -83,11 +83,11 @@ public class ConfigurationManager
         }
     }
 
-    @ServiceUnbind
-    public void removeConfigurable( @Nonnull MethodEndpoint endpoint, @Nullable @ServiceProperty String type )
+    @MethodEndpointUnbind( Configurable.class )
+    public void removeConfigurable( @Nonnull MethodEndpoint endpoint )
     {
         Multimap<String, MethodEndpoint> endpoints = this.endpoints;
-        if( endpoints != null && Configurable.class.getName().equals( type ) )
+        if( endpoints != null )
         {
             Configurable ann = ( Configurable ) endpoint.getType();
             endpoints.remove( ann.value(), endpoint );

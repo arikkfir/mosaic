@@ -857,11 +857,34 @@ public class ModuleImpl implements Module
                 }
             }
 
+            // detect @MethodEndpointRef dependencies
+            MethodEndpointRef methodEndpointRefAnn = methodHandle.getAnnotation( MethodEndpointRef.class );
+            if( methodEndpointRefAnn != null )
+            {
+                String filter = "(type=" + methodEndpointRefAnn.value().getName() + ")";
+                if( methodEndpointRefAnn.autoSelectIfMultiple() )
+                {
+                    dependencies.add( new OptimisticServiceRefDependency( this, filter, methodEndpointRefAnn.required(), beanName, methodHandle ) );
+                }
+                else
+                {
+                    dependencies.add( new PessimisticServiceRefDependency( this, filter, methodEndpointRefAnn.required(), beanName, methodHandle ) );
+                }
+            }
+
             // detect @ServiceRefs dependency
             ServiceRefs serviceRefsAnn = methodHandle.getAnnotation( ServiceRefs.class );
             if( serviceRefsAnn != null )
             {
                 dependencies.add( new ServiceRefsDependency( this, serviceRefsAnn.value(), beanName, methodHandle ) );
+            }
+
+            // detect @ServiceRefs dependency
+            MethodEndpointRefs methodEndpointRefsAnn = methodHandle.getAnnotation( MethodEndpointRefs.class );
+            if( methodEndpointRefsAnn != null )
+            {
+                String filter = "(type=" + methodEndpointRefsAnn.value().getName() + ")";
+                dependencies.add( new ServiceRefsDependency( this, filter, beanName, methodHandle ) );
             }
 
             // detect @ServiceBind dependency
@@ -871,11 +894,27 @@ public class ModuleImpl implements Module
                 dependencies.add( new ServiceBindDependency( this, serviceBindAnn.value(), serviceBindAnn.updates(), beanName, methodHandle ) );
             }
 
+            // detect @ServiceBind dependency
+            MethodEndpointBind methodEndpointBindAnn = methodHandle.getAnnotation( MethodEndpointBind.class );
+            if( methodEndpointBindAnn != null )
+            {
+                String filter = "(type=" + methodEndpointBindAnn.value().getName() + ")";
+                dependencies.add( new ServiceBindDependency( this, filter, methodEndpointBindAnn.updates(), beanName, methodHandle ) );
+            }
+
             // detect @ServiceUnbind dependency
             ServiceUnbind serviceUnbindAnn = methodHandle.getAnnotation( ServiceUnbind.class );
             if( serviceUnbindAnn != null )
             {
                 dependencies.add( new ServiceUnbindDependency( this, serviceUnbindAnn.value(), beanName, methodHandle ) );
+            }
+
+            // detect @ServiceUnbind dependency
+            MethodEndpointUnbind methodEndpointUnbindAnn = methodHandle.getAnnotation( MethodEndpointUnbind.class );
+            if( methodEndpointUnbindAnn != null )
+            {
+                String filter = "(type=" + methodEndpointUnbindAnn.value().getName() + ")";
+                dependencies.add( new ServiceUnbindDependency( this, filter, beanName, methodHandle ) );
             }
 
             // detect @ServiceUnbind dependency

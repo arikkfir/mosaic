@@ -6,9 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.lifecycle.MethodEndpoint;
-import org.mosaic.lifecycle.annotation.Service;
-import org.mosaic.lifecycle.annotation.ServiceBind;
-import org.mosaic.lifecycle.annotation.ServiceUnbind;
+import org.mosaic.lifecycle.annotation.*;
 import org.mosaic.security.realm.MutableUser;
 import org.mosaic.security.realm.Realm;
 import org.mosaic.security.realm.RealmManager;
@@ -40,14 +38,14 @@ public class RealmManagerImpl implements RealmManager
         this.realms.remove( realm.getName() );
     }
 
-    @ServiceBind( "type=org.mosaic.security.realm.annotation.Realm" )
+    @MethodEndpointBind( org.mosaic.security.realm.annotation.Realm.class )
     public void addRealmMethodEndpoint( @Nonnull MethodEndpoint realmMethodEndpoint )
     {
         RealmMethodEndpointAdapter realmAdapter = new RealmMethodEndpointAdapter( realmMethodEndpoint );
         this.realms.put( realmAdapter.getName(), realmAdapter );
     }
 
-    @ServiceUnbind( "type=org.mosaic.security.realm.annotation.Realm" )
+    @MethodEndpointUnbind( org.mosaic.security.realm.annotation.Realm.class )
     public void removeRealmMethodEndpoint( @Nonnull MethodEndpoint realmMethodEndpoint )
     {
         org.mosaic.security.realm.annotation.Realm ann = realmMethodEndpoint.getAnnotation( org.mosaic.security.realm.annotation.Realm.class );
