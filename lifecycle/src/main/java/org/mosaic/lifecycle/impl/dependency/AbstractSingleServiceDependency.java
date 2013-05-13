@@ -58,7 +58,9 @@ public abstract class AbstractSingleServiceDependency extends AbstractBeanDepend
         this.beanName = beanName;
         this.methodHandle = methodHandle;
         this.serviceType = detectServiceType();
-        this.invoker = this.methodHandle.createInvoker( new ServicePropertyParameterResolver(), new ServiceInstanceResolver() );
+        this.invoker = this.methodHandle.createInvoker( new ServicePropertyParameterResolver(),
+                                                        new ServiceIdParameterResolver(),
+                                                        new ServiceInstanceResolver() );
     }
 
     @Nonnull
