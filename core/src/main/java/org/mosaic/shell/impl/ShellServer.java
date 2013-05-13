@@ -3,6 +3,7 @@ package org.mosaic.shell.impl;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import org.apache.mina.core.session.IoSession;
@@ -64,37 +65,37 @@ public class ShellServer
     private KeyPairProvider keyPairProvider;
 
     @BeanRef
-    public void setKeyPairProvider( KeyPairProvider keyPairProvider )
+    public void setKeyPairProvider( @Nonnull KeyPairProvider keyPairProvider )
     {
         this.keyPairProvider = keyPairProvider;
     }
 
     @ServiceRef
-    public void setServer( Server server )
+    public void setServer( @Nonnull Server server )
     {
         this.server = server;
     }
 
     @ServiceRef
-    public void setModuleManager( ModuleManager moduleManager )
+    public void setModuleManager( @Nonnull ModuleManager moduleManager )
     {
         this.moduleManager = moduleManager;
     }
 
     @BeanRef
-    public void setPasswordAuthenticator( PasswordAuthenticator passwordAuthenticator )
+    public void setPasswordAuthenticator( @Nonnull PasswordAuthenticator passwordAuthenticator )
     {
         this.passwordAuthenticator = passwordAuthenticator;
     }
 
     @BeanRef
-    public void setPublicKeyAuthenticator( PublicKeyAuthenticator publicKeyAuthenticator )
+    public void setPublicKeyAuthenticator( @Nonnull PublicKeyAuthenticator publicKeyAuthenticator )
     {
         this.publicKeyAuthenticator = publicKeyAuthenticator;
     }
 
     @BeanRef
-    public void setCommandManager( CommandManager shellCommandsManager )
+    public void setCommandManager( @Nonnull CommandManager shellCommandsManager )
     {
         this.shellCommandsManager = shellCommandsManager;
     }
