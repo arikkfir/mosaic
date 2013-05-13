@@ -40,12 +40,12 @@ public class Metrics
     private ModuleManager moduleManager;
 
     @ServiceRef
-    public void setModuleManager( ModuleManager moduleManager )
+    public void setModuleManager( @Nonnull ModuleManager moduleManager )
     {
         this.moduleManager = moduleManager;
     }
 
-    @Command(name = "metrics", label = "List available metrics", desc = "Lists all available metrics, optionally filtered by name.")
+    @Command( name = "metrics", label = "List available metrics", desc = "Lists all available metrics, optionally filtered by name." )
     public void listMetrics( @Nonnull Console console, @Arguments String... filters ) throws IOException
     {
         List<Module.MetricsTimer> timers = new LinkedList<>();
