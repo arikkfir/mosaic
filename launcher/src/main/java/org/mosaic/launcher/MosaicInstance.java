@@ -1,47 +1,29 @@
 package org.mosaic.launcher;
 
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.joran.JoranConfigurator;
-import ch.qos.logback.core.joran.spi.JoranException;
-import ch.qos.logback.core.status.ErrorStatus;
-import ch.qos.logback.core.status.Status;
-import ch.qos.logback.core.status.StatusChecker;
-import ch.qos.logback.core.util.StatusPrinter;
 import java.io.Closeable;
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Properties;
-import java.util.StringTokenizer;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import org.apache.felix.framework.Felix;
-import org.apache.felix.framework.cache.BundleCache;
-import org.apache.felix.framework.util.FelixConstants;
-import org.mosaic.launcher.logging.AppenderRegistry;
-import org.mosaic.launcher.logging.LogbackBuiltinConfigurator;
-import org.mosaic.launcher.logging.LogbackRestrictedConfigurator;
-import org.mosaic.launcher.util.SystemError;
+import org.mosaic.launcher.logging.LoggingConfigurator;
+import org.mosaic.launcher.osgi.BootBundlesWatcher;
+import org.mosaic.launcher.osgi.MosaicFelix;
 import org.mosaic.launcher.util.Utils;
-import org.osgi.framework.*;
-import org.osgi.framework.startlevel.FrameworkStartLevel;
+import org.osgi.framework.BundleException;
+import org.osgi.framework.FrameworkEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.bridge.SLF4JBridgeHandler;
 
-import static ch.qos.logback.core.status.StatusUtil.filterStatusListByTimeThreshold;
 import static java.lang.System.currentTimeMillis;
-import static java.nio.file.Files.*;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.util.Arrays.asList;
+import static java.nio.file.Files.createDirectories;
+import static java.nio.file.Files.exists;
 import static org.mosaic.launcher.logging.EventsLogger.printEmphasizedWarnMessage;
 import static org.mosaic.launcher.util.Header.printHeader;
 import static org.mosaic.launcher.util.SystemError.BootstrapException;
 import static org.mosaic.launcher.util.SystemError.bootstrapError;
-import static org.mosaic.launcher.util.SystemPackages.getExtraSystemPackages;
-import static org.mosaic.launcher.util.Utils.requireClasspathResource;
 import static org.mosaic.launcher.util.Utils.resolveDirectoryInHome;
 
 /**
@@ -50,12 +32,6 @@ import static org.mosaic.launcher.util.Utils.resolveDirectoryInHome;
 public class MosaicInstance implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger( MosaicInstance.class );
-
-    private static final Integer FELIX_CACHE_BUFSIZE = 1024 * 64;
-
-    private static final Logger OSGI_SVC_LOG = LoggerFactory.getLogger( "org.osgi.service" );
-
-    private static final Logger OSGI_FRWK_LOG = LoggerFactory.getLogger( "org.osgi.framework" );
 
     @Nonnull
     private final Properties properties;
@@ -87,6 +63,9 @@ public class MosaicInstance implements Closeable
     private final Path felixWork;
 
     @Nonnull
+    private final LoggingConfigurator loggingConfigurator;
+
+    @Nonnull
     private final MosaicInstance.MosaicShutdownHook mosaicShutdownHook = new MosaicShutdownHook();
 
     /**
@@ -102,7 +81,11 @@ public class MosaicInstance implements Closeable
     /**
      * The OSGi container instance.
      */
+    @Nullable
     private Felix felix;
+
+    @Nullable
+    private BootBundlesWatcher bootBundlesWatcher;
 
     MosaicInstance( @Nonnull Properties properties )
     {
@@ -116,6 +99,7 @@ public class MosaicInstance implements Closeable
         this.logs = resolveDirectoryInHome( this.properties, this.home, "logs" );
         this.work = resolveDirectoryInHome( this.properties, this.home, "work" );
         this.felixWork = this.work.resolve( "felix" );
+        this.loggingConfigurator = new LoggingConfigurator( this );
     }
 
     @Nonnull
@@ -190,20 +174,19 @@ public class MosaicInstance implements Closeable
         return seconds + " seconds";
     }
 
-    public void start()
+    public synchronized void start()
     {
         this.initializationStartTime = System.currentTimeMillis();
         this.initializationFinishTime = -1;
 
         printHeader( this );
         prepareHome();
-        initializeLogging();
+        this.loggingConfigurator.initializeLogging();
         startFelix();
         try
         {
-            installMosaicBundle( "api" );
-            installMosaicBundle( "lifecycle" );
-            installMosaicBundle( "core" );
+            //noinspection ConstantConditions
+            this.bootBundlesWatcher = new BootBundlesWatcher( this, this.felix );
         }
         catch( Exception e )
         {
@@ -222,8 +205,20 @@ public class MosaicInstance implements Closeable
         stop();
     }
 
-    public void stop()
+    public synchronized void stop()
     {
+        if( this.bootBundlesWatcher != null )
+        {
+            try
+            {
+                this.bootBundlesWatcher.stop();
+            }
+            catch( InterruptedException ignore )
+            {
+            }
+            this.bootBundlesWatcher = null;
+        }
+
         if( this.felix != null )
         {
             try
@@ -308,121 +303,15 @@ public class MosaicInstance implements Closeable
         }
     }
 
-    private void initializeLogging()
-    {
-        try
-        {
-            // obtain logger context from Logback
-            LoggerContext lc = ( LoggerContext ) LoggerFactory.getILoggerFactory();
-            lc.reset();
-
-            // disable logback packaging source calculation (causes problems when bundles disappear, on felix shutdown, etc)
-            lc.setPackagingDataEnabled( false );
-
-            // apply our properties on the logger context so we can use them in logback*.xml files
-            for( String propertyName : this.properties.stringPropertyNames() )
-            {
-                lc.putProperty( propertyName, this.properties.getProperty( propertyName ) );
-            }
-
-            // apply built-in & user-customizable configurations
-            AppenderRegistry appenderRegistry = new AppenderRegistry();
-            applyBuiltinLogbackConfiguration( lc, appenderRegistry );
-            applyServerLogbackConfiguration( lc, appenderRegistry );
-
-            // install JUL-to-SLF4J adapter
-            SLF4JBridgeHandler.removeHandlersForRootLogger();
-            SLF4JBridgeHandler.install();
-        }
-        catch( BootstrapException e )
-        {
-            throw e;
-        }
-        catch( Exception e )
-        {
-            throw bootstrapError( "Could not initialize Mosaic logging framework: {}", e.getMessage(), e );
-        }
-    }
-
-    private void applyBuiltinLogbackConfiguration( @Nonnull LoggerContext lc,
-                                                   @Nonnull org.mosaic.launcher.logging.AppenderRegistry appenderRegistry )
-    {
-        JoranConfigurator configurator = new LogbackBuiltinConfigurator( appenderRegistry );
-        configurator.setContext( lc );
-        try
-        {
-            configurator.doConfigure( requireClasspathResource( this.properties, "logbackBuiltin", "/logback-builtin.xml" ) );
-            checkLogbackContextForErrors( lc );
-        }
-        catch( JoranException e )
-        {
-            throw bootstrapError( "Error while applying built-in Logback configuration: {}", e.getMessage(), e );
-        }
-    }
-
-    private void applyServerLogbackConfiguration( @Nonnull LoggerContext lc,
-                                                  @Nonnull AppenderRegistry appenderRegistry )
-    {
-        Path logbackConfigFile = this.etc.resolve( "logback.xml" );
-        if( exists( logbackConfigFile ) )
-        {
-            try
-            {
-                LogbackRestrictedConfigurator configurator = new LogbackRestrictedConfigurator( appenderRegistry );
-                configurator.setContext( lc );
-                configurator.doConfigure( logbackConfigFile.toFile() );
-                checkLogbackContextForErrors( lc );
-            }
-            catch( JoranException e )
-            {
-                throw SystemError.bootstrapError( "Error while applying Logback configuration in '{}': {}", logbackConfigFile, e.getMessage(), e );
-            }
-        }
-    }
-
-    private void checkLogbackContextForErrors( @Nonnull LoggerContext lc )
-    {
-        if( new StatusChecker( lc ).getHighestLevel( 0 ) >= ErrorStatus.WARN )
-        {
-            System.out.println();
-            System.out.printf( "LOGGING CONFIGURATION ERRORS DETECTED:\n" );
-            System.out.println();
-            System.out.println();
-            StatusPrinter.printInCaseOfErrorsOrWarnings( lc );
-
-            StringBuilder sb = new StringBuilder();
-            for( Status s : filterStatusListByTimeThreshold( lc.getStatusManager().getCopyOfStatusList(), 0 ) )
-            {
-                StatusPrinter.buildStr( sb, "", s );
-            }
-
-            throw SystemError.bootstrapError( "LOGGING CONFIGURATION ERRORS DETECTED:\n" + sb );
-        }
-    }
-
     private void startFelix()
     {
         // create felix configuration
-        Map<Object, Object> felixConfig = new HashMap<>( this.properties );
-        felixConfig.put( FelixConstants.FRAMEWORK_STORAGE, this.felixWork.toString() );                 // specify work location for felix
-        felixConfig.put( BundleCache.CACHE_BUFSIZE_PROP, FELIX_CACHE_BUFSIZE.toString() );              // buffer size for reading from storage
-        felixConfig.put( FelixConstants.LOG_LEVEL_PROP, "0" );                                          // disable Felix logging output (we'll only log OSGi events)
-        felixConfig.put( FelixConstants.FRAMEWORK_BEGINNING_STARTLEVEL, "1" );                          // the framework should start at start-level 1
-        felixConfig.put( FelixConstants.BUNDLE_STARTLEVEL_PROP, "1" );                                  // boot bundles should start at start-level 1 as well (will be modified later for app bundles)
-        felixConfig.put( FelixConstants.FRAMEWORK_SYSTEMPACKAGES_EXTRA, getExtraSystemPackages() );     // extra packages exported by system bundle
         try
         {
-            // initialize felix
-            Felix felix = new Felix( felixConfig );
-            felix.init();
-
-            // start felix
+            // create & start felix
+            Felix felix = new MosaicFelix( this );
             felix.start();
             this.felix = felix;
-
-            // add a framework listener which logs framework lifecycle events
-            this.felix.getBundleContext().addFrameworkListener( new LoggingFrameworkListener() );
-            this.felix.getBundleContext().addServiceListener( new LoggingFrameworkListener() );
 
             // install a shutdown hook to ensure we close the server when the JVM process dies
             Runtime.getRuntime().addShutdownHook( this.mosaicShutdownHook );
@@ -439,78 +328,6 @@ public class MosaicInstance implements Closeable
         {
             stop();
             throw bootstrapError( "Could not initialize OSGi container: {}", e.getMessage(), e );
-        }
-    }
-
-    private void installMosaicBundle( @Nonnull String fileName )
-    {
-        installMosaicBundle( fileName, fileName );
-    }
-
-    private void installMosaicBundle( @Nonnull String fileName, @Nonnull String propertyName )
-    {
-        Path bundlePath = null;
-
-        String location = this.properties.getProperty( "mosaic.boot." + propertyName );
-        if( location != null )
-        {
-            bundlePath = this.home.resolve( location ).normalize().toAbsolutePath();
-            verifyInstallableBundle( fileName, bundlePath );
-        }
-
-        String versionedFilename = fileName + "-" + this.version + ".jar";
-        if( bundlePath == null )
-        {
-            String delim = System.getProperty( "path.separator" );
-            StringTokenizer tokenizer = new StringTokenizer( ManagementFactory.getRuntimeMXBean().getClassPath(), delim, false );
-            while( tokenizer.hasMoreTokens() )
-            {
-                String item = tokenizer.nextToken();
-                if( item.contains( "/" + fileName ) )
-                {
-                    bundlePath = Paths.get( item );
-                    if( bundlePath.endsWith( "target/classes" ) )
-                    {
-                        bundlePath = bundlePath.getParent().resolve( versionedFilename );
-                    }
-                    verifyInstallableBundle( fileName, bundlePath );
-                    break;
-                }
-            }
-        }
-
-        if( bundlePath == null )
-        {
-            bundlePath = this.home.resolve( "boot" ).resolve( versionedFilename ).normalize().toAbsolutePath();
-            verifyInstallableBundle( fileName, bundlePath );
-        }
-
-        String bundleLocation = bundlePath.toString();
-        try
-        {
-            BundleContext bc = this.felix.getBundleContext();
-            Bundle bundle = bc.installBundle( bundleLocation, newInputStream( bundlePath, READ ) );
-            bundle.start();
-        }
-        catch( Exception e )
-        {
-            throw bootstrapError( "Could not install boot bundle at '{}': {}", bundleLocation, e.getMessage(), e );
-        }
-    }
-
-    private void verifyInstallableBundle( @Nonnull String name, @Nonnull Path file )
-    {
-        if( !exists( file ) )
-        {
-            throw bootstrapError( "Could not find bundle '{}' at '{}'", name, file );
-        }
-        else if( !isRegularFile( file ) )
-        {
-            throw bootstrapError( "Bundle at '{}' is not a file", file );
-        }
-        else if( !isReadable( file ) )
-        {
-            throw bootstrapError( "Bundle at '{}' is not readable", file );
         }
     }
 
@@ -547,11 +364,12 @@ public class MosaicInstance implements Closeable
         @Override
         public void run()
         {
-            while( MosaicInstance.this.felix != null )
+            Felix felix = MosaicInstance.this.felix;
+            while( felix != null )
             {
                 try
                 {
-                    int event = MosaicInstance.this.felix.waitForStop( 1000l ).getType();
+                    int event = felix.waitForStop( 1000l ).getType();
                     if( event == FrameworkEvent.STOPPED )
                     {
                         // clear Felix reference
@@ -578,6 +396,7 @@ public class MosaicInstance implements Closeable
                 {
                     break;
                 }
+                felix = MosaicInstance.this.felix;
             }
         }
     }
@@ -595,69 +414,6 @@ public class MosaicInstance implements Closeable
         public void run()
         {
             MosaicInstance.this.start();
-        }
-    }
-
-    private class LoggingFrameworkListener implements FrameworkListener, ServiceListener
-    {
-        @Override
-        public void frameworkEvent( @Nonnull FrameworkEvent event )
-        {
-            Throwable throwable = event.getThrowable();
-            String throwableMsg = throwable != null ? throwable.getMessage() : "";
-
-            switch( event.getType() )
-            {
-                case FrameworkEvent.INFO:
-                    OSGI_FRWK_LOG.warn( "OSGi framework informational has occurred: {}", throwableMsg, throwable );
-                    break;
-
-                case FrameworkEvent.WARNING:
-                    OSGI_FRWK_LOG.warn( "OSGi framework warning has occurred: {}", throwableMsg, throwable );
-                    break;
-
-                case FrameworkEvent.ERROR:
-                    Bundle bundle = event.getBundle();
-                    String bstr = bundle == null ? "unknown" : bundle.getSymbolicName() + "-" + bundle.getVersion() + "[" + bundle.getBundleId() + "]";
-                    OSGI_FRWK_LOG.error( "OSGi framework error for/from bundle '{}' has occurred:", bstr, throwable );
-                    break;
-
-                case FrameworkEvent.STARTLEVEL_CHANGED:
-                    OSGI_FRWK_LOG.info( "OSGi framework start level has been changed to: {}", event.getBundle().adapt( FrameworkStartLevel.class ).getStartLevel() );
-                    break;
-            }
-        }
-
-        @Override
-        public void serviceChanged( ServiceEvent event )
-        {
-            if( OSGI_SVC_LOG.isTraceEnabled() )
-            {
-                ServiceReference<?> sr = event.getServiceReference();
-                Bundle bundle = sr.getBundle();
-                switch( event.getType() )
-                {
-                    case ServiceEvent.REGISTERED:
-                        OSGI_SVC_LOG.trace(
-                                "OSGi service of type '{}' registered from '{}-{}[{}]'",
-                                asList( ( String[] ) sr.getProperty( Constants.OBJECTCLASS ) ),
-                                bundle.getSymbolicName(),
-                                bundle.getVersion(),
-                                bundle.getBundleId()
-                        );
-                        break;
-
-                    case ServiceEvent.UNREGISTERING:
-                        OSGI_SVC_LOG.trace(
-                                "OSGi service of type '{}' from from '{}-{}[{}]' was unregistered",
-                                asList( ( String[] ) sr.getProperty( Constants.OBJECTCLASS ) ),
-                                bundle.getSymbolicName(),
-                                bundle.getVersion(),
-                                bundle.getBundleId()
-                        );
-                        break;
-                }
-            }
         }
     }
 }
