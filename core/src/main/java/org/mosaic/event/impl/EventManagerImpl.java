@@ -20,9 +20,7 @@ import org.mosaic.lifecycle.MethodEndpoint;
 import org.mosaic.lifecycle.annotation.*;
 import org.mosaic.util.collect.LinkedHashMapEx;
 import org.mosaic.util.collect.MapEx;
-import org.mosaic.util.collect.UnmodifiableMapEx;
 import org.mosaic.util.convert.ConversionService;
-import org.mosaic.util.pair.Pair;
 import org.mosaic.util.reflection.MethodHandle;
 import org.mosaic.util.reflection.MethodParameter;
 import org.slf4j.Logger;
@@ -31,7 +29,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author arik
  */
-@Service( EventManager.class )
+@Service(EventManager.class)
 public class EventManagerImpl implements EventManager
 {
     private static final Logger LOG = LoggerFactory.getLogger( EventManagerImpl.class );
@@ -53,13 +51,13 @@ public class EventManagerImpl implements EventManager
         this.conversionService = conversionService;
     }
 
-    @MethodEndpointBind( Subscribe.class )
+    @MethodEndpointBind(Subscribe.class)
     public void addEventSubscriber( @ServiceId long id, @Nonnull MethodEndpoint endpoint )
     {
         this.listeners.put( id, new EventListenerImpl( endpoint ) );
     }
 
-    @MethodEndpointUnbind( Subscribe.class )
+    @MethodEndpointUnbind(Subscribe.class)
     public void removeEventSubscriber( @ServiceId long id, @Nonnull MethodEndpoint endpoint )
     {
         this.listeners.remove( id );
@@ -88,14 +86,9 @@ public class EventManagerImpl implements EventManager
 
     @Nonnull
     @Override
-    public Event createEvent( @Nonnull String topic, @Nonnull Pair<String, ?>... propertyPairs )
+    public Event createEvent( @Nonnull String topic )
     {
-        MapEx<String, Object> properties = new LinkedHashMapEx<>( propertyPairs.length, this.conversionService );
-        for( Pair<String, ?> pair : propertyPairs )
-        {
-            properties.put( pair.getLeft(), pair.getValue() );
-        }
-        return new EventImpl( topic, new UnmodifiableMapEx<>( properties ) );
+        return new EventImpl( topic, new LinkedHashMapEx<String, Object>( this.conversionService ) );
     }
 
     @Override

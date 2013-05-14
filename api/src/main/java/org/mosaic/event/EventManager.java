@@ -1,7 +1,6 @@
 package org.mosaic.event;
 
 import javax.annotation.Nonnull;
-import org.mosaic.util.pair.Pair;
 
 /**
  * @author arik
@@ -9,7 +8,7 @@ import org.mosaic.util.pair.Pair;
 public interface EventManager
 {
     @Nonnull
-    Event createEvent( @Nonnull String topic, @Nonnull Pair<String, ?>... propertyPairs );
+    Event createEvent( @Nonnull String topic );
 
     void postEvent( @Nonnull Event event );
 
