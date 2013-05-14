@@ -1,4 +1,4 @@
-package org.mosaic.net;
+package org.mosaic.web.net;
 
 import java.nio.file.Path;
 

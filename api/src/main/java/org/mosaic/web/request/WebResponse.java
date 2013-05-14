@@ -4,7 +4,7 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.mosaic.net.HttpStatus;
+import org.mosaic.web.net.HttpStatus;
 
 /**
  * @author arik

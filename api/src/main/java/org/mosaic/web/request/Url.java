@@ -2,7 +2,7 @@ package org.mosaic.web.request;
 
 import com.google.common.collect.Multimap;
 import javax.annotation.Nonnull;
-import org.mosaic.net.HttpMethod;
+import org.mosaic.web.net.HttpMethod;
 
 /**
  * @author arik

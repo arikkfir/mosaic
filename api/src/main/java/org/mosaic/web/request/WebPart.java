@@ -5,7 +5,7 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.file.Path;
 import javax.annotation.Nonnull;
-import org.mosaic.net.MediaType;
+import org.mosaic.web.net.MediaType;
 
 /**
  * @author arik

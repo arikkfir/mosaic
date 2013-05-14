@@ -1,4 +1,4 @@
-package org.mosaic.net;
+package org.mosaic.web.net;
 
 import java.io.Serializable;
 import java.nio.charset.Charset;

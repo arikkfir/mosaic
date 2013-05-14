@@ -1,4 +1,4 @@
-package org.mosaic.net;
+package org.mosaic.web.net;
 
 import javax.annotation.Nonnull;
 
@@ -72,7 +72,7 @@ public enum HttpStatus
     NOT_EXTENDED( 510, "Not Extended" ),
     NETWORK_AUTHENTICATION_REQUIRED( 511, "Network Authentication Required" );
 
-    @SuppressWarnings( "UnusedDeclaration" )
+    @SuppressWarnings("UnusedDeclaration")
     public static HttpStatus valueOf( int statusCode )
     {
         for( HttpStatus status : values() )
@@ -102,14 +102,14 @@ public enum HttpStatus
     }
 
     @Nonnull
-    @SuppressWarnings( "UnusedDeclaration" )
+    @SuppressWarnings("UnusedDeclaration")
     public String getReasonPhrase()
     {
         return reasonPhrase;
     }
 
     @Nonnull
-    @SuppressWarnings( "UnusedDeclaration" )
+    @SuppressWarnings("UnusedDeclaration")
     public Series series()
     {
         return Series.valueOf( this );

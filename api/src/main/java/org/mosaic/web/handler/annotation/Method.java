@@ -4,13 +4,13 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.mosaic.net.HttpMethod;
+import org.mosaic.web.net.HttpMethod;
 
 /**
  * @author arik
  */
-@Retention( RetentionPolicy.RUNTIME )
-@Target( ElementType.METHOD )
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
 public @interface Method
 {
     HttpMethod[] value();

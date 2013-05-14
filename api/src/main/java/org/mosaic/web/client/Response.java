@@ -1,7 +1,7 @@
 package org.mosaic.web.client;
 
 import com.google.common.collect.ListMultimap;
-import org.mosaic.net.HttpStatus;
+import org.mosaic.web.net.HttpStatus;
 
 /**
  * @author arik

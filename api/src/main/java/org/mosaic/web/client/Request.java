@@ -3,7 +3,7 @@ package org.mosaic.web.client;
 import com.google.common.reflect.TypeToken;
 import java.net.URI;
 import javax.annotation.Nonnull;
-import org.mosaic.net.MediaType;
+import org.mosaic.web.net.MediaType;
 import org.mosaic.web.request.WebRequest;
 
 /**

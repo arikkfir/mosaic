@@ -8,8 +8,8 @@ import java.util.Locale;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.mosaic.net.HttpMethod;
-import org.mosaic.net.MediaType;
+import org.mosaic.web.net.HttpMethod;
+import org.mosaic.web.net.MediaType;
 
 /**
  * @author arik

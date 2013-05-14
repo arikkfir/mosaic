@@ -2,7 +2,7 @@ package org.mosaic.mail;
 
 import java.util.Collection;
 import javax.annotation.Nonnull;
-import org.mosaic.net.MediaType;
+import org.mosaic.web.net.MediaType;
 
 /**
  * @author arik
