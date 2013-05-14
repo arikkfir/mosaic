@@ -3,10 +3,7 @@ package org.mosaic.filewatch.impl.manager;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.FileVisitor;
-import java.nio.file.Path;
-import java.nio.file.PathMatcher;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
@@ -141,77 +138,102 @@ public class FileWatchersManager implements Runnable
             }
 
             // walk the path tree
-            if( exists( root ) && isDirectory( root ) && isReadable( root ) )
+            if( exists( root ) )
             {
-                try
+                if( isDirectory( root ) )
                 {
-                    walkFileTree( root, EnumSet.of( FOLLOW_LINKS ), 1024, new FileVisitor<Path>()
+                    try
                     {
-                        @Nonnull
-                        @Override
-                        public FileVisitResult preVisitDirectory( @Nonnull Path dir,
-                                                                  @Nonnull BasicFileAttributes attrs )
-                                throws IOException
+                        walkFileTree( root, EnumSet.of( FOLLOW_LINKS ), 1024, new FileVisitor<Path>()
                         {
-                            boolean svnDir = dir.getFileName().toString().equalsIgnoreCase( ".svn" );
-
-                            for( AbstractFileWatcherAdapter adapter : adapters )
+                            @Nonnull
+                            @Override
+                            public FileVisitResult preVisitDirectory( @Nonnull Path dir,
+                                                                      @Nonnull BasicFileAttributes attrs )
+                                    throws IOException
                             {
-                                if( !adapter.matchesSvnDir() || !svnDir )
+                                boolean svnDir = dir.getFileName().toString().equalsIgnoreCase( ".svn" );
+
+                                for( AbstractFileWatcherAdapter adapter : adapters )
                                 {
-                                    adapter.handleDirectoryEnter( context, dir, attrs );
+                                    if( !adapter.matchesSvnDir() || !svnDir )
+                                    {
+                                        adapter.handleDirectoryEnter( context, dir, attrs );
+                                    }
                                 }
-                            }
-                            return FileVisitResult.CONTINUE;
-                        }
-
-                        @Nonnull
-                        @Override
-                        public FileVisitResult visitFile( @Nonnull Path file, @Nonnull BasicFileAttributes attrs )
-                                throws IOException
-                        {
-                            // take the actual up-to-date modification time; ignore files modified less than 2 seconds ago
-                            // because they might still being written to...
-                            long fileModTime = attrs.lastModifiedTime().toMillis();
-                            if( fileModTime >= currentTimeMillis() - getInteger( "fileModificationGuard", 2000 ) )
-                            {
-                                // file modified in the last two seconds, so skip, probably file is being written to...
                                 return FileVisitResult.CONTINUE;
                             }
 
-                            for( AbstractFileWatcherAdapter adapter : adapters )
+                            @Nonnull
+                            @Override
+                            public FileVisitResult visitFile( @Nonnull Path file, @Nonnull BasicFileAttributes attrs )
+                                    throws IOException
                             {
-                                adapter.handleExistingFile( context, file, attrs );
+                                // take the actual up-to-date modification time; ignore files modified less than 2 seconds ago
+                                // because they might still being written to...
+                                long fileModTime = attrs.lastModifiedTime().toMillis();
+                                if( fileModTime >= currentTimeMillis() - getInteger( "fileModificationGuard", 2000 ) )
+                                {
+                                    // file modified in the last two seconds, so skip, probably file is being written to...
+                                    return FileVisitResult.CONTINUE;
+                                }
+
+                                for( AbstractFileWatcherAdapter adapter : adapters )
+                                {
+                                    adapter.handleExistingFile( context, file, attrs );
+                                }
+                                return FileVisitResult.CONTINUE;
                             }
-                            return FileVisitResult.CONTINUE;
-                        }
 
-                        @Nonnull
-                        @Override
-                        public FileVisitResult visitFileFailed( @Nonnull Path file, @Nonnull IOException exc )
-                                throws IOException
-                        {
-                            LOG.error( "Could not inspect file '{}' for file watchers. Error is: {}", file, exc.getMessage(), exc );
-                            return FileVisitResult.CONTINUE;
-                        }
-
-                        @Nonnull
-                        @Override
-                        public FileVisitResult postVisitDirectory( @Nonnull Path dir, @Nullable IOException exc )
-                                throws IOException
-                        {
-                            for( AbstractFileWatcherAdapter adapter : adapters )
+                            @Nonnull
+                            @Override
+                            public FileVisitResult visitFileFailed( @Nonnull Path file, @Nonnull IOException exc )
+                                    throws IOException
                             {
-                                adapter.handleDirectoryExit( context, dir );
+                                LOG.error( "Could not inspect file '{}' for file watchers. Error is: {}", file, exc.getMessage(), exc );
+                                return FileVisitResult.CONTINUE;
                             }
-                            return FileVisitResult.CONTINUE;
-                        }
-                    } );
+
+                            @Nonnull
+                            @Override
+                            public FileVisitResult postVisitDirectory( @Nonnull Path dir, @Nullable IOException exc )
+                                    throws IOException
+                            {
+                                for( AbstractFileWatcherAdapter adapter : adapters )
+                                {
+                                    adapter.handleDirectoryExit( context, dir );
+                                }
+                                return FileVisitResult.CONTINUE;
+                            }
+                        } );
+                    }
+                    catch( IOException e )
+                    {
+                        // should not happen since each visit method catches all exceptions - but just in case :)
+                        LOG.error( "Could not walk file root '{}'. Error is: {}", root, e.getMessage(), e );
+                    }
                 }
-                catch( IOException e )
+                else if( isReadable( root ) )
                 {
-                    // should not happen since each visit method catches all exceptions - but just in case :)
-                    LOG.error( "Could not walk file root '{}'. Error is: {}", root, e.getMessage(), e );
+                    try
+                    {
+                        BasicFileAttributes attrs = Files.readAttributes( root, BasicFileAttributes.class );
+
+                        // take the actual up-to-date modification time; ignore files modified less than 2 seconds ago
+                        // because they might still being written to...
+                        long fileModTime = attrs.lastModifiedTime().toMillis();
+                        if( fileModTime < currentTimeMillis() - getInteger( "fileModificationGuard", 2000 ) )
+                        {
+                            for( AbstractFileWatcherAdapter adapter : adapters )
+                            {
+                                adapter.handleExistingFile( context, root, attrs );
+                            }
+                        }
+                    }
+                    catch( IOException e )
+                    {
+                        LOG.error( "Could not process file root '{}'. Error is: {}", root, e.getMessage(), e );
+                    }
                 }
             }
 
