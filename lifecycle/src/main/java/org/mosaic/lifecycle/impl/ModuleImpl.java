@@ -3,6 +3,7 @@ package org.mosaic.lifecycle.impl;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ComparisonChain;
 import com.google.common.reflect.TypeToken;
 import com.yammer.metrics.core.MetricName;
 import com.yammer.metrics.core.MetricsRegistry;
@@ -56,6 +57,19 @@ import static org.springframework.util.ReflectionUtils.getUniqueDeclaredMethods;
 public class ModuleImpl implements Module
 {
     private static final Logger LOG = LoggerFactory.getLogger( ModuleImpl.class );
+
+    private static final Comparator<PackageExport> PACKAGE_EXPORT_COMPARATOR = new Comparator<PackageExport>()
+    {
+        @Override
+        public int compare( PackageExport o1, PackageExport o2 )
+        {
+            return ComparisonChain
+                    .start()
+                    .compare( o1.getPackageName(), o2.getPackageName() )
+                    .compare( o1.getVersion(), o2.getVersion() )
+                    .result();
+        }
+    };
 
     @Nonnull
     private final ModuleManagerImpl moduleManager;
@@ -269,12 +283,12 @@ public class ModuleImpl implements Module
             return Collections.emptyList();
         }
 
-
-        Collection<PackageExport> packageExports = new LinkedList<>();
+        List<PackageExport> packageExports = new LinkedList<>();
         for( BundleCapability capability : packageCapabilities )
         {
             packageExports.add( new PackageExportImpl( capability ) );
         }
+        Collections.sort( packageExports, PACKAGE_EXPORT_COMPARATOR );
         return packageExports;
     }
 
@@ -289,11 +303,12 @@ public class ModuleImpl implements Module
             return Collections.emptyList();
         }
 
-        Collection<PackageExport> packageImports = new LinkedList<>();
+        List<PackageExport> packageImports = new LinkedList<>();
         for( BundleWire wire : importedPackageWires )
         {
             packageImports.add( new PackageExportImpl( wire.getCapability() ) );
         }
+        Collections.sort( packageImports, PACKAGE_EXPORT_COMPARATOR );
         return packageImports;
     }
 
