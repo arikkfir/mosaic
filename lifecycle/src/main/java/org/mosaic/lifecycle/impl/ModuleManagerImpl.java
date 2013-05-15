@@ -20,14 +20,13 @@ import org.osgi.util.tracker.ServiceTrackerCustomizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.InitializingBean;
 
 import static java.util.Collections.unmodifiableCollection;
 
 /**
  * @author arik
  */
-public class ModuleManagerImpl implements ModuleManager, SynchronousBundleListener, InitializingBean, DisposableBean
+public class ModuleManagerImpl implements ModuleManager, SynchronousBundleListener, DisposableBean
 {
     private static final Logger LOG = LoggerFactory.getLogger( ModuleManagerImpl.class );
 
@@ -93,8 +92,7 @@ public class ModuleManagerImpl implements ModuleManager, SynchronousBundleListen
         } );
     }
 
-    @Override
-    public void afterPropertiesSet() throws Exception
+    public void start() throws Exception
     {
         this.moduleListeners.open();
 

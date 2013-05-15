@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.util.Enumeration;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.mosaic.lifecycle.impl.ModuleManagerImpl;
 import org.mosaic.lifecycle.impl.util.BundleUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
@@ -52,6 +53,7 @@ public class MosaicActivator implements BundleActivator
         applicationContext.setId( "MosaicLifecycle" );
         applicationContext.refresh();
         this.applicationContext = applicationContext;
+        this.applicationContext.getBean( ModuleManagerImpl.class ).start();
     }
 
     @Override
