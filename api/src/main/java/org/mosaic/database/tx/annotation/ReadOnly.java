@@ -1,4 +1,4 @@
-package org.mosaic.database.tx;
+package org.mosaic.database.tx.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
