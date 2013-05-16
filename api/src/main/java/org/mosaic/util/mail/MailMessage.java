@@ -1,4 +1,4 @@
-package org.mosaic.mail;
+package org.mosaic.util.mail;
 
 import java.util.Collection;
 import javax.annotation.Nonnull;

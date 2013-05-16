@@ -1,4 +1,4 @@
-package org.mosaic.mail;
+package org.mosaic.util.mail;
 
 import java.io.InputStream;
 import java.net.URL;
