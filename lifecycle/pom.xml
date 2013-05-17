@@ -29,15 +29,16 @@
                         </Export-Package>
                         <Embed-Dependency>
                             antlr,
+                            asm*,
                             com.springsource.org.aopalliance,
                             commons-cli,
                             groovy,
                             javassist,
+                            javax.mail,
                             jcl-over-slf4j,
                             jgrapht,
                             log4j-over-slf4j,
                             metrics-core,
-                            asm*,
                             org.springframework.aop,
                             org.springframework.beans,
                             org.springframework.context,
@@ -50,6 +51,7 @@
                             !bsh*,
                             !com.jamonapi*,
                             !com.sun.jdi*,
+                            !com.sun.mail*,
                             !com.sun.net.httpserver*,
                             !com.thoughtworks.xstream*,
                             !com.touchgraph*,
@@ -98,6 +100,11 @@
             <groupId>org.mosaic</groupId>
             <artifactId>api</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.mail</groupId>
+            <artifactId>javax.mail</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.yammer.metrics</groupId>
