@@ -6,7 +6,6 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 /**
  * @author arik
@@ -15,22 +14,6 @@ public interface MailManager
 {
     @Nonnull
     InitialMailMessage createMailMessage( @Nonnull Object id );
-
-    int getUnsentMailMessagesCount();
-
-    int getErroneousMailMessagesCount();
-
-    @Nonnull
-    Collection<MailMessage> getUnsentMailMessages();
-
-    @Nonnull
-    Collection<MailMessage> getUnsentMailMessages( int limit );
-
-    int scheduleMailMessage( @Nonnull PopulatedMailMessage message );
-
-    void markMessageAsErroneous( int id, @Nullable String description );
-
-    void markMessageAsSent( int id );
 
     interface InitialMailMessage
     {
@@ -83,5 +66,7 @@ public interface MailManager
 
         @Nonnull
         PopulatedMailMessage withAttachment( @Nonnull String id, @Nonnull InputStream inputStream );
+
+        void send();
     }
 }
