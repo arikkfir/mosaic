@@ -28,6 +28,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
+import static org.mosaic.filewatch.WatchEvent.FILE_ADDED;
+import static org.mosaic.filewatch.WatchEvent.FILE_MODIFIED;
+
 /**
  * @author arik
  */
@@ -98,9 +101,9 @@ public class LocalUsersRealm implements Realm
         return true;
     }
 
-    @FileWatcher(root = WatchRoot.ETC,
-                 pattern = "users.xml",
-                 event = { WatchEvent.FILE_ADDED, WatchEvent.FILE_MODIFIED })
+    @FileWatcher( root = WatchRoot.ETC,
+                  pattern = "users.xml",
+                  event = { FILE_ADDED, FILE_MODIFIED } )
     public void onFileModified( @Nonnull Path file, @Nonnull BasicFileAttributes attrs ) throws IOException
     {
         Digester digester = new Digester( getClass(), USERS_SCHEMA );
