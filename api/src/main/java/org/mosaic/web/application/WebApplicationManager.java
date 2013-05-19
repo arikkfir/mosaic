@@ -10,7 +10,7 @@ import javax.annotation.Nullable;
 public interface WebApplicationManager
 {
     @Nonnull
-    Collection<WebApplication> getApplications();
+    Collection<? extends WebApplication> getApplications();
 
     @Nullable
     WebApplication getApplication( @Nonnull String name );

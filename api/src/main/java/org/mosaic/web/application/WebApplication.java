@@ -6,6 +6,7 @@ import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.security.policy.PermissionPolicy;
+import org.mosaic.util.collect.MapEx;
 import org.mosaic.web.security.AuthenticatorType;
 
 /**
@@ -20,42 +21,34 @@ public interface WebApplication extends Map<String, Object>
     String getDisplayName();
 
     @Nonnull
-    Map<String, String> getParameters();
-
-    @Nonnull
     Set<String> getVirtualHosts();
 
     boolean isHostIncluded( @Nonnull String host );
 
-    boolean isAddressAllowed( @Nonnull String address );
-
     @Nonnull
-    Collection<String> getRealms();
-
-    @Nonnull
-    PermissionPolicy getPermissionPolicy();
+    Collection<String> getContentLanguages();
 
     boolean isUriLanguageSelectionEnabled();
 
     @Nonnull
-    String getDefaultCmsLanguage();
-
-    @Nonnull
-    Collection<String> getSupportedCmsLanguages();
-
-    boolean isResourceCompressionEnabled();
-
-    @Nullable
-    String getFormLoginUrl();
-
-    @Nullable
-    String getAccessDeniedUrl();
+    String getDefaultLanguage();
 
     @Nullable
     String getUnknownUrlPage();
 
     @Nullable
     String getInternalErrorPage();
+
+    boolean isResourceCompressionEnabled();
+
+    @Nonnull
+    MapEx<String, String> getParameters();
+
+    @Nonnull
+    Collection<String> getRealms();
+
+    @Nonnull
+    PermissionPolicy getPermissionPolicy();
 
     @Nonnull
     Collection<AuthenticatorType> getDefaultAuthenticatorTypes();
@@ -68,4 +61,10 @@ public interface WebApplication extends Map<String, Object>
 
     @Nonnull
     Collection<AuthenticatorType> getPageAuthenticatorTypes();
+
+    @Nullable
+    String getFormLoginUrl();
+
+    @Nullable
+    String getAccessDeniedUrl();
 }
