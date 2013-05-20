@@ -93,6 +93,11 @@
     </build>
     <dependencies>
         <dependency>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
             <groupId>biz.aQute</groupId>
             <artifactId>bndlib</artifactId>
         </dependency>
