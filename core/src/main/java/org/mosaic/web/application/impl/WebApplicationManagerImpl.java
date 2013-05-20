@@ -13,6 +13,7 @@ import javax.xml.validation.SchemaFactory;
 import org.mosaic.filewatch.annotation.FileWatcher;
 import org.mosaic.lifecycle.DP;
 import org.mosaic.lifecycle.Module;
+import org.mosaic.lifecycle.annotation.BeanRef;
 import org.mosaic.lifecycle.annotation.ModuleRef;
 import org.mosaic.lifecycle.annotation.Service;
 import org.mosaic.lifecycle.annotation.ServiceRef;
@@ -95,7 +96,7 @@ public class WebApplicationManagerImpl implements WebApplicationManager
         this.conversionService = conversionService;
     }
 
-    @ServiceRef
+    @BeanRef
     public void setPermissionPoliciesManager( @Nonnull PermissionPoliciesManager permissionPoliciesManager )
     {
         this.permissionPoliciesManager = permissionPoliciesManager;
