@@ -76,10 +76,7 @@ public class ConfigurationManager
             endpoints.put( ann.value(), endpoint );
 
             Properties properties = this.configurations.get( ann.value() );
-            if( properties != null )
-            {
-                notifyConfigurable( properties, endpoint );
-            }
+            notifyConfigurable( properties != null ? properties : new Properties(), endpoint );
         }
     }
 
