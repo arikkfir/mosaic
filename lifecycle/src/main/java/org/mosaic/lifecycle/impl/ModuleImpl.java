@@ -238,6 +238,29 @@ public class ModuleImpl implements Module
 
     @Nonnull
     @Override
+    public Collection<URL> getResourceUrls( @Nonnull String prefix )
+    {
+        Set<URL> urls = new HashSet<>( 1000 );
+        if( this.resources != null )
+        {
+            Enumeration<URL> entries = this.bundle.findEntries( prefix, "*", true );
+            if( entries != null )
+            {
+                while( entries.hasMoreElements() )
+                {
+                    URL url = entries.nextElement();
+                    if( !url.getPath().endsWith( "/" ) )
+                    {
+                        urls.add( url );
+                    }
+                }
+            }
+        }
+        return urls;
+    }
+
+    @Nonnull
+    @Override
     public Collection<ServiceExport> getExportedServices()
     {
         ServiceReference<?>[] registeredServices = this.bundle.getRegisteredServices();

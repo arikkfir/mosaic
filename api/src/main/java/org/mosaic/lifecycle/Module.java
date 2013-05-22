@@ -45,6 +45,9 @@ public interface Module
     Collection<String> getResources();
 
     @Nonnull
+    Collection<URL> getResourceUrls( @Nonnull String prefix );
+
+    @Nonnull
     Collection<ServiceExport> getExportedServices();
 
     @Nonnull
