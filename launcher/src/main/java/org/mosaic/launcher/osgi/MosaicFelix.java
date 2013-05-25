@@ -15,7 +15,7 @@ import static org.mosaic.launcher.util.SystemPackages.getExtraSystemPackages;
 /**
  * @author arik
  */
-@SuppressWarnings( "unchecked" )
+@SuppressWarnings("unchecked")
 public class MosaicFelix extends Felix
 {
     private static final Integer FELIX_CACHE_BUFSIZE = 1024 * 64;
@@ -24,7 +24,7 @@ public class MosaicFelix extends Felix
     {
         Path felixWork = mosaic.getWork().resolve( "felix" );
         Map<Object, Object> felixConfig = new HashMap<>( mosaic.getProperties() );
-        felixConfig.put( FelixConstants.FRAMEWORK_STORAGE, felixWork.toString() );                 // specify work location for felix
+        felixConfig.put( FelixConstants.FRAMEWORK_STORAGE, felixWork.toString() );                      // specify work location for felix
         felixConfig.put( BundleCache.CACHE_BUFSIZE_PROP, FELIX_CACHE_BUFSIZE.toString() );              // buffer size for reading from storage
         felixConfig.put( FelixConstants.LOG_LEVEL_PROP, "0" );                                          // disable Felix logging output (we'll only log OSGi events)
         felixConfig.put( FelixConstants.FRAMEWORK_BEGINNING_STARTLEVEL, "1" );                          // the framework should start at start-level 1
