@@ -150,6 +150,14 @@ public class ServiceRefsDependency extends AbstractBeanDependency implements Ser
     }
 
     @Override
+    public String toString()
+    {
+        return String.format( "ServiceRefs[%s] for %s",
+                              createFilter( this.serviceType, this.filter ),
+                              this.methodHandle );
+    }
+
+    @Override
     public void start()
     {
         if( this.serviceType != null )

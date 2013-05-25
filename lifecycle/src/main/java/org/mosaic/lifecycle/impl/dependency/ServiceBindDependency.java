@@ -8,6 +8,8 @@ import org.mosaic.util.reflection.MethodHandle;
 import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
 
+import static org.mosaic.lifecycle.impl.util.FilterUtils.createFilter;
+
 /**
  * @author arik
  */
@@ -23,6 +25,14 @@ public class ServiceBindDependency extends AbstractSingleServiceDependency
     {
         super( module, filterSpec, beanName, methodHandle );
         this.bindUpdates = bindUpdates;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "ServiceBind[%s] for %s",
+                              createFilter( this.serviceType, this.filter ),
+                              this.methodHandle );
     }
 
     @Override

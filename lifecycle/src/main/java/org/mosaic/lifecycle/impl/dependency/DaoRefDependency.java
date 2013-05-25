@@ -80,6 +80,15 @@ public class DaoRefDependency extends AbstractBeanDependency
         this.invoker = this.methodHandle.createInvoker( new ServiceInstanceResolver() );
     }
 
+    @Override
+    public String toString()
+    {
+        return String.format( "Dao[%s] using data source '%s' for %s",
+                              this.daoType.getSimpleName(),
+                              this.dataSourceName,
+                              this.methodHandle );
+    }
+
     @Nonnull
     public final String getBeanName()
     {
