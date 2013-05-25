@@ -621,6 +621,23 @@ public class ModuleImpl implements Module
         return true;
     }
 
+    public Collection<AbstractDependency> collectUnsatisfiedDependencies()
+    {
+        Collection<AbstractDependency> unsatisfiedDependencies = new LinkedList<>();
+        if( this.dependencies != null )
+        {
+            // check if all dependencies are satisified
+            for( AbstractDependency dependency : this.dependencies )
+            {
+                if( !dependency.isSatisfied() )
+                {
+                    unsatisfiedDependencies.add( dependency );
+                }
+            }
+        }
+        return unsatisfiedDependencies;
+    }
+
     public synchronized void deactivate()
     {
         if( this.applicationContext != null && this.state != ModuleState.DEACTIVATING )
