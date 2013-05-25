@@ -6,7 +6,10 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Properties;
+import java.util.StringTokenizer;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -22,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import static java.nio.file.Files.*;
 import static java.nio.file.StandardOpenOption.READ;
+import static java.util.Arrays.asList;
 import static org.mosaic.launcher.util.SystemError.bootstrapError;
 
 /**
@@ -42,7 +46,7 @@ public class BootBundlesWatcher implements Runnable
         Properties properties = mosaic.getProperties();
 
         List<Bundle> bundles = new LinkedList<>();
-        for( String name : Arrays.asList( "api", "lifecycle", "core" ) )
+        for( String name : asList( "api", "lifecycle", "core" ) )
         {
             Path bundlePath = null;
 
