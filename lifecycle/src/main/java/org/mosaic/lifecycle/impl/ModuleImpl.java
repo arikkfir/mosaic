@@ -614,6 +614,7 @@ public class ModuleImpl implements Module
             {
                 if( !dependency.isSatisfied() )
                 {
+                    LOG.debug( "Module '{}' cannot be activated - dependency {} is unsatisfied", getName(), dependency );
                     return false;
                 }
             }
