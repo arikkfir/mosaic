@@ -14,7 +14,10 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import sun.misc.Signal;
+import sun.misc.SignalHandler;
 
 import static java.nio.file.Files.copy;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -55,6 +58,19 @@ public class MosaicActivator implements BundleActivator
         applicationContext.refresh();
         this.applicationContext = applicationContext;
         this.applicationContext.getBean( ModuleManagerImpl.class ).start();
+
+        Signal.handle( new Signal( "HUP" ), new SignalHandler()
+        {
+            @Override
+            public void handle( Signal sig )
+            {
+                ApplicationContext applicationContext = MosaicActivator.this.applicationContext;
+                if( applicationContext != null )
+                {
+                    applicationContext.getBean( ModuleManagerImpl.class ).logStatusToStdErr();
+                }
+            }
+        } );
     }
 
     @Override
