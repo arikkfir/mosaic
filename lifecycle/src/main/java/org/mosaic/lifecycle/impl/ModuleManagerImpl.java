@@ -144,7 +144,7 @@ public class ModuleManagerImpl implements ModuleManager, SynchronousBundleListen
                 {
                     buf.append( "    -> " ).append( dependency.toString() );
                 }
-                System.err.printf( "Module '%s' could NOT be activated on startup:\n%s", module.getName(), buf );
+                System.err.printf( "Module '%s' could NOT be activated on startup:\n%s\n", module.getName(), buf );
             }
         }
     }
