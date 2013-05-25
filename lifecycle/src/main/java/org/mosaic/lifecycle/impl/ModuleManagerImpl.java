@@ -10,6 +10,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.filewatch.impl.manager.BundlesManager;
 import org.mosaic.lifecycle.*;
+import org.mosaic.lifecycle.impl.dependency.AbstractDependency;
 import org.mosaic.lifecycle.impl.util.ServiceUtils;
 import org.mosaic.util.reflection.impl.MethodHandleFactoryImpl;
 import org.osgi.framework.*;
@@ -125,6 +126,27 @@ public class ModuleManagerImpl implements ModuleManager, SynchronousBundleListen
 
         this.bundleContext.addBundleListener( this );
         this.moduleManagerRegistration = ServiceUtils.register( bundleContext, ModuleManager.class, this );
+    }
+
+    public void logStatusToStdErr()
+    {
+        for( ModuleImpl module : this.modules.values() )
+        {
+            if( module.getState() == ModuleState.ACTIVE )
+            {
+                System.err.printf( "Module '%s' is ACTIVATED\n", module.getName() );
+            }
+            else
+            {
+                Collection<AbstractDependency> dependencies = module.collectUnsatisfiedDependencies();
+                StringBuilder buf = new StringBuilder( 1000 );
+                for( AbstractDependency dependency : dependencies )
+                {
+                    buf.append( "    -> " ).append( dependency.toString() );
+                }
+                System.err.printf( "Module '%s' could NOT be activated on startup:\n%s", module.getName(), buf );
+            }
+        }
     }
 
     @Override
