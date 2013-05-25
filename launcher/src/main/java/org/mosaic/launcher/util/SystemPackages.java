@@ -62,28 +62,32 @@ public final class SystemPackages
                     String propertyName = matcher.group( 1 );
                     switch( propertyName )
                     {
-                        case "javax.annotation.version":
-                            version = Utils.getArtifactVersion( "com.google.code.findbugs", "jsr305", "2.0.1" );
-                            break;
-
-                        case "slf4j.version":
-                            version = "1.7.1";
-                            break;
-
                         case "guava.version":
                             version = "14.0.0.rc3";
                             break;
 
-                        case "joda.version":
-                            version = "2.1";
+                        case "jvm":
+                            version = "1.7.0";
                             break;
 
                         case "javax.activation.version":
                             version = "1.1";
                             break;
 
+                        case "javax.annotation.version":
+                            version = Utils.getArtifactVersion( "com.google.code.findbugs", "jsr305", "2.0.1" );
+                            break;
+
                         case "javax.mail.version":
                             version = "1.4.7";
+                            break;
+
+                        case "joda.version":
+                            version = "2.1";
+                            break;
+
+                        case "slf4j.version":
+                            version = "1.7.1";
                             break;
 
                         default:
