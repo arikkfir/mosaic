@@ -49,12 +49,6 @@ public class ModuleApplicationContext extends StaticApplicationContext
         setEnvironment( new ModuleEnvironment() );
         setResourceLoader( new DefaultResourceLoader( classLoader ) );
 
-        // add bean construction/destruction post processor
-        InitDestroyAnnotationBeanPostProcessor initDestroyAnnotationBeanPostProcessor = new InitDestroyAnnotationBeanPostProcessor();
-        initDestroyAnnotationBeanPostProcessor.setDestroyAnnotationType( PreDestroy.class );
-        initDestroyAnnotationBeanPostProcessor.setInitAnnotationType( PostConstruct.class );
-        getBeanFactory().addBeanPostProcessor( initDestroyAnnotationBeanPostProcessor );
-
         // add bean autowiring post processor
         AutowiredAnnotationBeanPostProcessor autowiredAnnotationBeanPostProcessor = new AutowiredAnnotationBeanPostProcessor();
         autowiredAnnotationBeanPostProcessor.setAutowiredAnnotationTypes( new HashSet<>( asList( BeanRef.class, Autowired.class ) ) );
@@ -65,6 +59,12 @@ public class ModuleApplicationContext extends StaticApplicationContext
 
         // add bean lifecycle post processor: ensures we inject module dependencies
         getBeanFactory().addBeanPostProcessor( new BeanLifecyclePostProcessor() );
+
+        // add bean construction/destruction post processor
+        InitDestroyAnnotationBeanPostProcessor initDestroyAnnotationBeanPostProcessor = new InitDestroyAnnotationBeanPostProcessor();
+        initDestroyAnnotationBeanPostProcessor.setDestroyAnnotationType( PreDestroy.class );
+        initDestroyAnnotationBeanPostProcessor.setInitAnnotationType( PostConstruct.class );
+        getBeanFactory().addBeanPostProcessor( initDestroyAnnotationBeanPostProcessor );
 
         // register the beans in the application context
         for( Class<?> componentClass : componentClasses )
