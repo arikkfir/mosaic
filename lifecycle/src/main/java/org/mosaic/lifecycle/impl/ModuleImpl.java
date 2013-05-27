@@ -622,21 +622,32 @@ public class ModuleImpl implements Module
         return true;
     }
 
-    public Collection<AbstractDependency> collectUnsatisfiedDependencies()
+    @Override
+    public Collection<Dependency> getDependencies()
     {
-        Collection<AbstractDependency> unsatisfiedDependencies = new LinkedList<>();
+        Collection<Dependency> dependencies = new LinkedList<>();
         if( this.dependencies != null )
         {
-            // check if all dependencies are satisified
+            dependencies.addAll( this.dependencies );
+        }
+        return dependencies;
+    }
+
+    @Override
+    public Collection<Dependency> getUnsatisfiedDependencies()
+    {
+        Collection<Dependency> dependencies = new LinkedList<>();
+        if( this.dependencies != null )
+        {
             for( AbstractDependency dependency : this.dependencies )
             {
                 if( !dependency.isSatisfied() )
                 {
-                    unsatisfiedDependencies.add( dependency );
+                    dependencies.add( dependency );
                 }
             }
         }
-        return unsatisfiedDependencies;
+        return dependencies;
     }
 
     public synchronized void deactivate()
@@ -892,7 +903,7 @@ public class ModuleImpl implements Module
 
     private void detectBeanRelationships( @Nonnull String beanName,
                                           @Nonnull Class<?> componentClass,
-                                          @Nonnull List<AbstractDependency> dependencies,
+                                          @Nonnull List<? super AbstractDependency> dependencies,
                                           @Nonnull List<AbstractRegistrar> registrars )
     {
         for( Method method : getUniqueDeclaredMethods( componentClass ) )

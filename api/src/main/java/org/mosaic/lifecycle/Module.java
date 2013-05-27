@@ -75,6 +75,10 @@ public interface Module
     @Nullable
     Metrics getMetrics();
 
+    Collection<Dependency> getDependencies();
+
+    Collection<Dependency> getUnsatisfiedDependencies();
+
     interface Metrics
     {
         @Nonnull
@@ -115,6 +119,11 @@ public interface Module
         double stdDev();
 
         double sum();
+    }
+
+    interface Dependency
+    {
+        boolean isSatisfied();
     }
 
     interface ServiceExport

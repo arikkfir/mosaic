@@ -10,7 +10,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.filewatch.impl.manager.BundlesManager;
 import org.mosaic.lifecycle.*;
-import org.mosaic.lifecycle.impl.dependency.AbstractDependency;
 import org.mosaic.lifecycle.impl.util.ServiceUtils;
 import org.mosaic.util.reflection.impl.MethodHandleFactoryImpl;
 import org.osgi.framework.*;
@@ -138,9 +137,9 @@ public class ModuleManagerImpl implements ModuleManager, SynchronousBundleListen
             }
             else
             {
-                Collection<AbstractDependency> dependencies = module.collectUnsatisfiedDependencies();
+                Collection<Module.Dependency> dependencies = module.getUnsatisfiedDependencies();
                 StringBuilder buf = new StringBuilder( 1000 );
-                for( AbstractDependency dependency : dependencies )
+                for( Module.Dependency dependency : dependencies )
                 {
                     buf.append( "    -> " ).append( dependency.toString() );
                 }
