@@ -357,6 +357,7 @@
                         <!-- reporting form -->
                         <runOrder>alphabetical</runOrder>
                         <reportFormat>plain</reportFormat>
+                        <redirectTestOutputToFile>true</redirectTestOutputToFile>
 
                         <!-- include all java methods -->
                         <includes>
