@@ -17,6 +17,7 @@ public abstract class BaseTests extends Assert
     public void setupMosaicRunner() throws IOException
     {
         this.runner = new MosaicRunner();
+        this.runner.onDevelopmentMode();
     }
 
     @After
