@@ -21,7 +21,6 @@
         <module>api</module>
         <module>lifecycle</module>
         <module>core</module>
-        <module>status</module>
         <module>admin</module>
         <module>it</module>
     </modules>

@@ -8,6 +8,8 @@ import java.nio.file.Path;
 import java.util.Enumeration;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.mosaic.lifecycle.Module;
+import org.mosaic.lifecycle.ModuleState;
 import org.mosaic.lifecycle.impl.ModuleManagerImpl;
 import org.mosaic.lifecycle.impl.util.BundleUtils;
 import org.osgi.framework.Bundle;
@@ -67,7 +69,22 @@ public class MosaicActivator implements BundleActivator
                 ApplicationContext applicationContext = MosaicActivator.this.applicationContext;
                 if( applicationContext != null )
                 {
-                    applicationContext.getBean( ModuleManagerImpl.class ).logStatusToStdErr();
+                    ModuleManagerImpl moduleManager = applicationContext.getBean( ModuleManagerImpl.class );
+                    for( Module module : moduleManager.getModules() )
+                    {
+                        if( module.getState() == ModuleState.ACTIVE )
+                        {
+                            System.err.printf( "Module '%s' is ACTIVATED\n", module.getName() );
+                        }
+                        else
+                        {
+                            System.err.printf( "Module '%s' could NOT be activated:\n", module.getName() );
+                            for( Module.Dependency dependency : module.getUnsatisfiedDependencies() )
+                            {
+                                System.out.printf( "    -> %s\n", dependency.toString() );
+                            }
+                        }
+                    }
                 }
             }
         } );

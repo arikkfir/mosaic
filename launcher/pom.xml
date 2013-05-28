@@ -111,12 +111,6 @@
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
-            <artifactId>status</artifactId>
-            <version>${project.version}</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mosaic</groupId>
             <artifactId>admin</artifactId>
             <version>${project.version}</version>
             <scope>runtime</scope>

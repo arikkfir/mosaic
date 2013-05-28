@@ -127,27 +127,6 @@ public class ModuleManagerImpl implements ModuleManager, SynchronousBundleListen
         this.moduleManagerRegistration = ServiceUtils.register( bundleContext, ModuleManager.class, this );
     }
 
-    public void logStatusToStdErr()
-    {
-        for( ModuleImpl module : this.modules.values() )
-        {
-            if( module.getState() == ModuleState.ACTIVE )
-            {
-                System.err.printf( "Module '%s' is ACTIVATED\n", module.getName() );
-            }
-            else
-            {
-                Collection<Module.Dependency> dependencies = module.getUnsatisfiedDependencies();
-                StringBuilder buf = new StringBuilder( 1000 );
-                for( Module.Dependency dependency : dependencies )
-                {
-                    buf.append( "    -> " ).append( dependency.toString() );
-                }
-                System.err.printf( "Module '%s' could NOT be activated on startup:\n%s\n", module.getName(), buf );
-            }
-        }
-    }
-
     @Override
     public void destroy() throws Exception
     {

@@ -574,34 +574,45 @@ public class ModuleImpl implements Module
         }
     }
 
-    public synchronized void activateIfReady()
+    public synchronized void activateIfReady( @Nonnull ActivationReason reason )
     {
-        if( this.applicationContext == null && canBeActivated() )
+        if( this.applicationContext == null )
         {
-            this.state = ModuleState.ACTIVATING;
-
-            if( this.componentClasses != null && !this.componentClasses.isEmpty() )
+            if( canBeActivated() )
             {
-                // create application context
-                ModuleApplicationContext moduleApplicationContext = new ModuleApplicationContext( this, this.componentClasses );
-                moduleApplicationContext.refresh();
-                this.applicationContext = moduleApplicationContext;
-            }
+                this.state = ModuleState.ACTIVATING;
 
-            // register all declared services
-            if( this.registrars != null )
-            {
-                for( AbstractRegistrar registrar : this.registrars )
+                if( this.componentClasses != null && !this.componentClasses.isEmpty() )
                 {
-                    registrar.register();
+                    // create application context
+                    ModuleApplicationContext moduleApplicationContext = new ModuleApplicationContext( this, this.componentClasses );
+                    moduleApplicationContext.refresh();
+                    this.applicationContext = moduleApplicationContext;
+                }
+
+                // register all declared services
+                if( this.registrars != null )
+                {
+                    for( AbstractRegistrar registrar : this.registrars )
+                    {
+                        registrar.register();
+                    }
+                }
+
+                // there! we've started!
+                this.state = ModuleState.ACTIVE;
+
+                LOG.info( "Module {} has been ACTIVATED", getName() );
+                this.moduleManager.notifyModuleActivated( this );
+            }
+            else if( reason == ActivationReason.MODULE_STARTED )
+            {
+                LOG.warn( "Could NOT activate {}:", this );
+                for( Dependency dependency : getUnsatisfiedDependencies() )
+                {
+                    LOG.warn( "    -> {}", dependency );
                 }
             }
-
-            // there! we've started!
-            this.state = ModuleState.ACTIVE;
-
-            LOG.info( "Module {} has been ACTIVATED", getName() );
-            this.moduleManager.notifyModuleActivated( this );
         }
     }
 
@@ -801,7 +812,7 @@ public class ModuleImpl implements Module
         this.state = ModuleState.STARTED;
 
         // activate, provided all dependencies are satisfied
-        activateIfReady();
+        activateIfReady( ActivationReason.MODULE_STARTED );
     }
 
     private void onBundleStopping()

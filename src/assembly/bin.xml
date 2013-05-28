@@ -107,7 +107,6 @@
                 <include>org.mosaic:api</include>
                 <include>org.mosaic:core</include>
                 <include>org.mosaic:lifecycle</include>
-                <include>org.mosaic:status</include>
             </includes>
             <binaries>
                 <outputDirectory>/boot</outputDirectory>
