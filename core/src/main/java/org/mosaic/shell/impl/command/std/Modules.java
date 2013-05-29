@@ -31,17 +31,27 @@ public class Modules
     }
 
     @Command( name = "install-module", label = "Install module", desc = "Install a new module from a given location." )
-    public int installModule( @Nonnull Console console, @Arguments @Nonnull String... locations )
+    public int installModule( @Nonnull Console console,
+
+                              @Option @Alias( "t" ) @Desc( "timeout" )
+                              Integer timeout,
+
+                              @Arguments @Nonnull String... locations )
             throws IOException
     {
         int exitCode = 0;
+        if( timeout == null )
+        {
+            timeout = 5;
+        }
+
         for( String location : locations )
         {
             URL url = new URL( location );
             console.println( "Installing module from '" + url + "'..." );
             try
             {
-                this.moduleManager.installModule( url ).waitForActivation( standardSeconds( 30 ) );
+                this.moduleManager.installModule( url ).waitForActivation( standardSeconds( timeout ) );
             }
             catch( Exception e )
             {
