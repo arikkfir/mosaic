@@ -26,7 +26,7 @@ public class OsgiEventsLoggingListener implements FrameworkListener, ServiceList
         switch( event.getType() )
         {
             case FrameworkEvent.INFO:
-                OSGI_FRWK_LOG.warn( "OSGi framework informational has occurred: {}", throwableMsg, throwable );
+                OSGI_FRWK_LOG.info( "OSGi framework informational has occurred: {}", throwableMsg, throwable );
                 break;
 
             case FrameworkEvent.WARNING:
