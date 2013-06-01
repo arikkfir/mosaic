@@ -36,7 +36,7 @@ public class OsgiEventsLoggingListener implements FrameworkListener, ServiceList
             case FrameworkEvent.ERROR:
                 Bundle bundle = event.getBundle();
                 String bstr = bundle == null ? "unknown" : bundle.getSymbolicName() + "-" + bundle.getVersion() + "[" + bundle.getBundleId() + "]";
-                OSGI_FRWK_LOG.error( "OSGi framework error for/from bundle '{}' has occurred:", bstr, throwable );
+                OSGI_FRWK_LOG.warn( "OSGi framework error for/from bundle '{}' has occurred:", bstr, throwable );
                 break;
 
             case FrameworkEvent.STARTLEVEL_CHANGED:

@@ -2,6 +2,5 @@
 
 <configuration>
 
-    <logger name="org.osgi.service" level="OFF"/>
 
 </configuration>
