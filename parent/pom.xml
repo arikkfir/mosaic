@@ -588,7 +588,7 @@
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>org.springframework.aop</artifactId>
-                <version>[3.2.2.RELEASE]</version>
+                <version>[3.2.3.RELEASE]</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.apache.commons</groupId>
@@ -599,7 +599,7 @@
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>org.springframework.beans</artifactId>
-                <version>[3.2.2.RELEASE]</version>
+                <version>[3.2.3.RELEASE]</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.apache.commons</groupId>
@@ -610,7 +610,7 @@
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>org.springframework.context</artifactId>
-                <version>[3.2.2.RELEASE]</version>
+                <version>[3.2.3.RELEASE]</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.apache.commons</groupId>
@@ -621,7 +621,7 @@
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>org.springframework.context.support</artifactId>
-                <version>[3.2.2.RELEASE]</version>
+                <version>[3.2.3.RELEASE]</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.apache.commons</groupId>
@@ -632,7 +632,7 @@
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>org.springframework.core</artifactId>
-                <version>[3.2.2.RELEASE]</version>
+                <version>[3.2.3.RELEASE]</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.apache.commons</groupId>
@@ -643,7 +643,7 @@
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>org.springframework.expression</artifactId>
-                <version>[3.2.2.RELEASE]</version>
+                <version>[3.2.3.RELEASE]</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.apache.commons</groupId>
@@ -654,7 +654,7 @@
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>org.springframework.jdbc</artifactId>
-                <version>[3.2.2.RELEASE]</version>
+                <version>[3.2.3.RELEASE]</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.apache.commons</groupId>
