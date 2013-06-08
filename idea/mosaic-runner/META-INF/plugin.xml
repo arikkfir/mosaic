@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+
+<idea-plugin version="2">
+
+    <!-- ============================================================== -->
+    <!-- GENERAL PLUGIN INFORMATION                                     -->
+    <!-- ============================================================== -->
+    <id>org.mosaic.idea.runner</id>
+    <name>Mosaic Runner</name>
+    <version>1.0</version>
+    <idea-version since-build="129.0000"/>
+    <vendor email="arik.kfir@gmail.com" url="https://github.com/arikkfir/mosaic/">Mosaic Project</vendor>
+    <description><![CDATA[
+        Mosaic is a modular web application platform used for developing next generation web applications.<br>
+        <small>This plugin allows running and deploying Mosaic modules in IntelliJ IDEA.</small>
+    ]]></description>
+    <change-notes><![CDATA[
+            <ul>
+                <li>No changes yet.</li>
+            </ul>
+    ]]></change-notes>
+
+    <!-- ============================================================== -->
+    <!-- PLUGIN DEPENDENCIES                                            -->
+    <!-- ============================================================== -->
+    <depends>org.jetbrains.idea.maven</depends>
+    <depends>org.mosaic.idea.module</depends>
+
+    <!-- ============================================================== -->
+    <!-- EXTENSIONS TO INTELLIJ IDEA                                    -->
+    <!-- ============================================================== -->
+    <extensions defaultExtensionNs="com.intellij">
+        <stepsBeforeRunProvider implementation="org.mosaic.idea.runner.task.BuildMosaicModulesBeforeRunTasksProvider"/>
+    </extensions>
+
+    <!-- ============================================================== -->
+    <!-- APPLICATION COMPONENTS                                         -->
+    <!-- ============================================================== -->
+    <application-components/>
+
+    <!-- ============================================================== -->
+    <!-- PROJECT COMPONENTS                                             -->
+    <!-- ============================================================== -->
+    <project-components/>
+
+    <!-- ============================================================== -->
+    <!-- MODULE COMPONENTS                                              -->
+    <!-- ============================================================== -->
+    <module-components/>
+
+    <!-- ============================================================== -->
+    <!-- PLUGIN ACTIONS                                                 -->
+    <!-- ============================================================== -->
+    <actions/>
+
+</idea-plugin>

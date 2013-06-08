@@ -1,0 +1,71 @@
+<idea-plugin version="2">
+
+    <!-- ============================================================== -->
+    <!-- GENERAL PLUGIN INFORMATION                                     -->
+    <!-- ============================================================== -->
+    <id>org.mosaic.idea.module</id>
+    <name>Mosaic Modules</name>
+    <version>1.0</version>
+    <idea-version since-build="129.0000"/>
+    <vendor email="arik.kfir@gmail.com" url="https://github.com/arikkfir/mosaic/">Mosaic Project</vendor>
+    <description><![CDATA[
+        Mosaic is a modular web application platform used for developing next generation web applications.<br>
+        <small>This plugin provides Mosaic modules integration for IntelliJ IDEA.</small>
+    ]]></description>
+    <change-notes><![CDATA[
+            <ul>
+                <li>No changes yet.</li>
+            </ul>
+    ]]></change-notes>
+
+    <!-- ============================================================== -->
+    <!-- PLUGIN DEPENDENCIES                                            -->
+    <!-- ============================================================== -->
+    <depends>org.jetbrains.idea.maven</depends>
+
+    <!-- ============================================================== -->
+    <!-- EXTENSIONS TO INTELLIJ IDEA                                    -->
+    <!-- ============================================================== -->
+    <extensions defaultExtensionNs="com.intellij">
+        <facetType implementation="org.mosaic.idea.module.facet.ModuleFacetType"/>
+    </extensions>
+
+    <!-- ============================================================== -->
+    <!-- EXTENSIONS TO INTELLIJ MAVEN PLUGIN                            -->
+    <!-- ============================================================== -->
+    <extensions defaultExtensionNs="org.jetbrains.idea.maven">
+        <importer implementation="org.mosaic.idea.module.facet.ModuleFacetImporter"/>
+    </extensions>
+
+    <!-- ============================================================== -->
+    <!-- APPLICATION COMPONENTS                                         -->
+    <!-- ============================================================== -->
+    <application-components/>
+
+    <!-- ============================================================== -->
+    <!-- PROJECT COMPONENTS                                             -->
+    <!-- ============================================================== -->
+    <project-components>
+        <component>
+            <implementation-class>org.mosaic.idea.module.facet.BuildMessages</implementation-class>
+        </component>
+    </project-components>
+
+    <!-- ============================================================== -->
+    <!-- MODULE COMPONENTS                                              -->
+    <!-- ============================================================== -->
+    <module-components/>
+
+    <!-- ============================================================== -->
+    <!-- PLUGIN ACTIONS                                                 -->
+    <!-- ============================================================== -->
+    <actions>
+        <action id="org.mosaic.idea.module.actions.BuildModulesAction"
+                class="org.mosaic.idea.module.actions.BuildModulesAction"
+                text="Build Mosaic modules"
+                description="Build all Mosaic modules">
+            <add-to-group group-id="BuildMenu" anchor="after" relative-to-action="CompileProject"/>
+        </action>
+    </actions>
+
+</idea-plugin>
