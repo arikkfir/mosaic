@@ -134,11 +134,11 @@ public class ModuleManagerImpl implements ModuleManager, SynchronousBundleListen
         {
             try
             {
-                module.stop();
+                module.deactivate();
             }
             catch( ModuleStopException e )
             {
-                LOG.error( "Could not stop module '{}': {}", module, e.getMessage(), e );
+                LOG.error( "Could not deactivate module '{}': {}", module, e.getMessage(), e );
             }
         }
 
@@ -229,7 +229,7 @@ public class ModuleManagerImpl implements ModuleManager, SynchronousBundleListen
                 return module;
             }
         }
-        catch( BundleException e )
+        catch( Exception e )
         {
             throw new ModuleInstallException( url.toExternalForm(), e );
         }

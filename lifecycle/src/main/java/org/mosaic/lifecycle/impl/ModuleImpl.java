@@ -1,55 +1,25 @@
 package org.mosaic.lifecycle.impl;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.reflect.TypeToken;
-import com.yammer.metrics.core.MetricName;
-import com.yammer.metrics.core.MetricsRegistry;
-import com.yammer.metrics.core.Timer;
-import com.yammer.metrics.core.TimerContext;
-import java.beans.PropertyChangeEvent;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.joda.time.Duration;
-import org.mosaic.database.dao.annotation.Dao;
 import org.mosaic.lifecycle.*;
-import org.mosaic.lifecycle.annotation.*;
-import org.mosaic.lifecycle.impl.dependency.*;
-import org.mosaic.lifecycle.impl.registrar.AbstractRegistrar;
-import org.mosaic.lifecycle.impl.registrar.BeanServiceRegistrar;
-import org.mosaic.lifecycle.impl.registrar.MethodEndpointRegistrar;
-import org.mosaic.util.reflection.MethodHandle;
-import org.mosaic.util.reflection.impl.MethodHandleFactoryImpl;
+import org.mosaic.util.reflection.MethodHandleFactory;
 import org.osgi.framework.*;
-import org.osgi.framework.namespace.PackageNamespace;
 import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWire;
 import org.osgi.framework.wiring.BundleWiring;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeansException;
-import org.springframework.beans.MethodInvocationException;
-import org.springframework.beans.TypeMismatchException;
-import org.springframework.beans.factory.support.BeanDefinitionValidationException;
-import org.springframework.util.ReflectionUtils;
 
-import static java.lang.System.currentTimeMillis;
-import static java.lang.reflect.Modifier.*;
-import static org.mosaic.util.reflection.impl.AnnotationUtils.getAnnotation;
 import static org.osgi.framework.namespace.PackageNamespace.PACKAGE_NAMESPACE;
-import static org.springframework.util.ReflectionUtils.getUniqueDeclaredMethods;
 
 /**
  * @author arik
@@ -72,16 +42,19 @@ public class ModuleImpl implements Module
     };
 
     @Nonnull
-    private final ModuleManagerImpl moduleManager;
+    private final ModuleHelper helper;
 
     @Nonnull
-    private final MethodHandleFactoryImpl methodHandleFactory;
+    private final ModuleManagerImpl moduleManager;
 
     @Nonnull
     private final Bundle bundle;
 
     @Nonnull
     private final Path path;
+
+    @Nonnull
+    private final Deque<ActivationReason> activationReasons = new ConcurrentLinkedDeque<>();
 
     @Nullable
     private Collection<String> resources;
@@ -93,23 +66,14 @@ public class ModuleImpl implements Module
     private ModuleApplicationContext applicationContext;
 
     @Nullable
-    private Set<Class<?>> componentClasses;
-
-    @Nullable
-    private List<AbstractRegistrar> registrars;
-
-    @Nullable
-    private List<AbstractDependency> dependencies;
-
-    @Nullable
     private MetricsImpl metrics;
 
     public ModuleImpl( @Nonnull ModuleManagerImpl moduleManager,
-                       @Nonnull MethodHandleFactoryImpl methodHandleFactory,
+                       @Nonnull MethodHandleFactory methodHandleFactory,
                        @Nonnull Bundle bundle )
     {
+        this.helper = new ModuleHelper( this, methodHandleFactory );
         this.moduleManager = moduleManager;
-        this.methodHandleFactory = methodHandleFactory;
         this.bundle = bundle;
         this.path = Paths.get( bundle.getLocation() );
     }
@@ -129,17 +93,13 @@ public class ModuleImpl implements Module
     @Nullable
     public ClassLoader getClassLoader()
     {
-        BundleRevision bundleRevision = this.bundle.adapt( BundleRevision.class );
-        if( bundleRevision != null )
+        BundleWiring bundleWiring = this.bundle.adapt( BundleWiring.class );
+        if( bundleWiring != null )
         {
-            BundleWiring bundleWiring = bundleRevision.getWiring();
-            if( bundleWiring != null )
+            ClassLoader classLoader = bundleWiring.getClassLoader();
+            if( classLoader != null )
             {
-                ClassLoader classLoader = bundleWiring.getClassLoader();
-                if( classLoader != null )
-                {
-                    return classLoader;
-                }
+                return classLoader;
             }
         }
         return null;
@@ -196,27 +156,6 @@ public class ModuleImpl implements Module
     }
 
     @Override
-    public void waitForActivation( @Nonnull Duration timeout ) throws InterruptedException
-    {
-        long start = currentTimeMillis();
-        long duration = timeout.getMillis();
-
-        ModuleState state;
-        do
-        {
-            state = getState();
-            if( state == ModuleState.ACTIVE )
-            {
-                return;
-            }
-            Thread.sleep( 500 );
-        } while( start + duration > currentTimeMillis() );
-
-        // module not found and the timeout has passed - throw an exception
-        throw new IllegalStateException( "Module '" + this + "' has not been activated within " + timeout );
-    }
-
-    @Override
     public long getLastModified()
     {
         return this.bundle.getLastModified();
@@ -240,9 +179,10 @@ public class ModuleImpl implements Module
     @Override
     public Collection<URL> getResourceUrls( @Nonnull String prefix )
     {
-        Set<URL> urls = new HashSet<>( 1000 );
+        // only provide resource URLs if this module loaded its resources on resolve
         if( this.resources != null )
         {
+            Set<URL> urls = new HashSet<>( 1000 );
             Enumeration<URL> entries = this.bundle.findEntries( prefix, "*", true );
             if( entries != null )
             {
@@ -255,8 +195,12 @@ public class ModuleImpl implements Module
                     }
                 }
             }
+            return urls;
         }
-        return urls;
+        else
+        {
+            return Collections.emptySet();
+        }
     }
 
     @Nonnull
@@ -309,7 +253,7 @@ public class ModuleImpl implements Module
         List<PackageExport> packageExports = new LinkedList<>();
         for( BundleCapability capability : packageCapabilities )
         {
-            packageExports.add( new PackageExportImpl( capability ) );
+            packageExports.add( new PackageExportImpl( this.moduleManager, capability ) );
         }
         Collections.sort( packageExports, PACKAGE_EXPORT_COMPARATOR );
         return packageExports;
@@ -329,7 +273,7 @@ public class ModuleImpl implements Module
         List<PackageExport> packageImports = new LinkedList<>();
         for( BundleWire wire : importedPackageWires )
         {
-            packageImports.add( new PackageExportImpl( wire.getCapability() ) );
+            packageImports.add( new PackageExportImpl( this.moduleManager, wire.getCapability() ) );
         }
         Collections.sort( packageImports, PACKAGE_EXPORT_COMPARATOR );
         return packageImports;
@@ -352,7 +296,7 @@ public class ModuleImpl implements Module
 
         // register & return
         ServiceRegistration<? super T> sr = this.bundle.getBundleContext().registerService( type, service, dict );
-        return new ServiceExportImpl( TypeToken.of( type ), sr );
+        return new ServiceExportImpl( this.moduleManager, this, TypeToken.of( type ), sr );
     }
 
     @Nullable
@@ -363,42 +307,53 @@ public class ModuleImpl implements Module
     }
 
     @Override
-    public void start() throws ModuleStartException
+    public void activate() throws ModuleStartException
     {
-        try
+        if( this.bundle.getState() == Bundle.ACTIVE )
         {
-            this.bundle.start();
+            activateInternal();
         }
-        catch( BundleException e )
+        else
         {
-            if( e.getType() == BundleException.RESOLVE_ERROR )
+            try
             {
-                throw new ModuleResolveException( this, e );
+                this.bundle.start();
             }
-            else
+            catch( BundleException e )
+            {
+                if( e.getType() == BundleException.RESOLVE_ERROR )
+                {
+                    throw new ModuleResolveException( this, e );
+                }
+                else
+                {
+                    throw new ModuleStartException( this, e.getMessage(), e );
+                }
+            }
+            catch( Exception e )
             {
                 throw new ModuleStartException( this, e.getMessage(), e );
             }
         }
-        catch( Exception e )
-        {
-            throw new ModuleStartException( this, e.getMessage(), e );
-        }
     }
 
     @Override
-    public void stop() throws ModuleStopException
+    public void deactivate() throws ModuleStopException
     {
-        try
+        // TODO: prevent stopping the whole server (throw error here instead... catch other mosaic modules too)
+        if( this.bundle.getBundleId() > 0 )
         {
-            if( this.bundle.getState() != Bundle.STOPPING )
+            try
             {
-                this.bundle.stop( 0 );
+                if( this.bundle.getState() != Bundle.STOPPING )
+                {
+                    this.bundle.stop( 0 );
+                }
             }
-        }
-        catch( Exception e )
-        {
-            throw new ModuleStopException( this, e.getMessage(), e );
+            catch( Exception e )
+            {
+                throw new ModuleStopException( this, e.getMessage(), e );
+            }
         }
     }
 
@@ -406,23 +361,14 @@ public class ModuleImpl implements Module
     @Override
     public <T> T getBean( @Nonnull Class<? extends T> type )
     {
-        if( this.state != ModuleState.ACTIVE )
-        {
-            throw new IllegalStateException( "Module '" + this + "' is not active" );
-        }
-
         ModuleApplicationContext applicationContext = this.applicationContext;
         if( applicationContext == null )
         {
-            throw new IllegalStateException( "Module '" + this + "' has no context" );
+            throw new IllegalStateException( "Module '" + this + "' has no context or has not been activated" );
         }
-        try
+        else
         {
-            return applicationContext.getBean( type );
-        }
-        catch( BeansException e )
-        {
-            throw new IllegalArgumentException( "Could not get or find bean of type '" + type.getName() + "' in module '" + this + "': " + e.getMessage(), e );
+            return this.applicationContext.findModuleBean( type );
         }
     }
 
@@ -430,23 +376,14 @@ public class ModuleImpl implements Module
     @Override
     public <T> T getBean( @Nonnull String beanName, @Nonnull Class<? extends T> type )
     {
-        if( this.state != ModuleState.ACTIVE )
-        {
-            throw new IllegalStateException( "Module '" + this + "' is not active" );
-        }
-
         ModuleApplicationContext applicationContext = this.applicationContext;
         if( applicationContext == null )
         {
             throw new IllegalStateException( "Module '" + this + "' has no context" );
         }
-        try
+        else
         {
-            return applicationContext.getBean( beanName, type );
-        }
-        catch( BeansException e )
-        {
-            throw new IllegalArgumentException( "Could not get or find bean of type '" + type.getName() + "' in module '" + this + "': " + e.getMessage(), e );
+            return this.applicationContext.findModuleBean( beanName, type );
         }
     }
 
@@ -515,178 +452,119 @@ public class ModuleImpl implements Module
 
     public void beanCreated( @Nonnull Object bean, @Nonnull String beanName )
     {
-        // detect and inject this module to any bean method annotated with @ModuleRef
-        for( Method method : ReflectionUtils.getUniqueDeclaredMethods( bean.getClass() ) )
-        {
-            if( getAnnotation( method, ModuleRef.class ) != null )
-            {
-                try
-                {
-                    method.invoke( bean, this );
-                }
-                catch( IllegalAccessException e )
-                {
-                    throw new BeanDefinitionValidationException( "Insufficient access to invoke a @ModuleRef method in bean '" + beanName + "'", e );
-                }
-                catch( IllegalArgumentException e )
-                {
-                    throw new TypeMismatchException( this, Module.class, e );
-                }
-                catch( InvocationTargetException e )
-                {
-                    throw new MethodInvocationException( new PropertyChangeEvent( bean, method.getName(), null, this ), e );
-                }
-            }
-        }
-
-        // notify any dependencies founded on this bean
-        if( this.dependencies != null )
-        {
-            for( AbstractDependency dependency : this.dependencies )
-            {
-                if( dependency instanceof AbstractBeanDependency )
-                {
-                    AbstractBeanDependency beanDependency = ( AbstractBeanDependency ) dependency;
-                    if( beanName.equals( beanDependency.getBeanName() ) )
-                    {
-                        beanDependency.beanCreated( bean );
-                    }
-                }
-            }
-        }
+        this.helper.onBeansCreated( bean, beanName );
     }
 
     public void beanInitialized( @Nonnull Object bean, @Nonnull String beanName )
     {
-        if( this.dependencies != null )
+        this.helper.onBeanInitialized( bean, beanName );
+    }
+
+    public void onDependencySatisfied()
+    {
+        try
         {
-            for( AbstractDependency dependency : this.dependencies )
-            {
-                if( dependency instanceof AbstractBeanDependency )
-                {
-                    AbstractBeanDependency beanDependency = ( AbstractBeanDependency ) dependency;
-                    if( beanName.equals( beanDependency.getBeanName() ) )
-                    {
-                        beanDependency.beanInitialized( bean );
-                    }
-                }
-            }
+            activateInternal();
+        }
+        catch( ModuleStartException ignore )
+        {
+        }
+        catch( Exception e )
+        {
+            LOG.warn( e.getMessage(), e );
         }
     }
 
-    public synchronized void activateIfReady( @Nonnull ActivationReason reason )
+    public void onDependencyUnsatisfied()
     {
-        if( this.applicationContext == null )
-        {
-            if( canBeActivated() )
-            {
-                this.state = ModuleState.ACTIVATING;
-
-                if( this.componentClasses != null && !this.componentClasses.isEmpty() )
-                {
-                    // create application context
-                    ModuleApplicationContext moduleApplicationContext = new ModuleApplicationContext( this, this.componentClasses );
-                    moduleApplicationContext.refresh();
-                    this.applicationContext = moduleApplicationContext;
-                }
-
-                // register all declared services
-                if( this.registrars != null )
-                {
-                    for( AbstractRegistrar registrar : this.registrars )
-                    {
-                        registrar.register();
-                    }
-                }
-
-                // there! we've started!
-                this.state = ModuleState.ACTIVE;
-
-                LOG.info( "Module {} has been ACTIVATED", getName() );
-                this.moduleManager.notifyModuleActivated( this );
-            }
-            else if( reason == ActivationReason.MODULE_STARTED )
-            {
-                LOG.warn( "Could NOT activate {}:", this );
-                for( Dependency dependency : getUnsatisfiedDependencies() )
-                {
-                    LOG.warn( "    -> {}", dependency );
-                }
-            }
-        }
+        deactivateInternal();
     }
 
     public boolean canBeActivated()
     {
-        if( this.dependencies != null )
-        {
-            // check if all dependencies are satisified
-            for( AbstractDependency dependency : this.dependencies )
-            {
-                if( !dependency.isSatisfied() )
-                {
-                    LOG.debug( "Module '{}' cannot be activated - dependency {} is unsatisfied", getName(), dependency );
-                    return false;
-                }
-            }
-        }
-        return true;
+        return !this.helper.hasUnsatisfiedDependencies();
     }
 
     @Override
     public Collection<Dependency> getDependencies()
     {
-        Collection<Dependency> dependencies = new LinkedList<>();
-        if( this.dependencies != null )
-        {
-            dependencies.addAll( this.dependencies );
-        }
-        return dependencies;
+        return this.helper.getDependencies();
     }
 
     @Override
     public Collection<Dependency> getUnsatisfiedDependencies()
     {
-        Collection<Dependency> dependencies = new LinkedList<>();
-        if( this.dependencies != null )
-        {
-            for( AbstractDependency dependency : this.dependencies )
-            {
-                if( !dependency.isSatisfied() )
-                {
-                    dependencies.add( dependency );
-                }
-            }
-        }
-        return dependencies;
+        return this.helper.getUnsatisfiedDependencies();
     }
 
-    public synchronized void deactivate()
+    @Override
+    public String toString()
+    {
+        return "Module[" + this.bundle.getSymbolicName() + "-" + this.bundle.getVersion() + " -> " + this.bundle.getBundleId() + " | " + getState() + "]";
+    }
+
+    private synchronized void activateInternal() throws ModuleStartException
+    {
+        if( this.applicationContext != null )
+        {
+            return;
+        }
+        else if( this.state == ModuleState.ACTIVE || this.state == ModuleState.ACTIVATING )
+        {
+            return;
+        }
+        else if( !canBeActivated() )
+        {
+            throw new ModuleStartException( this, "has unsatisfied dependencies" );
+        }
+
+        // switch to ACTIVATING state
+        this.state = ModuleState.ACTIVATING;
+
+        // create application context
+        ModuleApplicationContext moduleApplicationContext;
+        try
+        {
+            moduleApplicationContext = this.helper.createApplicationContext();
+        }
+        catch( Exception e )
+        {
+            this.state = ModuleState.STARTED;
+            throw e;
+        }
+        this.applicationContext = moduleApplicationContext;
+
+        // register all declared services
+        this.helper.registerDependencies();
+
+        // there! we're activated!
+        this.state = ModuleState.ACTIVE;
+
+        LOG.info( "Module {} has been ACTIVATED", getName() );
+        this.moduleManager.notifyModuleActivated( this );
+    }
+
+    private synchronized void deactivateInternal()
     {
         if( this.applicationContext != null && this.state != ModuleState.DEACTIVATING )
         {
             this.state = ModuleState.DEACTIVATING;
 
             // unregister all declared services
-            if( this.registrars != null )
-            {
-                for( AbstractRegistrar registrar : this.registrars )
-                {
-                    registrar.unregister();
-                }
-            }
+            this.helper.unregisterDependencies();
 
             // stop all dependencies
-            if( this.dependencies != null )
-            {
-                for( AbstractDependency dependency : this.dependencies )
-                {
-                    dependency.stop();
-                }
-            }
+            this.helper.stopDependencies();
 
             // stop application context
-            this.applicationContext.close();
+            try
+            {
+                this.applicationContext.close();
+            }
+            catch( Exception e )
+            {
+                LOG.warn( "An error occurred while deactivating {}: {}", this, e.getMessage(), e );
+            }
 
             // remove reference to the application context to allow garbage collection of beans
             this.applicationContext = null;
@@ -696,12 +574,6 @@ public class ModuleImpl implements Module
 
             this.moduleManager.notifyModuleDeactivated( this );
         }
-    }
-
-    @Override
-    public String toString()
-    {
-        return "Module[" + this.bundle.getSymbolicName() + "-" + this.bundle.getVersion() + " -> " + this.bundle.getBundleId() + " | " + getState() + "]";
     }
 
     private void addServiceExportsFromServiceReference( @Nonnull Collection<ServiceExport> serviceExports,
@@ -721,7 +593,7 @@ public class ModuleImpl implements Module
                 {
                     type = TypeToken.of( this.bundle.loadClass( className ) );
                 }
-                serviceExports.add( new ServiceExportImpl( type, serviceReference ) );
+                serviceExports.add( new ServiceExportImpl( this.moduleManager, this, type, serviceReference ) );
             }
             catch( ClassNotFoundException e )
             {
@@ -760,7 +632,7 @@ public class ModuleImpl implements Module
     private void onBundleResolved()
     {
         refreshResourcesCache();
-        this.metrics = new MetricsImpl();
+        this.metrics = new MetricsImpl( this );
         this.state = ModuleState.RESOLVED;
         LOG.debug( "Module {} has been RESOLVED", getName() );
     }
@@ -771,48 +643,34 @@ public class ModuleImpl implements Module
         this.state = ModuleState.STARTING;
 
         // add beans to application context, and also populate our dependencies during so
-        this.componentClasses = findComponentClasses();
-        this.registrars = new LinkedList<>();
-        this.dependencies = new LinkedList<>();
-        for( Class<?> componentClass : this.componentClasses )
-        {
-            String beanName = componentClass.getName();
-
-            // is this a service bean?
-            Service serviceAnn = getAnnotation( componentClass, Service.class );
-            if( serviceAnn != null )
-            {
-                Rank rankAnn = getAnnotation( componentClass, Rank.class );
-                for( Class<?> serviceType : serviceAnn.value() )
-                {
-                    this.registrars.add(
-                            new BeanServiceRegistrar( this,
-                                                      beanName,
-                                                      serviceType,
-                                                      rankAnn == null ? 0 : rankAnn.value(),
-                                                      serviceAnn.properties() ) );
-                }
-            }
-
-            // iterate class methods for dependencies
-            detectBeanRelationships( beanName, componentClass, this.dependencies, this.registrars );
-        }
+        this.helper.refreshModuleComponents();
     }
 
     private void onBundleStarted()
     {
-        if( this.dependencies != null )
-        {
-            // open all dependencies
-            for( AbstractDependency dependency : this.dependencies )
-            {
-                dependency.start();
-            }
-        }
+        this.helper.startDependencies();
         this.state = ModuleState.STARTED;
 
-        // activate, provided all dependencies are satisfied
-        activateIfReady( ActivationReason.MODULE_STARTED );
+        try
+        {
+            activateInternal();
+        }
+        catch( ModuleStartException e )
+        {
+            LOG.warn( e.getMessage(), e );
+            for( Dependency dependency : getUnsatisfiedDependencies() )
+            {
+                LOG.warn( "    -> {}", dependency );
+            }
+        }
+        catch( Exception e )
+        {
+            LOG.warn( "Could NOT activate {}:", this );
+            for( Dependency dependency : getUnsatisfiedDependencies() )
+            {
+                LOG.warn( "    -> {}", dependency );
+            }
+        }
     }
 
     private void onBundleStopping()
@@ -820,14 +678,12 @@ public class ModuleImpl implements Module
         LOG.debug( "Module {} is STOPPING", getName() );
 
         // deactivate
-        deactivate();
+        deactivateInternal();
 
         this.state = ModuleState.STOPPING;
 
         // clear our registrars, dependencies and component classes to avoid keeping stuff in memory (in particular the class loader)
-        this.registrars = null;
-        this.dependencies = null;
-        this.componentClasses = null;
+        this.helper.discardModuleComponents();
     }
 
     private void onBundleStopped()
@@ -859,479 +715,5 @@ public class ModuleImpl implements Module
         this.state = ModuleState.UNINSTALLED;
         LOG.info( "Module {} has been UNINSTALLED", getName() );
         this.moduleManager.notifyModuleUninstalled( this );
-    }
-
-    private Set<Class<?>> findComponentClasses()
-    {
-        Set<Class<?>> componentClasses = new HashSet<>();
-
-        Enumeration<URL> entries = this.bundle.findEntries( "/", "*.class", true );
-        if( entries != null )
-        {
-            while( entries.hasMoreElements() )
-            {
-                URL entry = entries.nextElement();
-                String path = entry.getPath();
-                if( path.toLowerCase().endsWith( ".class" ) )
-                {
-                    // remove the "/" prefix
-                    if( path.startsWith( "/" ) )
-                    {
-                        path = path.substring( 1 );
-                    }
-
-                    // remove the ".class" suffix
-                    path = path.substring( 0, path.length() - ".class".length() );
-
-                    // load the class and determine if it's a @Component class (@Bean is @Component by proxy too)
-                    Class<?> clazz;
-                    try
-                    {
-                        clazz = this.bundle.loadClass( path.replace( '/', '.' ) );
-
-                        int modifiers = clazz.getModifiers();
-                        if( isAbstract( modifiers ) || isInterface( modifiers ) || !isPublic( modifiers ) )
-                        {
-                            // if abstract, interface or non-public then skip it
-                            continue;
-                        }
-                        else if( getAnnotation( clazz, Bean.class ) == null )
-                        {
-                            // if not a @Bean then skip it
-                            continue;
-                        }
-                        componentClasses.add( clazz );
-                    }
-                    catch( ClassNotFoundException | NoClassDefFoundError e )
-                    {
-                        LOG.warn( "Could not read or parse class '{}' from module '{}': {}", path, this, e.getMessage(), e );
-                    }
-                }
-            }
-        }
-        return componentClasses;
-    }
-
-    private void detectBeanRelationships( @Nonnull String beanName,
-                                          @Nonnull Class<?> componentClass,
-                                          @Nonnull List<? super AbstractDependency> dependencies,
-                                          @Nonnull List<AbstractRegistrar> registrars )
-    {
-        for( Method method : getUniqueDeclaredMethods( componentClass ) )
-        {
-            MethodHandle methodHandle = this.methodHandleFactory.findMethodHandle( method );
-
-            // detect @ServiceRef dependencies
-            ServiceRef serviceRefAnn = methodHandle.getAnnotation( ServiceRef.class );
-            if( serviceRefAnn != null )
-            {
-                if( serviceRefAnn.autoSelectIfMultiple() )
-                {
-                    dependencies.add( new OptimisticServiceRefDependency( this, serviceRefAnn.value(), serviceRefAnn.required(), beanName, methodHandle ) );
-                }
-                else
-                {
-                    dependencies.add( new PessimisticServiceRefDependency( this, serviceRefAnn.value(), serviceRefAnn.required(), beanName, methodHandle ) );
-                }
-            }
-
-            // detect @MethodEndpointRef dependencies
-            MethodEndpointRef methodEndpointRefAnn = methodHandle.getAnnotation( MethodEndpointRef.class );
-            if( methodEndpointRefAnn != null )
-            {
-                String filter = "(type=" + methodEndpointRefAnn.value().getName() + ")";
-                if( methodEndpointRefAnn.autoSelectIfMultiple() )
-                {
-                    dependencies.add( new OptimisticServiceRefDependency( this, filter, methodEndpointRefAnn.required(), beanName, methodHandle ) );
-                }
-                else
-                {
-                    dependencies.add( new PessimisticServiceRefDependency( this, filter, methodEndpointRefAnn.required(), beanName, methodHandle ) );
-                }
-            }
-
-            // detect @ServiceRefs dependency
-            ServiceRefs serviceRefsAnn = methodHandle.getAnnotation( ServiceRefs.class );
-            if( serviceRefsAnn != null )
-            {
-                dependencies.add( new ServiceRefsDependency( this, serviceRefsAnn.value(), beanName, methodHandle ) );
-            }
-
-            // detect @ServiceRefs dependency
-            MethodEndpointRefs methodEndpointRefsAnn = methodHandle.getAnnotation( MethodEndpointRefs.class );
-            if( methodEndpointRefsAnn != null )
-            {
-                String filter = "(type=" + methodEndpointRefsAnn.value().getName() + ")";
-                dependencies.add( new ServiceRefsDependency( this, filter, beanName, methodHandle ) );
-            }
-
-            // detect @ServiceBind dependency
-            ServiceBind serviceBindAnn = methodHandle.getAnnotation( ServiceBind.class );
-            if( serviceBindAnn != null )
-            {
-                dependencies.add( new ServiceBindDependency( this, serviceBindAnn.value(), serviceBindAnn.updates(), beanName, methodHandle ) );
-            }
-
-            // detect @ServiceBind dependency
-            MethodEndpointBind methodEndpointBindAnn = methodHandle.getAnnotation( MethodEndpointBind.class );
-            if( methodEndpointBindAnn != null )
-            {
-                String filter = "(type=" + methodEndpointBindAnn.value().getName() + ")";
-                dependencies.add( new ServiceBindDependency( this, filter, methodEndpointBindAnn.updates(), beanName, methodHandle ) );
-            }
-
-            // detect @ServiceUnbind dependency
-            ServiceUnbind serviceUnbindAnn = methodHandle.getAnnotation( ServiceUnbind.class );
-            if( serviceUnbindAnn != null )
-            {
-                dependencies.add( new ServiceUnbindDependency( this, serviceUnbindAnn.value(), beanName, methodHandle ) );
-            }
-
-            // detect @ServiceUnbind dependency
-            MethodEndpointUnbind methodEndpointUnbindAnn = methodHandle.getAnnotation( MethodEndpointUnbind.class );
-            if( methodEndpointUnbindAnn != null )
-            {
-                String filter = "(type=" + methodEndpointUnbindAnn.value().getName() + ")";
-                dependencies.add( new ServiceUnbindDependency( this, filter, beanName, methodHandle ) );
-            }
-
-            // detect @ServiceUnbind dependency
-            Dao daoAnn = methodHandle.getAnnotation( Dao.class );
-            if( daoAnn != null )
-            {
-                dependencies.add( new DaoRefDependency( this, beanName, methodHandle, daoAnn.value() ) );
-            }
-
-            // detect method endpoints
-            for( Annotation annotation : methodHandle.getAnnotations() )
-            {
-                Class<? extends Annotation> annotationType = annotation.annotationType();
-                if( annotationType.isAnnotationPresent( MethodEndpointMarker.class ) )
-                {
-                    registrars.add( new MethodEndpointRegistrar( this, beanName, annotation, methodHandle ) );
-                }
-            }
-        }
-    }
-
-    private class MetricsTimerImpl implements MetricsTimer
-    {
-        @Nonnull
-        private final ThreadLocal<Deque<TimerContext>> timerContexts = new ThreadLocal<Deque<TimerContext>>()
-        {
-            @Override
-            protected Deque<TimerContext> initialValue()
-            {
-                return new LinkedList<>();
-            }
-        };
-
-        @Nonnull
-        private final MetricName name;
-
-        @Nonnull
-        private final Timer timer;
-
-        private MetricsTimerImpl( @Nonnull MetricName name, @Nonnull Timer timer )
-        {
-            this.name = name;
-            this.timer = timer;
-        }
-
-        @Nonnull
-        @Override
-        public Module getModule()
-        {
-            return ModuleImpl.this;
-        }
-
-        @Nonnull
-        @Override
-        public String getName()
-        {
-            return this.name.toString();
-        }
-
-        @Override
-        public void startTimer()
-        {
-            this.timerContexts.get().push( this.timer.time() );
-        }
-
-        @Override
-        public void stopTimer()
-        {
-            this.timerContexts.get().pop().stop();
-        }
-
-        @Override
-        public long count()
-        {
-            return this.timer.count();
-        }
-
-        @Override
-        public double fifteenMinuteRate()
-        {
-            return this.timer.fifteenMinuteRate();
-        }
-
-        @Override
-        public double fiveMinuteRate()
-        {
-            return this.timer.fiveMinuteRate();
-        }
-
-        @Override
-        public double meanRate()
-        {
-            return this.timer.meanRate();
-        }
-
-        @Override
-        public double oneMinuteRate()
-        {
-            return this.timer.oneMinuteRate();
-        }
-
-        @Override
-        public double max()
-        {
-            return this.timer.max();
-        }
-
-        @Override
-        public double min()
-        {
-            return this.timer.min();
-        }
-
-        @Override
-        public double mean()
-        {
-            return this.timer.mean();
-        }
-
-        @Override
-        public double stdDev()
-        {
-            return this.timer.stdDev();
-        }
-
-        @Override
-        public double sum()
-        {
-            return this.timer.sum();
-        }
-    }
-
-    private class MetricsImpl implements Metrics
-    {
-        @Nullable
-        private MetricsRegistry metricsRegistry;
-
-        @Nullable
-        private LoadingCache<MetricName, MetricsTimerImpl> timerCache;
-
-        private MetricsImpl()
-        {
-            this.metricsRegistry = new MetricsRegistry();
-            this.timerCache = CacheBuilder.newBuilder()
-                                          .initialCapacity( 1000 )
-                                          .concurrencyLevel( 20 )
-                                          .build( new CacheLoader<MetricName, MetricsTimerImpl>()
-                                          {
-                                              @Override
-                                              public MetricsTimerImpl load( MetricName key ) throws Exception
-                                              {
-                                                  Timer timer = metricsRegistry.newTimer( key, TimeUnit.MILLISECONDS, TimeUnit.SECONDS );
-                                                  return new MetricsTimerImpl( key, timer );
-                                              }
-                                          } );
-        }
-
-        @Nonnull
-        @Override
-        public MetricsTimer getTimer( @Nonnull String group, @Nonnull String type, @Nonnull String name )
-        {
-            final MetricsRegistry metricsRegistry = this.metricsRegistry;
-            LoadingCache<MetricName, MetricsTimerImpl> cache = this.timerCache;
-
-            if( metricsRegistry != null && cache != null )
-            {
-                final MetricName key = new MetricName( group, type, name );
-                try
-                {
-                    return cache.get( key );
-                }
-                catch( ExecutionException e )
-                {
-                    throw new IllegalStateException( "Could not create metrics timer for '" + group + ":" + type + ":" + name + "'", e );
-                }
-            }
-            throw new IllegalStateException( "Could not create metrics timer for '" + group + ":" + type + ":" + name + "'" );
-        }
-
-        @Nonnull
-        @Override
-        public Collection<? extends MetricsTimer> getTimers()
-        {
-            LoadingCache<MetricName, MetricsTimerImpl> cache = this.timerCache;
-            if( cache != null )
-            {
-                return cache.asMap().values();
-            }
-            throw new IllegalStateException( "Metrics timers are not available" );
-        }
-
-        private void shutdown()
-        {
-            MetricsRegistry metricsRegistry = this.metricsRegistry;
-            if( metricsRegistry != null )
-            {
-                metricsRegistry.shutdown();
-            }
-            this.metricsRegistry = null;
-
-            LoadingCache<MetricName, MetricsTimerImpl> cache = this.timerCache;
-            if( cache != null )
-            {
-                cache.invalidateAll();
-            }
-            this.timerCache = null;
-        }
-    }
-
-    private class ServiceExportImpl implements ServiceExport
-    {
-        private final TypeToken<?> type;
-
-        private final ServiceRegistration<?> serviceRegistration;
-
-        private final ServiceReference<?> serviceReference;
-
-        public ServiceExportImpl( TypeToken<?> type, ServiceReference<?> serviceReference )
-        {
-            this.type = type;
-            this.serviceReference = serviceReference;
-
-            Method getRegistrationMethod = ReflectionUtils.findMethod( serviceReference.getClass(), "getRegistration" );
-            getRegistrationMethod.setAccessible( true );
-            try
-            {
-                this.serviceRegistration = ( ServiceRegistration<?> ) getRegistrationMethod.invoke( serviceReference );
-            }
-            catch( IllegalAccessException | InvocationTargetException e )
-            {
-                throw new IllegalStateException( "Could not obtain OSGi service registration from a service reference '" + serviceReference + "':" + e.getMessage(), e );
-            }
-        }
-
-        public ServiceExportImpl( TypeToken<?> type, ServiceRegistration<?> serviceRegistration )
-        {
-            this.type = type;
-            this.serviceRegistration = serviceRegistration;
-            this.serviceReference = serviceRegistration.getReference();
-        }
-
-        @Nonnull
-        @Override
-        public Module getProvider()
-        {
-            return ModuleImpl.this;
-        }
-
-        @Nonnull
-        @Override
-        public TypeToken<?> getType()
-        {
-            return type;
-        }
-
-        @Nonnull
-        @Override
-        public Map<String, Object> getProperties()
-        {
-            Map<String, Object> properties = new LinkedHashMap<>( 10 );
-            for( String key : serviceReference.getPropertyKeys() )
-            {
-                properties.put( key, serviceReference.getProperty( key ) );
-            }
-            return properties;
-        }
-
-        @Nonnull
-        @Override
-        public Collection<Module> getConsumers()
-        {
-            Collection<Module> modules = new LinkedList<>();
-            Bundle[] usingBundles = serviceReference.getUsingBundles();
-            if( usingBundles != null )
-            {
-                for( Bundle usingBundle : usingBundles )
-                {
-                    Module module = moduleManager.getModule( usingBundle.getBundleId() );
-                    if( module != null )
-                    {
-                        modules.add( module );
-                    }
-                }
-            }
-            return modules;
-        }
-
-        @Override
-        public boolean isRegistered()
-        {
-            return this.serviceReference.getBundle() != null;
-        }
-
-        @Override
-        public void unregister()
-        {
-            this.serviceRegistration.unregister();
-        }
-    }
-
-    private class PackageExportImpl implements PackageExport
-    {
-        @Nonnull
-        private final BundleCapability capability;
-
-        private PackageExportImpl( @Nonnull BundleCapability capability )
-        {
-            this.capability = capability;
-        }
-
-        @Nonnull
-        @Override
-        public Module getProvider()
-        {
-            Module module = moduleManager.getModuleFor( this.capability.getRevision() );
-            if( module == null )
-            {
-                throw new IllegalStateException( "Could not find module for capability: " + this.capability );
-            }
-            else
-            {
-                return module;
-            }
-        }
-
-        @Nonnull
-        @Override
-        public String getPackageName()
-        {
-            Object packageName = this.capability.getAttributes().get( PACKAGE_NAMESPACE );
-            return packageName == null ? "unknown" : packageName.toString();
-        }
-
-        @Nonnull
-        @Override
-        public String getVersion()
-        {
-            Object version = this.capability.getAttributes().get( PackageNamespace.CAPABILITY_VERSION_ATTRIBUTE );
-            return version == null ? "0.0.0" : version.toString();
-        }
     }
 }

@@ -7,7 +7,6 @@ import java.util.Collection;
 import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.joda.time.Duration;
 
 /**
  * @author arik
@@ -30,8 +29,6 @@ public interface Module
 
     @Nonnull
     ModuleState getState();
-
-    void waitForActivation( @Nonnull Duration timeout ) throws InterruptedException;
 
     long getLastModified();
 
@@ -62,9 +59,9 @@ public interface Module
     @Nonnull
     <T> ServiceExport exportService( @Nonnull Class<? super T> type, T service, @Nonnull DP... properties );
 
-    void start() throws ModuleStartException;
+    void activate() throws ModuleStartException;
 
-    void stop() throws ModuleStopException;
+    void deactivate() throws ModuleStopException;
 
     @Nonnull
     <T> T getBean( @Nonnull Class<? extends T> type );

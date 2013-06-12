@@ -75,10 +75,7 @@ public class BundlesManager extends AbstractFileWatcherAdapter
             ByteStreams.copy( in, out );
             Flushables.flush( out, false );
         }
-
-        Bundle bundle = installBundle( tempFile );
-        bundle.start();
-        return bundle;
+        return installBundle( tempFile );
     }
 
     @Override
@@ -172,7 +169,7 @@ public class BundlesManager extends AbstractFileWatcherAdapter
 
     private void handleScanFinished( ScanContext context )
     {
-        @SuppressWarnings( "unchecked" )
+        @SuppressWarnings("unchecked")
         final List<Bundle> bundlesToStart = context.getAttributes().require( "bundlesToStart", List.class );
         final Boolean bundlesWereUninstalled = context.getAttributes().require( "bundlesWereUninstalled", Boolean.class );
 
@@ -267,7 +264,7 @@ public class BundlesManager extends AbstractFileWatcherAdapter
 
     private void handleJarFileAddedOrModified( @Nonnull ScanContext context, @Nonnull Path path )
     {
-        @SuppressWarnings( "unchecked" )
+        @SuppressWarnings("unchecked")
         List<Bundle> bundlesToStart = context.getAttributes().require( "bundlesToStart", List.class );
 
         // check whether we need to install a new bundle or update an existing bundle

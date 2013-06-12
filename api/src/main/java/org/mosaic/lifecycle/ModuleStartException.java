@@ -14,7 +14,7 @@ public class ModuleStartException extends Exception
 
     public ModuleStartException( Module module, String message, Throwable cause )
     {
-        super( "Could not start module '" + module.getName() + "-" + module.getVersion() + "[" + module.getId() + "]': " + message, cause );
+        super( "Could not activate " + module + ": " + message, cause );
         this.module = module;
     }
 

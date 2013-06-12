@@ -3,7 +3,6 @@ package org.mosaic.lifecycle.impl.dependency;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.lifecycle.ModuleState;
-import org.mosaic.lifecycle.impl.ActivationReason;
 import org.mosaic.lifecycle.impl.ModuleImpl;
 import org.mosaic.util.reflection.MethodHandle;
 import org.osgi.framework.ServiceReference;
@@ -87,7 +86,7 @@ public class OptimisticServiceRefDependency extends AbstractSingleServiceDepende
             }
             else
             {
-                this.module.activateIfReady( ActivationReason.DEPENDENCY_SATISFIED );
+                this.module.onDependencySatisfied();
             }
         }
     }
@@ -107,12 +106,12 @@ public class OptimisticServiceRefDependency extends AbstractSingleServiceDepende
                 }
                 else
                 {
-                    this.module.activateIfReady( ActivationReason.DEPENDENCY_SATISFIED );
+                    this.module.onDependencySatisfied();
                 }
             }
             else
             {
-                this.module.deactivate();
+                this.module.onDependencyUnsatisfied();
                 this.injectedServiceInstance = null;
             }
         }

@@ -32,7 +32,6 @@
 
     <logger name="com.google.common.io.Closeables" level="OFF"/>
     <logger name="net.schmizz.sshj" level="WARN"/>
-    <logger name="org.osgi.service" level="OFF"/>
-    <logger name="org.osgi.framework" level="OFF"/>
+    <logger name="org.osgi" level="OFF"/>
 
 </configuration>

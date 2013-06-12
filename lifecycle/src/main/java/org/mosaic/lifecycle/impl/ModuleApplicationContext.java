@@ -6,6 +6,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import org.mosaic.lifecycle.Module;
+import org.mosaic.lifecycle.ModuleState;
 import org.mosaic.lifecycle.annotation.BeanRef;
 import org.osgi.framework.BundleContext;
 import org.springframework.beans.BeansException;
@@ -72,6 +73,44 @@ public class ModuleApplicationContext extends StaticApplicationContext
             String beanName = componentClass.getName();
             BeanDefinition beanDef = new AnnotatedGenericBeanDefinition( componentClass );
             registerBeanDefinition( beanName, beanDef );
+        }
+    }
+
+    public <T> T findModuleBean( @Nonnull Class<? extends T> type )
+    {
+        if( this.module.getState() != ModuleState.ACTIVE )
+        {
+            throw new IllegalStateException( "Module '" + this + "' is not active" );
+        }
+        else
+        {
+            try
+            {
+                return getBean( type );
+            }
+            catch( BeansException e )
+            {
+                throw new IllegalArgumentException( "Could not get or find bean of type '" + type.getName() + "' in module '" + this + "': " + e.getMessage(), e );
+            }
+        }
+    }
+
+    public <T> T findModuleBean( @Nonnull String beanName, @Nonnull Class<? extends T> type )
+    {
+        if( this.module.getState() != ModuleState.ACTIVE )
+        {
+            throw new IllegalStateException( "Module '" + this + "' is not active" );
+        }
+        else
+        {
+            try
+            {
+                return getBean( beanName, type );
+            }
+            catch( BeansException e )
+            {
+                throw new IllegalArgumentException( "Could not get or find bean of type '" + type.getName() + "' in module '" + this + "': " + e.getMessage(), e );
+            }
         }
     }
 

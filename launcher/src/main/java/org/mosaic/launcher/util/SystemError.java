@@ -1,9 +1,10 @@
 package org.mosaic.launcher.util;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.helpers.FormattingTuple;
+import org.slf4j.helpers.MessageFormatter;
 
 /**
  * @author arik
@@ -15,7 +16,7 @@ public class SystemError
     @Nonnull
     public static BootstrapException bootstrapError( @Nonnull String message, @Nonnull Object... args )
     {
-        return new BootstrapException( message, null, args );
+        return new BootstrapException( message, args );
     }
 
     public static void handle( @Nonnull Throwable e )
@@ -36,12 +37,30 @@ public class SystemError
     public static class BootstrapException extends RuntimeException
     {
         @Nonnull
+        private final String message;
+
+        @Nonnull
         private final Object[] arguments;
 
-        private BootstrapException( @Nonnull String message, @Nullable Throwable cause, @Nonnull Object[] arguments )
+        private BootstrapException( @Nonnull String message, @Nonnull Object[] arguments )
         {
-            super( message, cause );
-            this.arguments = arguments;
+            FormattingTuple tuple = MessageFormatter.arrayFormat( message, arguments );
+            this.message = tuple.getMessage();
+            this.arguments = tuple.getArgArray();
+            initCause( tuple.getThrowable() );
+        }
+
+        @Nonnull
+        @Override
+        public String getMessage()
+        {
+            return this.message;
+        }
+
+        @Override
+        public String getLocalizedMessage()
+        {
+            return this.message;
         }
 
         @Nonnull

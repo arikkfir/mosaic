@@ -6,5 +6,6 @@ package org.mosaic.lifecycle.impl;
 public enum ActivationReason
 {
     MODULE_STARTED,
-    DEPENDENCY_SATISFIED
+    DEPENDENCY_SATISFIED,
+    MANUAL
 }

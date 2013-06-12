@@ -37,7 +37,7 @@ public class PessimisticServiceRefDependency extends OptimisticServiceRefDepende
         else
         {
             // we now track more than one service and we are not allowed to auto-choose - deactivate
-            this.module.deactivate();
+            this.module.onDependencyUnsatisfied();
         }
     }
 }

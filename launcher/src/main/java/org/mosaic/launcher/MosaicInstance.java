@@ -1,19 +1,28 @@
 package org.mosaic.launcher;
 
+import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Properties;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.apache.felix.framework.Felix;
-import org.mosaic.launcher.logging.LoggingConfigurator;
+import org.mosaic.launcher.logging.ServerLoggingConfigurator;
+import org.mosaic.launcher.logging.SimpleLoggingConfigurator;
 import org.mosaic.launcher.osgi.BootBundlesWatcher;
 import org.mosaic.launcher.osgi.MosaicFelix;
+import org.mosaic.launcher.util.SystemError;
 import org.mosaic.launcher.util.Utils;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
-import org.osgi.framework.FrameworkEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,9 +31,9 @@ import static java.nio.file.Files.createDirectories;
 import static java.nio.file.Files.exists;
 import static org.mosaic.launcher.logging.EventsLogger.printEmphasizedWarnMessage;
 import static org.mosaic.launcher.util.Header.printHeader;
-import static org.mosaic.launcher.util.SystemError.BootstrapException;
 import static org.mosaic.launcher.util.SystemError.bootstrapError;
 import static org.mosaic.launcher.util.Utils.resolveDirectoryInHome;
+import static org.osgi.framework.FrameworkEvent.STOPPED;
 
 /**
  * @author arik
@@ -32,6 +41,12 @@ import static org.mosaic.launcher.util.Utils.resolveDirectoryInHome;
 public class MosaicInstance implements Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger( MosaicInstance.class );
+
+    /**
+     * The port on which the shutdown and restart requests are sent. If changing this value, remember to change it also
+     * in ServerImpl.
+     */
+    private static final int SHUTDOWN_PORT = 38631;
 
     @Nonnull
     private final Properties properties;
@@ -63,24 +78,15 @@ public class MosaicInstance implements Closeable
     private final Path felixWork;
 
     @Nonnull
-    private final LoggingConfigurator loggingConfigurator;
-
-    @Nonnull
     private final MosaicInstance.MosaicShutdownHook mosaicShutdownHook = new MosaicShutdownHook();
 
-    /**
-     * The exact time initialization started.
-     */
+    @Nonnull
+    private final Deque<BootTask> bootTasks = new ConcurrentLinkedDeque<>();
+
     private long initializationStartTime;
 
-    /**
-     * The exact time initialization finished.
-     */
     private long initializationFinishTime;
 
-    /**
-     * The OSGi container instance.
-     */
     @Nullable
     private Felix felix;
 
@@ -99,7 +105,194 @@ public class MosaicInstance implements Closeable
         this.logs = resolveDirectoryInHome( this.properties, this.home, "logs" );
         this.work = resolveDirectoryInHome( this.properties, this.home, "work" );
         this.felixWork = this.work.resolve( "felix" );
-        this.loggingConfigurator = new LoggingConfigurator( this );
+
+        this.bootTasks.addAll( Arrays.asList(
+                new BootTask( "home" )
+                {
+                    @Override
+                    protected void executeInternal() throws IOException
+                    {
+                        if( MosaicInstance.this.devMode )
+                        {
+                            LOG.warn( "Cleaning logs directory..." );
+                            if( exists( MosaicInstance.this.logs ) )
+                            {
+                                Utils.deleteContents( MosaicInstance.this.logs );
+                            }
+
+                            LOG.warn( "Cleaning work directory..." );
+                            if( exists( MosaicInstance.this.work ) )
+                            {
+                                Utils.deleteContents( MosaicInstance.this.work );
+                            }
+                        }
+                        else if( exists( MosaicInstance.this.felixWork ) )
+                        {
+                            LOG.warn( "Cleaning OSGi cache..." );
+                            Utils.deletePath( MosaicInstance.this.felixWork );
+                        }
+                        createDirectories( apps );
+                        createDirectories( etc );
+                        createDirectories( lib );
+                        createDirectories( logs );
+                        createDirectories( work );
+                    }
+                },
+                new BootTask( "logging" )
+                {
+                    @Override
+                    protected void executeInternal() throws Exception
+                    {
+                        new ServerLoggingConfigurator( MosaicInstance.this.properties, MosaicInstance.this.etc ).initializeLogging();
+                    }
+
+                    @Override
+                    protected void revertInternal() throws Exception
+                    {
+                        new SimpleLoggingConfigurator( MosaicInstance.this.properties ).initializeLogging();
+                    }
+                },
+                new BootTask( "osgi-framework" )
+                {
+                    @Override
+                    protected void executeInternal() throws BundleException
+                    {
+                        Felix felix = new MosaicFelix( MosaicInstance.this );
+                        felix.start();
+                        MosaicInstance.this.felix = felix;
+                    }
+
+                    @Override
+                    protected void revertInternal() throws BundleException, InterruptedException
+                    {
+                        Felix felix = MosaicInstance.this.felix;
+                        if( felix != null && felix.getState() == Bundle.ACTIVE )
+                        {
+                            felix.stop();
+                            while( true )
+                            {
+                                if( felix.waitForStop( 1000 ).getType() == STOPPED )
+                                {
+                                    break;
+                                }
+                            }
+                        }
+                        MosaicInstance.this.felix = null;
+                    }
+                },
+                new BootTask( "jvm-shutdown-hook" )
+                {
+                    @Override
+                    protected void executeInternal()
+                    {
+                        Runtime.getRuntime().addShutdownHook( MosaicInstance.this.mosaicShutdownHook );
+                    }
+
+                    @Override
+                    protected void revertInternal()
+                    {
+                        Runtime.getRuntime().removeShutdownHook( MosaicInstance.this.mosaicShutdownHook );
+                    }
+                },
+                new BootTask( "boot-bundles" )
+                {
+                    @Override
+                    protected void executeInternal()
+                    {
+                        Felix felix = MosaicInstance.this.felix;
+                        if( felix != null )
+                        {
+                            MosaicInstance.this.bootBundlesWatcher = new BootBundlesWatcher( MosaicInstance.this, felix );
+                        }
+                        else
+                        {
+                            throw new IllegalStateException( "Felix has not been initialized" );
+                        }
+                    }
+
+                    @Override
+                    protected void revertInternal() throws Exception
+                    {
+                        BootBundlesWatcher bootBundlesWatcher = MosaicInstance.this.bootBundlesWatcher;
+                        if( bootBundlesWatcher != null )
+                        {
+                            bootBundlesWatcher.stop();
+                        }
+                        else
+                        {
+                            throw new IllegalStateException( "Boot bundles watcher has not been initialized" );
+                        }
+                        MosaicInstance.this.bootBundlesWatcher = null;
+                    }
+                },
+                new BootTask( "mosaic-shutdown-listener" )
+                {
+                    private ServerSocket serverSocket;
+
+                    @Override
+                    protected void executeInternal() throws IOException
+                    {
+                        this.serverSocket = new ServerSocket( SHUTDOWN_PORT, 5, InetAddress.getLoopbackAddress() );
+                        new Thread( "MosaicShutdownListener" )
+                        {
+                            @Override
+                            public void run()
+                            {
+                                while( true )
+                                {
+                                    final Socket clientSocket;
+                                    try
+                                    {
+                                        clientSocket = serverSocket.accept();
+                                    }
+                                    catch( SocketException e )
+                                    {
+                                        LOG.info( "Mosaic shutdown listener closed" );
+                                        break;
+                                    }
+                                    catch( IOException e )
+                                    {
+                                        LOG.error( "Could not listen for shutdown requests on port {}: {}", SHUTDOWN_PORT, e.getMessage(), e );
+                                        break;
+                                    }
+
+                                    new Thread( "ShutdownRequestHandler" )
+                                    {
+                                        @Override
+                                        public void run()
+                                        {
+                                            try( BufferedReader reader = new BufferedReader( new InputStreamReader( clientSocket.getInputStream(), "UTF-8" ) ) )
+                                            {
+                                                String instruction = reader.readLine();
+                                                switch( instruction )
+                                                {
+                                                    case "SHUTDOWN":
+                                                        MosaicInstance.this.stop();
+                                                        break;
+                                                    case "RESTART":
+                                                        MosaicInstance.this.stop();
+                                                        MosaicInstance.this.start();
+                                                        break;
+                                                }
+                                            }
+                                            catch( IOException e )
+                                            {
+                                                LOG.error( "Error while processing request to shutdown listener: {}", e.getMessage(), e );
+                                            }
+                                        }
+                                    }.start();
+                                }
+                            }
+                        }.start();
+                    }
+
+                    @Override
+                    protected void revertInternal() throws IOException
+                    {
+                        this.serverSocket.close();
+                    }
+                }
+        ) );
     }
 
     @Nonnull
@@ -176,25 +369,32 @@ public class MosaicInstance implements Closeable
 
     public synchronized void start()
     {
-        this.initializationStartTime = System.currentTimeMillis();
-        this.initializationFinishTime = -1;
-
-        printHeader( this );
-        prepareHome();
-        this.loggingConfigurator.initializeLogging();
-        startFelix();
-        try
+        if( MosaicInstance.this.felix != null )
         {
-            //noinspection ConstantConditions
-            this.bootBundlesWatcher = new BootBundlesWatcher( this, this.felix );
-        }
-        catch( Exception e )
-        {
-            stop();
-            throw e;
+            throw bootstrapError( "Mosaic already started!" );
         }
 
-        // done!
+        MosaicInstance.this.initializationStartTime = System.currentTimeMillis();
+        MosaicInstance.this.initializationFinishTime = -1;
+        printHeader( MosaicInstance.this );
+
+        Deque<BootTask> executedTasks = new LinkedList<>();
+        for( BootTask task : this.bootTasks )
+        {
+            if( task.execute() )
+            {
+                executedTasks.push( task );
+            }
+            else
+            {
+                while( !executedTasks.isEmpty() )
+                {
+                    executedTasks.pop().revert();
+                }
+                throw SystemError.bootstrapError( "Could not start Mosaic server: boot phase {} failed", task.getName() );
+            }
+        }
+
         MosaicInstance.this.initializationFinishTime = currentTimeMillis();
         printEmphasizedWarnMessage( "Mosaic server is running (initialized in {})", getInitializationTime() );
     }
@@ -207,127 +407,20 @@ public class MosaicInstance implements Closeable
 
     public synchronized void stop()
     {
-        if( this.bootBundlesWatcher != null )
-        {
-            try
-            {
-                this.bootBundlesWatcher.stop();
-            }
-            catch( InterruptedException ignore )
-            {
-            }
-            this.bootBundlesWatcher = null;
-        }
-
         if( this.felix != null )
         {
-            try
-            {
-                this.felix.stop();
-                this.felix.waitForStop( 30000 );
-            }
-            catch( BundleException e )
-            {
-                throw new IllegalStateException( "Could not stop OSGi container: " + e.getMessage(), e );
-            }
-            catch( InterruptedException e )
-            {
-                throw new IllegalStateException( "Timed-out while waiting for OSGi container to stop.", e );
-            }
-            catch( Exception e )
-            {
-                throw new IllegalStateException( "Unknown error occurred while stopping Mosaic: " + e.getMessage(), e );
-            }
-            finally
-            {
-                this.felix = null;
-                try
-                {
-                    Runtime.getRuntime().removeShutdownHook( this.mosaicShutdownHook );
-                }
-                catch( Exception ignore )
-                {
-                }
-            }
-        }
-    }
+            printEmphasizedWarnMessage( "Mosaic server is stopping..." );
 
-    private void prepareHome()
-    {
-        try
-        {
-            // if dev mode, clean logs and all work dirs
-            if( this.devMode )
+            List<BootTask> reversedTasks = new ArrayList<>( this.bootTasks );
+            Collections.reverse( reversedTasks );
+            for( BootTask task : reversedTasks )
             {
-                LOG.warn( "Cleaning logs directory..." );
-                if( exists( this.logs ) )
-                {
-                    Utils.deleteContents( this.logs );
-                }
-
-                LOG.warn( "Cleaning work directory..." );
-                if( exists( this.work ) )
-                {
-                    Utils.deleteContents( this.work );
-                }
+                task.revert();
             }
-            else
-            {
-                // not dev mode - just clean felix storage directory
-                if( exists( this.felixWork ) )
-                {
-                    Utils.deletePath( this.felixWork );
-                }
-            }
-        }
-        catch( BootstrapException e )
-        {
-            throw e;
-        }
-        catch( Exception e )
-        {
-            throw bootstrapError( "Could not clean temporary work directories: {}", e.getMessage(), e );
-        }
 
-        try
-        {
-            createDirectories( this.apps );
-            createDirectories( this.etc );
-            createDirectories( this.lib );
-            createDirectories( this.logs );
-            createDirectories( this.work );
-        }
-        catch( IOException e )
-        {
-            throw bootstrapError( "Could not create server home directories: {}", e.getMessage(), e );
-        }
-    }
-
-    private void startFelix()
-    {
-        // create felix configuration
-        try
-        {
-            // create & start felix
-            Felix felix = new MosaicFelix( this );
-            felix.start();
-            this.felix = felix;
-
-            // install a shutdown hook to ensure we close the server when the JVM process dies
-            Runtime.getRuntime().addShutdownHook( this.mosaicShutdownHook );
-
-            // start a thread that monitors felix
-            new FrameworkStateMonitor().start();
-        }
-        catch( BootstrapException e )
-        {
-            stop();
-            throw e;
-        }
-        catch( Exception e )
-        {
-            stop();
-            throw bootstrapError( "Could not initialize OSGi container: {}", e.getMessage(), e );
+            printEmphasizedWarnMessage( "Mosaic system has been stopped (up-time was {})", getUpTime() );
+            MosaicInstance.this.initializationFinishTime = -1;
+            MosaicInstance.this.initializationStartTime = -1;
         }
     }
 
@@ -349,71 +442,6 @@ public class MosaicInstance implements Closeable
             {
                 LOG.warn( e.getMessage(), e );
             }
-        }
-    }
-
-    private class FrameworkStateMonitor extends Thread
-    {
-        private FrameworkStateMonitor()
-        {
-            setName( "FelixMonitor" );
-            setDaemon( false );
-            setPriority( Thread.MIN_PRIORITY );
-        }
-
-        @Override
-        public void run()
-        {
-            Felix felix = MosaicInstance.this.felix;
-            while( felix != null )
-            {
-                try
-                {
-                    int event = felix.waitForStop( 1000l ).getType();
-                    if( event == FrameworkEvent.STOPPED )
-                    {
-                        // clear Felix reference
-                        MosaicInstance.this.felix = null;
-
-                        printEmphasizedWarnMessage( "Mosaic system has been stopped (up-time was {})", getUpTime() );
-
-                        // if restarting - start a new thread which will call Main again
-                        if( Boolean.getBoolean( "mosaic.restarting" ) )
-                        {
-                            // reset the 'restarting' flag
-                            System.setProperty( "mosaic.restarting", "false" );
-
-                            // wait a little for things to calm down
-                            Thread.sleep( 2000 );
-
-                            // start a new thread which will start the server
-                            new StartRunnable().start();
-                        }
-                        return;
-                    }
-                }
-                catch( InterruptedException e )
-                {
-                    break;
-                }
-                felix = MosaicInstance.this.felix;
-            }
-        }
-    }
-
-    private class StartRunnable extends Thread
-    {
-        private StartRunnable()
-        {
-            setName( "MosaicRunner" );
-            setDaemon( false );
-            setPriority( Thread.MAX_PRIORITY );
-        }
-
-        @Override
-        public void run()
-        {
-            MosaicInstance.this.start();
         }
     }
 }

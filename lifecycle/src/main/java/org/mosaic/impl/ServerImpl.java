@@ -1,5 +1,8 @@
 package org.mosaic.impl;
 
+import java.io.OutputStreamWriter;
+import java.net.InetAddress;
+import java.net.Socket;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import javax.annotation.Nonnull;
@@ -9,8 +12,6 @@ import org.mosaic.lifecycle.impl.util.ServiceUtils;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.Version;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 
@@ -19,7 +20,11 @@ import org.springframework.beans.factory.InitializingBean;
  */
 public class ServerImpl implements Server, InitializingBean, DisposableBean
 {
-    private static final Logger LOG = LoggerFactory.getLogger( ServerImpl.class );
+    /**
+     * The port on which the shutdown and restart requests are sent. If changing this value, remember to change it also
+     * in MosaicInstance.
+     */
+    private static final int SHUTDOWN_PORT = 38631;
 
     @Nonnull
     private final Version version;
@@ -76,60 +81,31 @@ public class ServerImpl implements Server, InitializingBean, DisposableBean
     @Override
     public void shutdown()
     {
-        new Thread( new Runnable()
+        try( Socket socket = new Socket( InetAddress.getLoopbackAddress(), SHUTDOWN_PORT ) )
         {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    // please ensure this logging dogma matches the one in launcher module's EventsLogger
-                    LoggerFactory.getLogger( "org.osgi.framework" ).warn( "" );
-                    LoggerFactory.getLogger( "org.osgi.framework" ).warn( "*****************************************************************************************" );
-                    LoggerFactory.getLogger( "org.osgi.framework" ).warn( "Shutting down Mosaic server" );
-                    LoggerFactory.getLogger( "org.osgi.framework" ).warn( "*****************************************************************************************" );
-                    LoggerFactory.getLogger( "org.osgi.framework" ).warn( "" );
-
-                    // stop the OSGi container (the mosaic launcher will take care of the rest)
-                    bundleContext.getBundle( 0 ).stop();
-                }
-                catch( Exception e )
-                {
-                    LOG.error( "Could not shutdown Mosaic server: {}", e.getMessage(), e );
-                }
-            }
-        }, "MosaicShutdown" ).start();
+            OutputStreamWriter writer = new OutputStreamWriter( socket.getOutputStream(), "UTF-8" );
+            writer.write( "SHUTDOWN" );
+            writer.flush();
+        }
+        catch( Exception e )
+        {
+            throw new IllegalStateException( "Error shutting down Mosaic server: " + e.getMessage(), e );
+        }
     }
 
     @Override
     public void restart()
     {
-        // let the mosaic launcher know we want to restart, rather than stop
-        System.setProperty( "mosaic.restarting", "true" );
-
-        new Thread( new Runnable()
+        try( Socket socket = new Socket( InetAddress.getLoopbackAddress(), SHUTDOWN_PORT ) )
         {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    // please ensure this logging dogma matches the one in launcher module's EventsLogger
-                    LoggerFactory.getLogger( "org.osgi.framework" ).warn( "" );
-                    LoggerFactory.getLogger( "org.osgi.framework" ).warn( "*****************************************************************************************" );
-                    LoggerFactory.getLogger( "org.osgi.framework" ).warn( "Restarting Mosaic server" );
-                    LoggerFactory.getLogger( "org.osgi.framework" ).warn( "*****************************************************************************************" );
-                    LoggerFactory.getLogger( "org.osgi.framework" ).warn( "" );
-
-                    // stop the OSGi container (the mosaic launcher will take care of the rest)
-                    bundleContext.getBundle( 0 ).stop();
-                }
-                catch( Exception e )
-                {
-                    LOG.error( "Could not restart Mosaic server: {}", e.getMessage(), e );
-                }
-            }
-        }, "MosaicRestart" ).start();
+            OutputStreamWriter writer = new OutputStreamWriter( socket.getOutputStream(), "UTF-8" );
+            writer.write( "RESTART" );
+            writer.flush();
+        }
+        catch( Exception e )
+        {
+            throw new IllegalStateException( "Error shutting down Mosaic server: " + e.getMessage(), e );
+        }
     }
 
     @Nonnull

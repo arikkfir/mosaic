@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class EventsLogger
 {
-    private static final Logger LOG = LoggerFactory.getLogger( "org.osgi.framework" );
+    private static final Logger LOG = LoggerFactory.getLogger( "org.mosaic.events" );
 
     public static void printEmphasizedInfoMessage( @Nonnull String message, @Nullable Object... args )
     {

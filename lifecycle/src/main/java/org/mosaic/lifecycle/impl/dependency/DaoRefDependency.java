@@ -8,7 +8,6 @@ import javax.annotation.Nullable;
 import javax.sql.DataSource;
 import org.mosaic.database.dao.DaoFactory;
 import org.mosaic.lifecycle.ModuleState;
-import org.mosaic.lifecycle.impl.ActivationReason;
 import org.mosaic.lifecycle.impl.ModuleImpl;
 import org.mosaic.util.reflection.MethodHandle;
 import org.mosaic.util.reflection.MethodParameter;
@@ -177,12 +176,12 @@ public class DaoRefDependency extends AbstractBeanDependency
             }
             else
             {
-                module.activateIfReady( ActivationReason.DEPENDENCY_SATISFIED );
+                module.onDependencySatisfied();
             }
         }
         else
         {
-            this.module.deactivate();
+            this.module.onDependencyUnsatisfied();
             this.dao = null;
             this.dataSource = null;
             this.daoFactory = null;
