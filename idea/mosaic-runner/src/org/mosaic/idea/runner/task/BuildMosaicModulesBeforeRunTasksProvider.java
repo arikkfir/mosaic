@@ -8,10 +8,14 @@ import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.module.Module;
+import com.intellij.openapi.module.ModulePointer;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.ui.DialogBuilder;
+import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.util.IconLoader;
 import com.intellij.openapi.util.Key;
+import java.util.LinkedList;
 import java.util.List;
 import javax.swing.Icon;
 import org.jetbrains.annotations.Nullable;
@@ -20,7 +24,6 @@ import org.mosaic.idea.module.facet.ModuleFacet;
 
 import static com.intellij.openapi.actionSystem.PlatformDataKeys.PROJECT;
 import static java.util.Arrays.asList;
-import static org.mosaic.idea.module.facet.ModuleFacet.getBuildableModules;
 
 /**
  * @author arik
@@ -64,8 +67,7 @@ public class BuildMosaicModulesBeforeRunTasksProvider extends BeforeRunTaskProvi
 
     public boolean isConfigurable()
     {
-        // TODO arik: allow configuring task to select which modules to build
-        return false;
+        return true;
     }
 
     public boolean canExecuteTask( RunConfiguration runConfiguration,
@@ -74,11 +76,18 @@ public class BuildMosaicModulesBeforeRunTasksProvider extends BeforeRunTaskProvi
         return true;
     }
 
+    @Override
+    public boolean isSingleton()
+    {
+        return true;
+    }
+
     @Nullable
     @Override
     public BuildMosaicModulesBeforeRunTask createTask( RunConfiguration runConfiguration )
     {
-        BuildMosaicModulesBeforeRunTask task = new BuildMosaicModulesBeforeRunTask();
+        // TODO arik: only return non-null when run configuration is a mosaic server run configuration
+        BuildMosaicModulesBeforeRunTask task = new BuildMosaicModulesBeforeRunTask( runConfiguration.getProject() );
         task.setEnabled( true );
         return task;
     }
@@ -86,14 +95,35 @@ public class BuildMosaicModulesBeforeRunTasksProvider extends BeforeRunTaskProvi
     @Override
     public boolean configureTask( RunConfiguration runConfiguration, BuildMosaicModulesBeforeRunTask task )
     {
-        // TODO arik: allow user to choose which modules are built by this task
-        return false;
+        SelectMosaicModulesForm chooser = new SelectMosaicModulesForm( runConfiguration.getProject() );
+        List<ModulePointer> selectedModules = task.getModulesToBuild();
+        if( selectedModules != null )
+        {
+            chooser.setSelectedModules( selectedModules );
+        }
+
+        DialogBuilder builder = new DialogBuilder( runConfiguration.getProject() );
+        builder.setTitle( "Select modules to build" );
+        builder.setDimensionServiceKey( "#BuildMosaicModulesBeforeRunChooser" );
+        builder.addOkAction();
+        builder.addCancelAction();
+        builder.setCenterPanel( chooser.getPanel() );
+        builder.setPreferredFocusComponent( chooser.getPreferredFocusComponent() );
+        if( builder.show() == DialogWrapper.OK_EXIT_CODE )
+        {
+            task.setModulesToBuild( chooser.getSelectedModules() );
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
     public boolean executeTask( DataContext dataContext,
                                 final RunConfiguration runConfiguration,
                                 ExecutionEnvironment executionEnvironment,
-                                BuildMosaicModulesBeforeRunTask buildMosaicModulesBeforeRunTask )
+                                BuildMosaicModulesBeforeRunTask beforeRunTask )
     {
         Project project = PROJECT.getData( dataContext );
         if( project == null )
@@ -101,35 +131,43 @@ public class BuildMosaicModulesBeforeRunTasksProvider extends BeforeRunTaskProvi
             return true;
         }
 
-        List<ModuleFacet> moduleFacets;
+        List<Module> modules;
 
-        List<Module> modules = buildMosaicModulesBeforeRunTask.getModules();
-        if( modules == null )
+        List<ModulePointer> modulePointers = beforeRunTask.getModulesToBuild();
+        if( modulePointers == null )
         {
             if( runConfiguration instanceof ModuleRunProfile )
             {
                 ModuleRunProfile moduleRunProfile = ( ModuleRunProfile ) runConfiguration;
-                moduleFacets = getBuildableModules( asList( moduleRunProfile.getModules() ) );
+                modules = ModuleFacet.findMosaicModules( asList( moduleRunProfile.getModules() ) );
             }
             else
             {
-                moduleFacets = getBuildableModules( project );
+                modules = ModuleFacet.findMosaicModules( project );
             }
         }
         else
         {
-            moduleFacets = ModuleFacet.getBuildableModules( modules );
+            modules = new LinkedList<>();
+            for( ModulePointer modulePointer : modulePointers )
+            {
+                Module module = modulePointer.getModule();
+                if( module != null )
+                {
+                    modules.add( module );
+                }
+            }
         }
 
-        final BuildModulesTask task = new BuildModulesTask( project, moduleFacets );
+        final BuildModulesTask buildModulesTask = new BuildModulesTask( project, modules );
         ApplicationManager.getApplication().invokeAndWait( new Runnable()
         {
             @Override
             public void run()
             {
-                ProgressManager.getInstance().run( task.asModal() );
+                ProgressManager.getInstance().run( buildModulesTask.asModal() );
             }
         }, ModalityState.any() );
-        return task.isSuccessful();
+        return buildModulesTask.isSuccessful();
     }
 }

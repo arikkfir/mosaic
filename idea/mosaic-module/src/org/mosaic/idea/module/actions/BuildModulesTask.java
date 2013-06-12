@@ -1,5 +1,6 @@
 package org.mosaic.idea.module.actions;
 
+import com.intellij.openapi.module.Module;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
@@ -13,19 +14,19 @@ import org.mosaic.idea.module.facet.ModuleFacet;
  */
 public class BuildModulesTask extends Task.Modal
 {
-    private final List<ModuleFacet> moduleFacets;
+    private final List<Module> modules;
 
     private boolean successful;
 
     public BuildModulesTask( @NotNull Project project )
     {
-        this( project, ModuleFacet.getBuildableModules( project ) );
+        this( project, ModuleFacet.findMosaicModules( project ) );
     }
 
-    public BuildModulesTask( @NotNull Project project, @NotNull List<ModuleFacet> moduleFacets )
+    public BuildModulesTask( @NotNull Project project, @NotNull List<Module> modules )
     {
         super( project, "Building Mosaic modules", true );
-        this.moduleFacets = moduleFacets;
+        this.modules = modules;
     }
 
     public boolean isSuccessful()
@@ -39,7 +40,7 @@ public class BuildModulesTask extends Task.Modal
         BuildMessages.getInstance( getProject() ).clearBundleMessages();
 
         this.successful = true;
-        if( this.moduleFacets.isEmpty() )
+        if( this.modules.isEmpty() )
         {
             return;
         }
@@ -49,9 +50,9 @@ public class BuildModulesTask extends Task.Modal
             indicator.setIndeterminate( false );
             indicator.setFraction( 0d );
             indicator.setText( "Building Mosaic modules..." );
-            for( int i = 0; i < moduleFacets.size(); i++ )
+            for( int i = 0; i < this.modules.size(); i++ )
             {
-                ModuleFacet facet = moduleFacets.get( i );
+                ModuleFacet facet = ModuleFacet.getInstance( this.modules.get( i ) );
                 if( indicator.isCanceled() )
                 {
                     this.successful = false;
@@ -60,7 +61,7 @@ public class BuildModulesTask extends Task.Modal
 
                 indicator.setText2( "[" + facet.getModule().getName() + "]" );
                 this.successful = this.successful && facet.build();
-                indicator.setFraction( ( i + 1 ) / moduleFacets.size() );
+                indicator.setFraction( ( i + 1 ) / this.modules.size() );
             }
         }
         catch( Exception e )

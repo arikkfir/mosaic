@@ -58,21 +58,20 @@ public class ModuleFacet extends Facet<ModuleFacetConfiguration>
     //      this means that 'getOut(moduleB)' returns moduleC
     // Graph<Module> graph = ModuleManager.getInstance( project ).moduleGraph();
 
-    public static List<ModuleFacet> getBuildableModules( Project project )
+    public static List<Module> findMosaicModules( Project project )
     {
         AccessToken lock = ApplicationManager.getApplication().acquireReadActionLock();
         try
         {
-            List<ModuleFacet> facets = new LinkedList<>();
-            for( Module module : asList( ModuleManager.getInstance( project ).getSortedModules() ) )
+            List<Module> modules = new LinkedList<>();
+            for( Module module : asList( ModuleManager.getInstance( project ).getModules() ) )
             {
-                ModuleFacet facet = getInstance( module );
-                if( facet != null && !facets.contains( facet ) )
+                if( ModuleFacet.getInstance( module ) != null )
                 {
-                    facets.add( facet );
+                    modules.add( module );
                 }
             }
-            return facets;
+            return modules;
         }
         finally
         {
@@ -80,21 +79,20 @@ public class ModuleFacet extends Facet<ModuleFacetConfiguration>
         }
     }
 
-    public static List<ModuleFacet> getBuildableModules( List<Module> modules )
+    public static List<Module> findMosaicModules( List<Module> allModules )
     {
         AccessToken lock = ApplicationManager.getApplication().acquireReadActionLock();
         try
         {
-            List<ModuleFacet> facets = new LinkedList<>();
-            for( Module module : modules )
+            List<Module> modules = new LinkedList<>();
+            for( Module module : allModules )
             {
-                ModuleFacet facet = getInstance( module );
-                if( facet != null && !facets.contains( facet ) )
+                if( ModuleFacet.getInstance( module ) != null )
                 {
-                    facets.add( facet );
+                    modules.add( module );
                 }
             }
-            return facets;
+            return modules;
         }
         finally
         {
