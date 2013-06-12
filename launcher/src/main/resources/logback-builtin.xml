@@ -100,20 +100,7 @@
         <appender-ref ref="global"/>
     </root>
 
-    <!-- reduce verbosity of ssh sessions -->
-    <logger name="org.mosaic.shell.impl.session.MosaicServerSession" level="WARN"/>
-    <logger name="org.mosaic.lifecycle.impl.ModuleApplicationContext" level="WARN"/>
-
-    <!-- disable internal 3rd-party logging statements, they're not interesting -->
-    <logger name="com.google.common.io.Closeables" level="OFF"/>
-    <logger name="freemarker.runtime" level="OFF"/>
-    <logger name="net.schmizz.sshj" level="WARN"/>
-    <logger name="org.apache.sshd" level="WARN"/>
-    <logger name="org.eclipse.jetty" level="WARN"/>
-    <logger name="org.hibernate" level="WARN"/>
-    <logger name="org.mortbay" level="WARN"/>
-    <logger name="org.osgi" level="OFF"/>
-    <logger name="org.quartz" level="WARN"/>
-    <logger name="org.springframework" level="WARN"/>
+    <!-- default loggers configuration -->
+    <include resource="logback-default-loggers.xml"/>
 
 </configuration>
