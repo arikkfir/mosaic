@@ -143,13 +143,19 @@ public class MosaicInstance implements Closeable
                     @Override
                     protected void executeInternal() throws Exception
                     {
-                        new ServerLoggingConfigurator( MosaicInstance.this.properties, MosaicInstance.this.etc ).initializeLogging();
+                        if( !isDevMode() )
+                        {
+                            new ServerLoggingConfigurator( MosaicInstance.this.properties, MosaicInstance.this.etc ).initializeLogging();
+                        }
                     }
 
                     @Override
                     protected void revertInternal() throws Exception
                     {
-                        new SimpleLoggingConfigurator( MosaicInstance.this.properties ).initializeLogging();
+                        if( !isDevMode() )
+                        {
+                            new SimpleLoggingConfigurator( MosaicInstance.this.properties ).initializeLogging();
+                        }
                     }
                 },
                 new BootTask( "osgi-framework" )
