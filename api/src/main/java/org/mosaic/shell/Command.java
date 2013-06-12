@@ -8,6 +8,14 @@ import javax.annotation.Nullable;
  */
 public interface Command
 {
+    int SUCCESS = 0;
+
+    int ILLEGAL_USAGE = -1;
+
+    int INSUFFICIENT_CONSOLE_SPACE = -2;
+
+    int INTERNAL_ERROR = -99;
+
     @Nonnull
     String getName();
 

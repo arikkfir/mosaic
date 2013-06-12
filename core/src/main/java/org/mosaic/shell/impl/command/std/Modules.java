@@ -6,6 +6,7 @@ import java.net.URL;
 import java.util.*;
 import javax.annotation.Nonnull;
 import org.mosaic.lifecycle.Module;
+import org.mosaic.lifecycle.ModuleInstallException;
 import org.mosaic.lifecycle.ModuleManager;
 import org.mosaic.lifecycle.annotation.Bean;
 import org.mosaic.lifecycle.annotation.ServiceRef;
@@ -13,7 +14,6 @@ import org.mosaic.shell.Console;
 import org.mosaic.shell.annotation.*;
 
 import static com.google.common.base.Strings.padStart;
-import static org.joda.time.Duration.standardSeconds;
 
 /**
  * @author arik
@@ -30,39 +30,49 @@ public class Modules
         this.moduleManager = moduleManager;
     }
 
-    @Command( name = "install-module", label = "Install module", desc = "Install a new module from a given location." )
-    public int installModule( @Nonnull Console console,
-
-                              @Option @Alias( "t" ) @Desc( "timeout" )
-                              Integer timeout,
-
-                              @Arguments @Nonnull String... locations )
+    @Command(name = "install-module", label = "Install module", desc = "Install a new module from a given location.")
+    public int installModule( @Nonnull Console console, @Arguments @Nonnull String... locations )
             throws IOException
     {
-        int exitCode = 0;
-        if( timeout == null )
+        if( locations.length == 0 )
         {
-            timeout = 5;
+            console.println( "No location specified!" );
+            return org.mosaic.shell.Command.ILLEGAL_USAGE;
+        }
+        else if( locations.length > 1 )
+        {
+            console.println( "Only one location can be specified!" );
+            return org.mosaic.shell.Command.ILLEGAL_USAGE;
         }
 
-        for( String location : locations )
+        URL url = new URL( locations[ 0 ] );
+        console.println( "Installing module from '" + url + "'..." );
+
+        Module module;
+        try
         {
-            URL url = new URL( location );
-            console.println( "Installing module from '" + url + "'..." );
-            try
-            {
-                this.moduleManager.installModule( url ).waitForActivation( standardSeconds( timeout ) );
-            }
-            catch( Exception e )
-            {
-                console.printStackTrace( "Could not install module from '" + location + "': " + e.getMessage(), e );
-                exitCode = 1;
-            }
+            module = this.moduleManager.installModule( url );
         }
-        return exitCode;
+        catch( ModuleInstallException e )
+        {
+            console.printStackTrace( "Could not install module from '" + url + "': " + e.getMessage(), e );
+            return 1;
+        }
+
+        try
+        {
+            module.activate();
+        }
+        catch( Exception e )
+        {
+            console.printStackTrace( "Could not activate module from '" + url + "': " + e.getMessage(), e );
+            return 2;
+        }
+
+        return 0;
     }
 
-    @Command( name = "list-modules", label = "List modules", desc = "List installed modules." )
+    @Command(name = "list-modules", label = "List modules", desc = "List installed modules.")
     public void listModules( @Nonnull Console console ) throws IOException
     {
         Console.TableHeaders table = console.createTable();
@@ -86,25 +96,25 @@ public class Modules
         printer.done();
     }
 
-    @Command( name = "inspect-module", label = "Inspect module(s)", desc = "Inspects and show information about installed modules." )
+    @Command(name = "inspect-module", label = "Inspect module(s)", desc = "Inspects and show information about installed modules.")
     public void inspectModule( @Nonnull Console console,
 
-                               @Option @Alias( "e" ) @Desc( "use exact matching of module names" )
+                               @Option @Alias("e") @Desc("use exact matching of module names")
                                boolean exact,
 
-                               @Option @Alias( "h" ) @Desc( "show module headers" )
+                               @Option @Alias("h") @Desc("show module headers")
                                boolean showHeaders,
 
-                               @Option @Alias( "s" ) @Desc( "show module service declarations and usages" )
+                               @Option @Alias("s") @Desc("show module service declarations and usages")
                                boolean showServices,
 
-                               @Option @Alias( "p" ) @Desc( "show module package imports and exports" )
+                               @Option @Alias("p") @Desc("show module package imports and exports")
                                boolean showPackages,
 
-                               @Option @Alias( "c" ) @Desc( "show module content" )
+                               @Option @Alias("c") @Desc("show module content")
                                boolean showContents,
 
-                               @Option @Alias( "a" ) @Desc( "show all" )
+                               @Option @Alias("a") @Desc("show all")
                                boolean all,
 
                                @Nonnull @Arguments String... moduleNames ) throws IOException

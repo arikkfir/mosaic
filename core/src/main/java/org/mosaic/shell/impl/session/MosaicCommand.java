@@ -14,7 +14,6 @@ import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.session.ServerSession;
-import org.mosaic.shell.CommandExecutionException;
 import org.mosaic.shell.TerminateSessionException;
 import org.mosaic.shell.impl.command.CommandManager;
 
@@ -98,15 +97,10 @@ public class MosaicCommand implements Command, SessionAware
             {
                 // we can ignore this since the command already finished, we can gracefuly exit
             }
-            catch( CommandExecutionException e )
-            {
-                console.printStackTrace( e );
-                exitCode = e.getExitCode();
-            }
             catch( Exception e )
             {
                 console.printStackTrace( e );
-                exitCode = 1;
+                exitCode = org.mosaic.shell.Command.INTERNAL_ERROR;
             }
         }
 
@@ -120,7 +114,7 @@ public class MosaicCommand implements Command, SessionAware
         }
     }
 
-    @SuppressWarnings( "deprecation" )
+    @SuppressWarnings("deprecation")
     @Override
     public void destroy()
     {

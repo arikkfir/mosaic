@@ -101,7 +101,7 @@ public class CommandManager
         this.conversionService = conversionService;
     }
 
-    @MethodEndpointBind( org.mosaic.shell.annotation.Command.class )
+    @MethodEndpointBind(org.mosaic.shell.annotation.Command.class)
     public void addCommand( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
     {
         Map<Long, CommandExecutor> commands = this.commands;
@@ -111,7 +111,7 @@ public class CommandManager
         }
     }
 
-    @MethodEndpointUnbind( org.mosaic.shell.annotation.Command.class )
+    @MethodEndpointUnbind(org.mosaic.shell.annotation.Command.class)
     public void removeCommand( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
     {
         Map<Long, CommandExecutor> commands = this.commands;
@@ -141,8 +141,7 @@ public class CommandManager
         }
     }
 
-    public int execute( @Nonnull Console console, @Nonnull String line )
-            throws IOException, CommandDefinitionException, IllegalUsageException, CommandExecutionException
+    public int execute( @Nonnull Console console, @Nonnull String line ) throws IOException
     {
         String[] tokens = line.split( " " );
 
@@ -340,34 +339,41 @@ public class CommandManager
         }
 
         @Override
-        public int execute( @Nonnull Console console, @Nonnull String... arguments )
-                throws CommandDefinitionException, IllegalUsageException, CommandExecutionException, IOException
+        public int execute( @Nonnull Console console, @Nonnull String... arguments ) throws IOException
         {
-            org.apache.commons.cli.Options cliOptions = getCommandCliOptions();
             try
             {
+                org.apache.commons.cli.Options cliOptions = getCommandCliOptions();
                 CommandLineParser parser = new PosixParser();
                 final CommandLine cmd = parser.parse( cliOptions, arguments, false );
                 return this.command.execute( console, new OptionsImpl( cliOptions, cmd, console ) );
             }
-            catch( IllegalUsageException | RequiredOptionMissingException | ParseException e )
+            catch( ParseException e )
             {
-                printUsage( console );
+                try
+                {
+                    printUsage( console );
+                }
+                catch( CommandDefinitionException ignore )
+                {
+                }
                 console.println( e.getMessage() );
-                return 2;
+                return Command.ILLEGAL_USAGE;
             }
             catch( InsufficientConsoleWidthException e )
             {
                 console.println( e.getMessage() );
-                return 3;
+                return Command.INSUFFICIENT_CONSOLE_SPACE;
             }
             catch( CommandExecutionException e )
             {
-                throw e;
+                console.printStackTrace( e.getMessage(), e );
+                return e.getExitCode();
             }
-            catch( Exception e )
+            catch( NoClassDefFoundError | Exception e )
             {
-                throw new CommandExecutionException( this.command.getName(), 1, e );
+                console.printStackTrace( "Error executing command '" + this.command.getName() + "': " + e.getMessage(), e );
+                return Command.INTERNAL_ERROR;
             }
         }
 
@@ -681,7 +687,7 @@ public class CommandManager
             }
             else
             {
-                return 0;
+                return Command.SUCCESS;
             }
         }
 

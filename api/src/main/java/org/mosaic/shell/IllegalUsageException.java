@@ -5,20 +5,10 @@ import javax.annotation.Nonnull;
 /**
  * @author arik
  */
-public class IllegalUsageException extends Exception
+public class IllegalUsageException extends CommandExecutionException
 {
-    @Nonnull
-    private final String command;
-
     public IllegalUsageException( @Nonnull String command, String message )
     {
-        super( "Illegal usage for command '" + command + "': " + message );
-        this.command = command;
-    }
-
-    @Nonnull
-    public String getCommand()
-    {
-        return command;
+        super( command, Command.ILLEGAL_USAGE, "Illegal usage for command '" + command + "': " + message );
     }
 }
