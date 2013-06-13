@@ -9,7 +9,7 @@
     <!-- disable internal 3rd-party logging statements, they're not interesting -->
     <logger name="com.google.common.io.Closeables" level="OFF"/>
     <logger name="freemarker.runtime" level="OFF"/>
-    <logger name="net.schmizz.sshj" level="WARN"/>
+    <logger name="net.schmizz.sshj" level="ERROR"/>
     <logger name="org.apache.sshd" level="WARN"/>
     <logger name="org.eclipse.jetty" level="WARN"/>
     <logger name="org.hibernate" level="WARN"/>
