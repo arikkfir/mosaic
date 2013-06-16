@@ -80,7 +80,6 @@ public class ConversionServiceImpl implements ConversionService, ServiceListener
         if( this.bundleContext != null && this.serviceRegistration != null )
         {
             this.serviceRegistration = ServiceUtils.unregister( this.serviceRegistration );
-            this.serviceRegistration = null;
         }
     }
 
