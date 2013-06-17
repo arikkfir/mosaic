@@ -26,6 +26,18 @@ public class WebAppWired
     }
 
     @Command
+    public int checkWebAppContentRoot() throws IOException
+    {
+        if( this.webApp == null )
+        {
+            return -1;
+        }
+        checkState( this.webApp.getContentRoots().size() == 1, "wrong content roots size: " + this.webApp.getContentRoots().size() );
+        checkState( this.webApp.getContentRoots().contains( Paths.get( "/some/dir/module02-updated" ) ), "wrong content roots: " + this.webApp.getContentRoots() );
+        return 0;
+    }
+
+    @Command
     public int checkWebAppWired() throws IOException
     {
         if( this.webApp == null )
