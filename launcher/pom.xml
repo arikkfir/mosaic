@@ -37,7 +37,8 @@
                                     <include>com.google.guava:guava</include>
                                     <include>joda-time:joda-time</include>
                                     <include>javax.activation:activation</include>
-                                    <include>org.slf4j:*</include>
+                                    <include>org.slf4j:slf4j-api</include>
+                                    <include>org.slf4j:jul-to-slf4j</include>
                                     <include>ch.qos.logback:*</include>
                                 </includes>
                             </artifactSet>
