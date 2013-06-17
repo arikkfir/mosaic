@@ -105,10 +105,10 @@
         <moduleSet>
             <includes>
                 <include>org.mosaic:api</include>
-                <include>org.mosaic:lifecycle</include>
                 <include>org.mosaic:config</include>
                 <include>org.mosaic:database</include>
                 <include>org.mosaic:event</include>
+                <include>org.mosaic:lifecycle</include>
                 <include>org.mosaic:mail</include>
                 <include>org.mosaic:security</include>
                 <include>org.mosaic:shell</include>
