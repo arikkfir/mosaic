@@ -24,12 +24,12 @@
     <xsd:complexType name="roleType">
         <xsd:choice minOccurs="0" maxOccurs="unbounded">
             <xsd:element type="roleType" name="role"/>
-            <xsd:element type="permissionType" name="permission"/>
+            <xsd:element name="permission">
+                <xsd:complexType>
+                    <xsd:attribute type="xsd:string" name="name" use="required"/>
+                </xsd:complexType>
+            </xsd:element>
         </xsd:choice>
-        <xsd:attribute type="xsd:string" name="name" use="required"/>
-    </xsd:complexType>
-
-    <xsd:complexType name="permissionType">
         <xsd:attribute type="xsd:string" name="name" use="required"/>
     </xsd:complexType>
 

@@ -6,33 +6,33 @@
             elementFormDefault="qualified"
             attributeFormDefault="unqualified">
 
-    <xsd:element name="users" type="usersType"/>
-
-    <xsd:complexType name="usersType">
-        <xsd:sequence>
-            <xsd:element type="userType" name="user" minOccurs="0" maxOccurs="unbounded"/>
-        </xsd:sequence>
-    </xsd:complexType>
-
-    <xsd:complexType name="userType">
-        <xsd:sequence>
-            <xsd:element type="passwordType" name="password" minOccurs="0" maxOccurs="1"/>
-            <xsd:element type="xsd:string" name="public-keys" minOccurs="0" maxOccurs="1"/>
-            <xsd:element type="rolesType" name="roles" minOccurs="0" maxOccurs="1"/>
-        </xsd:sequence>
-        <xsd:attribute name="name" type="xsd:string" use="required"/>
-    </xsd:complexType>
-
-    <xsd:complexType name="passwordType">
-        <xsd:attribute name="value" type="xsd:string" use="required"/>
-        <xsd:attribute name="encryption" type="passwordEncryptionType" use="required"/>
-    </xsd:complexType>
-
-    <xsd:complexType name="rolesType">
-        <xsd:sequence>
-            <xsd:element type="xsd:string" name="role" minOccurs="0" maxOccurs="unbounded"/>
-        </xsd:sequence>
-    </xsd:complexType>
+    <xsd:element name="users">
+        <xsd:complexType>
+            <xsd:sequence>
+                <xsd:element name="user" minOccurs="0" maxOccurs="unbounded">
+                    <xsd:complexType>
+                        <xsd:sequence>
+                            <xsd:element name="password" minOccurs="0" maxOccurs="1">
+                                <xsd:complexType>
+                                    <xsd:attribute name="value" type="xsd:string" use="required"/>
+                                    <xsd:attribute name="encryption" type="passwordEncryptionType" use="required"/>
+                                </xsd:complexType>
+                            </xsd:element>
+                            <xsd:element name="public-keys" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+                            <xsd:element name="roles" minOccurs="0" maxOccurs="1">
+                                <xsd:complexType>
+                                    <xsd:sequence>
+                                        <xsd:element name="role" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+                                    </xsd:sequence>
+                                </xsd:complexType>
+                            </xsd:element>
+                        </xsd:sequence>
+                        <xsd:attribute name="name" type="xsd:string" use="required"/>
+                    </xsd:complexType>
+                </xsd:element>
+            </xsd:sequence>
+        </xsd:complexType>
+    </xsd:element>
 
     <xsd:simpleType name="passwordEncryptionType">
         <xsd:restriction base="xsd:string">

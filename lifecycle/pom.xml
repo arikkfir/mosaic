@@ -20,25 +20,14 @@
                 <configuration>
                     <instructions>
                         <Bundle-Activator>org.mosaic.impl.MosaicActivator</Bundle-Activator>
-                        <Export-Package>
-                            !*impl*,
-                            !*internal*,
-                            {local-packages},
-                            groovy*;version=2.1.3,
-                            org.codehaus.groovy*;version=2.1.3
-                        </Export-Package>
                         <Embed-Dependency>
                             antlr,
-                            asm*,
                             com.springsource.org.aopalliance,
-                            commons-cli,
-                            groovy,
+                            metrics-core,
                             javassist,
-                            javax.mail,
                             jcl-over-slf4j,
                             jgrapht,
                             log4j-over-slf4j,
-                            metrics-core,
                             org.springframework.aop,
                             org.springframework.beans,
                             org.springframework.context,
@@ -48,44 +37,55 @@
                         </Embed-Dependency>
                         <Embed-Transitive>true</Embed-Transitive>
                         <Import-Package>
-                            !bsh*,
-                            !com.jamonapi*,
-                            !com.sun.jdi*,
-                            !com.sun.mail*,
-                            !com.sun.net.httpserver*,
-                            !com.thoughtworks.xstream*,
-                            !com.touchgraph*,
-                            !commonj*,
-                            !edu.emory.mathcs*,
-                            !freemarker*,
-                            !javax.cache*,
-                            !javax.ejb*,
-                            !javax.el*,
-                            !javax.inject*,
-                            !javax.interceptor*,
-                            !javax.jms*,
-                            !javax.persistence*,
-                            !javax.validation*,
-                            !jline*,
-                            !joptsimple*,
-                            !net.sf.ehcache*,
-                            !net.sf.jasperreports*,
-                            !org.apache.commons.collections*,
-                            !org.apache.commons.pool*,
-                            !org.apache.ivy*,
-                            !org.apache.tools.ant*,
-                            !org.apache.velocity*,
-                            !org.aspectj*,
-                            !org.codehaus.groovy*,
-                            !org.fusesource*,
-                            !org.hibernate.validator*,
+                            bsh*;resolution:=optional,
+                            com.jamonapi*;resolution:=optional,
+                            com.sun.jdi*;resolution:=optional,
+                            com.sun.net.httpserver*;resolution:=optional,
+                            com.thoughtworks.xstream*;resolution:=optional,
+                            com.touchgraph*;resolution:=optional,
+                            commonj*;resolution:=optional,
+                            edu.emory.mathcs*;resolution:=optional,
+                            freemarker*;resolution:=optional,
+                            groovy*;resolution:=optional,
+                            javax.cache*;resolution:=optional,
+                            javax.ejb*;resolution:=optional,
+                            javax.el*;resolution:=optional,
+                            javax.inject*;resolution:=optional,
+                            javax.interceptor*;resolution:=optional,
+                            javax.jms*;resolution:=optional,
+                            javax.mail*;resolution:=optional,
+                            javax.persistence*;resolution:=optional,
+                            javax.validation*;resolution:=optional,
+                            joptsimple*;resolution:=optional,
+                            net.sf.ehcache*;resolution:=optional,
+                            net.sf.jasperreports*;resolution:=optional,
+                            org.apache.commons.collections*;resolution:=optional,
+                            org.apache.commons.pool*;resolution:=optional,
+                            org.apache.tools.ant*;resolution:=optional,
+                            org.apache.velocity*;resolution:=optional,
+                            org.aspectj*;resolution:=optional,
+                            org.codehaus.groovy*;resolution:=optional,
+                            org.hibernate.validator*;resolution:=optional,
                             !org.jgraph*,
-                            !org.jruby*,
-                            !org.omg.CORBA*,
-                            !org.quartz*,
+                            org.jruby*;resolution:=optional,
+                            org.quartz*;resolution:=optional,
                             !org.springframework*,
                             *
                         </Import-Package>
+                        <!--
+                            <Embed-Dependency>
+                                asm*,
+                                commons-cli,
+                            </Embed-Dependency>
+                            <Import-Package>
+                                !com.thoughtworks.xstream*,
+                                !jline*,
+                                !org.apache.ivy*,
+                                !org.fusesource*,
+                                !org.omg.CORBA*,
+                                *
+                            </Import-Package>
+                        -->
                     </instructions>
                 </configuration>
             </plugin>
@@ -93,73 +93,9 @@
     </build>
     <dependencies>
         <dependency>
-            <groupId>org.codehaus.groovy</groupId>
-            <artifactId>groovy</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>biz.aQute</groupId>
-            <artifactId>bndlib</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>api</artifactId>
             <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.sun.mail</groupId>
-            <artifactId>javax.mail</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.yammer.metrics</groupId>
-            <artifactId>metrics-core</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.javassist</groupId>
-            <artifactId>javassist</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>commons-cli</groupId>
-            <artifactId>commons-cli</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.google.code.findbugs</groupId>
-            <artifactId>jsr305</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>org.springframework.aop</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>org.springframework.beans</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>org.springframework.context</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>org.springframework.context.support</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>org.springframework.core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>org.springframework.expression</artifactId>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -174,14 +110,58 @@
             <artifactId>log4j-over-slf4j</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>jsr305</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>biz.aQute</groupId>
+            <artifactId>bndlib</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.apache.felix</groupId>
             <artifactId>org.apache.felix.framework</artifactId>
-            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>com.yammer.metrics</groupId>
+            <artifactId>metrics-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.javassist</groupId>
+            <artifactId>javassist</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>org.springframework.aop</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>org.springframework.beans</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>org.springframework.context</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>org.springframework.context.support</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>org.springframework.core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>org.springframework.expression</artifactId>
         </dependency>
         <dependency>
             <groupId>net.sf.jgrapht</groupId>
             <artifactId>jgrapht</artifactId>
-            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>

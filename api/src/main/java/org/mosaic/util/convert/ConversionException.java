@@ -18,7 +18,7 @@ public class ConversionException extends RuntimeException
                                 @Nonnull TypeToken<?> sourceTypeToken,
                                 @Nonnull TypeToken<?> targetTypeToken )
     {
-        super( "Could not convert '{}' from '{}' to '{}': " + message );
+        super( "Could not convert from '" + sourceTypeToken + "' to '" + targetTypeToken + "': " + message );
         this.sourceTypeToken = sourceTypeToken;
         this.targetTypeToken = targetTypeToken;
     }
@@ -28,7 +28,7 @@ public class ConversionException extends RuntimeException
                                 @Nonnull TypeToken<?> sourceTypeToken,
                                 @Nonnull TypeToken<?> targetTypeToken )
     {
-        super( "Could not convert '{}' from '{}' to '{}': " + message, cause );
+        super( "Could not convert from '" + sourceTypeToken + "' to '" + targetTypeToken + "': " + message, cause );
         this.sourceTypeToken = sourceTypeToken;
         this.targetTypeToken = targetTypeToken;
     }

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 
-<xsd:schema xmlns="https://github.com/arikkfir/mosaic/application-5.0.0"
+<xsd:schema xmlns="https://github.com/arikkfir/mosaic/web/application"
             xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-            targetNamespace="https://github.com/arikkfir/mosaic/application-5.0.0"
+            targetNamespace="https://github.com/arikkfir/mosaic/web/application"
             elementFormDefault="qualified"
             attributeFormDefault="unqualified">
 
@@ -40,6 +40,13 @@
                     </xsd:complexType>
                 </xsd:element>
                 <xsd:element name="security" type="securityType" minOccurs="0" maxOccurs="1"/>
+                <xsd:element name="content-roots" minOccurs="0" maxOccurs="1">
+                    <xsd:complexType>
+                        <xsd:sequence>
+                            <xsd:element name="content-root" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+                        </xsd:sequence>
+                    </xsd:complexType>
+                </xsd:element>
             </xsd:sequence>
             <xsd:attribute name="display-name" type="xsd:string" use="required"/>
         </xsd:complexType>
@@ -66,7 +73,7 @@
                 </xsd:complexType>
             </xsd:element>
             <xsd:element name="permission-policy" type="xsd:string" minOccurs="1" maxOccurs="1"/>
-            <xsd:element name="access-denied-url" type="elementWithUriType" minOccurs="0" maxOccurs="1"/>
+            <xsd:element name="access-denied-page" type="xsd:string" minOccurs="0" maxOccurs="1"/>
         </xsd:sequence>
     </xsd:complexType>
 

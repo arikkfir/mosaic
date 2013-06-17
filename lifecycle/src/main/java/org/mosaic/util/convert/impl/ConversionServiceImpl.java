@@ -17,24 +17,25 @@ import org.mosaic.util.convert.ConversionService;
 import org.mosaic.util.convert.Converter;
 import org.mosaic.util.pair.ImmutablePair;
 import org.mosaic.util.pair.Pair;
-import org.osgi.framework.*;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.InvalidSyntaxException;
+import org.osgi.framework.ServiceReference;
+import org.osgi.framework.ServiceRegistration;
+import org.osgi.util.tracker.ServiceTracker;
+import org.osgi.util.tracker.ServiceTrackerCustomizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 
 import static org.jgrapht.alg.DijkstraShortestPath.findPathBetween;
-import static org.osgi.framework.Constants.OBJECTCLASS;
 
 /**
  * @author arik
  */
-public class ConversionServiceImpl implements ConversionService, ServiceListener, InitializingBean, DisposableBean
+public class ConversionServiceImpl implements ConversionService, InitializingBean, DisposableBean
 {
     private static final Logger LOG = LoggerFactory.getLogger( ConversionServiceImpl.class );
-
-    @Nullable
-    private ServiceRegistration<ConversionService> serviceRegistration;
 
     @Nonnull
     private final AtomicLong customIdGenerator = new AtomicLong( 0 );
@@ -44,6 +45,12 @@ public class ConversionServiceImpl implements ConversionService, ServiceListener
 
     @Nonnull
     private final Cache<Pair<TypeToken<?>, TypeToken<?>>, List<ConverterAdapter>> pathCache;
+
+    @Nullable
+    private final ServiceTracker<Converter, Converter> convertersTracker;
+
+    @Nullable
+    private ServiceRegistration<ConversionService> serviceRegistration;
 
     @Nullable
     private DirectedGraph<TypeToken<?>, ConverterAdapter> convertersGraph;
@@ -56,30 +63,83 @@ public class ConversionServiceImpl implements ConversionService, ServiceListener
     public ConversionServiceImpl( @Nullable BundleContext bundleContext ) throws InvalidSyntaxException
     {
         this.bundleContext = bundleContext;
+        if( this.bundleContext != null )
+        {
+            this.convertersTracker = new ServiceTracker<>(
+                    this.bundleContext,
+                    Converter.class,
+                    new ServiceTrackerCustomizer<Converter, Converter>()
+                    {
+                        @Override
+                        public synchronized Converter addingService( ServiceReference<Converter> reference )
+                        {
+                            BundleContext bundleContext = ConversionServiceImpl.this.bundleContext;
+                            if( bundleContext != null )
+                            {
+                                Converter<?, ?> converter = bundleContext.getService( reference );
+                                if( converter != null )
+                                {
+                                    long id = ServiceUtils.getId( reference );
+                                    registerConverter( new ConverterAdapter( id, converter ) );
+                                    return converter;
+                                }
+                            }
+                            return null;
+                        }
+
+                        @Override
+                        public void modifiedService( ServiceReference<Converter> reference, Converter service )
+                        {
+                            // no-op
+                        }
+
+                        @Override
+                        public synchronized void removedService( ServiceReference<Converter> reference,
+                                                                 Converter service )
+                        {
+                            unregisterConverter( service );
+                        }
+                    }
+
+            );
+        }
+        else
+        {
+            this.convertersTracker = null;
+        }
         this.pathCache = CacheBuilder.newBuilder()
                                      .concurrencyLevel( 50 )
                                      .build();
     }
 
     @Override
-    public void afterPropertiesSet() throws Exception
+    public synchronized void afterPropertiesSet() throws Exception
     {
+        if( this.convertersTracker != null )
+        {
+            this.convertersTracker.open();
+        }
+
         if( this.bundleContext != null )
         {
-            bundleContext.addServiceListener( this, "(" + OBJECTCLASS + "=" + Converter.class + ")" );
             this.serviceRegistration = ServiceUtils.register( this.bundleContext, ConversionService.class, this );
         }
     }
 
     @Override
-    public void destroy() throws Exception
+    public synchronized void destroy() throws Exception
     {
-        this.pathCache.invalidateAll();
-        this.pathCache.cleanUp();
-
         if( this.bundleContext != null && this.serviceRegistration != null )
         {
             this.serviceRegistration = ServiceUtils.unregister( this.serviceRegistration );
+        }
+
+        this.pathCache.invalidateAll();
+        this.pathCache.cleanUp();
+
+        if( this.convertersTracker != null )
+        {
+            this.convertersTracker.close();
         }
     }
 
@@ -109,7 +169,7 @@ public class ConversionServiceImpl implements ConversionService, ServiceListener
         }
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     @Nonnull
     @Override
     public <Source, Dest> Dest convert( @Nonnull Source source, @Nonnull TypeToken<Dest> targetTypeToken )
@@ -150,45 +210,7 @@ public class ConversionServiceImpl implements ConversionService, ServiceListener
         return convert( source, TypeToken.of( targetTypeToken ) );
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public synchronized void serviceChanged( ServiceEvent event )
-    {
-        if( this.bundleContext == null )
-        {
-            return;
-        }
-
-        if( event.getType() == ServiceEvent.REGISTERED )
-        {
-            registerConverter( new ConverterAdapter( this.bundleContext, ( ServiceReference<Converter<?, ?>> ) event.getServiceReference() ) );
-        }
-        else if( event.getType() == ServiceEvent.UNREGISTERING )
-        {
-            if( this.convertersGraph != null )
-            {
-                ServiceReference<?> reference = event.getServiceReference();
-                long id = ServiceUtils.getId( reference );
-
-                DirectedGraph<TypeToken<?>, ConverterAdapter> graph = new SimpleDirectedGraph<>( ConverterAdapter.class );
-                for( ConverterAdapter i : this.convertersGraph.edgeSet() )
-                {
-                    if( i.id != id )
-                    {
-                        addConverterAdapter( i, graph );
-                    }
-                    else
-                    {
-                        LOG.debug( "Unregistered converter from '{}' to '{}' (converter is {})", i.sourceTypeToken, i.targetTypeToken, i.converter );
-                    }
-                }
-                this.convertersGraph = graph;
-                this.pathCache.invalidateAll();
-            }
-        }
-    }
-
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     @Nonnull
     private Object convert( @Nonnull Object source, @Nonnull List<ConverterAdapter> path )
     {
@@ -196,7 +218,14 @@ public class ConversionServiceImpl implements ConversionService, ServiceListener
         Object currentSource = source;
         for( ConverterAdapter entry : path )
         {
-            currentSource = entry.converter.convert( currentSource );
+            try
+            {
+                currentSource = entry.converter.convert( currentSource );
+            }
+            catch( Exception e )
+            {
+                throw new ConversionException( e.getMessage(), e, entry.sourceTypeToken, entry.targetTypeToken );
+            }
         }
         return currentSource;
     }
@@ -247,12 +276,6 @@ public class ConversionServiceImpl implements ConversionService, ServiceListener
 
         @Nonnull
         private final TypeToken<?> targetTypeToken;
-
-        private ConverterAdapter( @Nonnull BundleContext bundleContext,
-                                  @Nonnull ServiceReference<Converter<?, ?>> reference )
-        {
-            this( ServiceUtils.getId( reference ), bundleContext.getService( reference ) );
-        }
 
         private ConverterAdapter( @Nonnull Converter<?, ?> converter )
         {

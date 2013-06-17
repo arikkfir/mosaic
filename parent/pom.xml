@@ -168,7 +168,6 @@
                     <execution>
                         <id>analyze</id>
                         <goals>
-                            <!--suppress MavenModelInspection -->
                             <goal>analyze-only</goal>
                         </goals>
                         <configuration>
@@ -378,6 +377,16 @@
         <dependencies>
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-http</artifactId>
+                <version>[9.0.3.v20130506]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-io</artifactId>
+                <version>[9.0.3.v20130506]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-server</artifactId>
                 <version>[9.0.3.v20130506]</version>
             </dependency>
@@ -388,17 +397,17 @@
             </dependency>
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-util</artifactId>
-                <version>[9.0.3.v20130506]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-servlets</artifactId>
                 <version>[9.0.3.v20130506]</version>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-webapp</artifactId>
+                <version>[9.0.3.v20130506]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-util</artifactId>
                 <version>[9.0.3.v20130506]</version>
             </dependency>
             <dependency>
@@ -493,6 +502,16 @@
                 <groupId>org.hibernate</groupId>
                 <artifactId>hibernate-validator</artifactId>
                 <version>[4.3.1.Final]</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-beanutils</groupId>
+                <artifactId>commons-beanutils</artifactId>
+                <version>[1.8.3]</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-collections</groupId>
+                <artifactId>commons-collections</artifactId>
+                <version>[3.2.1]</version>
             </dependency>
             <dependency>
                 <groupId>commons-dbcp</groupId>

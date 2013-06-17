@@ -48,7 +48,6 @@ public class MosaicActivator implements BundleActivator
 
         deployEmbeddedBundle( "jcl-over-slf4j" );
         deployEmbeddedBundle( "log4j-over-slf4j" );
-        deployEmbeddedBundle( "javax.mail" );
 
         ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext();
         applicationContext.setConfigLocation( "/lifecycle-beans.xml" );

@@ -1,6 +1,7 @@
 package org.mosaic.it.runner;
 
 import javax.annotation.Nonnull;
+import org.junit.Assert;
 
 public class CommandResult
 {
@@ -40,13 +41,15 @@ public class CommandResult
     {
         if( this.exitCode != 0 )
         {
-            throw new CommandFailedException( "Command failed: " + commandLine + "\n" +
-                                              "==================================================================\n" +
-                                              this.output + "\n" +
-                                              "==================================================================\n",
-                                              this.exitCode,
-                                              this.commandLine,
-                                              this.output );
+            Assert.fail(
+                    String.format(
+                            "Command '%s' failed with exit code %d\n" +
+                            "===[ OUTPUT ]=====================================\n" +
+                            "%s\n" +
+                            "===[ END ]========================================",
+                            this.commandLine, this.exitCode, this.output
+                    )
+            );
         }
         return this;
     }

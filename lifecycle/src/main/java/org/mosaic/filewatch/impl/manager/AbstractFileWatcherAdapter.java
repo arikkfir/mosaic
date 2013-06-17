@@ -44,10 +44,12 @@ public abstract class AbstractFileWatcherAdapter
             return;
         }
 
+        // first get the known file modification time (before we "know" about this file)
+        Long knownModTime = this.knownFiles.get( path );
+
+        // now update our known file modification times for the next iterations
         long fileModTime = attrs.lastModifiedTime().toMillis();
         this.knownFiles.put( path, fileModTime );
-
-        Long knownModTime = this.knownFiles.get( path );
         if( knownModTime != null )
         {
             if( matchesEvent( FILE_MODIFIED ) && fileModTime > knownModTime )

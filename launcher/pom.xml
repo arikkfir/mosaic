@@ -90,7 +90,6 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>api</artifactId>
@@ -99,13 +98,49 @@
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
-            <artifactId>core</artifactId>
+            <artifactId>lifecycle</artifactId>
             <version>${project.version}</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
-            <artifactId>lifecycle</artifactId>
+            <artifactId>config</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mosaic</groupId>
+            <artifactId>database</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mosaic</groupId>
+            <artifactId>event</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mosaic</groupId>
+            <artifactId>mail</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mosaic</groupId>
+            <artifactId>security</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mosaic</groupId>
+            <artifactId>shell</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mosaic</groupId>
+            <artifactId>web</artifactId>
             <version>${project.version}</version>
             <scope>runtime</scope>
         </dependency>

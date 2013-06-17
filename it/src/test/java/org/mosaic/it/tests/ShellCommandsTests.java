@@ -14,12 +14,12 @@ public class ShellCommandsTests extends BaseTests
     public void testHelp() throws Exception
     {
         String output = this.runner.runSingleCommand( "help" ).assertSuccess().getOutput();
-        assertTrue( "Help not printed fully or not at all", output.contains( "org.mosaic.core:metrics" ) );
-        assertTrue( "Help not printed fully or not at all", output.contains( "org.mosaic.core:help" ) );
-        assertTrue( "Help not printed fully or not at all", output.contains( "org.mosaic.core:restart-server" ) );
-        assertTrue( "Help not printed fully or not at all", output.contains( "org.mosaic.core:list-modules" ) );
-        assertTrue( "Help not printed fully or not at all", output.contains( "org.mosaic.core:inspect-module" ) );
-        assertTrue( "Help not printed fully or not at all", output.contains( "org.mosaic.core:shutdown-server" ) );
+        assertTrue( "Help not printed fully or not at all", output.contains( "org.mosaic.shell:metrics" ) );
+        assertTrue( "Help not printed fully or not at all", output.contains( "org.mosaic.shell:help" ) );
+        assertTrue( "Help not printed fully or not at all", output.contains( "org.mosaic.shell:restart-server" ) );
+        assertTrue( "Help not printed fully or not at all", output.contains( "org.mosaic.shell:list-modules" ) );
+        assertTrue( "Help not printed fully or not at all", output.contains( "org.mosaic.shell:inspect-module" ) );
+        assertTrue( "Help not printed fully or not at all", output.contains( "org.mosaic.shell:shutdown-server" ) );
     }
 
     @Test

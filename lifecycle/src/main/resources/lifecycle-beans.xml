@@ -4,11 +4,31 @@
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
+    <bean class="org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor">
+        <property name="autowiredAnnotationTypes">
+            <set>
+                <value>org.mosaic.lifecycle.annotation.BeanRef</value>
+                <value>org.springframework.beans.factory.annotation.Autowired</value>
+            </set>
+        </property>
+        <property name="requiredParameterName" value="required"/>
+        <property name="requiredParameterValue" value="true"/>
+    </bean>
+
+    <bean class="org.springframework.beans.factory.annotation.InitDestroyAnnotationBeanPostProcessor">
+        <property name="destroyAnnotationType" value="javax.annotation.PreDestroy"/>
+        <property name="initAnnotationType" value="javax.annotation.PostConstruct"/>
+    </bean>
+
     <bean id="bundleContext"
           class="org.mosaic.impl.MosaicActivator"
           factory-method="getBundleContext"/>
 
     <bean id="conversionService" class="org.mosaic.util.convert.impl.ConversionServiceImpl">
+        <constructor-arg ref="bundleContext"/>
+    </bean>
+
+    <bean id="stringToBooleanConverter" class="org.mosaic.util.convert.impl.StringToBooleanConverter">
         <constructor-arg ref="bundleContext"/>
     </bean>
 
@@ -65,6 +85,11 @@
         <constructor-arg ref="bundleContext"/>
         <constructor-arg ref="server"/>
         <constructor-arg ref="bundlesManager"/>
+        <constructor-arg ref="conversionService"/>
+    </bean>
+
+    <bean id="xmlParser" class="org.mosaic.util.xml.impl.XmlParserImpl">
+        <constructor-arg ref="bundleContext"/>
         <constructor-arg ref="conversionService"/>
     </bean>
 

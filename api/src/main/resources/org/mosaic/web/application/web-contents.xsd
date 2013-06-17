@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<xsd:schema xmlns="https://github.com/arikkfir/mosaic/web/content-5.0.0"
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            targetNamespace="https://github.com/arikkfir/mosaic/web/content-5.0.0"
+            elementFormDefault="qualified"
+            attributeFormDefault="unqualified">
+
+    <xsd:element name="web-content">
+        <xsd:complexType>
+            <xsd:sequence>
+                <xsd:element name="snippets" minOccurs="0" maxOccurs="1">
+                    <xsd:complexType>
+                        <xsd:sequence>
+                            <xsd:element name="snippet" type="snippetType" minOccurs="0" maxOccurs="unbounded"/>
+                        </xsd:sequence>
+                    </xsd:complexType>
+                </xsd:element>
+                <xsd:element name="pages" minOccurs="0" maxOccurs="1">
+                    <xsd:complexType>
+                        <xsd:sequence>
+                            <xsd:element name="page" type="pageType" minOccurs="0" maxOccurs="unbounded"/>
+                        </xsd:sequence>
+                    </xsd:complexType>
+                </xsd:element>
+            </xsd:sequence>
+        </xsd:complexType>
+    </xsd:element>
+
+    <xsd:complexType name="snippetType">
+        <xsd:sequence>
+            <!-- TODO arik: allow specifying which context items (providers) this snippet requires -->
+            <xsd:element name="content" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+        </xsd:sequence>
+        <xsd:attribute name="id" type="xsd:string" use="required"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="pageType">
+        <xsd:sequence>
+            <xsd:element name="tags" minOccurs="0" maxOccurs="1">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="tag" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="security" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+            <xsd:element name="filter" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+            <xsd:element name="media-type" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+            <xsd:element name="seconds-to-cache" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+            <xsd:element name="url-paths" minOccurs="0" maxOccurs="1">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="path" minOccurs="0" maxOccurs="unbounded">
+                            <xsd:complexType mixed="true">
+                                <xsd:attribute name="languages" type="xsd:string" use="optional"/>
+                            </xsd:complexType>
+                        </xsd:element>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="context" type="contextType" minOccurs="0" maxOccurs="1"/>
+            <xsd:element name="blocks" minOccurs="0" maxOccurs="1">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="block" type="blockType" minOccurs="0" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+        </xsd:sequence>
+        <xsd:attribute name="name" type="xsd:string" use="required"/>
+        <xsd:attribute name="abstract" type="xsd:boolean" use="optional"/>
+        <xsd:attribute name="active" type="xsd:boolean" use="required"/>
+        <xsd:attribute name="parent" type="xsd:string" use="optional"/>
+        <xsd:attribute name="display-name" type="xsd:string" use="optional"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="blockType">
+        <xsd:sequence>
+            <xsd:element name="context" type="contextType" minOccurs="0" maxOccurs="1"/>
+        </xsd:sequence>
+        <xsd:attribute name="name" type="xsd:string" use="required"/>
+        <xsd:attribute name="display-name" type="xsd:string" use="optional"/>
+        <xsd:attribute name="snippet-id" type="xsd:string" use="required"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="contextType">
+        <xsd:sequence>
+            <xsd:element name="provider" minOccurs="0" maxOccurs="unbounded">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="parameter" minOccurs="0" maxOccurs="unbounded">
+                            <xsd:complexType>
+                                <xsd:attribute name="name" type="xsd:string" use="required"/>
+                                <xsd:attribute name="value" type="xsd:string" use="optional"/>
+                            </xsd:complexType>
+                        </xsd:element>
+                    </xsd:sequence>
+                    <xsd:attribute name="name" type="xsd:string" use="required"/>
+                    <xsd:attribute name="type" type="xsd:string" use="required"/>
+                </xsd:complexType>
+            </xsd:element>
+        </xsd:sequence>
+    </xsd:complexType>
+
+</xsd:schema>

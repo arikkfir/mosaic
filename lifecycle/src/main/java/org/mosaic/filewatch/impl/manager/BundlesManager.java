@@ -22,18 +22,20 @@ import org.osgi.framework.*;
 import org.osgi.framework.wiring.FrameworkWiring;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.PropertyPlaceholderHelper;
 
 import static java.nio.file.Files.*;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static org.springframework.util.SystemPropertyUtils.resolvePlaceholders;
 
 /**
  * @author arik
  */
-public class BundlesManager extends AbstractFileWatcherAdapter
+public class BundlesManager extends AbstractFileWatcherAdapter implements PropertyPlaceholderHelper.PlaceholderResolver
 {
     private static final Logger LOG = LoggerFactory.getLogger( BundlesManager.class );
+
+    public static final PropertyPlaceholderHelper PROPERTY_PLACEHOLDER_HELPER = new PropertyPlaceholderHelper( "${", "}", ":", false );
 
     private static class BundleLocationCache
     {
@@ -76,6 +78,12 @@ public class BundlesManager extends AbstractFileWatcherAdapter
             Flushables.flush( out, false );
         }
         return installBundle( tempFile );
+    }
+
+    @Override
+    public String resolvePlaceholder( String placeholderName )
+    {
+        return this.bundleContext.getProperty( placeholderName );
     }
 
     @Override
@@ -169,7 +177,7 @@ public class BundlesManager extends AbstractFileWatcherAdapter
 
     private void handleScanFinished( ScanContext context )
     {
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         final List<Bundle> bundlesToStart = context.getAttributes().require( "bundlesToStart", List.class );
         final Boolean bundlesWereUninstalled = context.getAttributes().require( "bundlesWereUninstalled", Boolean.class );
 
@@ -264,7 +272,7 @@ public class BundlesManager extends AbstractFileWatcherAdapter
 
     private void handleJarFileAddedOrModified( @Nonnull ScanContext context, @Nonnull Path path )
     {
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         List<Bundle> bundlesToStart = context.getAttributes().require( "bundlesToStart", List.class );
 
         // check whether we need to install a new bundle or update an existing bundle
@@ -456,7 +464,7 @@ public class BundlesManager extends AbstractFileWatcherAdapter
                     }
                     else
                     {
-                        target = Paths.get( resolvePlaceholders( trimmedLine, false ) );
+                        target = Paths.get( PROPERTY_PLACEHOLDER_HELPER.replacePlaceholders( trimmedLine, this ) );
                         if( !target.isAbsolute() )
                         {
                             target = path.resolveSibling( target );

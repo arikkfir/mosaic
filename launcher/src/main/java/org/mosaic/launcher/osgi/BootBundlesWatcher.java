@@ -46,7 +46,7 @@ public class BootBundlesWatcher implements Runnable
         Properties properties = mosaic.getProperties();
 
         List<Bundle> bundles = new LinkedList<>();
-        for( String name : asList( "api", "lifecycle", "core" ) )
+        for( String name : asList( "api", "lifecycle", "config", "database", "event", "mail", "security", "shell", "web" ) )
         {
             Path bundlePath = null;
 

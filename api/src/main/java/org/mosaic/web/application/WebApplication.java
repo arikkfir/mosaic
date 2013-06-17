@@ -1,5 +1,6 @@
 package org.mosaic.web.application;
 
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -23,8 +24,6 @@ public interface WebApplication extends Map<String, Object>
     @Nonnull
     Set<String> getVirtualHosts();
 
-    boolean isHostIncluded( @Nonnull String host );
-
     @Nonnull
     Collection<String> getContentLanguages();
 
@@ -34,10 +33,10 @@ public interface WebApplication extends Map<String, Object>
     String getDefaultLanguage();
 
     @Nullable
-    String getUnknownUrlPage();
+    Page getUnknownUrlPage();
 
     @Nullable
-    String getInternalErrorPage();
+    Page getInternalErrorPage();
 
     boolean isResourceCompressionEnabled();
 
@@ -66,5 +65,20 @@ public interface WebApplication extends Map<String, Object>
     String getFormLoginUrl();
 
     @Nullable
-    String getAccessDeniedUrl();
+    Page getAccessDeniedPage();
+
+    @Nonnull
+    Collection<Path> getContentRoots();
+
+    @Nonnull
+    Map<String, Snippet> getSnippetMap();
+
+    @Nonnull
+    Collection<Snippet> getSnippets();
+
+    @Nonnull
+    Map<String, Page> getPageMap();
+
+    @Nonnull
+    Collection<Page> getPages();
 }

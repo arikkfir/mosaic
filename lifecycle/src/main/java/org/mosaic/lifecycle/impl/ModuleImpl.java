@@ -6,7 +6,6 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.lifecycle.*;
@@ -52,9 +51,6 @@ public class ModuleImpl implements Module
 
     @Nonnull
     private final Path path;
-
-    @Nonnull
-    private final Deque<ActivationReason> activationReasons = new ConcurrentLinkedDeque<>();
 
     @Nullable
     private Collection<String> resources;
@@ -311,7 +307,18 @@ public class ModuleImpl implements Module
     {
         if( this.bundle.getState() == Bundle.ACTIVE )
         {
-            activateInternal();
+            try
+            {
+                activateInternal();
+            }
+            catch( ModuleStartException e )
+            {
+                throw e;
+            }
+            catch( Exception e )
+            {
+                throw new ModuleStartException( this, e.getMessage(), e );
+            }
         }
         else
         {
@@ -527,10 +534,10 @@ public class ModuleImpl implements Module
         {
             moduleApplicationContext = this.helper.createApplicationContext();
         }
-        catch( Exception e )
+        catch( Throwable e )
         {
             this.state = ModuleState.STARTED;
-            throw e;
+            throw new ModuleStartException( this, e.getMessage(), e );
         }
         this.applicationContext = moduleApplicationContext;
 
@@ -665,7 +672,7 @@ public class ModuleImpl implements Module
         }
         catch( Exception e )
         {
-            LOG.warn( "Could NOT activate {}:", this );
+            LOG.warn( "Could NOT activate {}: {}", this, e.getMessage(), e );
             for( Dependency dependency : getUnsatisfiedDependencies() )
             {
                 LOG.warn( "    -> {}", dependency );

@@ -1,6 +1,9 @@
 package org.mosaic.it.runner;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -126,27 +129,58 @@ public class MosaicRunner
         } );
     }
 
-    public CommandResult deployModule( @Nonnull String name ) throws IOException
+    public void deployModule( @Nonnull String name ) throws IOException
+    {
+        runCommand( "install-module file:" + this.modulesExtractor.getModule( name ) ).assertSuccess();
+    }
+
+    public void deployModuleFile( @Nonnull String name ) throws IOException
     {
         Path src = this.modulesExtractor.getModule( name );
+        Path target = this.mosaicDirectory.resolve( "lib" ).resolve( src.getFileName() );
+        copy( src, target, ATOMIC_MOVE, REPLACE_EXISTING, COPY_ATTRIBUTES );
+    }
 
-        if( this.mosaic == null )
+    public void deployWebApplication( @Nonnull String name ) throws IOException, InterruptedException
+    {
+        String fileName = name + ".xml";
+
+        URL webAppDescUrl = getClass().getResource( "/org/mosaic/it/apps/" + fileName );
+        if( webAppDescUrl == null )
         {
-            Path target = this.mosaicDirectory.resolve( "lib" ).resolve( src.getFileName() );
-            copy( src, target, ATOMIC_MOVE, REPLACE_EXISTING, COPY_ATTRIBUTES );
-            return null;
+            throw new IllegalStateException( "Could not find testing web application '" + name + "' file" );
         }
-        else
+
+        try( InputStream is = webAppDescUrl.openStream() )
         {
-            return runCommand( "install-module file:" + src ).assertSuccess();
+            Path target;
+            if( this.mosaic == null )
+            {
+                target = this.mosaicDirectory.resolve( "apps" ).resolve( fileName );
+            }
+            else
+            {
+                target = this.mosaic.getApps().resolve( fileName );
+            }
+
+            LOG.info( "Deploying web application '{}' to '{}'", name, target );
+            Files.copy( is, target );
+            Thread.sleep( 3000 );
         }
     }
 
     public <T> T runOnServer( @Nonnull CallableWithMosaic<T> callable ) throws Exception
     {
+        //noinspection UnusedDeclaration
         try( MosaicInstance mosaic = start() )
         {
             return callable.run( this );
         }
+    }
+
+    @Nullable
+    public MosaicInstance getInstance()
+    {
+        return mosaic;
     }
 }
