@@ -141,7 +141,7 @@ public class MosaicRunner
         copy( src, target, ATOMIC_MOVE, REPLACE_EXISTING, COPY_ATTRIBUTES );
     }
 
-    public void deployWebApplication( @Nonnull String name ) throws IOException, InterruptedException
+    public Path deployWebApplication( @Nonnull String name ) throws IOException, InterruptedException
     {
         String fileName = name + ".xml";
 
@@ -166,6 +166,7 @@ public class MosaicRunner
             LOG.info( "Deploying web application '{}' to '{}'", name, target );
             Files.copy( is, target );
             Thread.sleep( 3000 );
+            return target;
         }
     }
 
