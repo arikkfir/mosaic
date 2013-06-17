@@ -186,7 +186,7 @@ public class MosaicInstance implements Closeable
                         MosaicInstance.this.felix = null;
                     }
                 },
-                new BootTask( "jvm-shutdown-hook" )
+                new BootTask( "jvm-hook" )
                 {
                     @Override
                     protected void executeInternal()
@@ -231,7 +231,7 @@ public class MosaicInstance implements Closeable
                         MosaicInstance.this.bootBundlesWatcher = null;
                     }
                 },
-                new BootTask( "mosaic-shutdown-listener" )
+                new BootTask( "control-listener" )
                 {
                     private ServerSocket serverSocket;
 
