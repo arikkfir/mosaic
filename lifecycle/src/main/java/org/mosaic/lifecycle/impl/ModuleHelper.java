@@ -346,14 +346,7 @@ public class ModuleHelper
             ServiceRef serviceRefAnn = methodHandle.getAnnotation( ServiceRef.class );
             if( serviceRefAnn != null )
             {
-                if( serviceRefAnn.autoSelectIfMultiple() )
-                {
-                    dependencies.add( new OptimisticServiceRefDependency( this.module, serviceRefAnn.value(), serviceRefAnn.required(), beanName, methodHandle ) );
-                }
-                else
-                {
-                    dependencies.add( new PessimisticServiceRefDependency( this.module, serviceRefAnn.value(), serviceRefAnn.required(), beanName, methodHandle ) );
-                }
+                dependencies.add( new OptimisticServiceRefDependency( this.module, serviceRefAnn.value(), serviceRefAnn.required(), beanName, methodHandle ) );
             }
 
             // detect @MethodEndpointRef dependencies
@@ -361,14 +354,7 @@ public class ModuleHelper
             if( methodEndpointRefAnn != null )
             {
                 String filter = "(type=" + methodEndpointRefAnn.value().getName() + ")";
-                if( methodEndpointRefAnn.autoSelectIfMultiple() )
-                {
-                    dependencies.add( new OptimisticServiceRefDependency( this.module, filter, methodEndpointRefAnn.required(), beanName, methodHandle ) );
-                }
-                else
-                {
-                    dependencies.add( new PessimisticServiceRefDependency( this.module, filter, methodEndpointRefAnn.required(), beanName, methodHandle ) );
-                }
+                dependencies.add( new OptimisticServiceRefDependency( this.module, filter, methodEndpointRefAnn.required(), beanName, methodHandle ) );
             }
 
             // detect @ServiceRefs dependency

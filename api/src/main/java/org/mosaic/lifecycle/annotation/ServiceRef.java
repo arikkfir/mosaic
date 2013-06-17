@@ -15,6 +15,4 @@ public @interface ServiceRef
     String value() default "";
 
     boolean required() default true;
-
-    boolean autoSelectIfMultiple() default false;
 }

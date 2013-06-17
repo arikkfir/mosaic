@@ -5,13 +5,11 @@ import java.lang.annotation.*;
 /**
  * @author arik
  */
-@Retention( RetentionPolicy.RUNTIME )
-@Target( ElementType.METHOD )
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
 public @interface MethodEndpointRef
 {
     Class<? extends Annotation> value();
 
     boolean required() default true;
-
-    boolean autoSelectIfMultiple() default false;
 }
