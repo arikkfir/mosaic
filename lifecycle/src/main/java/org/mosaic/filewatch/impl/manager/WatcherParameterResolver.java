@@ -37,6 +37,10 @@ public class WatcherParameterResolver implements MethodHandle.ParameterResolver
         {
             return resolveContext.get( "event", WatchEvent.class );
         }
+        else if( parameter.getType().isAssignableFrom( BasicFileAttributes.class ) )
+        {
+            return resolveContext.get( "attrs", BasicFileAttributes.class );
+        }
         else if( parameter.getType().isAssignableFrom( DosFileAttributes.class ) )
         {
             return resolveContext.get( "attrs", DosFileAttributes.class );
@@ -44,10 +48,6 @@ public class WatcherParameterResolver implements MethodHandle.ParameterResolver
         else if( parameter.getType().isAssignableFrom( PosixFileAttributes.class ) )
         {
             return resolveContext.get( "attrs", PosixFileAttributes.class );
-        }
-        else if( parameter.getType().isAssignableFrom( BasicFileAttributes.class ) )
-        {
-            return resolveContext.get( "attrs", BasicFileAttributes.class );
         }
         else
         {
