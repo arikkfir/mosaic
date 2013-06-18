@@ -30,8 +30,6 @@ import static java.util.Arrays.asList;
  */
 public class BuildMosaicModulesBeforeRunTasksProvider extends BeforeRunTaskProvider<BuildMosaicModulesBeforeRunTask>
 {
-    public static final Key<List<Module>> MODULES_KEY = Key.create( BuildMosaicModulesBeforeRunTasksProvider.class.getName() + "#modules" );
-
     public static final String NAME = "Build Mosaic Modules";
 
     public static final String DESCRIPTION = NAME;
@@ -88,7 +86,6 @@ public class BuildMosaicModulesBeforeRunTasksProvider extends BeforeRunTaskProvi
     @Override
     public BuildMosaicModulesBeforeRunTask createTask( RunConfiguration runConfiguration )
     {
-        // TODO arik: only return non-null when run configuration is a mosaic server run configuration
         BuildMosaicModulesBeforeRunTask task = new BuildMosaicModulesBeforeRunTask( runConfiguration.getProject() );
         task.setEnabled( true );
         return task;
@@ -167,12 +164,12 @@ public class BuildMosaicModulesBeforeRunTasksProvider extends BeforeRunTaskProvi
             @Override
             public void run()
             {
-                ProgressManager.getInstance().run( buildModulesTask.asModal() );
+                ProgressManager.getInstance().run( buildModulesTask );
             }
         }, ModalityState.any() );
 
-        // this is used by the compilation listener to re-make modules after make when this run configuration is running
-        executionEnvironment.putUserData( MODULES_KEY, modules );
+        BuildMosaicModulesWhileRunning whileRunning = BuildMosaicModulesWhileRunning.getInstance( project );
+        whileRunning.makeModulesForExecutionId( executionEnvironment.getExecutionId(), modules );
 
         return buildModulesTask.isSuccessful();
     }

@@ -8,31 +8,48 @@ import com.intellij.openapi.compiler.CompilationStatusAdapter;
 import com.intellij.openapi.compiler.CompileContext;
 import com.intellij.openapi.compiler.CompilerTopics;
 import com.intellij.openapi.components.ProjectComponent;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Key;
 import com.intellij.util.messages.MessageBusConnection;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import org.jetbrains.annotations.NotNull;
 import org.mosaic.idea.module.actions.BuildModulesTask;
-
-import static org.mosaic.idea.runner.task.BuildMosaicModulesBeforeRunTasksProvider.MODULES_KEY;
 
 /**
  * @author arik
  */
 public class BuildMosaicModulesWhileRunning implements ProjectComponent
 {
+    private static final Logger LOG = Logger.getInstance( BuildMosaicModulesWhileRunning.class );
+
+    private static final Key<List<Module>> MODULES_KEY = Key.create( BuildMosaicModulesBeforeRunTasksProvider.class.getName() + "#modules" );
+
+    public static BuildMosaicModulesWhileRunning getInstance( Project project )
+    {
+        return project.getComponent( BuildMosaicModulesWhileRunning.class );
+    }
+
     private final Project project;
 
     private MessageBusConnection messageBusConnection;
 
+    private Map<Long, ExecutionEntry> modulesForExecutionIds;
+
     public BuildMosaicModulesWhileRunning( Project project )
     {
         this.project = project;
+    }
+
+    public void makeModulesForExecutionId( long executionId, List<Module> modules )
+    {
+        if( this.modulesForExecutionIds != null )
+        {
+            this.modulesForExecutionIds.put( executionId, new ExecutionEntry( executionId, modules ) );
+        }
     }
 
     @NotNull
@@ -45,7 +62,7 @@ public class BuildMosaicModulesWhileRunning implements ProjectComponent
     @Override
     public void initComponent()
     {
-        // no-op
+        this.modulesForExecutionIds = new ConcurrentHashMap<>( 1000 );
     }
 
     @Override
@@ -60,7 +77,20 @@ public class BuildMosaicModulesWhileRunning implements ProjectComponent
                                         @NotNull ExecutionEnvironment env,
                                         @NotNull ProcessHandler handler )
             {
-                handler.putUserData( MODULES_KEY, env.getUserData( MODULES_KEY ) );
+                for( Iterator<ExecutionEntry> iterator = modulesForExecutionIds.values().iterator(); iterator.hasNext(); )
+                {
+                    ExecutionEntry entry = iterator.next();
+                    if( entry.executionId == env.getExecutionId() )
+                    {
+                        handler.putUserData( MODULES_KEY, entry.modules );
+                        iterator.remove();
+                    }
+                    else if( System.currentTimeMillis() - entry.creationTime > 1000 * 60 * 5 )
+                    {
+                        iterator.remove();
+                    }
+                }
+
             }
         } );
 
@@ -86,7 +116,11 @@ public class BuildMosaicModulesWhileRunning implements ProjectComponent
                         }
                     }
 
-                    ProgressManager.getInstance().run( new BuildModulesTask( project, new LinkedList<>( modules ) ) );
+                    if( !modules.isEmpty() )
+                    {
+                        LOG.info( "Build mosaic modules after make because we have running processes monitoring these modules: " + modules );
+                        ProgressManager.getInstance().run( new BuildModulesTask( project, new LinkedList<>( modules ) ) );
+                    }
                 }
             }
         } );
@@ -101,6 +135,21 @@ public class BuildMosaicModulesWhileRunning implements ProjectComponent
     @Override
     public void disposeComponent()
     {
-        // no-op
+        this.modulesForExecutionIds = null;
+    }
+
+    private class ExecutionEntry
+    {
+        private final long creationTime = System.currentTimeMillis();
+
+        private final long executionId;
+
+        private final List<Module> modules;
+
+        private ExecutionEntry( long executionId, List<Module> modules )
+        {
+            this.executionId = executionId;
+            this.modules = modules;
+        }
     }
 }

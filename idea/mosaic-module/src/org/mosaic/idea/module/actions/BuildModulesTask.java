@@ -1,5 +1,6 @@
 package org.mosaic.idea.module.actions;
 
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.Task;
@@ -14,6 +15,8 @@ import org.mosaic.idea.module.facet.ModuleFacet;
  */
 public class BuildModulesTask extends Task.Modal
 {
+    private static final Logger LOG = Logger.getInstance( BuildModulesTask.class );
+
     private final List<Module> modules;
 
     private boolean successful;
@@ -37,6 +40,8 @@ public class BuildModulesTask extends Task.Modal
     @Override
     public void run( @NotNull ProgressIndicator indicator )
     {
+        LOG.info( "Building mosaic modules for: " + this.modules );
+
         BuildMessages.getInstance( getProject() ).clearBundleMessages();
 
         this.successful = true;
