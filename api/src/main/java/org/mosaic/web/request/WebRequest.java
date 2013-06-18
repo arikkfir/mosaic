@@ -1,5 +1,6 @@
 package org.mosaic.web.request;
 
+import com.google.common.collect.Multimap;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -8,12 +9,36 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.security.User;
 import org.mosaic.web.application.WebApplication;
+import org.mosaic.web.net.HttpMethod;
 
 /**
  * @author arik
  */
 public interface WebRequest extends Map<String, Object>
 {
+    @Nonnull
+    HttpMethod getMethod();
+
+    @Nonnull
+    String getScheme();
+
+    @Nonnull
+    String getHost();
+
+    int getPort();
+
+    @Nonnull
+    String getDecodedPath();
+
+    @Nonnull
+    String getEncodedPath();
+
+    @Nonnull
+    String getEncodedQueryString();
+
+    @Nonnull
+    Multimap<String, String> getDecodedQueryParameters();
+
     @Nonnull
     WebApplication getApplication();
 
@@ -28,9 +53,6 @@ public interface WebRequest extends Map<String, Object>
 
     @Nonnull
     InetAddress getClientAddress();
-
-    @Nonnull
-    Url getUrl();
 
     @Nonnull
     Map<String, String> getPathParameters();
