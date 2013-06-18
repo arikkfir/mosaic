@@ -34,7 +34,7 @@ public class WebServer
         this.requestHandler = requestHandler;
     }
 
-    @Configurable( "web" )
+    @Configurable("web")
     public void configure( @Nonnull MapEx<String, String> cfg ) throws Exception
     {
         Log.setLog( new Slf4jLog() );
@@ -46,6 +46,18 @@ public class WebServer
                 Server server = createServer( cfg );
                 server.start();
                 this.server = server;
+
+                LOG.info( "Started web server listening at the following addresses:" );
+                for( Connector connector : this.server.getConnectors() )
+                {
+                    if( connector instanceof NetworkConnector )
+                    {
+                        NetworkConnector networkConnector = ( NetworkConnector ) connector;
+                        String host = networkConnector.getHost();
+                        int port = networkConnector.getPort();
+                        LOG.info( "    {}:{}", host == null ? "(all)" : host, port );
+                    }
+                }
             }
             catch( Exception e )
             {
@@ -54,6 +66,7 @@ public class WebServer
         }
         else
         {
+            LOG.info( "Web server disabled (add 'enable=true' to your web.properties file to enable)" );
             stopServer();
         }
     }
@@ -72,6 +85,7 @@ public class WebServer
             {
                 this.server.stop();
                 this.server.join();
+                LOG.info( "Stopped web server" );
             }
             finally
             {
