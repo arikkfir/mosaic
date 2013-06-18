@@ -30,6 +30,8 @@ import static java.util.Arrays.asList;
  */
 public class BuildMosaicModulesBeforeRunTasksProvider extends BeforeRunTaskProvider<BuildMosaicModulesBeforeRunTask>
 {
+    public static final Key<List<Module>> MODULES_KEY = Key.create( BuildMosaicModulesBeforeRunTasksProvider.class.getName() + "#modules" );
+
     public static final String NAME = "Build Mosaic Modules";
 
     public static final String DESCRIPTION = NAME;
@@ -168,6 +170,10 @@ public class BuildMosaicModulesBeforeRunTasksProvider extends BeforeRunTaskProvi
                 ProgressManager.getInstance().run( buildModulesTask.asModal() );
             }
         }, ModalityState.any() );
+
+        // this is used by the compilation listener to re-make modules after make when this run configuration is running
+        executionEnvironment.putUserData( MODULES_KEY, modules );
+
         return buildModulesTask.isSuccessful();
     }
 }

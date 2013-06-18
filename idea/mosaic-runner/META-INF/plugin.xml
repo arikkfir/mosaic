@@ -41,7 +41,11 @@
     <!-- ============================================================== -->
     <!-- PROJECT COMPONENTS                                             -->
     <!-- ============================================================== -->
-    <project-components/>
+    <project-components>
+        <component>
+            <implementation-class>org.mosaic.idea.runner.task.BuildMosaicModulesWhileRunning</implementation-class>
+        </component>
+    </project-components>
 
     <!-- ============================================================== -->
     <!-- MODULE COMPONENTS                                              -->
