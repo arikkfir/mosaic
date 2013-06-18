@@ -92,7 +92,7 @@ public class ConfigurationManager
     }
 
     @FileWatcher(root = WatchRoot.ETC,
-                 pattern = "**/*.properties",
+                 pattern = "*.properties",
                  event = { WatchEvent.FILE_ADDED, WatchEvent.FILE_MODIFIED })
     public void onFileModified( @Nonnull Path file, @Nonnull BasicFileAttributes attrs ) throws IOException
     {
