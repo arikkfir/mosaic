@@ -1,4 +1,4 @@
-package org.mosaic.web.request.impl;
+package org.mosaic.web.server.impl;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -9,8 +9,10 @@ import org.eclipse.jetty.util.log.Slf4jLog;
 import org.mosaic.lifecycle.annotation.Bean;
 import org.mosaic.lifecycle.annotation.BeanRef;
 import org.mosaic.lifecycle.annotation.Configurable;
+import org.mosaic.util.collect.EmptyMapEx;
 import org.mosaic.util.collect.MapEx;
 import org.mosaic.web.handler.impl.RequestHandler;
+import org.mosaic.web.server.WebServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,9 +20,9 @@ import org.slf4j.LoggerFactory;
  * @author arik
  */
 @Bean
-public class WebServer
+public class WebServerImpl implements WebServer
 {
-    private static final Logger LOG = LoggerFactory.getLogger( WebServer.class );
+    private static final Logger LOG = LoggerFactory.getLogger( WebServerImpl.class );
 
     @Nonnull
     private RequestHandler requestHandler;
@@ -28,22 +30,24 @@ public class WebServer
     @Nullable
     private Server server;
 
+    @Nonnull
+    private MapEx<String, String> cfg = EmptyMapEx.emptyMapEx();
+
     @BeanRef
     public void setRequestHandler( @Nonnull RequestHandler requestHandler )
     {
         this.requestHandler = requestHandler;
     }
 
-    @Configurable("web")
-    public void configure( @Nonnull MapEx<String, String> cfg ) throws Exception
+    @Override
+    public synchronized void start() throws Exception
     {
-        Log.setLog( new Slf4jLog() );
-        if( cfg.get( "enable", Boolean.class, false ) )
+        if( this.server == null )
         {
-            stopServer();
+            stop();
             try
             {
-                Server server = createServer( cfg );
+                Server server = createServer();
                 server.start();
                 this.server = server;
 
@@ -64,20 +68,11 @@ public class WebServer
                 LOG.warn( "Could not start web server: {}", e.getMessage(), e );
             }
         }
-        else
-        {
-            LOG.info( "Web server disabled (add 'enable=true' to your web.properties file to enable)" );
-            stopServer();
-        }
     }
 
+    @Override
     @PreDestroy
-    public void destroy() throws Exception
-    {
-        stopServer();
-    }
-
-    private void stopServer() throws Exception
+    public synchronized void stop() throws Exception
     {
         if( this.server != null )
         {
@@ -87,6 +82,10 @@ public class WebServer
                 this.server.join();
                 LOG.info( "Stopped web server" );
             }
+            catch( Exception e )
+            {
+                LOG.warn( "Could not stop web server: {}", e.getMessage(), e );
+            }
             finally
             {
                 this.server = null;
@@ -94,14 +93,31 @@ public class WebServer
         }
     }
 
-    private Server createServer( MapEx<String, String> cfg )
+    @Configurable( "web" )
+    public void configure( @Nonnull MapEx<String, String> cfg ) throws Exception
+    {
+        Log.setLog( new Slf4jLog() );
+        this.cfg = cfg;
+
+        if( cfg.get( "enable", Boolean.class, false ) )
+        {
+            start();
+        }
+        else
+        {
+            LOG.info( "Web server disabled (add 'enable=true' to your web.properties file to enable)" );
+            stop();
+        }
+    }
+
+    private Server createServer()
     {
         Server server = new Server();
         server.setStopAtShutdown( true );
-        server.setStopTimeout( cfg.get( "stopTimeout", Long.class, 60 * 1000l ) );
-        server.setAttribute( "org.eclipse.jetty.server.Request.maxFormContentSize", cfg.get( "server.maxFormContentSize", Integer.class, 1024 * 200 ) );
-        server.setAttribute( "org.eclipse.jetty.server.Request.maxFormKeys", cfg.get( "server.maxFormKeys", Integer.class, 2000 ) );
-        server.addConnector( createConnector( cfg, server ) );
+        server.setStopTimeout( this.cfg.get( "stopTimeout", Long.class, 60 * 1000l ) );
+        server.setAttribute( "org.eclipse.jetty.server.Request.maxFormContentSize", this.cfg.get( "server.maxFormContentSize", Integer.class, 1024 * 200 ) );
+        server.setAttribute( "org.eclipse.jetty.server.Request.maxFormKeys", this.cfg.get( "server.maxFormKeys", Integer.class, 2000 ) );
+        server.addConnector( createConnector( this.cfg, server ) );
         server.setHandler( this.requestHandler );
         return server;
     }
