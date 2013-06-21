@@ -4,8 +4,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
 import org.eclipse.jetty.server.*;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Slf4jLog;
 import org.mosaic.lifecycle.annotation.Bean;
 import org.mosaic.lifecycle.annotation.BeanRef;
 import org.mosaic.lifecycle.annotation.Configurable;
@@ -80,6 +78,7 @@ public class WebServerImpl implements WebServer
             {
                 this.server.stop();
                 this.server.join();
+                Thread.sleep( 2000 );
                 LOG.info( "Stopped web server" );
             }
             catch( Exception e )
@@ -96,7 +95,6 @@ public class WebServerImpl implements WebServer
     @Configurable( "web" )
     public void configure( @Nonnull MapEx<String, String> cfg ) throws Exception
     {
-        Log.setLog( new Slf4jLog() );
         this.cfg = cfg;
 
         if( cfg.get( "enable", Boolean.class, false ) )
