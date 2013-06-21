@@ -186,7 +186,7 @@ public class ModuleHelper
                         }
                         componentClasses.add( clazz );
                     }
-                    catch( ClassNotFoundException | NoClassDefFoundError e )
+                    catch( Throwable e )
                     {
                         LOG.warn( "Could not read or parse class '{}' from module '{}': {}", path, this.module, e.getMessage(), e );
                     }
