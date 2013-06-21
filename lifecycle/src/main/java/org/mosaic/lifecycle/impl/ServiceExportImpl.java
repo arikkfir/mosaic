@@ -3,10 +3,7 @@ package org.mosaic.lifecycle.impl;
 import com.google.common.reflect.TypeToken;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 import javax.annotation.Nonnull;
 import org.mosaic.lifecycle.Module;
 import org.mosaic.lifecycle.ModuleManager;
@@ -125,5 +122,16 @@ public class ServiceExportImpl implements Module.ServiceExport
     public void unregister()
     {
         this.serviceRegistration.unregister();
+    }
+
+    @Override
+    public void update()
+    {
+        Dictionary<String, Object> dict = new Hashtable<>();
+        for( String propertyKey : this.serviceReference.getPropertyKeys() )
+        {
+            dict.put( propertyKey, this.serviceReference.getProperty( propertyKey ) );
+        }
+        this.serviceRegistration.setProperties( dict );
     }
 }

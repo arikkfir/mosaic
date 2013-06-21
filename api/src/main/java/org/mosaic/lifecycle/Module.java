@@ -140,6 +140,8 @@ public interface Module
         boolean isRegistered();
 
         void unregister();
+
+        void update();
     }
 
     interface PackageExport
