@@ -93,62 +93,72 @@
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
-            <artifactId>api</artifactId>
+            <artifactId>admin</artifactId>
             <version>${project.version}</version>
+            <!-- included only so IDEA will compile these modules when running mosaic as a java main -->
             <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
-            <artifactId>lifecycle</artifactId>
+            <artifactId>api</artifactId>
             <version>${project.version}</version>
+            <!-- included only so IDEA will compile these modules when running mosaic as a java main -->
             <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>config</artifactId>
             <version>${project.version}</version>
+            <!-- included only so IDEA will compile these modules when running mosaic as a java main -->
             <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>database</artifactId>
             <version>${project.version}</version>
+            <!-- included only so IDEA will compile these modules when running mosaic as a java main -->
             <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>event</artifactId>
             <version>${project.version}</version>
+            <!-- included only so IDEA will compile these modules when running mosaic as a java main -->
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mosaic</groupId>
+            <artifactId>lifecycle</artifactId>
+            <version>${project.version}</version>
+            <!-- included only so IDEA will compile these modules when running mosaic as a java main -->
             <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>mail</artifactId>
             <version>${project.version}</version>
+            <!-- included only so IDEA will compile these modules when running mosaic as a java main -->
             <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>security</artifactId>
             <version>${project.version}</version>
+            <!-- included only so IDEA will compile these modules when running mosaic as a java main -->
             <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>shell</artifactId>
             <version>${project.version}</version>
+            <!-- included only so IDEA will compile these modules when running mosaic as a java main -->
             <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>web</artifactId>
             <version>${project.version}</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mosaic</groupId>
-            <artifactId>admin</artifactId>
-            <version>${project.version}</version>
+            <!-- included only so IDEA will compile these modules when running mosaic as a java main -->
             <scope>runtime</scope>
         </dependency>
         <dependency>
