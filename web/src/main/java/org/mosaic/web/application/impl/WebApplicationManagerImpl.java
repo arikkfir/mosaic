@@ -25,7 +25,7 @@ import static org.mosaic.filewatch.WatchRoot.APPS;
 /**
  * @author arik
  */
-@Service({ WebApplicationManager.class, ModuleListener.class })
+@Service( { WebApplicationManager.class, ModuleListener.class } )
 public class WebApplicationManagerImpl extends ModuleListenerAdapter implements WebApplicationManager
 {
     private static final Logger LOG = LoggerFactory.getLogger( WebApplicationManagerImpl.class );
@@ -56,7 +56,7 @@ public class WebApplicationManagerImpl extends ModuleListenerAdapter implements 
         return this.applications.get( name );
     }
 
-    @FileWatcher(root = APPS, pattern = "*.xml", event = { FILE_ADDED, FILE_MODIFIED })
+    @FileWatcher( root = APPS, pattern = "*.xml", event = FILE_ADDED )
     public synchronized void onAppDescriptorAdded( @Nonnull Path file, @Nonnull WatchEvent event ) throws IOException
     {
         try
@@ -64,7 +64,7 @@ public class WebApplicationManagerImpl extends ModuleListenerAdapter implements 
             WebApplicationFactory.WebApplicationImpl application = this.webApplicationFactory.parseWebApplication( file );
             this.applications.put( application.getName(), application );
             application.register();
-            LOG.info( "{} application '{}' from '{}'", event == FILE_ADDED ? "Added" : "Updated", application.getName(), file );
+            LOG.info( "Added application '{}' from '{}'", application.getName(), file );
         }
         catch( WebApplicationParseException e )
         {
@@ -72,7 +72,29 @@ public class WebApplicationManagerImpl extends ModuleListenerAdapter implements 
         }
     }
 
-    @FileWatcher(root = APPS, pattern = "*.xml", event = FILE_DELETED)
+    @FileWatcher( root = APPS, pattern = "*.xml", event = FILE_MODIFIED )
+    public synchronized void onAppDescriptorModified( @Nonnull Path file, @Nonnull WatchEvent event ) throws IOException
+    {
+        String applicationName = this.webApplicationFactory.getApplicationName( file );
+        WebApplicationFactory.WebApplicationImpl application = this.applications.get( applicationName );
+        if( application == null )
+        {
+            LOG.warn( "Web application file '{}' was modified, but Mosaic has no recollection of a web application from that path!" );
+            return;
+        }
+
+        try
+        {
+            application.refresh();
+            LOG.info( "Updated application '{}' from '{}'", application.getName(), file );
+        }
+        catch( Exception e )
+        {
+            LOG.error( "Error updating web application at '{}': {}", file, e.getMessage(), e );
+        }
+    }
+
+    @FileWatcher( root = APPS, pattern = "*.xml", event = FILE_DELETED )
     public synchronized void onAppDescriptorDeleted( @Nonnull Path file ) throws IOException
     {
         String appName = this.webApplicationFactory.getApplicationName( file );
