@@ -58,7 +58,7 @@ public class WebApplicationFactory
 
     private static final Schema WEB_CONTENT_SCHEMA;
 
-    private static final PermissionPolicy NO_OP_PERMISSION_POLICY = new WebApplicationFactory.NoOpPermissionPolicy();
+    public static final PermissionPolicy NO_OP_PERMISSION_POLICY = new WebApplicationFactory.NoOpPermissionPolicy();
 
     public static class NoOpPermissionPolicy implements PermissionPolicy
     {
@@ -238,20 +238,24 @@ public class WebApplicationFactory
             refresh();
         }
 
-        public void refresh() throws IOException, SAXException, ParserConfigurationException, XPathException
+        public void refresh() throws
+                              IOException,
+                              SAXException,
+                              ParserConfigurationException,
+                              XPathException
         {
             XmlDocument document = xmlParser.parse( this.file, WEB_APP_SCHEMA );
             document.addNamespace( "a", WEB_APP_SCHEMA_NS );
             XmlElement root = document.getRoot();
 
-            this.displayName = root.requireAttribute( "display-name" );
-            this.virtualHosts = parseTexts( root.findTexts( "a:virtual-hosts/a:virtual-host" ), "localhost" );
-            this.uriLanguageSelectionEnabled = root.find( "a:content-languages/@support-uri-selection", TypeToken.of( Boolean.class ), false );
-            this.defaultLanguage = root.find( "a:content-languages/@default-language", TypeToken.of( String.class ), "en" );
-            this.contentLanguages = parseTexts( root.findTexts( "a:content-languages/a:language" ), "en" );
-            this.unknownUrlPageName = root.find( "a:unknown-url-page", TypeToken.of( String.class ) );
-            this.internalErrorPageName = root.find( "a:internal-error-page", TypeToken.of( String.class ) );
-            this.resourceCompressionEnabled = root.find( "a:resource-compression", TypeToken.of( Boolean.class ), true );
+            String displayName = root.requireAttribute( "display-name" );
+            Set<String> virtualHosts = parseTexts( root.findTexts( "a:virtual-hosts/a:virtual-host" ), "localhost" );
+            Boolean uriLanguageSelectionEnabled = root.find( "a:content-languages/@support-uri-selection", TypeToken.of( Boolean.class ), false );
+            String defaultLanguage = root.find( "a:content-languages/@default-language", TypeToken.of( String.class ), "en" );
+            Set<String> contentLanguages = parseTexts( root.findTexts( "a:content-languages/a:language" ), "en" );
+            String unknownUrlPageName = root.find( "a:unknown-url-page", TypeToken.of( String.class ) );
+            String internalErrorPageName = root.find( "a:internal-error-page", TypeToken.of( String.class ) );
+            Boolean resourceCompressionEnabled = root.find( "a:resource-compression", TypeToken.of( Boolean.class ), true );
 
             // parameters
             MapEx<String, String> parameters = new LinkedHashMapEx<>( 20, conversionService );
@@ -259,17 +263,15 @@ public class WebApplicationFactory
             {
                 parameters.put( element.requireAttribute( "name" ), element.getValue() );
             }
-            this.parameters = new UnmodifiableMapEx<>( parameters );
 
-            // security
-            this.realms = parseTexts( root.findTexts( "a:security/a:authentication/a:realms/a:realm" ) );
-            this.permissionPolicyName = root.find( "a:security/a:permission-policy", TypeToken.of( String.class ) );
-            this.defaultAuthenticators = parseAuthenticators( root.findTexts( "a:security/a:authentication/a:default-authenticators/a:authenticator" ), BASIC_AUTH_HEADER );
-            this.serviceAuthenticators = parseAuthenticators( root.findTexts( "a:security/a:authentication/a:service-authenticators/a:authenticator" ), SESSION_COOKIE, REMEMBER_ME_COOKIE, BASIC_AUTH_HEADER );
-            this.resourcesAuthenticators = parseAuthenticators( root.findTexts( "a:security/a:authentication/a:resources-authenticators/a:authenticator" ), SESSION_COOKIE, REMEMBER_ME_COOKIE, BASIC_AUTH_HEADER );
-            this.pageAuthenticators = parseAuthenticators( root.findTexts( "a:security/a:authentication/a:page-authenticators/a:authenticator" ), SESSION_COOKIE, REMEMBER_ME_COOKIE, FORM_PAGE );
-            this.formLoginUrl = root.find( "a:security/a:authentication/a:form-login-url/@url", TypeToken.of( String.class ) );
-            this.accessDeniedPageName = root.find( "a:security/a:access-denied-page", TypeToken.of( String.class ) );
+            Set<String> realms = parseTexts( root.findTexts( "a:security/a:authentication/a:realms/a:realm" ) );
+            String permissionPolicyName = root.find( "a:security/a:permission-policy", TypeToken.of( String.class ) );
+            Set<AuthenticatorType> defaultAuthenticators = parseAuthenticators( root.findTexts( "a:security/a:authentication/a:default-authenticators/a:authenticator" ), BASIC_AUTH_HEADER );
+            Set<AuthenticatorType> serviceAuthenticators = parseAuthenticators( root.findTexts( "a:security/a:authentication/a:service-authenticators/a:authenticator" ), SESSION_COOKIE, REMEMBER_ME_COOKIE, BASIC_AUTH_HEADER );
+            Set<AuthenticatorType> resourcesAuthenticators = parseAuthenticators( root.findTexts( "a:security/a:authentication/a:resources-authenticators/a:authenticator" ), SESSION_COOKIE, REMEMBER_ME_COOKIE, BASIC_AUTH_HEADER );
+            Set<AuthenticatorType> pageAuthenticators = parseAuthenticators( root.findTexts( "a:security/a:authentication/a:page-authenticators/a:authenticator" ), SESSION_COOKIE, REMEMBER_ME_COOKIE, FORM_PAGE );
+            String formLoginUrl = root.find( "a:security/a:authentication/a:form-login-url/@url", TypeToken.of( String.class ) );
+            String accessDeniedPageName = root.find( "a:security/a:access-denied-page", TypeToken.of( String.class ) );
 
             // content roots
             Set<Path> contentRoots = new LinkedHashSet<>();
@@ -277,9 +279,10 @@ public class WebApplicationFactory
             {
                 contentRoots.add( Paths.get( value ) );
             }
-            this.contentRoots = unmodifiableSet( contentRoots );
 
             // web content
+            Map<String, Snippet> snippets;
+            Map<String, Page> pages;
             Path contentFile = this.file.resolveSibling( "content" ).resolve( this.name + "-content.xml" );
             if( exists( contentFile ) )
             {
@@ -288,28 +291,51 @@ public class WebApplicationFactory
                 root = document.getRoot();
 
                 // snippets
-                Map<String, Snippet> snippets = new HashMap<>( 500 );
+                snippets = new HashMap<>( 500 );
                 for( XmlElement element : root.findElements( "c:snippets/c:snippet" ) )
                 {
                     String id = element.requireAttribute( "id" );
                     String content = element.find( "c:content", TypeToken.of( String.class ) );
                     snippets.put( id, new SnippetImpl( id, content ) );
                 }
-                this.snippets = snippets;
 
                 // pages
-                Map<String, Page> pages = new HashMap<>( 100 );
+                pages = new HashMap<>( 100 );
                 for( XmlElement element : root.findElements( "c:pages/c:page" ) )
                 {
                     PageImpl page = new PageImpl( expressionParser, conversionService, this, element );
                     pages.put( page.getName(), page );
                 }
-                this.pages = pages;
             }
             else
             {
-                this.snippets = emptyMap();
-                this.pages = emptyMap();
+                snippets = emptyMap();
+                pages = emptyMap();
+            }
+
+            this.displayName = displayName;
+            this.virtualHosts = virtualHosts;
+            this.uriLanguageSelectionEnabled = uriLanguageSelectionEnabled;
+            this.defaultLanguage = defaultLanguage;
+            this.contentLanguages = contentLanguages;
+            this.unknownUrlPageName = unknownUrlPageName;
+            this.internalErrorPageName = internalErrorPageName;
+            this.resourceCompressionEnabled = resourceCompressionEnabled;
+            this.parameters = new UnmodifiableMapEx<>( parameters );
+            this.realms = realms;
+            this.permissionPolicyName = permissionPolicyName;
+            this.defaultAuthenticators = defaultAuthenticators;
+            this.serviceAuthenticators = serviceAuthenticators;
+            this.resourcesAuthenticators = resourcesAuthenticators;
+            this.pageAuthenticators = pageAuthenticators;
+            this.formLoginUrl = formLoginUrl;
+            this.accessDeniedPageName = accessDeniedPageName;
+            this.contentRoots = unmodifiableSet( contentRoots );
+            this.snippets = snippets;
+            this.pages = pages;
+            if( this.export != null )
+            {
+                this.export.update();
             }
         }
 
