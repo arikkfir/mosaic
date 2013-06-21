@@ -54,24 +54,50 @@
         <dependency>
             <groupId>org.eclipse.jetty.orbit</groupId>
             <artifactId>javax.servlet</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-server</artifactId>
+            <!-- make provided so these dependencies are not included by IDEA in run classpath -->
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-http</artifactId>
-            <scope>runtime</scope>
+            <!-- make provided so these dependencies are not included by IDEA in run classpath -->
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-io</artifactId>
-            <scope>runtime</scope>
+            <!-- make provided so these dependencies are not included by IDEA in run classpath -->
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-security</artifactId>
+            <!-- make provided so these dependencies are not included by IDEA in run classpath -->
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+            <!-- make provided so these dependencies are not included by IDEA in run classpath -->
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-servlet</artifactId>
+            <!-- make provided so these dependencies are not included by IDEA in run classpath -->
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-servlets</artifactId>
+            <!-- make provided so these dependencies are not included by IDEA in run classpath -->
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-util</artifactId>
+            <!-- make provided so these dependencies are not included by IDEA in run classpath -->
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
