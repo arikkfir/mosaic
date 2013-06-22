@@ -11,11 +11,11 @@ import static java.lang.String.format;
 /**
  * @author arik
  */
-@SuppressWarnings( "CPD-START" )
+@SuppressWarnings("CPD-START")
 public class HashMapEx<K, V> extends HashMap<K, V> implements MapEx<K, V>
 {
     @Nonnull
-    private final ConversionService conversionService;
+    protected final ConversionService conversionService;
 
     public HashMapEx( int initialCapacity,
                       float loadFactor,
