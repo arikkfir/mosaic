@@ -67,6 +67,13 @@ public class MethodEndpointRegistrar extends AbstractRegistrar implements Method
 
     @Nonnull
     @Override
+    public Class<?> getDeclaringType()
+    {
+        return this.methodHandle.getDeclaringClass();
+    }
+
+    @Nonnull
+    @Override
     public List<MethodParameter> getParameters()
     {
         return this.methodHandle.getParameters();
@@ -107,6 +114,12 @@ public class MethodEndpointRegistrar extends AbstractRegistrar implements Method
         return new InvokerImpl( this.methodHandle.createInvoker( resolvers ) );
     }
 
+    @Override
+    public String toString()
+    {
+        return "MethodEndpoint[" + this.methodHandle + " in bean '" + this.beanName + "']";
+    }
+
     @Nonnull
     @Override
     protected Class<?> getServiceType()
@@ -134,12 +147,6 @@ public class MethodEndpointRegistrar extends AbstractRegistrar implements Method
             properties.add( DP.dp( entry.getKey(), entry.getValue() ) );
         }
         return properties.toArray( new DP[ properties.size() ] );
-    }
-
-    @Override
-    public String toString()
-    {
-        return "MethodEndpoint[" + this.methodHandle + " in bean '" + this.beanName + "']";
     }
 
     private class InvokerImpl implements Invoker

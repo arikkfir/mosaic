@@ -28,6 +28,9 @@ public interface MethodEndpoint
     TypeToken<?> getReturnType();
 
     @Nonnull
+    Class<?> getDeclaringType();
+
+    @Nonnull
     List<MethodParameter> getParameters();
 
     @Nonnull
