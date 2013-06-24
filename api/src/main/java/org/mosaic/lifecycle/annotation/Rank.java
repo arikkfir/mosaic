@@ -8,9 +8,9 @@ import java.lang.annotation.Target;
 /**
  * @author arik
  */
-@Retention( RetentionPolicy.RUNTIME )
-@Target( { ElementType.METHOD, ElementType.TYPE } )
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ ElementType.METHOD, ElementType.TYPE, ElementType.PARAMETER })
 public @interface Rank
 {
-    int value();
+    int value() default 0;
 }
