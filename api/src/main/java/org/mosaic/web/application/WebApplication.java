@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.joda.time.Period;
 import org.mosaic.security.policy.PermissionPolicy;
 import org.mosaic.util.collect.MapEx;
 import org.mosaic.web.security.AuthenticatorType;
@@ -48,6 +49,9 @@ public interface WebApplication extends Map<String, Object>
 
     @Nonnull
     PermissionPolicy getPermissionPolicy();
+
+    @Nonnull
+    Period getMaxSessionAge();
 
     @Nonnull
     Collection<AuthenticatorType> getDefaultAuthenticatorTypes();

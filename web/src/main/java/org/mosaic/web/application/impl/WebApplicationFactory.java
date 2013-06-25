@@ -14,6 +14,10 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import javax.xml.xpath.XPathException;
+import org.joda.time.Period;
+import org.joda.time.PeriodType;
+import org.joda.time.format.PeriodFormatter;
+import org.joda.time.format.PeriodFormatterBuilder;
 import org.mosaic.lifecycle.DP;
 import org.mosaic.lifecycle.Module;
 import org.mosaic.lifecycle.annotation.Bean;
@@ -94,6 +98,21 @@ public class WebApplicationFactory
             throw new IllegalStateException( "Could not find 'web-application.xsd' schema resource in Mosaic API bundle: " + e.getMessage(), e );
         }
     }
+
+    @Nonnull
+    private final PeriodFormatter maxSessionAgePeriodFormatter = new PeriodFormatterBuilder()
+            .appendYears()
+            .appendSuffix( " year", " years" ).appendSeparator( ", ", " and " )
+            .appendMonths()
+            .appendSuffix( " month", " months" ).appendSeparator( ", ", " and " )
+            .appendDays()
+            .appendSuffix( " day", " days" ).appendSeparator( ", ", " and " )
+            .appendHours()
+            .appendSuffix( " hour", " hours" ).appendSeparator( ", ", " and " )
+            .printZeroRarelyLast()
+            .appendMinutes()
+            .appendSuffix( " minute", " minutes" )
+            .toFormatter();
 
     @Nonnull
     private Module module;
@@ -229,6 +248,9 @@ public class WebApplicationFactory
         @Nullable
         private Module.ServiceExport export;
 
+        @Nonnull
+        private Period maxSessionAge;
+
         private WebApplicationImpl( @Nonnull Path file )
                 throws IOException, SAXException, ParserConfigurationException, XPathException
         {
@@ -256,6 +278,17 @@ public class WebApplicationFactory
             String unknownUrlPageName = root.find( "a:unknown-url-page", TypeToken.of( String.class ) );
             String internalErrorPageName = root.find( "a:internal-error-page", TypeToken.of( String.class ) );
             Boolean resourceCompressionEnabled = root.find( "a:resource-compression", TypeToken.of( Boolean.class ), true );
+
+            Period maxSessionAge;
+            String maxSessionAgeString = root.find( "a:max-session-age", TypeToken.of( String.class ) );
+            if( maxSessionAgeString != null )
+            {
+                maxSessionAge = maxSessionAgePeriodFormatter.parsePeriod( maxSessionAgeString );
+            }
+            else
+            {
+                maxSessionAge = new Period( 30, PeriodType.minutes() );
+            }
 
             // parameters
             MapEx<String, String> parameters = new LinkedHashMapEx<>( 20, conversionService );
@@ -321,6 +354,7 @@ public class WebApplicationFactory
             this.unknownUrlPageName = unknownUrlPageName;
             this.internalErrorPageName = internalErrorPageName;
             this.resourceCompressionEnabled = resourceCompressionEnabled;
+            this.maxSessionAge = maxSessionAge;
             this.parameters = new UnmodifiableMapEx<>( parameters );
             this.realms = realms;
             this.permissionPolicyName = permissionPolicyName;
@@ -449,6 +483,13 @@ public class WebApplicationFactory
                 PermissionPolicy permissionPolicy = permissionPoliciesManager.getPolicy( this.permissionPolicyName );
                 return permissionPolicy == null ? NO_OP_PERMISSION_POLICY : permissionPolicy;
             }
+        }
+
+        @Nonnull
+        @Override
+        public Period getMaxSessionAge()
+        {
+            return this.maxSessionAge;
         }
 
         @Nonnull

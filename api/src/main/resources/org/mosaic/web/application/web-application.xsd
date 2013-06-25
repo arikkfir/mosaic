@@ -28,6 +28,7 @@
                 <xsd:element name="unknown-url-page" type="xsd:string" minOccurs="0" maxOccurs="1"/>
                 <xsd:element name="internal-error-page" type="xsd:string" minOccurs="0" maxOccurs="1"/>
                 <xsd:element name="resource-compression" type="xsd:boolean" minOccurs="0" maxOccurs="1"/>
+                <xsd:element name="max-session-age" type="xsd:string" minOccurs="0" maxOccurs="1"/>
                 <xsd:element name="parameters" minOccurs="0" maxOccurs="1">
                     <xsd:complexType>
                         <xsd:sequence>
