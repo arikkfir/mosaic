@@ -38,6 +38,12 @@ public class UserImpl extends ConcurrentHashMapEx<String, Object> implements Mut
         this.name = name;
     }
 
+    @Override
+    public boolean isAnonymous()
+    {
+        return false;
+    }
+
     @Nonnull
     @Override
     public String getName()

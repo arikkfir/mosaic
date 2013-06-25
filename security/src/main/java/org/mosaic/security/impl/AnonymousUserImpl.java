@@ -19,6 +19,12 @@ import static java.lang.String.format;
  */
 public class AnonymousUserImpl implements MutableUser
 {
+    @Override
+    public boolean isAnonymous()
+    {
+        return true;
+    }
+
     @Nonnull
     @Override
     public String getName()

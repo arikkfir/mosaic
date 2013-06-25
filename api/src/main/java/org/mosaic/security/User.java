@@ -12,6 +12,8 @@ import org.mosaic.util.collect.MapEx;
  */
 public interface User extends MapEx<String, Object>
 {
+    boolean isAnonymous();
+
     @Nonnull
     String getName();
 
