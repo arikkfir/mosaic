@@ -92,7 +92,8 @@ public interface MethodHandle
         Object SKIP = new Object();
 
         @Nullable
-        Object resolve( @Nonnull MethodParameter parameter, @Nonnull MapEx<String, Object> resolveContext );
+        Object resolve( @Nonnull MethodParameter parameter, @Nonnull MapEx<String, Object> resolveContext )
+                throws Exception;
     }
 
     interface Invoker
