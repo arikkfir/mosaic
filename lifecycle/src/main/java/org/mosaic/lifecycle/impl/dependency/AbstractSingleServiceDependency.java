@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.mosaic.lifecycle.annotation.Rank;
 import org.mosaic.lifecycle.annotation.ServiceId;
 import org.mosaic.lifecycle.annotation.ServiceProperty;
 import org.mosaic.lifecycle.impl.ModuleImpl;
@@ -180,7 +181,7 @@ public abstract class AbstractSingleServiceDependency extends AbstractBeanDepend
         TypeToken<?> type = null;
         for( MethodParameter parameter : this.methodHandle.getParameters() )
         {
-            if( !parameter.hasAnnotation( ServiceProperty.class ) && !parameter.hasAnnotation( ServiceId.class ) )
+            if( !parameter.hasAnnotation( ServiceProperty.class ) && !parameter.hasAnnotation( ServiceId.class ) && !parameter.hasAnnotation( Rank.class ) )
             {
                 if( type != null )
                 {
