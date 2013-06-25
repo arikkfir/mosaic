@@ -31,7 +31,7 @@ public class ServiceBindDependency extends AbstractSingleServiceDependency
     public String toString()
     {
         return String.format( "ServiceBind[%s] for %s",
-                              createFilter( this.serviceType, this.filter ),
+                              this.serviceType == null ? "unknown service type" : createFilter( this.serviceType, this.filter ),
                               this.methodHandle );
     }
 
