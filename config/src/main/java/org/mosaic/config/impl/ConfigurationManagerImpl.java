@@ -14,13 +14,13 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import org.mosaic.config.ConfigurationManager;
 import org.mosaic.filewatch.WatchEvent;
 import org.mosaic.filewatch.WatchRoot;
 import org.mosaic.filewatch.annotation.FileWatcher;
 import org.mosaic.lifecycle.MethodEndpoint;
 import org.mosaic.lifecycle.annotation.*;
+import org.mosaic.util.collect.EmptyMapEx;
 import org.mosaic.util.collect.HashMapEx;
 import org.mosaic.util.collect.MapEx;
 import org.mosaic.util.convert.ConversionService;
@@ -35,18 +35,18 @@ import static com.google.common.collect.Multimaps.synchronizedMultimap;
  * @author arik
  */
 @Bean
-public class ConfigurationManager
+public class ConfigurationManagerImpl implements ConfigurationManager
 {
-    private static final Logger LOG = LoggerFactory.getLogger( ConfigurationManager.class );
+    private static final Logger LOG = LoggerFactory.getLogger( ConfigurationManagerImpl.class );
 
     @Nonnull
     private final Map<String, Properties> configurations = new ConcurrentHashMap<>( 50 );
 
     @Nonnull
-    private ConversionService conversionService;
+    private final Multimap<String, MethodEndpoint> endpoints = synchronizedMultimap( ArrayListMultimap.<String, MethodEndpoint>create() );
 
-    @Nullable
-    private Multimap<String, MethodEndpoint> endpoints;
+    @Nonnull
+    private ConversionService conversionService;
 
     @ServiceRef
     public void setConversionService( @Nonnull ConversionService conversionService )
@@ -54,46 +54,41 @@ public class ConfigurationManager
         this.conversionService = conversionService;
     }
 
-    @PostConstruct
-    public void init()
+    @Override
+    @Nonnull
+    public MapEx<String, String> getConfiguration( @Nonnull String name )
     {
-        this.endpoints = synchronizedMultimap( ArrayListMultimap.<String, MethodEndpoint>create() );
+        Properties properties = this.configurations.get( name );
+        if( properties == null )
+        {
+            return EmptyMapEx.emptyMapEx();
+        }
+
+        return new HashMapEx<>( Maps.fromProperties( properties ), conversionService );
     }
 
-    @PreDestroy
-    public void destory()
-    {
-        this.endpoints = null;
-    }
-
-    @MethodEndpointBind(Configurable.class)
+    @MethodEndpointBind( Configurable.class )
     public void addConfigurable( @Nonnull MethodEndpoint endpoint )
     {
-        Multimap<String, MethodEndpoint> endpoints = this.endpoints;
-        if( endpoints != null )
-        {
-            Configurable ann = ( Configurable ) endpoint.getType();
-            endpoints.put( ann.value(), endpoint );
+        Configurable ann = ( Configurable ) endpoint.getType();
+        this.endpoints.put( ann.value(), endpoint );
+        LOG.info( "Added @Configurable from {}", endpoint );
 
-            Properties properties = this.configurations.get( ann.value() );
-            notifyConfigurable( properties != null ? properties : new Properties(), endpoint );
-        }
+        Properties properties = this.configurations.get( ann.value() );
+        notifyConfigurable( properties != null ? properties : new Properties(), endpoint );
     }
 
-    @MethodEndpointUnbind(Configurable.class)
+    @MethodEndpointUnbind( Configurable.class )
     public void removeConfigurable( @Nonnull MethodEndpoint endpoint )
     {
-        Multimap<String, MethodEndpoint> endpoints = this.endpoints;
-        if( endpoints != null )
-        {
-            Configurable ann = ( Configurable ) endpoint.getType();
-            endpoints.remove( ann.value(), endpoint );
-        }
+        Configurable ann = ( Configurable ) endpoint.getType();
+        this.endpoints.remove( ann.value(), endpoint );
+        LOG.info( "Removed @Configurable {}", endpoint );
     }
 
-    @FileWatcher(root = WatchRoot.ETC,
-                 pattern = "*.properties",
-                 event = { WatchEvent.FILE_ADDED, WatchEvent.FILE_MODIFIED })
+    @FileWatcher( root = WatchRoot.ETC,
+                  pattern = "*.properties",
+                  event = { WatchEvent.FILE_ADDED, WatchEvent.FILE_MODIFIED } )
     public void onFileModified( @Nonnull Path file, @Nonnull BasicFileAttributes attrs ) throws IOException
     {
         // load configuration data
@@ -106,19 +101,15 @@ public class ConfigurationManager
         this.configurations.put( configurationName, properties );
 
         // notify interested endpoints
-        Multimap<String, MethodEndpoint> endpoints = this.endpoints;
-        if( endpoints != null )
+        for( MethodEndpoint endpoint : this.endpoints.get( configurationName ) )
         {
-            for( MethodEndpoint endpoint : endpoints.get( configurationName ) )
-            {
-                notifyConfigurable( properties, endpoint );
-            }
+            notifyConfigurable( properties, endpoint );
         }
     }
 
-    @FileWatcher(root = WatchRoot.ETC,
-                 pattern = "*.properties",
-                 event = WatchEvent.FILE_DELETED)
+    @FileWatcher( root = WatchRoot.ETC,
+                  pattern = "*.properties",
+                  event = WatchEvent.FILE_DELETED )
     public void onFileDeleted( @Nonnull Path file ) throws IOException
     {
         // store (possibly replace previous) configuration in memory
@@ -127,14 +118,10 @@ public class ConfigurationManager
         this.configurations.remove( configurationName );
 
         // notify interested endpoints
-        Multimap<String, MethodEndpoint> endpoints = this.endpoints;
-        if( endpoints != null )
+        final Properties emptyProperties = new Properties();
+        for( MethodEndpoint endpoint : this.endpoints.get( configurationName ) )
         {
-            final Properties emptyProperties = new Properties();
-            for( MethodEndpoint endpoint : endpoints.get( configurationName ) )
-            {
-                notifyConfigurable( emptyProperties, endpoint );
-            }
+            notifyConfigurable( emptyProperties, endpoint );
         }
     }
 
