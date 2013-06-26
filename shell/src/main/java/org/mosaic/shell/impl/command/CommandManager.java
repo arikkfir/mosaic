@@ -10,8 +10,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import org.apache.commons.cli.*;
 import org.mosaic.lifecycle.MethodEndpoint;
 import org.mosaic.lifecycle.annotation.*;
@@ -24,6 +22,8 @@ import org.mosaic.util.collect.MapEx;
 import org.mosaic.util.convert.ConversionService;
 import org.mosaic.util.reflection.MethodHandle;
 import org.mosaic.util.reflection.MethodParameter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static com.google.common.collect.Collections2.transform;
 import static java.util.Arrays.asList;
@@ -38,6 +38,8 @@ public class CommandManager
     private static final String[] EMPTY_STRING_ARRAY = new String[ 0 ];
 
     private static final CommandExecutorComparator COMMAND_EXECUTOR_COMPARATOR = new CommandExecutorComparator();
+
+    private static final Logger LOG = LoggerFactory.getLogger( CommandManager.class );
 
     private static String[] splitByCharacterType( String str, boolean camelCase )
     {
@@ -90,10 +92,10 @@ public class CommandManager
     }
 
     @Nonnull
-    private ConversionService conversionService;
+    private final Map<Long, CommandExecutor> commands = new ConcurrentHashMap<>();
 
-    @Nullable
-    private Map<Long, CommandExecutor> commands;
+    @Nonnull
+    private ConversionService conversionService;
 
     @ServiceRef
     public void setConversionService( @Nonnull ConversionService conversionService )
@@ -101,44 +103,28 @@ public class CommandManager
         this.conversionService = conversionService;
     }
 
-    @MethodEndpointBind(org.mosaic.shell.annotation.Command.class)
+    @MethodEndpointBind( org.mosaic.shell.annotation.Command.class )
     public void addCommand( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
     {
-        Map<Long, CommandExecutor> commands = this.commands;
-        if( commands != null )
-        {
-            this.commands.put( id, new StandardCommandExecutor( new MethodEndpointCommandAdapter( endpoint ) ) );
-        }
+        addCommand( id, new StandardCommandExecutor( new MethodEndpointCommandAdapter( endpoint ) ) );
     }
 
-    @MethodEndpointUnbind(org.mosaic.shell.annotation.Command.class)
+    @MethodEndpointUnbind( org.mosaic.shell.annotation.Command.class )
     public void removeCommand( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
     {
-        Map<Long, CommandExecutor> commands = this.commands;
-        if( commands != null )
-        {
-            this.commands.remove( id );
-        }
+        removeCommand( id );
     }
 
     @ServiceBind
     public void addCommand( @Nonnull Command command, @ServiceId long id )
     {
-        Map<Long, CommandExecutor> commands = this.commands;
-        if( commands != null )
-        {
-            this.commands.put( id, new StandardCommandExecutor( command ) );
-        }
+        addCommand( id, new StandardCommandExecutor( command ) );
     }
 
     @ServiceUnbind
     public void removeCommand( Command command, @ServiceId long id )
     {
-        Map<Long, CommandExecutor> commands = this.commands;
-        if( commands != null )
-        {
-            this.commands.remove( id );
-        }
+        removeCommand( id );
     }
 
     public int execute( @Nonnull Console console, @Nonnull String line ) throws IOException
@@ -171,26 +157,24 @@ public class CommandManager
     @Nullable
     public CommandExecutor getCommand( @Nonnull String name )
     {
-        if( this.commands != null )
+        Set<CommandExecutor> candidates = new HashSet<>();
+        for( CommandExecutor command : this.commands.values() )
         {
-            Set<CommandExecutor> candidates = new HashSet<>();
-            for( CommandExecutor command : this.commands.values() )
+            String commandName = command.getCommand().getName();
+            if( commandName.equals( name ) )
             {
-                String commandName = command.getCommand().getName();
-                if( commandName.equals( name ) )
-                {
-                    return command;
-                }
-                else if( commandName.endsWith( ":" + name ) )
-                {
-                    candidates.add( command );
-                }
+                return command;
             }
-            if( candidates.size() == 1 )
+            else if( commandName.endsWith( ":" + name ) )
             {
-                return candidates.iterator().next();
+                candidates.add( command );
             }
         }
+        if( candidates.size() == 1 )
+        {
+            return candidates.iterator().next();
+        }
+
         return null;
     }
 
@@ -198,26 +182,24 @@ public class CommandManager
     public Set<CommandExecutor> getCommandExecutorsStartingWithPrefix( @Nonnull String prefix )
     {
         Set<CommandExecutor> commands = new HashSet<>();
-        if( this.commands != null )
+        List<Pattern> patterns = new LinkedList<>();
+        patterns.add( Pattern.compile( quote( prefix.toLowerCase() ) + ".*" ) );
+        if( !prefix.contains( ":" ) )
         {
-            List<Pattern> patterns = new LinkedList<>();
-            patterns.add( Pattern.compile( quote( prefix.toLowerCase() ) + ".*" ) );
-            if( !prefix.contains( ":" ) )
-            {
-                patterns.add( Pattern.compile( ".*:" + quote( prefix.toLowerCase() ) + ".*" ) );
-            }
+            patterns.add( Pattern.compile( ".*:" + quote( prefix.toLowerCase() ) + ".*" ) );
+        }
 
-            for( CommandExecutor command : this.commands.values() )
+        for( CommandExecutor command : this.commands.values() )
+        {
+            for( Pattern pattern : patterns )
             {
-                for( Pattern pattern : patterns )
+                if( pattern.matcher( command.getCommand().getName().toLowerCase() ).matches() )
                 {
-                    if( pattern.matcher( command.getCommand().getName().toLowerCase() ).matches() )
-                    {
-                        commands.add( command );
-                    }
+                    commands.add( command );
                 }
             }
         }
+
         return commands;
     }
 
@@ -225,23 +207,23 @@ public class CommandManager
     public Set<CommandExecutor> getCommandExecutors()
     {
         Set<CommandExecutor> commands = new TreeSet<>( COMMAND_EXECUTOR_COMPARATOR );
-        if( this.commands != null )
-        {
-            commands.addAll( this.commands.values() );
-        }
+        commands.addAll( this.commands.values() );
         return commands;
     }
 
-    @PostConstruct
-    public void init()
+    private void addCommand( long id, @Nonnull CommandExecutor commandExecutor )
     {
-        this.commands = new ConcurrentHashMap<>();
+        this.commands.put( id, commandExecutor );
+        LOG.info( "Added {}", commandExecutor );
     }
 
-    @PreDestroy
-    public void destroy()
+    private void removeCommand( long id )
     {
-        this.commands = null;
+        CommandExecutor removed = this.commands.remove( id );
+        if( removed != null )
+        {
+            LOG.info( "Removed {}", removed );
+        }
     }
 
     private void printHelp( @Nonnull Console console,
@@ -317,6 +299,12 @@ public class CommandManager
         private StandardCommandExecutor( @Nonnull Command command )
         {
             this.command = command;
+        }
+
+        @Override
+        public String toString()
+        {
+            return this.command.toString();
         }
 
         @Nonnull
@@ -561,6 +549,12 @@ public class CommandManager
         {
             this.endpoint = endpoint;
             this.invoker = this.endpoint.createInvoker( this );
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Command[ " + getName() + " from " + this.endpoint + "]";
         }
 
         @Nonnull

@@ -63,6 +63,7 @@ public class RealmManagerImpl implements RealmManager
     {
         RealmMethodEndpointAdapter realmAdapter = new RealmMethodEndpointAdapter( realmMethodEndpoint );
         this.realms.put( realmAdapter.getName(), realmAdapter );
+        LOG.info( "Added @Realm {}", realmMethodEndpoint );
     }
 
     @MethodEndpointUnbind(org.mosaic.security.realm.annotation.Realm.class)
@@ -72,6 +73,7 @@ public class RealmManagerImpl implements RealmManager
         if( ann != null )
         {
             this.realms.remove( ann.value() );
+            LOG.info( "Removed @Realm {}", realmMethodEndpoint );
         }
     }
 
