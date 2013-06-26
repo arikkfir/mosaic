@@ -1,8 +1,8 @@
 package org.mosaic.web.request;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
+import java.io.InputStream;
+import java.io.Reader;
 import java.nio.file.Path;
 import javax.annotation.Nonnull;
 import org.mosaic.web.net.MediaType;
@@ -21,10 +21,13 @@ public interface WebPart
     long getSize();
 
     @Nonnull
-    ByteBuffer getBinaryContents();
+    InputStream getBinaryContents() throws IOException;
 
     @Nonnull
-    CharBuffer getCharacterContents();
+    Reader getCharacterContents() throws IOException;
 
     void saveLocally( @Nonnull Path file ) throws IOException;
+
+    @Nonnull
+    Path saveToTempFile() throws IOException;
 }

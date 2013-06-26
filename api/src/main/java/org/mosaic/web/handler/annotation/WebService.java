@@ -12,7 +12,9 @@ import org.mosaic.lifecycle.annotation.MethodEndpointMarker;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 @MethodEndpointMarker
-public @interface Handler
+public @interface WebService
 {
     String[] value();
+
+    boolean wrapResult() default true;
 }

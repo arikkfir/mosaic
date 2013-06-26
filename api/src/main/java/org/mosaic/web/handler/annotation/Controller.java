@@ -9,10 +9,10 @@ import org.mosaic.lifecycle.annotation.MethodEndpointMarker;
 /**
  * @author arik
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
+@Retention( RetentionPolicy.RUNTIME )
+@Target( ElementType.METHOD )
 @MethodEndpointMarker
-public @interface Interceptor
+public @interface Controller
 {
-    String[] value() default "";
+    String[] value();
 }

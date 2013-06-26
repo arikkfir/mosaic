@@ -92,7 +92,7 @@ public class WebServerImpl implements WebServer
         }
     }
 
-    @Configurable( "web" )
+    @Configurable("web")
     public void configure( @Nonnull MapEx<String, String> cfg ) throws Exception
     {
         this.cfg = cfg;
@@ -123,7 +123,7 @@ public class WebServerImpl implements WebServer
     private ServerConnector createConnector( MapEx<String, String> cfg, Server server )
     {
         ServerConnector connector = new ServerConnector( server, createHttpConnectionFactory( cfg ) );
-        connector.setReuseAddress( cfg.get( "connector.reuseAddress", Boolean.class, false ) );
+        connector.setReuseAddress( cfg.get( "connector.reuseAddress", Boolean.class, true ) );
         connector.setDefaultProtocol( "http/1.1" );
         connector.setPort( cfg.get( "connector.port", Integer.class, 8080 ) );
         connector.setIdleTimeout( cfg.get( "connector.idleTimeout", Integer.class, 60000 ) );

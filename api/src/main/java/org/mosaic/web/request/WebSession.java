@@ -1,23 +1,26 @@
 package org.mosaic.web.request;
 
-import java.util.Date;
 import javax.annotation.Nonnull;
+import org.joda.time.DateTime;
+import org.joda.time.Duration;
+import org.mosaic.util.collect.MapEx;
 
 /**
  * @author arik
  */
-public interface WebSession
+public interface WebSession extends MapEx<String, Object>
 {
     @Nonnull
     String getId();
 
     @Nonnull
-    Date getCreationTime();
+    DateTime getCreationTime();
 
     @Nonnull
-    Date getLastAccessTime();
+    DateTime getLastAccessTime();
 
-    long getMaxInactiveIntervalInSeconds();
+    @Nonnull
+    Duration getMaxInactiveIntervalInSeconds();
 
     boolean isNew();
 

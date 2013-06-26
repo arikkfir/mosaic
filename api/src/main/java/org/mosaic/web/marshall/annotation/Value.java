@@ -1,4 +1,4 @@
-package org.mosaic.web.handler.annotation;
+package org.mosaic.web.marshall.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -8,8 +8,8 @@ import java.lang.annotation.Target;
 /**
  * @author arik
  */
-@Retention( RetentionPolicy.RUNTIME )
-@Target( ElementType.PARAMETER )
-public @interface Query
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.PARAMETER)
+public @interface Value
 {
 }

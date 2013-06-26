@@ -6,6 +6,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.mosaic.web.net.HttpMethod;
 
+import static org.mosaic.web.net.HttpMethod.*;
+
 /**
  * @author arik
  */
@@ -13,5 +15,5 @@ import org.mosaic.web.net.HttpMethod;
 @Target(ElementType.METHOD)
 public @interface Method
 {
-    HttpMethod[] value();
+    HttpMethod[] value() default { DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT, TRACE };
 }

@@ -2,49 +2,26 @@ package org.mosaic.web.request;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.joda.time.Period;
 
 /**
  * @author arik
  */
-public interface WebCookie
+public interface ResponseCookie extends RequestCookie
 {
-    @Nonnull
-    String getName();
-
-    @Nullable
-    String getValue();
-
     void setValue( @Nullable String value );
-
-    @Nullable
-    String getDomain();
 
     void setDomain( @Nonnull String domain );
 
-    @Nullable
-    String getPath();
-
     void setPath( @Nullable String path );
 
-    @Nullable
-    Integer getMaxAgeInSeconds();
-
-    void setMaxAgeInSeconds( @Nullable Integer maxAgeInSeconds );
-
-    boolean isSecure();
+    void setMaxAge( @Nullable Period maxAge );
 
     void setSecure( boolean secure );
 
-    @Nullable
-    String getComment();
-
     void setComment( @Nullable String comment );
 
-    boolean isHttpOnly();
-
     void setHttpOnly( boolean httpOnly );
-
-    int getVersion();
 
     void setVersion( int version );
 }

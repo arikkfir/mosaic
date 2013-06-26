@@ -52,6 +52,10 @@
             <artifactId>jsr305</artifactId>
         </dependency>
         <dependency>
+            <groupId>joda-time</groupId>
+            <artifactId>joda-time</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.eclipse.jetty.orbit</groupId>
             <artifactId>javax.servlet</artifactId>
             <!-- make provided so these dependencies are not included by IDEA in run classpath -->
