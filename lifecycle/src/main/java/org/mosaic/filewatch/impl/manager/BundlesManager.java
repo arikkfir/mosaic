@@ -37,14 +37,14 @@ public class BundlesManager extends AbstractFileWatcherAdapter implements Proper
 
     public static final PropertyPlaceholderHelper PROPERTY_PLACEHOLDER_HELPER = new PropertyPlaceholderHelper( "${", "}", ":", false );
 
-    private static class BundleLocationCache
+    private static class BundleCollection
     {
         private long readTime;
 
         @Nonnull
         private Set<Path> targets = Collections.emptySet();
 
-        private BundleLocationCache( long readTime )
+        private BundleCollection( long readTime )
         {
             this.readTime = readTime;
         }
@@ -57,7 +57,7 @@ public class BundlesManager extends AbstractFileWatcherAdapter implements Proper
     private final Server server;
 
     @Nonnull
-    private final Map<Path, BundleLocationCache> fileLocationCache = new HashMap<>();
+    private final Map<Path, BundleCollection> bundleCollections = new HashMap<>();
 
     public BundlesManager( @Nonnull BundleContext bundleContext, @Nonnull Server server )
     {
@@ -177,8 +177,63 @@ public class BundlesManager extends AbstractFileWatcherAdapter implements Proper
 
     private void handleScanFinished( ScanContext context )
     {
-        @SuppressWarnings( "unchecked" )
+        @SuppressWarnings("unchecked")
         final List<Bundle> bundlesToStart = context.getAttributes().require( "bundlesToStart", List.class );
+
+        // check bundles installed from jars/maven files
+        for( BundleCollection bundleCollection : this.bundleCollections.values() )
+        {
+            for( Path target : bundleCollection.targets )
+            {
+                if( exists( target ) )
+                {
+                    Bundle bundle = this.bundleContext.getBundle( target.toString() );
+                    if( bundle == null )
+                    {
+                        // file exists but there's no corresponding bundle (maybe removed in the past, and now restored)
+                        bundle = installBundleNoError( target );
+                        if( bundle != null )
+                        {
+                            bundlesToStart.add( bundle );
+                        }
+                    }
+                    else
+                    {
+                        long fileLastMod;
+                        try
+                        {
+                            BasicFileAttributes attrs = readAttributes( target, BasicFileAttributes.class );
+                            fileLastMod = attrs.lastModifiedTime().toMillis();
+                        }
+                        catch( IOException ignore )
+                        {
+                            LOG.warn( "Cannot read file attributes of {}", target );
+                            continue;
+                        }
+
+                        if( fileLastMod > bundle.getLastModified() && System.currentTimeMillis() - 2000 > fileLastMod )
+                        {
+                            if( stopAndUpdateBundle( bundle, target ) )
+                            {
+                                bundlesToStart.add( bundle );
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    Bundle bundle = this.bundleContext.getBundle( target.toString() );
+                    if( bundle != null )
+                    {
+                        if( uninstallBundle( bundle ) )
+                        {
+                            context.getAttributes().put( "bundlesWereUninstalled", true );
+                        }
+                    }
+                }
+            }
+        }
+
         final Boolean bundlesWereUninstalled = context.getAttributes().require( "bundlesWereUninstalled", Boolean.class );
 
         // if any bundle was uninstalled or we have any bundle to start, we should perform a package refresh now
@@ -245,13 +300,13 @@ public class BundlesManager extends AbstractFileWatcherAdapter implements Proper
 
     private void handleJarCollectionFileDeleted( ScanContext context, Path path )
     {
-        BundleLocationCache cache = this.fileLocationCache.remove( path );
+        BundleCollection cache = this.bundleCollections.remove( path );
         if( cache != null )
         {
             for( Path jar : cache.targets )
             {
                 boolean referenced = false;
-                for( BundleLocationCache validCache : this.fileLocationCache.values() )
+                for( BundleCollection validCache : this.bundleCollections.values() )
                 {
                     if( validCache.targets.contains( jar ) )
                     {
@@ -272,7 +327,7 @@ public class BundlesManager extends AbstractFileWatcherAdapter implements Proper
 
     private void handleJarFileAddedOrModified( @Nonnull ScanContext context, @Nonnull Path path )
     {
-        @SuppressWarnings( "unchecked" )
+        @SuppressWarnings("unchecked")
         List<Bundle> bundlesToStart = context.getAttributes().require( "bundlesToStart", List.class );
 
         // check whether we need to install a new bundle or update an existing bundle
@@ -303,7 +358,7 @@ public class BundlesManager extends AbstractFileWatcherAdapter implements Proper
     {
         // obtain list of installed bundles specified in this file from previous runs
         Set<Path> oldTargets = Collections.emptySet();
-        BundleLocationCache cache = this.fileLocationCache.get( path );
+        BundleCollection cache = this.bundleCollections.get( path );
         if( cache != null )
         {
             oldTargets = cache.targets;
@@ -414,7 +469,7 @@ public class BundlesManager extends AbstractFileWatcherAdapter implements Proper
         long fileModificationTime = attrs.lastModifiedTime().toMillis();
 
         // check if we have the list of targets for this file already cached - and if that cache is not stale
-        BundleLocationCache cache = this.fileLocationCache.get( path );
+        BundleCollection cache = this.bundleCollections.get( path );
         if( cache != null )
         {
             if( cache.readTime >= fileModificationTime )
@@ -427,8 +482,8 @@ public class BundlesManager extends AbstractFileWatcherAdapter implements Proper
         else
         {
             // no cache - create a new cache entry and proceed to read the target locations
-            cache = new BundleLocationCache( fileModificationTime );
-            this.fileLocationCache.put( path, cache );
+            cache = new BundleCollection( fileModificationTime );
+            this.bundleCollections.put( path, cache );
         }
 
         // is this a maven file?
