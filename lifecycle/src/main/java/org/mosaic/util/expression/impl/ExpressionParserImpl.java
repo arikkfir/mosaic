@@ -12,6 +12,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.lifecycle.impl.util.ServiceUtils;
 import org.mosaic.util.expression.Expression;
+import org.mosaic.util.expression.ExpressionEvaluateException;
 import org.mosaic.util.expression.ExpressionParseException;
 import org.mosaic.util.expression.ExpressionParser;
 import org.osgi.framework.BundleContext;
@@ -19,6 +20,7 @@ import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceRegistration;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.expression.EvaluationException;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
@@ -178,10 +180,17 @@ public class ExpressionParserImpl implements ExpressionParser, InitializingBean,
             @Override
             public T invoke()
             {
-                StandardEvaluationContext evaluationContext = new StandardEvaluationContext();
-                evaluationContext.setRootObject( this.root );
-                evaluationContext.setVariables( this.variables );
-                return spelExpression.getValue( evaluationContext, this.expectedType );
+                try
+                {
+                    StandardEvaluationContext evaluationContext = new StandardEvaluationContext();
+                    evaluationContext.setRootObject( this.root );
+                    evaluationContext.setVariables( this.variables );
+                    return spelExpression.getValue( evaluationContext, this.expectedType );
+                }
+                catch( EvaluationException e )
+                {
+                    throw new ExpressionEvaluateException( e.getMessage(), e );
+                }
             }
         }
     }
