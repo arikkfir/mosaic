@@ -84,6 +84,11 @@ public class ExecutionPlanFactory
             }
         }
 
+        public boolean hasHandler()
+        {
+            return !this.endpoints.getHandlers().isEmpty();
+        }
+
         public void execute()
         {
             Object result;
@@ -204,9 +209,8 @@ public class ExecutionPlanFactory
                 // a match was found, invoke that match
                 return matchingHandler.handle( matchingHandlerContext );
             }
-            else if( this.endpoints.getHandlers().isEmpty() )
+            else if( !hasHandler() )
             {
-                // TODO arik: decide whether to render HTML page-not-found or just return 404 (Accept header, configurable, etc?)
                 // no handler matched the request - return 404
                 this.request.getResponse().setStatus( HttpStatus.NOT_FOUND );
                 return null;

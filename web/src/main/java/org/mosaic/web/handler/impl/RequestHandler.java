@@ -4,13 +4,14 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Handler;
@@ -18,10 +19,13 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.resource.FileResource;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.mosaic.Server;
 import org.mosaic.lifecycle.annotation.*;
@@ -113,7 +117,7 @@ public class RequestHandler extends ContextHandlerCollection
     }
 
     @ServiceBind(updates = true)
-    public void addWebApplication( @Nonnull WebApplication application )
+    public void addWebApplication( @Nonnull WebApplication application ) throws IOException, URISyntaxException
     {
         // since this invocation might mean that the app was simply updated - lets completely remove it and add it a-new
         removeWebApplication( application );
@@ -183,6 +187,7 @@ public class RequestHandler extends ContextHandlerCollection
         private final org.mosaic.web.application.WebApplication application;
 
         private WebApplicationContextHandler( @Nonnull WebApplication application )
+                throws IOException, URISyntaxException
         {
             super( SESSIONS );
 
@@ -203,23 +208,28 @@ public class RequestHandler extends ContextHandlerCollection
             this.setLogger( Log.getLogger( "org.mosaic.web.application" ) );
             this.setServletHandler( new ServletHandler() );
             this.setVirtualHosts( getApplicationVirtualHosts() );
-            this.addServlet( new ServletHolder( "dispatcher", new WebApplicationServlet() ), "/" );
+
+            ServletHolder servletHolder = new ServletHolder( "dispatcher", new WebApplicationServlet() );
+            servletHolder.setInitParameter( "etags", "true" );
+            servletHolder.setInitParameter( "maxCachedFiles", 50000 + "" );
+            servletHolder.setInitParameter( "maxCacheSize", 1024 * 1024 * 50 + "" );
+            servletHolder.setInitParameter( "maxCachedFileSize", 1024 * 1024 * 1 + "" );
+            this.addServlet( servletHolder, "/" );
         }
 
-        private ResourceCollection getApplicationContentRoots()
+        private ResourceCollection getApplicationContentRoots() throws IOException, URISyntaxException
         {
             ResourceCollection baseResources = new ResourceCollection();
-            for( Path contentRoot : this.application.getContentRoots() )
+
+            Collection<Path> contentRoots = this.application.getContentRoots();
+            Path[] contentRootsArr = contentRoots.toArray( new Path[ contentRoots.size() ] );
+            Resource[] contentRootResources = new Resource[ contentRootsArr.length ];
+            for( int i = 0; i < contentRootsArr.length; i++ )
             {
-                try
-                {
-                    baseResources.addPath( contentRoot.toString() );
-                }
-                catch( IOException e )
-                {
-                    LOG.warn( "Could not add web application content root '{}': {}", contentRoot, e.getMessage(), e );
-                }
+                Path path = contentRootsArr[ i ];
+                contentRootResources[ i ] = new FileResource( path.toUri().toURL() );
             }
+            baseResources.setResources( contentRootResources );
             return baseResources;
         }
 
@@ -229,7 +239,7 @@ public class RequestHandler extends ContextHandlerCollection
             return virtualHosts.toArray( new String[ virtualHosts.size() ] );
         }
 
-        private class WebApplicationServlet extends HttpServlet
+        private class WebApplicationServlet extends DefaultServlet
         {
             @Override
             protected void doGet( HttpServletRequest req, HttpServletResponse resp )
@@ -288,16 +298,40 @@ public class RequestHandler extends ContextHandlerCollection
                 try
                 {
                     request.getResponse().setStatus( HttpStatus.OK );
-                    request.getResponse().disableCaching();
 
-                    if( "/favicon.ico".equalsIgnoreCase( request.getUri().getEncodedPath() ) )
+                    ExecutionPlanFactory.ExecutionPlan plan = executionPlanFactory.buildExecutionPlan( request );
+                    if( plan.hasHandler() )
                     {
-                        // TODO arik: allow standard favicon resource serving
-                        request.getResponse().setStatus( HttpStatus.NOT_FOUND );
-                        return;
+                        request.getResponse().disableCaching();
+                        plan.execute();
                     }
-
-                    executionPlanFactory.buildExecutionPlan( request ).execute();
+                    else
+                    {
+                        switch( request.getMethod() )
+                        {
+                            case GET:
+                                super.doGet( req, resp );
+                                return;
+                            case POST:
+                                super.doPost( req, resp );
+                                return;
+                            case OPTIONS:
+                                super.doOptions( req, resp );
+                                return;
+                            case TRACE:
+                                super.doTrace( req, resp );
+                                return;
+                            default:
+                                if( request.getProtocol().endsWith( "1.1" ) )
+                                {
+                                    request.getResponse().setStatus( HttpStatus.METHOD_NOT_ALLOWED );
+                                }
+                                else
+                                {
+                                    request.getResponse().setStatus( HttpStatus.BAD_REQUEST );
+                                }
+                        }
+                    }
                 }
                 catch( Throwable e )
                 {

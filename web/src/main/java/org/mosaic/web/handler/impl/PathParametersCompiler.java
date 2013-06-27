@@ -5,7 +5,6 @@ import com.google.common.reflect.TypeToken;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 import org.mosaic.lifecycle.annotation.Bean;
 import org.mosaic.lifecycle.annotation.ServiceRef;
@@ -15,6 +14,9 @@ import org.mosaic.util.collect.UnmodifiableMapEx;
 import org.mosaic.util.convert.ConversionService;
 import org.mosaic.util.pair.Pair;
 import org.mosaic.web.request.IllegalPathTemplateException;
+
+import static java.util.regex.Pattern.compile;
+import static java.util.regex.Pattern.quote;
 
 /**
  * @author arik
@@ -73,7 +75,7 @@ public class PathParametersCompiler extends CacheLoader<Pair<String, String>, Ma
             char c = chars[ i ];
             if( c == '{' )
             {
-                pathTemplateBuilder.append( Pattern.quote( buffer.toString() ) );
+                pathTemplateBuilder.append( quote( buffer.toString() ) );
                 buffer.delete( 0, buffer.length() );
 
                 int end = pathTemplate.indexOf( '}', i );
@@ -91,6 +93,25 @@ public class PathParametersCompiler extends CacheLoader<Pair<String, String>, Ma
 
                 pathTemplateBuilder.append( "([^/]+)" );
             }
+            else if( c == '*' && i + 1 < chars.length && chars[ i + 1 ] == '*' )
+            {
+                // a "**" encountered
+
+                if( buffer.length() > 0 )
+                {
+                    pathTemplateBuilder.append( quote( buffer.toString() ) );
+                    buffer.delete( 0, buffer.length() );
+                }
+
+                pathTemplateBuilder.append( ".*" );
+
+                // skip the next "*" too
+                i++;
+            }
+            else if( c == '*' )
+            {
+                pathTemplateBuilder.append( "[^/]*" );
+            }
             else
             {
                 buffer.append( c );
@@ -99,11 +120,11 @@ public class PathParametersCompiler extends CacheLoader<Pair<String, String>, Ma
 
         if( buffer.length() > 0 )
         {
-            pathTemplateBuilder.append( Pattern.quote( buffer.toString() ) );
+            pathTemplateBuilder.append( quote( buffer.toString() ) );
+            buffer.delete( 0, buffer.length() );
         }
 
-        Pattern pattern = Pattern.compile( pathTemplateBuilder.toString() );
-        Matcher matcher = pattern.matcher( encodedPath );
+        Matcher matcher = compile( pathTemplateBuilder.toString() ).matcher( encodedPath );
         if( matcher.matches() )
         {
             MapEx<String, String> pathParameters = new HashMapEx<>( variableNames.size(), this.conversionService );
