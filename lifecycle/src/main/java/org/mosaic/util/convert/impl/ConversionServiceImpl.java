@@ -169,7 +169,7 @@ public class ConversionServiceImpl implements ConversionService, InitializingBea
         }
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     @Nonnull
     @Override
     public <Source, Dest> Dest convert( @Nonnull Source source, @Nonnull TypeToken<Dest> targetTypeToken )
@@ -186,11 +186,60 @@ public class ConversionServiceImpl implements ConversionService, InitializingBea
         DirectedGraph<TypeToken<?>, ConverterAdapter> graph = this.convertersGraph;
         if( graph != null )
         {
-            for( TypeToken<?> typeToken : sourceTypeToken.getTypes() )
+            if( !graph.containsVertex( targetTypeToken ) )
             {
-                if( graph.containsVertex( typeToken ) )
+                throw new ConversionException( "could not find a converter generating '" + targetTypeToken + "'", sourceTypeToken, targetTypeToken );
+            }
+
+            // Some examples:
+            //    REGISTER: converter<String,Dog>  (NOTE: Dog extends Animal)
+            //    VERTIXES: String, CharSequence, Dog, Animal
+            //       EDGES: String->Dog
+            //              String->Animal
+            //        TEST: convert(String(""),Dog):
+            //                  check: String -> Dog            : OK
+            //                  check: CharSequence -> Dog      : not found
+            //                  check: Object -> Dog            : not found
+            //        TEST: convert(CharSequence(""),Dog):
+            //                  check: CharSequence -> Dog      : not found
+            //                  check: Object -> Dog            : not found
+            //        TEST: convert(String(""),Animal):
+            //                  check: String -> Animal         : OK
+            //                  check: CharSequence -> Animal   : not found
+            //                  check: Object -> Animal         : not found
+            //        TEST: convert(String(""),Animal):
+            //                  check: String -> Animal         : OK
+            //                  check: CharSequence -> Animal   : not found
+            //                  check: Object -> Dog            : not found
+            //
+            //    REGISTER: converter<CharSequence,Dog>  (NOTE: Dog extends Animal)
+            //    VERTIXES: CharSequence, Dog, Animal
+            //       EDGES: CharSequence->Dog
+            //              CharSequence->Animal
+            //        TEST: convert(String(""),Dog):
+            //                  check: String -> Dog            : not found
+            //                  check: CharSequence -> Dog      : OK
+            //                  check: Object -> Dog            : not found
+            //        TEST: convert(CharSequence(""),Dog):
+            //                  check: CharSequence -> Dog      : OK
+            //                  check: Object -> Dog            : not found
+            //        TEST: convert(String(""),Animal):
+            //                  check: String -> Animal         : not found
+            //                  check: CharSequence -> Animal   : OK
+            //                  check: Object -> Animal         : not found
+            for( TypeToken<?> currentSourceTypeToken : sourceTypeToken.getTypes() )
+            {
+                if( graph.containsVertex( currentSourceTypeToken ) )
                 {
-                    path = findPathBetween( graph, typeToken, targetTypeToken );
+                    try
+                    {
+                        path = findPathBetween( graph, currentSourceTypeToken, targetTypeToken );
+                    }
+                    catch( Exception e )
+                    {
+                        throw new ConversionException( e.getMessage(), e, sourceTypeToken, targetTypeToken );
+                    }
+
                     if( path != null )
                     {
                         // found converter - save the path in our cache
@@ -210,7 +259,7 @@ public class ConversionServiceImpl implements ConversionService, InitializingBea
         return convert( source, TypeToken.of( targetTypeToken ) );
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     @Nonnull
     private Object convert( @Nonnull Object source, @Nonnull List<ConverterAdapter> path )
     {
@@ -232,7 +281,7 @@ public class ConversionServiceImpl implements ConversionService, InitializingBea
 
     private synchronized void registerConverter( @Nonnull ConverterAdapter adapter )
     {
-        DirectedGraph<TypeToken<?>, ConverterAdapter> graph = new SimpleDirectedGraph<>( ConverterAdapter.class );
+        SimpleDirectedGraph<TypeToken<?>, ConverterAdapter> graph = new SimpleDirectedGraph<>( ConverterAdapter.class );
         if( this.convertersGraph != null )
         {
             for( ConverterAdapter i : this.convertersGraph.edgeSet() )
@@ -251,17 +300,19 @@ public class ConversionServiceImpl implements ConversionService, InitializingBea
     private void addConverterAdapter( @Nonnull ConverterAdapter adapter,
                                       @Nonnull Graph<TypeToken<?>, ConverterAdapter> graph )
     {
-        addVertex( adapter.sourceTypeToken, graph );
-        addVertex( adapter.targetTypeToken, graph );
-        graph.addEdge( adapter.sourceTypeToken, adapter.targetTypeToken, adapter );
-    }
-
-    private void addVertex( @Nonnull TypeToken<?> type, @Nonnull Graph<TypeToken<?>, ConverterAdapter> graph )
-    {
-        for( TypeToken<?> typeToken : type.getTypes() )
+        // add source type, and all its supertypes including its implemented interfaces as vertexes (nodes) in the graph
+        for( TypeToken<?> currentSourceTypeToken : adapter.sourceTypeToken.getTypes() )
         {
-            graph.addVertex( typeToken );
+            graph.addVertex( currentSourceTypeToken );      // TODO arik: ignore serializable and comparable, maybe more?
         }
+
+        // add target type, and all its supertypes including its implemented interfaces as vertexes (nodes) in the graph
+        // add edges between source type-token and the target type-token, and all its supertypes and interfaces
+        for( TypeToken<?> currentTargetTypeToken : adapter.targetTypeToken.getTypes() )
+        {
+            graph.addVertex( currentTargetTypeToken );
+        }
+        graph.addEdge( adapter.sourceTypeToken, adapter.targetTypeToken, adapter );
     }
 
     private class ConverterAdapter
