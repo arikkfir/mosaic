@@ -27,10 +27,7 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
+import org.w3c.dom.*;
 import org.xml.sax.SAXException;
 
 import static java.util.Collections.emptyList;
@@ -241,7 +238,8 @@ public class XmlParserImpl implements XmlParser, InitializingBean, DisposableBea
             @Nullable
             public String getAttribute( @Nonnull String name )
             {
-                return this.element.getAttribute( name );
+                Attr attr = this.element.getAttributeNode( name );
+                return attr == null ? null : attr.getValue();
             }
 
             @Override
@@ -288,8 +286,15 @@ public class XmlParserImpl implements XmlParser, InitializingBean, DisposableBea
             {
                 XPathExpression expr = getXPathExpression( xpath );
 
-                String text = ( String ) expr.evaluate( this.element, XPathConstants.STRING );
-                return text == null ? null : XmlParserImpl.this.conversionService.convert( text, type );
+                Node node = ( Node ) expr.evaluate( this.element, XPathConstants.NODE );
+                if( node == null )
+                {
+                    return null;
+                }
+                else
+                {
+                    return XmlParserImpl.this.conversionService.convert( node.getTextContent(), type );
+                }
             }
 
             @Nonnull
