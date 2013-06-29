@@ -31,6 +31,9 @@
     <bean id="stringToBooleanConverter" class="org.mosaic.util.convert.impl.StringToBooleanConverter">
         <constructor-arg ref="bundleContext"/>
     </bean>
+    <bean id="stringToMediaTypeConverter" class="org.mosaic.util.convert.impl.StringToMediaTypeConverter">
+        <constructor-arg ref="bundleContext"/>
+    </bean>
 
     <bean id="server" class="org.mosaic.impl.ServerImpl">
         <constructor-arg ref="bundleContext"/>
