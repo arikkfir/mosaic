@@ -10,56 +10,49 @@ import javax.annotation.Nullable;
  */
 public abstract class Pair<L, R> implements Map.Entry<L, R>
 {
-    @Nullable
     private L left;
 
-    @Nullable
     private R right;
 
-    protected Pair( @Nullable L left, @Nullable R right )
+    protected Pair( L left, R right )
     {
         this.left = left;
         this.right = right;
     }
 
-    @Nullable
     public L getLeft()
     {
         return this.left;
     }
 
-    protected void setLeft( @Nullable L left )
+    protected void setLeft( L left )
     {
         this.left = left;
     }
 
-    @Nullable
     public R getRight()
     {
         return this.right;
     }
 
-    protected void setRight( @Nullable R right )
+    protected void setRight( R right )
     {
         this.right = right;
     }
 
     @Override
-    @Nullable
     public final L getKey()
     {
         return getLeft();
     }
 
     @Override
-    @Nullable
     public final R getValue()
     {
         return getRight();
     }
 
     @Override
-    @Nullable
     public R setValue( R value )
     {
         throw new UnsupportedOperationException();

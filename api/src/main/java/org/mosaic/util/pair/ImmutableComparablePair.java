@@ -10,8 +10,8 @@ import javax.annotation.Nullable;
 public class ImmutableComparablePair<L, R> extends ImmutablePair<L, R> implements Comparable<Pair<L, R>>
 {
     @Nonnull
-    public static <L, R> ImmutablePair<L, R> of( @Nullable L left,
-                                                 @Nullable R right,
+    public static <L, R> ImmutablePair<L, R> of( L left,
+                                                 R right,
                                                  @Nonnull Comparator<? super Pair<L, R>> comparator )
     {
         return new ImmutableComparablePair<>( left, right, comparator );
@@ -20,8 +20,8 @@ public class ImmutableComparablePair<L, R> extends ImmutablePair<L, R> implement
     @Nonnull
     private final Comparator<? super Pair<L, R>> comparator;
 
-    protected ImmutableComparablePair( @Nullable L left,
-                                       @Nullable R right,
+    protected ImmutableComparablePair( L left,
+                                       R right,
                                        @Nonnull Comparator<? super Pair<L, R>> comparator )
     {
         super( left, right );

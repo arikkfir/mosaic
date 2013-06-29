@@ -10,8 +10,8 @@ import javax.annotation.Nullable;
 public class MutableComparablePair<L, R> extends MutablePair<L, R> implements Comparable<Pair<L, R>>
 {
     @Nonnull
-    public static <L, R> MutablePair<L, R> of( @Nullable L left,
-                                               @Nullable R right,
+    public static <L, R> MutablePair<L, R> of( L left,
+                                               R right,
                                                @Nonnull Comparator<? super Pair<L, R>> comparator )
     {
         return new MutableComparablePair<>( left, right, comparator );
@@ -20,8 +20,8 @@ public class MutableComparablePair<L, R> extends MutablePair<L, R> implements Co
     @Nonnull
     private final Comparator<? super Pair<L, R>> comparator;
 
-    public MutableComparablePair( @Nullable L left,
-                                  @Nullable R right,
+    public MutableComparablePair( L left,
+                                  R right,
                                   @Nonnull Comparator<? super Pair<L, R>> comparator )
     {
         super( left, right );
