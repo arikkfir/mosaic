@@ -8,22 +8,30 @@ import javax.annotation.Nullable;
  */
 public interface Expression
 {
+    @Nonnull
     Invoker createInvoker();
 
     interface Invoker
     {
+        @Nonnull
         InvokerWithRoot withRoot( @Nonnull Object root );
     }
 
     interface InvokerWithRoot
     {
+        @Nonnull
         InvokerWithRoot setVariable( @Nonnull String name, @Nullable Object value );
 
+        @Nonnull
         <T> TypedInvoker<T> expect( @Nonnull Class<T> type );
     }
 
     interface TypedInvoker<T>
     {
-        T invoke();
+        @Nullable
+        T get();
+
+        @Nonnull
+        T require();
     }
 }

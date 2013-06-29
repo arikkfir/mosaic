@@ -108,6 +108,7 @@ public class ExpressionParserImpl implements ExpressionParser, InitializingBean,
         }
 
         @Override
+        @Nonnull
         public Invoker createInvoker()
         {
             return new InvokerImpl();
@@ -116,6 +117,7 @@ public class ExpressionParserImpl implements ExpressionParser, InitializingBean,
         private class InvokerImpl implements Invoker
         {
             @Override
+            @Nonnull
             public InvokerWithRoot withRoot( @Nonnull Object root )
             {
                 return new InvokerWithRootImpl( root );
@@ -136,6 +138,7 @@ public class ExpressionParserImpl implements ExpressionParser, InitializingBean,
             }
 
             @Override
+            @Nonnull
             public InvokerWithRoot setVariable( @Nonnull String name, @Nullable Object value )
             {
                 if( this.variables == null )
@@ -147,6 +150,7 @@ public class ExpressionParserImpl implements ExpressionParser, InitializingBean,
             }
 
             @Override
+            @Nonnull
             public <T> TypedInvoker<T> expect( @Nonnull Class<T> type )
             {
                 return new TypedInvokerImpl<>(
@@ -178,7 +182,7 @@ public class ExpressionParserImpl implements ExpressionParser, InitializingBean,
             }
 
             @Override
-            public T invoke()
+            public T get()
             {
                 try
                 {
@@ -190,6 +194,21 @@ public class ExpressionParserImpl implements ExpressionParser, InitializingBean,
                 catch( EvaluationException e )
                 {
                     throw new ExpressionEvaluateException( e.getMessage(), e );
+                }
+            }
+
+            @Nonnull
+            @Override
+            public T require()
+            {
+                T result = get();
+                if( result == null )
+                {
+                    throw new ExpressionEvaluateException( "result of expression '" + spelExpression.getExpressionString() + "' must not be null" );
+                }
+                else
+                {
+                    return result;
                 }
             }
         }
