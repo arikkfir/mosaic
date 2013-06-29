@@ -1,6 +1,11 @@
 STUFF TO DO
 ===========
 
+lifecycle
+---
+
+* Add @Cachable facility
+
 web
 ---
 
