@@ -29,7 +29,7 @@ public class GrantRule
             return this.test.createInvoker()
                             .withRoot( user )
                             .expect( Boolean.class )
-                            .invoke();
+                            .require();
         }
         else
         {
