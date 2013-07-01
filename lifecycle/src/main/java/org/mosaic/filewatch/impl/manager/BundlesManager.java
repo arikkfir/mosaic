@@ -175,9 +175,109 @@ public class BundlesManager extends AbstractFileWatcherAdapter implements Proper
         }
     }
 
+    private void handleJarFileDeleted( ScanContext context, Path path )
+    {
+        Bundle bundle = this.bundleContext.getBundle( path.toString() );
+        if( bundle != null )
+        {
+            LOG.debug( "Deleted JAR file detected at: {} (uninstalling bundle '{}')", path, BundleUtils.toString( bundle ) );
+            if( uninstallBundle( bundle ) )
+            {
+                context.getAttributes().put( "bundlesWereUninstalled", true );
+            }
+        }
+    }
+
+    private void handleJarCollectionFileDeleted( ScanContext context, Path path )
+    {
+        BundleCollection cache = this.bundleCollections.remove( path );
+        if( cache != null )
+        {
+            for( Path jar : cache.targets )
+            {
+                boolean referenced = false;
+                for( BundleCollection validCache : this.bundleCollections.values() )
+                {
+                    if( validCache.targets.contains( jar ) )
+                    {
+                        // jar is still referenced from any other jar collection - do not uninstall it
+                        referenced = true;
+                        break;
+                    }
+                }
+
+                if( !referenced )
+                {
+                    // file not referenced from any other jar-collection file (*.jarS or *.maven)
+                    handleJarFileDeleted( context, jar );
+                }
+            }
+        }
+    }
+
+    private void handleJarFileAddedOrModified( @Nonnull ScanContext context, @Nonnull Path path )
+    {
+        @SuppressWarnings( "unchecked" )
+        List<Bundle> bundlesToStart = context.getAttributes().require( "bundlesToStart", List.class );
+
+        // check whether we need to install a new bundle or update an existing bundle
+        Bundle bundle = this.bundleContext.getBundle( path.toString() );
+        if( bundle == null )
+        {
+            bundle = installBundleNoError( path );
+            if( bundle != null )
+            {
+                // installed successfully - remember it for later so we will try to start it
+                bundlesToStart.add( bundle );
+            }
+        }
+        else
+        {
+            // log the change, stop the bundle, update it, and remember it for start later on
+            LOG.debug( "Updated JAR file detected at '{}' (updating bundle '{}')", path, BundleUtils.toString( bundle ) );
+            if( stopAndUpdateBundle( bundle, path ) )
+            {
+                bundlesToStart.add( bundle );
+            }
+        }
+    }
+
+    private void handleJarCollectionFileAddedOrModified( @Nonnull ScanContext context,
+                                                         @Nonnull Path path,
+                                                         @Nonnull BasicFileAttributes attrs )
+    {
+        // obtain list of installed bundles specified in this file from previous runs
+        Set<Path> oldTargets = Collections.emptySet();
+        BundleCollection cache = this.bundleCollections.get( path );
+        if( cache != null )
+        {
+            oldTargets = cache.targets;
+        }
+
+        // obtain an up-to-date list of bundles this file specifies to install
+        Set<Path> updatedTargets = getJarFiles( path, attrs );
+
+        // uninstall any bundles present in the file on previous runs, but were removed from the file now
+        for( Path oldTarget : oldTargets )
+        {
+            if( !updatedTargets.contains( oldTarget ) )
+            {
+                Bundle oldBundle = this.bundleContext.getBundle( oldTarget.toString() );
+                if( oldBundle != null )
+                {
+                    LOG.debug( "JAR file '{}' has been removed from '{}' (uninstalling bundle '{}')", oldTarget, path, BundleUtils.toString( oldBundle ) );
+                    if( uninstallBundle( oldBundle ) )
+                    {
+                        context.getAttributes().put( "bundlesWereUninstalled", true );
+                    }
+                }
+            }
+        }
+    }
+
     private void handleScanFinished( ScanContext context )
     {
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         final List<Bundle> bundlesToStart = context.getAttributes().require( "bundlesToStart", List.class );
 
         // check bundles installed from jars/maven files
@@ -281,115 +381,6 @@ public class BundlesManager extends AbstractFileWatcherAdapter implements Proper
                         break;
                     }
                 }
-            }
-        }
-    }
-
-    private void handleJarFileDeleted( ScanContext context, Path path )
-    {
-        Bundle bundle = this.bundleContext.getBundle( path.toString() );
-        if( bundle != null )
-        {
-            LOG.debug( "Deleted JAR file detected at: {} (uninstalling bundle '{}')", path, BundleUtils.toString( bundle ) );
-            if( uninstallBundle( bundle ) )
-            {
-                context.getAttributes().put( "bundlesWereUninstalled", true );
-            }
-        }
-    }
-
-    private void handleJarCollectionFileDeleted( ScanContext context, Path path )
-    {
-        BundleCollection cache = this.bundleCollections.remove( path );
-        if( cache != null )
-        {
-            for( Path jar : cache.targets )
-            {
-                boolean referenced = false;
-                for( BundleCollection validCache : this.bundleCollections.values() )
-                {
-                    if( validCache.targets.contains( jar ) )
-                    {
-                        // jar is still referenced from any other jar collection - do not uninstall it
-                        referenced = true;
-                        break;
-                    }
-                }
-
-                if( !referenced )
-                {
-                    // file not referenced from any other jar-collection file (*.jarS or *.maven)
-                    handleJarFileDeleted( context, jar );
-                }
-            }
-        }
-    }
-
-    private void handleJarFileAddedOrModified( @Nonnull ScanContext context, @Nonnull Path path )
-    {
-        @SuppressWarnings("unchecked")
-        List<Bundle> bundlesToStart = context.getAttributes().require( "bundlesToStart", List.class );
-
-        // check whether we need to install a new bundle or update an existing bundle
-        Bundle bundle = this.bundleContext.getBundle( path.toString() );
-        if( bundle == null )
-        {
-            bundle = installBundleNoError( path );
-            if( bundle != null )
-            {
-                // installed successfully - remember it for later so we will try to start it
-                bundlesToStart.add( bundle );
-            }
-        }
-        else
-        {
-            // log the change, stop the bundle, update it, and remember it for start later on
-            LOG.debug( "Updated JAR file detected at '{}' (updating bundle '{}')", path, BundleUtils.toString( bundle ) );
-            if( stopAndUpdateBundle( bundle, path ) )
-            {
-                bundlesToStart.add( bundle );
-            }
-        }
-    }
-
-    private void handleJarCollectionFileAddedOrModified( @Nonnull ScanContext context,
-                                                         @Nonnull Path path,
-                                                         @Nonnull BasicFileAttributes attrs )
-    {
-        // obtain list of installed bundles specified in this file from previous runs
-        Set<Path> oldTargets = Collections.emptySet();
-        BundleCollection cache = this.bundleCollections.get( path );
-        if( cache != null )
-        {
-            oldTargets = cache.targets;
-        }
-
-        // obtain an up-to-date list of bundles this file specifies to install
-        Set<Path> updatedTargets = getJarFiles( path, attrs );
-
-        // uninstall any bundles present in the file on previous runs, but were removed from the file now
-        for( Path oldTarget : oldTargets )
-        {
-            if( !updatedTargets.contains( oldTarget ) )
-            {
-                Bundle oldBundle = this.bundleContext.getBundle( oldTarget.toString() );
-                if( oldBundle != null )
-                {
-                    LOG.debug( "JAR file '{}' has been removed from '{}' (uninstalling bundle '{}')", oldTarget, path, BundleUtils.toString( oldBundle ) );
-                    if( uninstallBundle( oldBundle ) )
-                    {
-                        context.getAttributes().put( "bundlesWereUninstalled", true );
-                    }
-                }
-            }
-        }
-
-        // install new bundles
-        for( Path target : updatedTargets )
-        {
-            if( exists( target ) )
-            {
-                handleJarFileAddedOrModified( context, target );
             }
         }
     }
