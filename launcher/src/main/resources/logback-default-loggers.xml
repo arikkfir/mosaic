@@ -14,7 +14,7 @@
     <logger name="org.eclipse.jetty" level="WARN"/>
     <logger name="org.hibernate" level="WARN"/>
     <logger name="org.mortbay" level="WARN"/>
-    <logger name="org.osgi" level="OFF"/>
+    <logger name="org.osgi" level="INFO"/>
     <logger name="org.quartz" level="WARN"/>
     <logger name="org.springframework" level="WARN"/>
 
