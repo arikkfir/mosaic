@@ -1,4 +1,4 @@
-package org.mosaic.web.application.annotation;
+package org.mosaic.web.handler.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -9,8 +9,8 @@ import org.mosaic.lifecycle.annotation.MethodEndpointMarker;
 /**
  * @author arik
  */
-@Retention( RetentionPolicy.RUNTIME )
-@Target( ElementType.METHOD )
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
 @MethodEndpointMarker
 public @interface Context
 {

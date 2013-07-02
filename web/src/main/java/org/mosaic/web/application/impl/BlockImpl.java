@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import org.mosaic.util.convert.ConversionService;
 import org.mosaic.util.xml.XmlElement;
 import org.mosaic.web.application.Block;
-import org.mosaic.web.application.ContextProvider;
+import org.mosaic.web.application.ContextProviderRef;
 import org.mosaic.web.application.Page;
 import org.mosaic.web.application.Snippet;
 
@@ -34,7 +34,7 @@ public class BlockImpl implements Block
     {
         this.page = page;
         this.name = element.requireAttribute( "name" );
-        this.displayName = element.requireAttribute( "display-name" );
+        this.displayName = element.getAttribute( "display-name" );
 
         XmlElement contextElement = element.getFirstChildElement( "context" );
         if( contextElement != null )
@@ -78,9 +78,9 @@ public class BlockImpl implements Block
 
     @Nonnull
     @Override
-    public Collection<ContextProvider> getContext()
+    public Collection<ContextProviderRef> getContext()
     {
-        return this.context.getContextProviders();
+        return this.context.getContextProviderRefs();
     }
 
     @Nonnull

@@ -6,12 +6,12 @@ import org.mosaic.util.collect.MapEx;
 import org.mosaic.util.collect.UnmodifiableMapEx;
 import org.mosaic.util.convert.ConversionService;
 import org.mosaic.util.xml.XmlElement;
-import org.mosaic.web.application.ContextProvider;
+import org.mosaic.web.application.ContextProviderRef;
 
 /**
  * @author arik
  */
-public class ContextProviderImpl implements ContextProvider
+public class ContextProviderRefImpl implements ContextProviderRef
 {
     @Nonnull
     private final String name;
@@ -22,7 +22,7 @@ public class ContextProviderImpl implements ContextProvider
     @Nonnull
     private final MapEx<String, String> parameters;
 
-    public ContextProviderImpl( @Nonnull ConversionService conversionService, @Nonnull XmlElement element )
+    public ContextProviderRefImpl( @Nonnull ConversionService conversionService, @Nonnull XmlElement element )
     {
         this.name = element.requireAttribute( "name" );
         this.type = element.requireAttribute( "type" );

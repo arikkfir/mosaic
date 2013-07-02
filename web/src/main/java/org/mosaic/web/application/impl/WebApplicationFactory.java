@@ -36,10 +36,7 @@ import org.mosaic.util.xml.StrictErrorHandler;
 import org.mosaic.util.xml.XmlDocument;
 import org.mosaic.util.xml.XmlElement;
 import org.mosaic.util.xml.XmlParser;
-import org.mosaic.web.application.Page;
-import org.mosaic.web.application.Snippet;
-import org.mosaic.web.application.WebApplication;
-import org.mosaic.web.application.WebApplicationParseException;
+import org.mosaic.web.application.*;
 import org.mosaic.web.security.AuthenticatorType;
 import org.xml.sax.SAXException;
 
@@ -58,7 +55,7 @@ public class WebApplicationFactory
 
     private static final Schema WEB_APP_SCHEMA;
 
-    private static final String WEB_CONTENT_NS = "https://github.com/arikkfir/mosaic/web/content";
+    private static final String WEB_CONTENT_SCHEMA_NS = "https://github.com/arikkfir/mosaic/web/content";
 
     private static final Schema WEB_CONTENT_SCHEMA;
 
@@ -251,6 +248,9 @@ public class WebApplicationFactory
         @Nonnull
         private Period maxSessionAge;
 
+        @Nonnull
+        private ContextImpl context = new ContextImpl();
+
         private WebApplicationImpl( @Nonnull Path file )
                 throws IOException, SAXException, ParserConfigurationException, XPathException
         {
@@ -291,7 +291,7 @@ public class WebApplicationFactory
             }
 
             // parameters
-            MapEx<String, String> parameters = new LinkedHashMapEx<>( 20, conversionService );
+            MapEx<String, String> parameters = new LinkedHashMapEx<>( 20, this.conversionService );
             for( XmlElement element : root.findElements( "a:parameters/a:parameter" ) )
             {
                 parameters.put( element.requireAttribute( "name" ), element.getValue() );
@@ -316,12 +316,24 @@ public class WebApplicationFactory
             // web content
             Map<String, Snippet> snippets;
             Map<String, Page> pages;
+            ContextImpl context;
             Path contentFile = this.file.resolveSibling( "content" ).resolve( this.name + "-content.xml" );
             if( exists( contentFile ) )
             {
                 document = xmlParser.parse( contentFile, WEB_CONTENT_SCHEMA );
-                document.addNamespace( "c", WEB_CONTENT_NS );
+                document.addNamespace( "c", WEB_CONTENT_SCHEMA_NS );
                 root = document.getRoot();
+
+                // context
+                XmlElement contextElement = root.getFirstChildElement( "context" );
+                if( contextElement != null )
+                {
+                    context = new ContextImpl( this.conversionService, contextElement );
+                }
+                else
+                {
+                    context = new ContextImpl();
+                }
 
                 // snippets
                 snippets = new HashMap<>( 500 );
@@ -332,18 +344,28 @@ public class WebApplicationFactory
                     snippets.put( id, new SnippetImpl( id, content ) );
                 }
 
-                // pages
-                pages = new HashMap<>( 100 );
-                for( XmlElement element : root.findElements( "c:pages/c:page" ) )
+                Map<String, Snippet> oldSnippets = this.snippets;
+                this.snippets = snippets;
+                try
                 {
-                    PageImpl page = new PageImpl( expressionParser, conversionService, this, element );
-                    pages.put( page.getName(), page );
+                    // pages
+                    pages = new HashMap<>( 100 );
+                    for( XmlElement element : root.findElements( "c:pages/c:page" ) )
+                    {
+                        PageImpl page = new PageImpl( expressionParser, this.conversionService, this, element );
+                        pages.put( page.getName(), page );
+                    }
+                }
+                finally
+                {
+                    this.snippets = oldSnippets;
                 }
             }
             else
             {
                 snippets = emptyMap();
                 pages = emptyMap();
+                context = new ContextImpl();
             }
 
             this.displayName = displayName;
@@ -367,6 +389,7 @@ public class WebApplicationFactory
             this.contentRoots = unmodifiableSet( contentRoots );
             this.snippets = snippets;
             this.pages = pages;
+            this.context = context;
             if( this.export != null )
             {
                 this.export.update();
@@ -539,6 +562,13 @@ public class WebApplicationFactory
         public Collection<Path> getContentRoots()
         {
             return this.contentRoots;
+        }
+
+        @Nonnull
+        @Override
+        public Collection<ContextProviderRef> getContext()
+        {
+            return this.context.getContextProviderRefs();
         }
 
         @Nonnull

@@ -50,7 +50,7 @@ public interface Page
     Set<String> getPaths( @Nonnull String language );
 
     @Nonnull
-    Collection<ContextProvider> getContext();
+    Collection<ContextProviderRef> getContext();
 
     @Nonnull
     Map<String, Block> getBlocks();

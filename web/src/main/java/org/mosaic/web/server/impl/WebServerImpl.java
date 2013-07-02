@@ -9,7 +9,7 @@ import org.mosaic.lifecycle.annotation.BeanRef;
 import org.mosaic.lifecycle.annotation.Configurable;
 import org.mosaic.util.collect.EmptyMapEx;
 import org.mosaic.util.collect.MapEx;
-import org.mosaic.web.handler.impl.RequestHandler;
+import org.mosaic.web.handler.impl.RequestDispatcher;
 import org.mosaic.web.server.WebServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +23,7 @@ public class WebServerImpl implements WebServer
     private static final Logger LOG = LoggerFactory.getLogger( WebServerImpl.class );
 
     @Nonnull
-    private RequestHandler requestHandler;
+    private RequestDispatcher requestDispatcher;
 
     @Nullable
     private Server server;
@@ -32,9 +32,9 @@ public class WebServerImpl implements WebServer
     private MapEx<String, String> cfg = EmptyMapEx.emptyMapEx();
 
     @BeanRef
-    public void setRequestHandler( @Nonnull RequestHandler requestHandler )
+    public void setRequestDispatcher( @Nonnull RequestDispatcher requestDispatcher )
     {
-        this.requestHandler = requestHandler;
+        this.requestDispatcher = requestDispatcher;
     }
 
     @Override
@@ -116,7 +116,7 @@ public class WebServerImpl implements WebServer
         server.setAttribute( "org.eclipse.jetty.server.Request.maxFormContentSize", this.cfg.get( "server.maxFormContentSize", Integer.class, 1024 * 200 ) );
         server.setAttribute( "org.eclipse.jetty.server.Request.maxFormKeys", this.cfg.get( "server.maxFormKeys", Integer.class, 2000 ) );
         server.addConnector( createConnector( this.cfg, server ) );
-        server.setHandler( this.requestHandler );
+        server.setHandler( this.requestDispatcher );
         return server;
     }
 

@@ -14,4 +14,5 @@ import org.mosaic.lifecycle.annotation.MethodEndpointMarker;
 @MethodEndpointMarker
 public @interface ExceptionHandler
 {
+    String[] value() default { };
 }

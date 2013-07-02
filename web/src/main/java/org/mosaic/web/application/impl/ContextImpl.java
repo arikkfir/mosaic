@@ -7,7 +7,7 @@ import java.util.List;
 import javax.annotation.Nonnull;
 import org.mosaic.util.convert.ConversionService;
 import org.mosaic.util.xml.XmlElement;
-import org.mosaic.web.application.ContextProvider;
+import org.mosaic.web.application.ContextProviderRef;
 
 /**
  * @author arik
@@ -15,26 +15,26 @@ import org.mosaic.web.application.ContextProvider;
 public class ContextImpl
 {
     @Nonnull
-    private final Collection<ContextProvider> contextProviders;
+    private final Collection<ContextProviderRef> contextProviderRefs;
 
     public ContextImpl()
     {
-        this.contextProviders = Collections.emptyList();
+        this.contextProviderRefs = Collections.emptyList();
     }
 
     public ContextImpl( @Nonnull ConversionService conversionService, @Nonnull XmlElement element )
     {
-        List<ContextProvider> contextProviders = new LinkedList<>();
+        List<ContextProviderRef> contextProviderRefs = new LinkedList<>();
         for( XmlElement providerElement : element.getChildElements( "provider" ) )
         {
-            contextProviders.add( new ContextProviderImpl( conversionService, providerElement ) );
+            contextProviderRefs.add( new ContextProviderRefImpl( conversionService, providerElement ) );
         }
-        this.contextProviders = Collections.unmodifiableList( contextProviders );
+        this.contextProviderRefs = Collections.unmodifiableList( contextProviderRefs );
     }
 
     @Nonnull
-    public Collection<ContextProvider> getContextProviders()
+    public Collection<ContextProviderRef> getContextProviderRefs()
     {
-        return this.contextProviders;
+        return this.contextProviderRefs;
     }
 }

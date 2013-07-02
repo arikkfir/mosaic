@@ -18,7 +18,7 @@ public interface Block
     String getDisplayName();
 
     @Nonnull
-    Collection<ContextProvider> getContext();
+    Collection<ContextProviderRef> getContext();
 
     @Nonnull
     Snippet getSnippet();

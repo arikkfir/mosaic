@@ -12,7 +12,7 @@ import static org.mosaic.web.net.HttpMethod.*;
  * @author arik
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
+@Target({ ElementType.METHOD, ElementType.PARAMETER })
 public @interface Method
 {
     HttpMethod[] value() default { DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT, TRACE };

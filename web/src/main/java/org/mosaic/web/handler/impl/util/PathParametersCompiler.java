@@ -1,4 +1,4 @@
-package org.mosaic.web.handler.impl;
+package org.mosaic.web.handler.impl.util;
 
 import com.google.common.cache.CacheLoader;
 import com.google.common.reflect.TypeToken;

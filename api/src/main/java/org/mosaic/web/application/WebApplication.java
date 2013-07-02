@@ -75,6 +75,9 @@ public interface WebApplication extends Map<String, Object>
     Collection<Path> getContentRoots();
 
     @Nonnull
+    Collection<ContextProviderRef> getContext();
+
+    @Nonnull
     Map<String, Snippet> getSnippetMap();
 
     @Nonnull

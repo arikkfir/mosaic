@@ -9,6 +9,7 @@ import org.joda.time.PeriodType;
 import org.mosaic.security.policy.PermissionPolicy;
 import org.mosaic.util.collect.EmptyMapEx;
 import org.mosaic.util.collect.MapEx;
+import org.mosaic.web.application.ContextProviderRef;
 import org.mosaic.web.application.Page;
 import org.mosaic.web.application.Snippet;
 import org.mosaic.web.application.WebApplication;
@@ -158,6 +159,13 @@ public class UnknownHostWebApplication implements WebApplication
     @Nonnull
     @Override
     public Collection<Path> getContentRoots()
+    {
+        return Collections.emptyList();
+    }
+
+    @Nonnull
+    @Override
+    public Collection<ContextProviderRef> getContext()
     {
         return Collections.emptyList();
     }

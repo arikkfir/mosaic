@@ -1,26 +1,38 @@
 package org.mosaic.web.handler.impl;
 
+import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.annotation.PostConstruct;
 import org.mosaic.lifecycle.MethodEndpoint;
 import org.mosaic.lifecycle.annotation.*;
+import org.mosaic.util.collect.MapEx;
 import org.mosaic.util.convert.ConversionService;
 import org.mosaic.util.expression.ExpressionParser;
 import org.mosaic.util.pair.ImmutablePair;
 import org.mosaic.util.pair.Pair;
-import org.mosaic.web.handler.annotation.Controller;
-import org.mosaic.web.handler.annotation.ExceptionHandler;
-import org.mosaic.web.handler.annotation.Interceptor;
-import org.mosaic.web.handler.annotation.WebService;
+import org.mosaic.web.handler.InterceptorChain;
+import org.mosaic.web.handler.annotation.*;
+import org.mosaic.web.handler.impl.action.ExceptionHandler;
+import org.mosaic.web.handler.impl.action.*;
+import org.mosaic.web.handler.impl.action.Interceptor;
 import org.mosaic.web.handler.impl.adapter.*;
+import org.mosaic.web.handler.impl.filter.Filter;
+import org.mosaic.web.handler.impl.filter.HttpMethodFilter;
+import org.mosaic.web.handler.impl.filter.PathFilter;
+import org.mosaic.web.handler.impl.filter.WebApplicationFilter;
+import org.mosaic.web.marshall.MarshallingManager;
+import org.mosaic.web.net.HttpStatus;
+import org.mosaic.web.net.MediaType;
 import org.mosaic.web.request.WebRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Collections.sort;
+import static org.mosaic.web.net.HttpMethod.GET;
+import static org.mosaic.web.net.HttpMethod.POST;
 
 /**
  * @author arik
@@ -31,19 +43,31 @@ public class WebEndpointsManager
     private static final Logger LOG = LoggerFactory.getLogger( WebEndpointsManager.class );
 
     @Nonnull
-    private final Collection<ExceptionHandlerEndpointAdapter> exceptionHandlers = new ConcurrentSkipListSet<>();
+    private final Collection<HandlerAdapter> handlerAdapters = new ConcurrentSkipListSet<>();
 
     @Nonnull
-    private final Collection<RequestHandlerEndpointAdapter> handlers = new ConcurrentSkipListSet<>();
+    private final Collection<InterceptorAdapter> interceptorAdapters = new ConcurrentSkipListSet<>();
 
     @Nonnull
-    private final Collection<InterceptorEndpointAdapter> interceptors = new ConcurrentSkipListSet<>();
+    private final Collection<ExceptionHandlerAdapter> exceptionHandlerAdapters = new ConcurrentSkipListSet<>();
+
+    @Nonnull
+    private PageAdapter pageAdapter;
 
     @Nonnull
     private ExpressionParser expressionParser;
 
     @Nonnull
     private ConversionService conversionService;
+
+    @Nonnull
+    private MarshallingManager marshallingManager;
+
+    @BeanRef
+    public void setMarshallingManager( @Nonnull MarshallingManager marshallingManager )
+    {
+        this.marshallingManager = marshallingManager;
+    }
 
     @ServiceRef
     public void setExpressionParser( @Nonnull ExpressionParser expressionParser )
@@ -57,214 +81,351 @@ public class WebEndpointsManager
         this.conversionService = conversionService;
     }
 
-    @MethodEndpointBind(ExceptionHandler.class)
-    public void addExceptionHandler( @Nonnull MethodEndpoint endpoint, @ServiceId long id, @Rank int rank )
-            throws NoSuchMethodException, IllegalAccessException, InvocationTargetException
+    @PostConstruct
+    public void init()
     {
-        this.exceptionHandlers.add( new ExceptionHandlerEndpointAdapter( id, rank, endpoint, this.expressionParser, this.conversionService ) );
-        LOG.info( "Added @ExceptionHandler {}", endpoint );
-    }
-
-    @MethodEndpointUnbind(ExceptionHandler.class)
-    public void removeExceptionHandler( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
-    {
-        removeEndpoint( id, this.exceptionHandlers );
+        this.pageAdapter = new PageAdapter( this.conversionService );
     }
 
     @MethodEndpointBind(Controller.class)
     public void addController( @Nonnull MethodEndpoint endpoint, @ServiceId long id, @Rank int rank )
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException
     {
-        this.handlers.add( new ControllerEndpointAdapter( id, rank, endpoint, this.expressionParser, this.conversionService ) );
+        Handler handler = new MethodEndpointHandler( endpoint, this.conversionService );
+
+        Secured securedAnn = endpoint.getAnnotation( Secured.class );
+        if( securedAnn != null )
+        {
+            handler = new SecuredHandler( handler, securedAnn.value() );
+        }
+
+        this.handlerAdapters.add(
+                new HandlerAdapter( this.conversionService,
+                                    id,
+                                    rank,
+                                    handler,
+                                    createHandlerFilters( endpoint, false ) ) );
         LOG.info( "Added @Controller {}", endpoint );
     }
 
     @MethodEndpointUnbind(Controller.class)
     public void removeController( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
     {
-        removeEndpoint( id, this.handlers );
+        removeEndpoint( id, this.handlerAdapters );
     }
 
     @MethodEndpointBind(WebService.class)
     public void addWebService( @Nonnull MethodEndpoint endpoint, @ServiceId long id, @Rank int rank )
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException
     {
-        this.handlers.add( new WebServiceEndpointAdapter( id, rank, endpoint, this.expressionParser, this.conversionService ) );
+        Handler handler = new MethodEndpointWebServiceHandler( endpoint, this.conversionService );
+
+        Secured securedAnn = endpoint.getAnnotation( Secured.class );
+        if( securedAnn != null )
+        {
+            handler = new SecuredHandler( handler, securedAnn.value() );
+        }
+
+        this.handlerAdapters.add(
+                new HandlerAdapter( this.conversionService,
+                                    id,
+                                    rank,
+                                    handler,
+                                    createHandlerFilters( endpoint, false ) ) );
         LOG.info( "Added @WebService {}", endpoint );
     }
 
     @MethodEndpointUnbind(WebService.class)
     public void removeWebService( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
     {
-        removeEndpoint( id, this.handlers );
+        removeEndpoint( id, this.handlerAdapters );
     }
 
-    @MethodEndpointBind(Interceptor.class)
+    @MethodEndpointBind(org.mosaic.web.handler.annotation.Interceptor.class)
     public void addInterceptorHandler( @Nonnull MethodEndpoint endpoint, @ServiceId long id, @Rank int rank )
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException
     {
-        this.interceptors.add( new InterceptorEndpointAdapter( id, rank, endpoint, this.expressionParser, this.conversionService ) );
+        this.interceptorAdapters.add(
+                new InterceptorAdapter( this.conversionService,
+                                        id,
+                                        rank,
+                                        new MethodEndpointInterceptor( endpoint, this.conversionService ),
+                                        createHandlerFilters( endpoint, false ) ) );
         LOG.info( "Added @Interceptor {}", endpoint );
     }
 
-    @MethodEndpointUnbind(Interceptor.class)
+    @MethodEndpointUnbind(org.mosaic.web.handler.annotation.Interceptor.class)
     public void removeInterceptorHandler( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
     {
-        removeEndpoint( id, this.interceptors );
+        removeEndpoint( id, this.interceptorAdapters );
+    }
+
+    @MethodEndpointBind(org.mosaic.web.handler.annotation.ExceptionHandler.class)
+    public void addExceptionHandler( @Nonnull MethodEndpoint endpoint, @ServiceId long id, @Rank int rank )
+            throws NoSuchMethodException, IllegalAccessException, InvocationTargetException
+    {
+        this.exceptionHandlerAdapters.add(
+                new ExceptionHandlerAdapter( this.conversionService,
+                                             id,
+                                             rank,
+                                             new MethodEndpointExceptionHandler( endpoint, this.conversionService ),
+                                             createHandlerFilters( endpoint, true ) ) );
+        LOG.info( "Added @ExceptionHandler {}", endpoint );
+    }
+
+    @MethodEndpointUnbind(org.mosaic.web.handler.annotation.ExceptionHandler.class)
+    public void removeExceptionHandler( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
+    {
+        removeEndpoint( id, this.exceptionHandlerAdapters );
     }
 
     @Nonnull
-    public RequestEndpoints getRequestEndpoints( @Nonnull WebRequest request )
+    public RequestExecutionPlan createRequestExecutionPlan( @Nonnull WebRequest request )
     {
-        return new RequestEndpoints( request );
+        return new RequestExecutionPlanImpl( request );
     }
 
-    private void removeEndpoint( long id, @Nonnull Collection<? extends AbstractMethodEndpointAdapter> adapters )
+    private List<Filter> createHandlerFilters( MethodEndpoint endpoint, boolean emptyPathListMatchesAll )
+            throws NoSuchMethodException, InvocationTargetException, IllegalAccessException
     {
-        for( Iterator<? extends AbstractMethodEndpointAdapter> iterator = adapters.iterator(); iterator.hasNext(); )
+        List<Filter> filters = new LinkedList<>();
+        applyWebAppFilter( endpoint, filters );
+        applyHttpMethodFilter( endpoint, filters );
+        filters.add( new PathFilter( endpoint, emptyPathListMatchesAll ) );
+        return filters;
+    }
+
+    private void applyHttpMethodFilter( MethodEndpoint endpoint, List<Filter> filters )
+    {
+        Method methodAnn = endpoint.getAnnotation( Method.class );
+        if( methodAnn != null )
         {
-            AbstractMethodEndpointAdapter handler = iterator.next();
+            filters.add( new HttpMethodFilter( methodAnn.value() ) );
+        }
+        else
+        {
+            filters.add( new HttpMethodFilter( GET, POST ) );
+        }
+    }
+
+    private void applyWebAppFilter( MethodEndpoint endpoint, List<Filter> filters )
+    {
+        WebAppFilter webAppFilterAnn = endpoint.getAnnotation( WebAppFilter.class );
+        if( webAppFilterAnn != null )
+        {
+            filters.add( new WebApplicationFilter( webAppFilterAnn.value() ) );
+        }
+    }
+
+    private void removeEndpoint( long id, @Nonnull Collection<? extends RequestAdapter> adapters )
+    {
+        for( Iterator<? extends RequestAdapter> iterator = adapters.iterator(); iterator.hasNext(); )
+        {
+            RequestAdapter handler = iterator.next();
             if( handler.getId() == id )
             {
                 iterator.remove();
-                LOG.info( "Removed @{} {}", handler.getEndpoint().getType().annotationType().getSimpleName(), handler.getEndpoint() );
                 return;
             }
         }
     }
 
-    public class RequestEndpoints
+    private class RequestExecutionPlanImpl implements RequestExecutionPlan, InterceptorChain
     {
         @Nonnull
         private final WebRequest request;
 
         @Nonnull
-        private final List<Pair<RequestHandlerEndpointAdapter, HandlerContext>> handlers;
+        private final Map<? super Participator, MapEx<String, Object>> participatorContexts = new HashMap<>();
 
         @Nonnull
-        private final List<Pair<InterceptorEndpointAdapter, HandlerContext>> interceptors;
+        private final List<Interceptor> interceptors = new LinkedList<>();
 
-        public RequestEndpoints( @Nonnull WebRequest request )
+        @Nonnull
+        private final List<Handler> handlers = new LinkedList<>();
+
+        @Nonnull
+        private final List<ExceptionHandler> exceptionHandlers = new LinkedList<>();
+
+        private int nextInterceptorIndex = 0;
+
+        private RequestExecutionPlanImpl( @Nonnull WebRequest request )
         {
             this.request = request;
 
-            // find best request handler
-            List<Pair<RequestHandlerEndpointAdapter, HandlerContext>> handlers = null;
-            for( RequestHandlerEndpointAdapter adapter : WebEndpointsManager.this.handlers )
+            for( InterceptorAdapter interceptor : WebEndpointsManager.this.interceptorAdapters )
             {
-                HandlerContext context = adapter.matches( request );
-                if( context != null )
-                {
-                    if( handlers == null )
-                    {
-                        handlers = new LinkedList<>();
-                    }
-                    handlers.add( ImmutablePair.of( adapter, context ) );
-                }
-            }
-            if( handlers == null )
-            {
-                this.handlers = Collections.emptyList();
-            }
-            else
-            {
-                this.handlers = handlers;
+                interceptor.apply( this );
             }
 
-            // find matching interceptors
-            List<Pair<InterceptorEndpointAdapter, HandlerContext>> interceptors = null;
-            for( InterceptorEndpointAdapter adapter : WebEndpointsManager.this.interceptors )
+            for( HandlerAdapter handler : WebEndpointsManager.this.handlerAdapters )
             {
-                HandlerContext context = adapter.matches( request );
-                if( context != null )
-                {
-                    if( interceptors == null )
-                    {
-                        interceptors = new LinkedList<>();
-                    }
-                    interceptors.add( ImmutablePair.of( adapter, context ) );
-                }
+                handler.apply( this );
             }
-            if( interceptors == null )
+            WebEndpointsManager.this.pageAdapter.apply( this );
+
+            for( ExceptionHandlerAdapter handler : WebEndpointsManager.this.exceptionHandlerAdapters )
             {
-                this.interceptors = Collections.emptyList();
-            }
-            else
-            {
-                this.interceptors = interceptors;
+                handler.apply( this );
             }
         }
 
         @Nonnull
-        public List<Pair<RequestHandlerEndpointAdapter, HandlerContext>> getHandlers()
+        @Override
+        public WebRequest getRequest()
         {
-            return this.handlers;
+            return this.request;
         }
 
         @Nonnull
-        public List<Pair<InterceptorEndpointAdapter, HandlerContext>> getInterceptors()
+        @Override
+        public ExpressionParser getExpressionParser()
         {
-            return this.interceptors;
+            return WebEndpointsManager.this.expressionParser;
+        }
+
+        @Override
+        public void addInterceptor( @Nonnull Interceptor interceptor,
+                                    @Nonnull MapEx<String, Object> context )
+        {
+            context.put( "request", this.request );
+            context.put( "plan", this );
+            this.participatorContexts.put( interceptor, context );
+            this.interceptors.add( interceptor );
+        }
+
+        @Override
+        public void addHandler( @Nonnull Handler handler, @Nonnull MapEx<String, Object> context )
+        {
+            context.put( "request", this.request );
+            context.put( "plan", this );
+            this.participatorContexts.put( handler, context );
+            this.handlers.add( handler );
+        }
+
+        @Override
+        public void addExceptionHandler( @Nonnull ExceptionHandler exceptionHandler,
+                                         @Nonnull MapEx<String, Object> context )
+        {
+            context.put( "request", this.request );
+            context.put( "plan", this );
+            this.participatorContexts.put( exceptionHandler, context );
+            this.exceptionHandlers.add( exceptionHandler );
+        }
+
+        @Override
+        public boolean canHandle()
+        {
+            return this.handlers.size() > 0;
+        }
+
+        @Override
+        public void execute()
+        {
+            Object result;
+            try
+            {
+                result = next();
+            }
+            catch( Throwable handleException )
+            {
+                result = handleException( handleException );
+            }
+
+            if( result != null )
+            {
+                marshallResult( result );
+            }
         }
 
         @Nullable
-        public Pair<ExceptionHandlerEndpointAdapter, ExceptionHandlerEndpointAdapter.ExceptionHandlerContext> findExceptionHandler(
-                @Nonnull Throwable throwable )
+        @Override
+        public synchronized Object next() throws Exception
         {
-            List<Pair<ExceptionHandlerEndpointAdapter, ExceptionHandlerEndpointAdapter.ExceptionHandlerContext>> exceptionHandlers = new ArrayList<>( WebEndpointsManager.this.exceptionHandlers.size() );
-            for( ExceptionHandlerEndpointAdapter exceptionHandler : WebEndpointsManager.this.exceptionHandlers )
+            if( this.nextInterceptorIndex < 0 )
             {
-                ExceptionHandlerEndpointAdapter.ExceptionHandlerContext handlerContext = exceptionHandler.matches( this.request, throwable );
-                if( handlerContext != null )
-                {
-                    exceptionHandlers.add( ImmutablePair.of( exceptionHandler, handlerContext ) );
-                }
+                throw new IllegalStateException( "Repeated request handler execution for: " + this );
             }
-
-            if( exceptionHandlers.isEmpty() )
+            else if( this.nextInterceptorIndex < this.interceptors.size() )
             {
+                Interceptor interceptor = this.interceptors.get( this.nextInterceptorIndex++ );
+                return interceptor.handle( this.request, this, this.participatorContexts.get( interceptor ) );
+            }
+            else
+            {
+                return invokeHandler();
+            }
+        }
+
+        @Nullable
+        private Object invokeHandler() throws Exception
+        {
+            this.nextInterceptorIndex = -1;
+            if( this.handlers.isEmpty() )
+            {
+                // no handler matched the request - return 404
+                this.request.getResponse().setStatus( HttpStatus.NOT_FOUND );
                 return null;
             }
-
-            sort( exceptionHandlers, new Comparator<Pair<ExceptionHandlerEndpointAdapter, ExceptionHandlerEndpointAdapter.ExceptionHandlerContext>>()
+            else
             {
-                @Override
-                public int compare( Pair<ExceptionHandlerEndpointAdapter, ExceptionHandlerEndpointAdapter.ExceptionHandlerContext> o1,
-                                    Pair<ExceptionHandlerEndpointAdapter, ExceptionHandlerEndpointAdapter.ExceptionHandlerContext> o2 )
-                {
-                    ExceptionHandlerEndpointAdapter.ExceptionHandlerContext ctx1 = o1.getRight();
-                    ExceptionHandlerEndpointAdapter.ExceptionHandlerContext ctx2 = o2.getRight();
-                    if( ctx1 == null || ctx2 == null )
-                    {
-                        throw new IllegalStateException();
-                    }
+                Handler handler = this.handlers.get( 0 );
+                return handler.handle( this.request, this.participatorContexts.get( handler ) );
+            }
+        }
 
-                    int d1 = ctx1.getDistance();
-                    int d2 = ctx2.getDistance();
-                    if( d1 < d2 )
+        private void marshallResult( @Nonnull Object result )
+        {
+            try
+            {
+                List<MediaType> acceptableMediaTypes = this.request.getHeaders().getAccept();
+                MediaType[] acceptableMediaTypesArray = acceptableMediaTypes.toArray( new MediaType[ acceptableMediaTypes.size() ] );
+                OutputStream targetOutputStream = this.request.getResponse().getBinaryBody();
+                marshallingManager.marshall( result, targetOutputStream, acceptableMediaTypesArray );
+            }
+            catch( Exception e )
+            {
+                this.request.dumpToLog( "could not marshall '{}' to response: {}", result, e.getMessage(), e );
+                this.request.getResponse().setStatus( HttpStatus.INTERNAL_SERVER_ERROR );
+            }
+        }
+
+        @Nullable
+        private Object handleException( @Nonnull Throwable throwable )
+        {
+            Pair<ExceptionHandler, Integer> handlerClosestToThrowableType = null;
+            for( ExceptionHandler exceptionHandler : this.exceptionHandlers )
+            {
+                int distance = exceptionHandler.getDistance( throwable );
+                if( distance >= 0 )
+                {
+                    if( handlerClosestToThrowableType == null || distance < handlerClosestToThrowableType.getRight() )
                     {
-                        return -1;
-                    }
-                    else if( d1 > d2 )
-                    {
-                        return 1;
-                    }
-                    else
-                    {
-                        ExceptionHandlerEndpointAdapter h1 = o1.getLeft();
-                        ExceptionHandlerEndpointAdapter h2 = o2.getLeft();
-                        if( h1 == null || h2 == null )
-                        {
-                            throw new IllegalStateException();
-                        }
-                        else
-                        {
-                            return h1.compareTo( h2 );
-                        }
+                        handlerClosestToThrowableType = ImmutablePair.of( exceptionHandler, distance );
                     }
                 }
-            } );
-            return exceptionHandlers.get( 0 );
+            }
+
+            if( handlerClosestToThrowableType == null )
+            {
+                this.request.dumpToLog( "no exception handler found for handler exception", throwable );
+                this.request.getResponse().setStatus( HttpStatus.INTERNAL_SERVER_ERROR );
+                return null;
+            }
+            else
+            {
+                try
+                {
+                    ExceptionHandler exceptionHandler = handlerClosestToThrowableType.getLeft();
+                    MapEx<String, Object> context = this.participatorContexts.get( exceptionHandler );
+                    return exceptionHandler.handle( this.request, throwable, context );
+                }
+                catch( Exception exceptionHandlingException )
+                {
+                    this.request.dumpToLog( "no exception handler found for handler exception", exceptionHandlingException );
+                    return null;
+                }
+            }
         }
     }
 }

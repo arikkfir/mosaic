@@ -3,8 +3,10 @@ package org.mosaic.web.handler.impl;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.io.Resources;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
@@ -27,6 +29,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.FileResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.joda.time.Period;
 import org.mosaic.Server;
 import org.mosaic.lifecycle.annotation.*;
 import org.mosaic.security.UserManager;
@@ -34,6 +37,7 @@ import org.mosaic.util.collect.MapEx;
 import org.mosaic.util.convert.ConversionService;
 import org.mosaic.util.pair.Pair;
 import org.mosaic.web.application.WebApplication;
+import org.mosaic.web.handler.impl.util.PathParametersCompiler;
 import org.mosaic.web.net.HttpStatus;
 import org.mosaic.web.request.WebResponse;
 import org.mosaic.web.request.impl.UnsupportedHttpMethodException;
@@ -41,13 +45,15 @@ import org.mosaic.web.request.impl.WebRequestImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.mosaic.web.net.HttpMethod.GET;
+
 /**
  * @author arik
  */
 @Bean
-public class RequestHandler extends ContextHandlerCollection
+public class RequestDispatcher extends ContextHandlerCollection
 {
-    private static final Logger LOG = LoggerFactory.getLogger( RequestHandler.class );
+    private static final Logger LOG = LoggerFactory.getLogger( RequestDispatcher.class );
 
     @Nonnull
     private final LoadingCache<Pair<String, String>, MapEx<String, String>> pathTemplatesCache;
@@ -65,9 +71,9 @@ public class RequestHandler extends ContextHandlerCollection
     private PathParametersCompiler pathParametersCompiler;
 
     @Nonnull
-    private ExecutionPlanFactory executionPlanFactory;
+    private WebEndpointsManager webEndpointsManager;
 
-    public RequestHandler()
+    public RequestDispatcher()
     {
         this.pathTemplatesCache = CacheBuilder
                 .newBuilder()
@@ -81,15 +87,15 @@ public class RequestHandler extends ContextHandlerCollection
                     public MapEx<String, String> load( @Nonnull Pair<String, String> key )
                             throws Exception
                     {
-                        return RequestHandler.this.pathParametersCompiler.load( key );
+                        return RequestDispatcher.this.pathParametersCompiler.load( key );
                     }
                 } );
     }
 
     @BeanRef
-    public void setExecutionPlanFactory( @Nonnull ExecutionPlanFactory executionPlanFactory )
+    public void setWebEndpointsManager( @Nonnull WebEndpointsManager webEndpointsManager )
     {
-        this.executionPlanFactory = executionPlanFactory;
+        this.webEndpointsManager = webEndpointsManager;
     }
 
     @BeanRef
@@ -173,11 +179,11 @@ public class RequestHandler extends ContextHandlerCollection
             throws UnsupportedHttpMethodException
     {
         WebRequestImpl webRequest = new WebRequestImpl( request,
-                                                        RequestHandler.this.conversionService,
+                                                        RequestDispatcher.this.conversionService,
                                                         webApplication,
-                                                        RequestHandler.this.userManager,
-                                                        RequestHandler.this.pathTemplatesCache );
-        webRequest.getResponse().getHeaders().setServer( "Mosaic Web Server/" + RequestHandler.this.server.getVersion() );
+                                                        RequestDispatcher.this.userManager,
+                                                        RequestDispatcher.this.pathTemplatesCache );
+        webRequest.getResponse().getHeaders().setServer( "Mosaic Web Server/" + RequestDispatcher.this.server.getVersion() );
         return webRequest;
     }
 
@@ -299,14 +305,27 @@ public class RequestHandler extends ContextHandlerCollection
                 {
                     request.getResponse().setStatus( HttpStatus.OK );
 
-                    ExecutionPlanFactory.ExecutionPlan plan = executionPlanFactory.buildExecutionPlan( request );
-                    if( plan.hasHandler() )
+                    if( request.getMethod() == GET && "/jetty-dir.css".equals( request.getDecodedPath() ) )
+                    {
+                        URL jettyDirUrl = getClass().getClassLoader().getResource( "jetty-dir.css" );
+                        if( jettyDirUrl != null )
+                        {
+                            request.getResponse().allowPublicCaches( Period.hours( 1 ) );
+                            request.getResponse().setStatus( HttpStatus.OK );
+                            Resources.copy( jettyDirUrl, request.getResponse().getBinaryBody() );
+                            return;
+                        }
+                    }
+
+                    RequestExecutionPlan plan = webEndpointsManager.createRequestExecutionPlan( request );
+                    if( plan.canHandle() )
                     {
                         request.getResponse().disableCaching();
                         plan.execute();
                     }
                     else
                     {
+                        request.getResponse().disableCaching();
                         switch( request.getMethod() )
                         {
                             case GET:

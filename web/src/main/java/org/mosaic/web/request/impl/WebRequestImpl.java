@@ -1,8 +1,9 @@
 package org.mosaic.web.request.impl;
 
 import com.google.common.cache.LoadingCache;
-import com.google.common.collect.LinkedHashMultimap;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,8 +37,9 @@ import org.slf4j.LoggerFactory;
 import static com.google.common.base.Strings.padStart;
 import static java.util.Arrays.asList;
 import static java.util.Collections.list;
+import static org.eclipse.jetty.http.HttpHeader.ACCEPT_LANGUAGE;
 import static org.eclipse.jetty.util.URIUtil.canonicalPath;
-import static org.mosaic.web.handler.impl.PathParametersCompiler.NO_MATCH;
+import static org.mosaic.web.handler.impl.util.PathParametersCompiler.NO_MATCH;
 import static org.mosaic.web.request.impl.WebSessionImpl.WEB_SESSION_ATTR_KEY;
 
 /**
@@ -162,12 +164,30 @@ public class WebRequestImpl extends HashMapEx<String, Object>
             this.cookies = cookies;
         }
 
-        Multimap<String, String> headers = LinkedHashMultimap.create( 20, 1 );
+        ListMultimap<String, String> headers = ArrayListMultimap.create( 20, 1 );
         for( String headerName : list( this.request.getHeaderNames() ) )
         {
             Collection<String> values = this.request.getHttpFields().getValuesCollection( headerName );
             headers.putAll( headerName, values );
         }
+
+        if( this.application.isUriLanguageSelectionEnabled() )
+        {
+            for( String supportedLanguage : this.application.getContentLanguages() )
+            {
+                String prefix = "/" + supportedLanguage;
+                if( this.decodedPath.startsWith( prefix + "/" ) || this.decodedPath.equals( prefix ) )
+                {
+                    headers.get( ACCEPT_LANGUAGE.toString() ).add( 0, supportedLanguage + ";q=1" );
+                    break;
+                }
+            }
+        }
+        if( headers.get( ACCEPT_LANGUAGE.toString() ).isEmpty() )
+        {
+            headers.get( ACCEPT_LANGUAGE.toString() ).add( this.application.getDefaultLanguage() + ";q=1" );
+        }
+
         this.headers = headers;
 
         this.device = new WebDeviceImpl();

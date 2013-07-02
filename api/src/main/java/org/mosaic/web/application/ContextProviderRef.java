@@ -6,7 +6,7 @@ import org.mosaic.util.collect.MapEx;
 /**
  * @author arik
  */
-public interface ContextProvider
+public interface ContextProviderRef
 {
     @Nonnull
     String getName();

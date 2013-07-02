@@ -15,7 +15,7 @@ import org.mosaic.util.expression.Expression;
 import org.mosaic.util.expression.ExpressionParser;
 import org.mosaic.util.xml.XmlElement;
 import org.mosaic.web.application.Block;
-import org.mosaic.web.application.ContextProvider;
+import org.mosaic.web.application.ContextProviderRef;
 import org.mosaic.web.application.Page;
 import org.mosaic.web.application.WebApplication;
 import org.mosaic.web.net.MediaType;
@@ -217,9 +217,9 @@ public class PageImpl implements Page
 
     @Nonnull
     @Override
-    public Collection<ContextProvider> getContext()
+    public Collection<ContextProviderRef> getContext()
     {
-        return this.context.getContextProviders();
+        return this.context.getContextProviderRefs();
     }
 
     @Nonnull
@@ -243,8 +243,8 @@ public class PageImpl implements Page
             {
                 String language = languagesIterator.next();
                 Set<String> languagePaths = urlPaths.containsKey( language )
-                                            ? new HashSet<String>()
-                                            : new HashSet<>( urlPaths.get( language ) );
+                                            ? new HashSet<>( urlPaths.get( language ) )
+                                            : new HashSet<String>();
                 languagePaths.add( element.requireValue().trim() );
                 urlPaths.put( language, unmodifiableSet( languagePaths ) );
             }
