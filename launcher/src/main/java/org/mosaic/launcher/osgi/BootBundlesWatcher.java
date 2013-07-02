@@ -35,6 +35,8 @@ public class BootBundlesWatcher implements Runnable
 {
     private static final Logger LOG = LoggerFactory.getLogger( BootBundlesWatcher.class );
 
+    private static final String PATH_SEPARATOR = System.getProperty( "path.separator" );
+
     @Nonnull
     private final List<Bundle> bundles;
 
@@ -46,7 +48,7 @@ public class BootBundlesWatcher implements Runnable
         Properties properties = mosaic.getProperties();
 
         List<Bundle> bundles = new LinkedList<>();
-        for( String name : asList( "api", "lifecycle", "config", "database", "event", "mail", "security", "shell", "web" ) )
+        for( String name : asList( "api", "lifecycle", "config", "database", "event", "mail", "metrics", "security", "shell", "web" ) )
         {
             Path bundlePath = null;
 
@@ -60,18 +62,19 @@ public class BootBundlesWatcher implements Runnable
             String versionedFilename = name + "-" + mosaic.getVersion() + ".jar";
             if( bundlePath == null )
             {
-                String delim = System.getProperty( "path.separator" );
-                StringTokenizer tokenizer = new StringTokenizer( ManagementFactory.getRuntimeMXBean().getClassPath(), delim, false );
+                StringTokenizer tokenizer = new StringTokenizer( ManagementFactory.getRuntimeMXBean().getClassPath(), PATH_SEPARATOR, false );
                 while( tokenizer.hasMoreTokens() )
                 {
                     String item = tokenizer.nextToken();
-                    if( item.contains( "/" + name ) )
+                    if( item.contains( "/" + name + "/target/classes" ) )
+                    {
+                        bundlePath = Paths.get( item ).getParent().resolve( versionedFilename );
+                        verifyInstallableBundle( name, bundlePath );
+                        break;
+                    }
+                    else if( name.endsWith( versionedFilename ) )
                     {
                         bundlePath = Paths.get( item );
-                        if( bundlePath.endsWith( "target/classes" ) )
-                        {
-                            bundlePath = bundlePath.getParent().resolve( versionedFilename );
-                        }
                         verifyInstallableBundle( name, bundlePath );
                         break;
                     }
