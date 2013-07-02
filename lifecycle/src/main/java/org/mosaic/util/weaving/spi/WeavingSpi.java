@@ -1,9 +1,7 @@
 package org.mosaic.util.weaving.spi;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import com.google.common.collect.ComparisonChain;
+import java.util.*;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.util.reflection.MethodHandle;
@@ -16,6 +14,9 @@ import org.osgi.util.tracker.ServiceTracker;
 import org.osgi.util.tracker.ServiceTrackerCustomizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.mosaic.lifecycle.impl.util.ServiceUtils.getId;
+import static org.mosaic.lifecycle.impl.util.ServiceUtils.getRanking;
 
 /**
  * @author arik
@@ -41,7 +42,7 @@ public final class WeavingSpi implements ServiceTrackerCustomizer<MethodIntercep
     private ServiceTracker<MethodInterceptor, MethodInterceptor> methodInterceptorsTracker;
 
     @Nonnull
-    private List<MethodInterceptor> methodInterceptors = Collections.emptyList();
+    private List<MethodInterceptorAdapter> methodInterceptors = Collections.emptyList();
 
     private WeavingSpi()
     {
@@ -59,9 +60,9 @@ public final class WeavingSpi implements ServiceTrackerCustomizer<MethodIntercep
         MethodInterceptor interceptor = WeavingSpi.this.bundleContext.getService( reference );
         if( interceptor != null )
         {
-            List<MethodInterceptor> interceptors = new LinkedList<>( WeavingSpi.this.methodInterceptors );
-            interceptors.add( interceptor );
-            // TODO arik: sort by rank
+            List<MethodInterceptorAdapter> interceptors = new LinkedList<>( WeavingSpi.this.methodInterceptors );
+            interceptors.add( new MethodInterceptorAdapter( getId( reference ), getRanking( reference ), interceptor ) );
+            Collections.sort( interceptors );
             WeavingSpi.this.methodInterceptors = interceptors;
             LOG.debug( "Added method interceptor {}", interceptor );
         }
@@ -77,8 +78,16 @@ public final class WeavingSpi implements ServiceTrackerCustomizer<MethodIntercep
     @Override
     public void removedService( ServiceReference<MethodInterceptor> reference, MethodInterceptor interceptor )
     {
-        List<MethodInterceptor> interceptors = new LinkedList<>( WeavingSpi.this.methodInterceptors );
-        interceptors.remove( interceptor );
+        List<MethodInterceptorAdapter> interceptors = new LinkedList<>( WeavingSpi.this.methodInterceptors );
+        for( Iterator<MethodInterceptorAdapter> iterator = interceptors.iterator(); iterator.hasNext(); )
+        {
+            MethodInterceptorAdapter adapter = iterator.next();
+            if( adapter.id == getId( reference ) )
+            {
+                iterator.remove();
+                break;
+            }
+        }
         WeavingSpi.this.methodInterceptors = interceptors;
         LOG.debug( "Removed method interceptor {}", interceptor );
     }
@@ -95,7 +104,7 @@ public final class WeavingSpi implements ServiceTrackerCustomizer<MethodIntercep
     }
 
     @Nonnull
-    private List<MethodInterceptor> getMethodInterceptors()
+    private List<? extends MethodInterceptor> getMethodInterceptors()
     {
         if( this.methodInterceptorsTracker == null )
         {
@@ -111,6 +120,39 @@ public final class WeavingSpi implements ServiceTrackerCustomizer<MethodIntercep
         return this.methodInterceptors;
     }
 
+    private class MethodInterceptorAdapter implements MethodInterceptor, Comparable<MethodInterceptorAdapter>
+    {
+        private final long id;
+
+        private final int rank;
+
+        @Nonnull
+        private final MethodInterceptor target;
+
+        private MethodInterceptorAdapter( long id, int rank, @Nonnull MethodInterceptor target )
+        {
+            this.id = id;
+            this.target = target;
+            this.rank = rank;
+        }
+
+        @Override
+        public int compareTo( MethodInterceptorAdapter o )
+        {
+            return ComparisonChain.start()
+                                  .compare( o.rank, this.rank )
+                                  .compare( this.id, o.id )
+                                  .result();
+        }
+
+        @Nullable
+        @Override
+        public Object intercept( @Nonnull MethodInvocation invocation ) throws Exception
+        {
+            return this.target.intercept( invocation );
+        }
+    }
+
     private class MethodInvocationImpl implements MethodInterceptor.MethodInvocation
     {
         @Nonnull
@@ -123,7 +165,7 @@ public final class WeavingSpi implements ServiceTrackerCustomizer<MethodIntercep
         private final MethodHandle realMethodHandle;
 
         @Nonnull
-        private final List<MethodInterceptor> interceptors;
+        private final List<? extends MethodInterceptor> interceptors;
 
         @Nonnull
         private Object[] arguments;
