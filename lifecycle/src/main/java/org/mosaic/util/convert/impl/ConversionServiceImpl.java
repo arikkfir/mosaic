@@ -169,7 +169,7 @@ public class ConversionServiceImpl implements ConversionService, InitializingBea
         }
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     @Nonnull
     @Override
     public <Source, Dest> Dest convert( @Nonnull Source source, @Nonnull TypeToken<Dest> targetTypeToken )
@@ -259,7 +259,7 @@ public class ConversionServiceImpl implements ConversionService, InitializingBea
         return convert( source, TypeToken.of( targetTypeToken ) );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     @Nonnull
     private Object convert( @Nonnull Object source, @Nonnull List<ConverterAdapter> path )
     {
@@ -303,7 +303,7 @@ public class ConversionServiceImpl implements ConversionService, InitializingBea
         // add source type, and all its supertypes including its implemented interfaces as vertexes (nodes) in the graph
         for( TypeToken<?> currentSourceTypeToken : adapter.sourceTypeToken.getTypes() )
         {
-            graph.addVertex( currentSourceTypeToken );      // TODO arik: ignore serializable and comparable, maybe more?
+            graph.addVertex( currentSourceTypeToken );
         }
 
         // add target type, and all its supertypes including its implemented interfaces as vertexes (nodes) in the graph
