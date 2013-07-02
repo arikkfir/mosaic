@@ -340,6 +340,12 @@ public class ModuleHelper
     {
         for( Method method : getUniqueDeclaredMethods( componentClass ) )
         {
+            if( method.getName().endsWith( "$$Impl" ) )
+            {
+                // ignore weaved methods
+                continue;
+            }
+
             MethodHandle methodHandle = this.methodHandleFactory.findMethodHandle( method );
 
             // detect @ServiceRef dependencies
