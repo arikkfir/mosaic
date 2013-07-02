@@ -72,7 +72,7 @@ public class BootBundlesWatcher implements Runnable
                         verifyInstallableBundle( name, bundlePath );
                         break;
                     }
-                    else if( name.endsWith( versionedFilename ) )
+                    else if( item.endsWith( versionedFilename ) )
                     {
                         bundlePath = Paths.get( item );
                         verifyInstallableBundle( name, bundlePath );
