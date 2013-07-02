@@ -72,20 +72,6 @@
                             !org.springframework*,
                             *
                         </Import-Package>
-                        <!--
-                            <Embed-Dependency>
-                                asm*,
-                                commons-cli,
-                            </Embed-Dependency>
-                            <Import-Package>
-                                !com.thoughtworks.xstream*,
-                                !jline*,
-                                !org.apache.ivy*,
-                                !org.fusesource*,
-                                !org.omg.CORBA*,
-                                *
-                            </Import-Package>
-                        -->
                     </instructions>
                 </configuration>
             </plugin>
