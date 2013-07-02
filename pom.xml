@@ -22,6 +22,7 @@
         <module>lifecycle</module>
         <module>config</module>
         <module>event</module>
+        <module>metrics</module>
         <module>shell</module>
         <module>database</module>
         <module>security</module>

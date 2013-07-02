@@ -1,6 +1,8 @@
 package org.mosaic.admin;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import javax.annotation.Nonnull;
 import org.mosaic.lifecycle.annotation.Bean;
 import org.mosaic.lifecycle.annotation.Measure;
@@ -19,11 +21,24 @@ public class AdminTest
 {
     private static final Logger LOG = LoggerFactory.getLogger( AdminTest.class );
 
-    @Command(name = "test")
+    @Command( name = "test" )
     @Measure
-    public void testCommand()
+    public void testCommand() throws InvocationTargetException, IllegalAccessException
     {
-        LOG.info( "Test test" );
+        LOG.info( "Test" );
+    }
+
+    @Command( name = "testImpl" )
+    public void testImpl() throws InvocationTargetException, IllegalAccessException
+    {
+        for( Method method : getClass().getDeclaredMethods() )
+        {
+            LOG.info( "Discovered method: {}", method.toGenericString() );
+            if( method.getName().startsWith( "testCommand" ) )
+            {
+                method.invoke( this );
+            }
+        }
     }
 
     @Controller( "/a" )
@@ -33,8 +48,8 @@ public class AdminTest
         response.getCharacterBody().append( "Hello controller 'a'!" );
     }
 
-    @Controller("/b")
-    @WebAppFilter("application.name=='test'")
+    @Controller( "/b" )
+    @WebAppFilter( "application.name=='test'" )
     public void b( @Nonnull WebResponse response ) throws IOException
     {
         response.getCharacterBody().append( "Hello controller 'b'!" );

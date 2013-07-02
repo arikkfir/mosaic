@@ -110,6 +110,7 @@
                 <include>org.mosaic:event</include>
                 <include>org.mosaic:lifecycle</include>
                 <include>org.mosaic:mail</include>
+                <include>org.mosaic:metrics</include>
                 <include>org.mosaic:security</include>
                 <include>org.mosaic:shell</include>
                 <include>org.mosaic:web</include>

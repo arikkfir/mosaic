@@ -19,6 +19,7 @@ import org.mosaic.util.pair.MutablePair;
 import org.mosaic.util.reflection.MethodHandle;
 import org.mosaic.util.reflection.MethodHandleFactory;
 import org.mosaic.util.reflection.MethodParameter;
+import org.mosaic.util.weaving.spi.WeavingSpi;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 import org.springframework.beans.factory.DisposableBean;
@@ -153,6 +154,7 @@ public class MethodHandleFactoryImpl implements MethodHandleFactory, Initializin
                                                          return key.findMethod();
                                                      }
                                                  } );
+        WeavingSpi.getInstance().setMethodHandleFactory( this );
     }
 
     @Override

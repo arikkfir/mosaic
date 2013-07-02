@@ -48,29 +48,8 @@
         <constructor-arg ref="bundleContext"/>
     </bean>
 
-    <bean id="metricsSpi" class="org.mosaic.lifecycle.spi.MetricsSpi">
-        <constructor-arg ref="moduleManager"/>
-    </bean>
-
-    <bean id="transactionSpi" class="org.mosaic.database.tx.spi.TransactionSpi">
+    <bean id="methodInterceptorWeaver" class="org.mosaic.util.weaving.impl.MethodInterceptorWeaver">
         <constructor-arg ref="bundleContext"/>
-    </bean>
-
-    <bean id="javassistClassPoolManager" class="org.mosaic.util.weaving.impl.JavassistClassPoolManager"/>
-
-    <bean id="nullabilityWeavingHook" class="org.mosaic.util.weaving.impl.NullabilityWeavingHook">
-        <constructor-arg ref="bundleContext"/>
-        <constructor-arg ref="javassistClassPoolManager"/>
-    </bean>
-
-    <bean id="metricsWeavingHook" class="org.mosaic.lifecycle.impl.metrics.MetricsWeavingHook">
-        <constructor-arg ref="bundleContext"/>
-        <constructor-arg ref="javassistClassPoolManager"/>
-    </bean>
-
-    <bean id="transactionWeavingHook" class="org.mosaic.database.tx.impl.weaving.TransactionWeavingHook">
-        <constructor-arg ref="bundleContext"/>
-        <constructor-arg ref="javassistClassPoolManager"/>
     </bean>
 
     <bean id="moduleManager" class="org.mosaic.lifecycle.impl.ModuleManagerImpl">
