@@ -235,7 +235,8 @@ public class Modules
         }
     }
 
-    private void printServiceExportProperties( Console console, Module.ServiceExport export ) throws IOException
+    private void printServiceExportProperties( @Nonnull Console console, @Nonnull Module.ServiceExport export )
+            throws IOException
     {
         console.println( 8, "Properties:" );
         for( Map.Entry<String, Object> entry : export.getProperties().entrySet() )
@@ -289,7 +290,7 @@ public class Modules
         }
     }
 
-    private boolean matches( Module module, String moduleName, boolean exact )
+    private boolean matches( @Nonnull Module module, @Nonnull String moduleName, boolean exact )
     {
         if( exact && module.getName().equalsIgnoreCase( moduleName ) )
         {
