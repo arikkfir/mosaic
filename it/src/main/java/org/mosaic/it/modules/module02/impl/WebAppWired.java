@@ -19,7 +19,7 @@ public class WebAppWired
     @Nullable
     private WebApplication webApp;
 
-    @ServiceRef(value = "name=app01", required = false)
+    @ServiceRef( value = "name=app01", required = false )
     public void setWebApp( @Nullable WebApplication webApp )
     {
         this.webApp = webApp;
@@ -54,8 +54,8 @@ public class WebAppWired
         checkState( this.webApp.getContentLanguages().contains( "he" ), "missing he content language from: " + this.webApp.getContentLanguages() );
         checkState( this.webApp.isUriLanguageSelectionEnabled(), "false from isUriLanguageSelectionEnabled" );
         checkState( "en".equals( this.webApp.getDefaultLanguage() ), "wrong getDefaultLanguage: " + this.webApp.getDefaultLanguage() );
-        // TODO:       checkState( this.webApp.getUnknownUrlPage() != null, "null unknown URL page" );
-        // TODO:        checkState( this.webApp.getInternalErrorPage() != null, "null internal error page" );
+        checkState( this.webApp.getUnknownUrlPage() != null, "null unknown URL page" );
+        checkState( this.webApp.getInternalErrorPage() != null, "null internal error page" );
         checkState( this.webApp.isResourceCompressionEnabled(), "false from isResourceCompressionEnabled" );
         checkState( this.webApp.getParameters().size() == 1, "wrong parameters size: " + this.webApp.getParameters().size() );
         checkState( this.webApp.getParameters().containsKey( "p1" ), "missing p1 parameter from: " + this.webApp.getParameters() );
@@ -65,7 +65,7 @@ public class WebAppWired
         //noinspection ConstantConditions
         checkState( this.webApp.getPermissionPolicy() != null, "null permission policy" );
         checkState( "/login".equals( this.webApp.getFormLoginUrl() ), "wrong form login url: " + this.webApp.getFormLoginUrl() );
-        // TODO:        checkState( this.webApp.getAccessDeniedPage() != null, "null access denied page" );
+        checkState( this.webApp.getAccessDeniedPage() != null, "null access denied page" );
         checkState( this.webApp.getContentRoots().size() == 1, "wrong content roots size: " + this.webApp.getContentRoots().size() );
         checkState( this.webApp.getContentRoots().contains( Paths.get( "/some/dir/module02" ) ), "wrong content roots: " + this.webApp.getContentRoots() );
         return 0;

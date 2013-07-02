@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+
+<web-content xmlns="https://github.com/arikkfir/mosaic/web/content"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="https://github.com/arikkfir/mosaic/web/content https://github.com/arikkfir/mosaic/web/content-5.0.0">
+
+    <snippets>
+        <snippet id="main-snippet">
+            <content><![CDATA[Hello from snippet!]]></content>
+        </snippet>
+    </snippets>
+
+    <pages>
+        <page name="403" active="true" display-name="Access denied">
+            <blocks>
+                <block name="main" snippet-id="main-snippet"/>
+            </blocks>
+        </page>
+        <page name="404" active="true" display-name="Not found">
+            <blocks>
+                <block name="main" snippet-id="main-snippet"/>
+            </blocks>
+        </page>
+        <page name="500" active="true" display-name="Internal error">
+            <blocks>
+                <block name="main" snippet-id="main-snippet"/>
+            </blocks>
+        </page>
+    </pages>
+
+</web-content>

@@ -21,8 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
-import static java.nio.file.Files.copy;
-import static java.nio.file.Files.createTempDirectory;
+import static java.nio.file.Files.*;
 import static java.nio.file.StandardCopyOption.*;
 
 /**
@@ -143,30 +142,55 @@ public class MosaicRunner
 
     public Path deployWebApplication( @Nonnull String name ) throws IOException, InterruptedException
     {
-        String fileName = name + ".xml";
-
-        URL webAppDescUrl = getClass().getResource( "/org/mosaic/it/apps/" + fileName );
-        if( webAppDescUrl == null )
         {
-            throw new IllegalStateException( "Could not find testing web application '" + name + "' file" );
+            String webContentDescName = name + "-content.xml";
+            URL webContentDescUrl = getClass().getResource( "/org/mosaic/it/apps/content/" + webContentDescName );
+            if( webContentDescUrl != null )
+            {
+                try( InputStream is = webContentDescUrl.openStream() )
+                {
+                    Path webContentDescPath;
+                    if( this.mosaic == null )
+                    {
+                        webContentDescPath = this.mosaicDirectory.resolve( "apps" ).resolve( "content" ).resolve( webContentDescName );
+                    }
+                    else
+                    {
+                        createDirectories( this.mosaic.getApps().resolve( "content" ) );
+                        webContentDescPath = this.mosaic.getApps().resolve( "content" ).resolve( webContentDescName );
+                    }
+
+                    LOG.info( "Deploying content of web application '{}' to '{}'", name, webContentDescPath );
+                    Files.copy( is, webContentDescPath );
+                }
+            }
         }
 
-        try( InputStream is = webAppDescUrl.openStream() )
         {
-            Path target;
-            if( this.mosaic == null )
+            String webAppDescName = name + ".xml";
+            URL webAppDescUrl = getClass().getResource( "/org/mosaic/it/apps/" + webAppDescName );
+            if( webAppDescUrl == null )
             {
-                target = this.mosaicDirectory.resolve( "apps" ).resolve( fileName );
-            }
-            else
-            {
-                target = this.mosaic.getApps().resolve( fileName );
+                throw new IllegalStateException( "Could not find testing web application '" + name + "' file" );
             }
 
-            LOG.info( "Deploying web application '{}' to '{}'", name, target );
-            Files.copy( is, target );
-            Thread.sleep( 3000 );
-            return target;
+            try( InputStream is = webAppDescUrl.openStream() )
+            {
+                Path webAppDescPath;
+                if( this.mosaic == null )
+                {
+                    webAppDescPath = this.mosaicDirectory.resolve( "apps" ).resolve( webAppDescName );
+                }
+                else
+                {
+                    webAppDescPath = this.mosaic.getApps().resolve( webAppDescName );
+                }
+
+                LOG.info( "Deploying web application '{}' to '{}'", name, webAppDescPath );
+                Files.copy( is, webAppDescPath );
+                Thread.sleep( 3000 );
+                return webAppDescPath;
+            }
         }
     }
 
