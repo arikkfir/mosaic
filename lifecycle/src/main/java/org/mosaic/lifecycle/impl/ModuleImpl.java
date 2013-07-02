@@ -347,7 +347,6 @@ public class ModuleImpl implements Module
     @Override
     public void deactivate() throws ModuleStopException
     {
-        // TODO: prevent stopping the whole server (throw error here instead... catch other mosaic modules too)
         if( this.bundle.getBundleId() > 0 )
         {
             try
