@@ -15,10 +15,11 @@ import org.mosaic.util.expression.ExpressionParser;
 import org.mosaic.util.pair.ImmutablePair;
 import org.mosaic.util.pair.Pair;
 import org.mosaic.web.handler.InterceptorChain;
-import org.mosaic.web.handler.annotation.*;
-import org.mosaic.web.handler.impl.action.ExceptionHandler;
+import org.mosaic.web.handler.annotation.Controller;
+import org.mosaic.web.handler.annotation.Method;
+import org.mosaic.web.handler.annotation.Secured;
+import org.mosaic.web.handler.annotation.WebAppFilter;
 import org.mosaic.web.handler.impl.action.*;
-import org.mosaic.web.handler.impl.action.Interceptor;
 import org.mosaic.web.handler.impl.adapter.*;
 import org.mosaic.web.handler.impl.filter.Filter;
 import org.mosaic.web.handler.impl.filter.HttpMethodFilter;
@@ -87,7 +88,7 @@ public class WebEndpointsManager
         this.pageAdapter = new PageAdapter( this.conversionService );
     }
 
-    @MethodEndpointBind(Controller.class)
+    @MethodEndpointBind( Controller.class )
     public void addController( @Nonnull MethodEndpoint endpoint, @ServiceId long id, @Rank int rank )
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException
     {
@@ -108,40 +109,13 @@ public class WebEndpointsManager
         LOG.info( "Added @Controller {}", endpoint );
     }
 
-    @MethodEndpointUnbind(Controller.class)
+    @MethodEndpointUnbind( Controller.class )
     public void removeController( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
     {
         removeEndpoint( id, this.handlerAdapters );
     }
 
-    @MethodEndpointBind(WebService.class)
-    public void addWebService( @Nonnull MethodEndpoint endpoint, @ServiceId long id, @Rank int rank )
-            throws NoSuchMethodException, IllegalAccessException, InvocationTargetException
-    {
-        Handler handler = new MethodEndpointWebServiceHandler( endpoint, this.conversionService );
-
-        Secured securedAnn = endpoint.getAnnotation( Secured.class );
-        if( securedAnn != null )
-        {
-            handler = new SecuredHandler( handler, securedAnn.value() );
-        }
-
-        this.handlerAdapters.add(
-                new HandlerAdapter( this.conversionService,
-                                    id,
-                                    rank,
-                                    handler,
-                                    createHandlerFilters( endpoint, false ) ) );
-        LOG.info( "Added @WebService {}", endpoint );
-    }
-
-    @MethodEndpointUnbind(WebService.class)
-    public void removeWebService( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
-    {
-        removeEndpoint( id, this.handlerAdapters );
-    }
-
-    @MethodEndpointBind(org.mosaic.web.handler.annotation.Interceptor.class)
+    @MethodEndpointBind( org.mosaic.web.handler.annotation.Interceptor.class )
     public void addInterceptorHandler( @Nonnull MethodEndpoint endpoint, @ServiceId long id, @Rank int rank )
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException
     {
@@ -154,13 +128,13 @@ public class WebEndpointsManager
         LOG.info( "Added @Interceptor {}", endpoint );
     }
 
-    @MethodEndpointUnbind(org.mosaic.web.handler.annotation.Interceptor.class)
+    @MethodEndpointUnbind( org.mosaic.web.handler.annotation.Interceptor.class )
     public void removeInterceptorHandler( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
     {
         removeEndpoint( id, this.interceptorAdapters );
     }
 
-    @MethodEndpointBind(org.mosaic.web.handler.annotation.ExceptionHandler.class)
+    @MethodEndpointBind( org.mosaic.web.handler.annotation.ExceptionHandler.class )
     public void addExceptionHandler( @Nonnull MethodEndpoint endpoint, @ServiceId long id, @Rank int rank )
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException
     {
@@ -173,7 +147,7 @@ public class WebEndpointsManager
         LOG.info( "Added @ExceptionHandler {}", endpoint );
     }
 
-    @MethodEndpointUnbind(org.mosaic.web.handler.annotation.ExceptionHandler.class)
+    @MethodEndpointUnbind( org.mosaic.web.handler.annotation.ExceptionHandler.class )
     public void removeExceptionHandler( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
     {
         removeEndpoint( id, this.exceptionHandlerAdapters );
