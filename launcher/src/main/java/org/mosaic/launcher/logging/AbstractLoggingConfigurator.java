@@ -9,7 +9,6 @@ import java.util.Properties;
 import javax.annotation.Nonnull;
 import org.mosaic.launcher.util.SystemError;
 import org.slf4j.LoggerFactory;
-import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import static ch.qos.logback.core.status.StatusUtil.filterStatusListByTimeThreshold;
 
@@ -31,10 +30,6 @@ public abstract class AbstractLoggingConfigurator
         LoggerContext loggerContext = getAndResetLoggerContext();
         configureLoggerContext( loggerContext );
         checkLogbackContextForErrors( loggerContext );
-
-        // install JUL-to-SLF4J adapter
-        SLF4JBridgeHandler.removeHandlersForRootLogger();
-        SLF4JBridgeHandler.install();
     }
 
     protected abstract void configureLoggerContext( @Nonnull LoggerContext loggerContext ) throws Exception;

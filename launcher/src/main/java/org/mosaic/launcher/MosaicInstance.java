@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.apache.felix.framework.Felix;
+import org.mosaic.launcher.logging.JavaUtilLoggingConfigurator;
 import org.mosaic.launcher.logging.ServerLoggingConfigurator;
 import org.mosaic.launcher.logging.SimpleLoggingConfigurator;
 import org.mosaic.launcher.osgi.BootBundlesWatcher;
@@ -143,6 +144,7 @@ public class MosaicInstance implements Closeable
                     @Override
                     protected void executeInternal() throws Exception
                     {
+                        new JavaUtilLoggingConfigurator().initializeLogging();
                         if( !isDevMode() )
                         {
                             new ServerLoggingConfigurator( MosaicInstance.this.properties, MosaicInstance.this.etc ).initializeLogging();
