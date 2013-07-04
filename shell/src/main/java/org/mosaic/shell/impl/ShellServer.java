@@ -4,21 +4,18 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import org.apache.mina.core.session.IoSession;
 import org.apache.sshd.SshServer;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.session.AbstractSession;
 import org.apache.sshd.server.Command;
 import org.apache.sshd.server.CommandFactory;
 import org.apache.sshd.server.UserAuth;
 import org.apache.sshd.server.auth.UserAuthPassword;
 import org.apache.sshd.server.auth.UserAuthPublicKey;
-import org.apache.sshd.server.session.SessionFactory;
 import org.mosaic.Server;
-import org.mosaic.lifecycle.ModuleManager;
 import org.mosaic.lifecycle.annotation.Bean;
 import org.mosaic.lifecycle.annotation.BeanRef;
 import org.mosaic.lifecycle.annotation.ServiceRef;
@@ -28,7 +25,7 @@ import org.mosaic.shell.impl.auth.PublicKeyAuthenticator;
 import org.mosaic.shell.impl.auth.UserAuthLocalhostNone;
 import org.mosaic.shell.impl.command.CommandManager;
 import org.mosaic.shell.impl.session.MosaicCommand;
-import org.mosaic.shell.impl.session.MosaicServerSession;
+import org.mosaic.shell.impl.session.MosaicCommandCompleter;
 import org.mosaic.shell.impl.session.MosaicSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,45 +38,31 @@ public class ShellServer
 {
     private static final Logger LOG = LoggerFactory.getLogger( ShellServer.class );
 
-    private static class MosaicSessionFactory extends SessionFactory
-    {
-        @Override
-        protected AbstractSession doCreateSession( IoSession ioSession ) throws Exception
-        {
-            return new MosaicServerSession( this.server, ioSession );
-        }
-    }
-
-    private ModuleManager moduleManager;
-
+    @Nonnull
     private PasswordAuthenticator passwordAuthenticator;
 
+    @Nonnull
     private PublicKeyAuthenticator publicKeyAuthenticator;
 
-    private Server server;
-
-    private SshServer sshServer;
-
+    @Nonnull
     private CommandManager shellCommandsManager;
 
+    @Nonnull
     private KeyPairProvider keyPairProvider;
+
+    @Nonnull
+    private MosaicCommandCompleter commandCompleter;
+
+    @Nonnull
+    private Server server;
+
+    @Nullable
+    private SshServer sshServer;
 
     @BeanRef
     public void setKeyPairProvider( @Nonnull KeyPairProvider keyPairProvider )
     {
         this.keyPairProvider = keyPairProvider;
-    }
-
-    @ServiceRef
-    public void setServer( @Nonnull Server server )
-    {
-        this.server = server;
-    }
-
-    @ServiceRef
-    public void setModuleManager( @Nonnull ModuleManager moduleManager )
-    {
-        this.moduleManager = moduleManager;
     }
 
     @BeanRef
@@ -100,6 +83,18 @@ public class ShellServer
         this.shellCommandsManager = shellCommandsManager;
     }
 
+    @ServiceRef
+    public void setServer( @Nonnull Server server )
+    {
+        this.server = server;
+    }
+
+    @BeanRef
+    public void setCommandCompleter( @Nonnull MosaicCommandCompleter commandCompleter )
+    {
+        this.commandCompleter = commandCompleter;
+    }
+
     @PostConstruct
     public void init() throws IOException
     {
@@ -112,13 +107,12 @@ public class ShellServer
             this.sshServer.setUserAuthFactories( createUserAuthFactories() );
             this.sshServer.setKeyPairProvider( this.keyPairProvider );
             this.sshServer.setPublickeyAuthenticator( this.publicKeyAuthenticator );
-            this.sshServer.setSessionFactory( new MosaicSessionFactory() );
             this.sshServer.setCommandFactory( new CommandFactory()
             {
                 @Override
                 public Command createCommand( String command )
                 {
-                    return new MosaicCommand( shellCommandsManager, command );
+                    return new MosaicCommand( server, shellCommandsManager, command );
                 }
             } );
             this.sshServer.start();
@@ -171,7 +165,7 @@ public class ShellServer
         @Override
         public Command create()
         {
-            return new MosaicSession( server, moduleManager, shellCommandsManager );
+            return new MosaicSession( server, commandCompleter, shellCommandsManager );
         }
     }
 }
