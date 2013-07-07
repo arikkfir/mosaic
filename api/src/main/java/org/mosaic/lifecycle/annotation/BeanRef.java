@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
  * @author arik
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
+@Target({ ElementType.METHOD, ElementType.PARAMETER })
 public @interface BeanRef
 {
     boolean required() default true;
