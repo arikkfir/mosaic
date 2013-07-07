@@ -55,14 +55,14 @@ public class BuildMosaicModulesBeforeRunTasksProvider extends BeforeRunTaskProvi
     @Nullable
     public Icon getIcon()
     {
-        return IconLoader.getIcon( "/com/infolinks/rinku/idea/plugin/icons/rinku.png" );
+        return IconLoader.getIcon( "/org/mosaic/idea/runner/mosaic.png" );
     }
 
     @Nullable
     @Override
     public Icon getTaskIcon( BuildMosaicModulesBeforeRunTask task )
     {
-        return IconLoader.getIcon( "/com/infolinks/rinku/idea/plugin/icons/rinku.png" );
+        return IconLoader.getIcon( "/org/mosaic/idea/runner/mosaic.png" );
     }
 
     public boolean isConfigurable()
