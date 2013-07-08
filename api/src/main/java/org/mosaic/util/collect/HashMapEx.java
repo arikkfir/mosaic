@@ -42,6 +42,12 @@ public class HashMapEx<K, V> extends HashMap<K, V> implements MapEx<K, V>
         this.conversionService = conversionService;
     }
 
+    @Nonnull
+    public ConversionService getConversionService()
+    {
+        return conversionService;
+    }
+
     @Override
     public V get( @Nonnull K key, @Nullable V defaultValue )
     {

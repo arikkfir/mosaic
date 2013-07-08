@@ -11,7 +11,7 @@ import static java.lang.String.format;
 /**
  * @author arik
  */
-@SuppressWarnings( "CPD-START" )
+@SuppressWarnings("CPD-START")
 public class ConcurrentHashMapEx<K, V> extends ConcurrentHashMap<K, V> implements MapEx<K, V>
 {
     @Nonnull
@@ -50,6 +50,12 @@ public class ConcurrentHashMapEx<K, V> extends ConcurrentHashMap<K, V> implement
     {
         super( m );
         this.conversionService = conversionService;
+    }
+
+    @Nonnull
+    public ConversionService getConversionService()
+    {
+        return conversionService;
     }
 
     @Override
