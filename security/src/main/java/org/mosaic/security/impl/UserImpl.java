@@ -15,8 +15,11 @@ import org.mosaic.util.convert.ConversionService;
 /**
  * @author arik
  */
-public class UserImpl extends ConcurrentHashMapEx<String, Object> implements MutableUser
+public class UserImpl implements MutableUser
 {
+    @Nonnull
+    private final ConcurrentHashMapEx<String, Object> attributes;
+
     @Nonnull
     private final String name;
 
@@ -34,8 +37,15 @@ public class UserImpl extends ConcurrentHashMapEx<String, Object> implements Mut
 
     public UserImpl( @Nonnull ConversionService conversionService, @Nonnull String name )
     {
-        super( 20, conversionService );
+        this.attributes = new ConcurrentHashMapEx<>( 20, conversionService );
         this.name = name;
+    }
+
+    @Nonnull
+    @Override
+    public MapEx<String, Object> getAttributes()
+    {
+        return this.attributes;
     }
 
     @Override
@@ -131,13 +141,13 @@ public class UserImpl extends ConcurrentHashMapEx<String, Object> implements Mut
     {
         if( this.principalsByName == null )
         {
-            this.principalsByName = new HashMapEx<>( conversionService );
+            this.principalsByName = new HashMapEx<>( this.attributes.getConversionService() );
         }
         this.principalsByName.put( principal.getType(), principal );
 
         if( this.principalsByType == null )
         {
-            this.principalsByType = new HashMapEx<>( conversionService );
+            this.principalsByType = new HashMapEx<>( this.attributes.getConversionService() );
         }
         this.principalsByType.put( principal.getClass(), principal );
 
@@ -157,7 +167,7 @@ public class UserImpl extends ConcurrentHashMapEx<String, Object> implements Mut
     {
         if( this.credentialsByType == null )
         {
-            this.credentialsByType = new HashMapEx<>( conversionService );
+            this.credentialsByType = new HashMapEx<>( this.attributes.getConversionService() );
         }
         this.credentialsByType.put( credential.getClass(), credential );
         return this;

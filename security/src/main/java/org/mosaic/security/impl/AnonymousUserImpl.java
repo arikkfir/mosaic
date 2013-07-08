@@ -10,15 +10,21 @@ import org.mosaic.security.CredentialNotFoundException;
 import org.mosaic.security.Principal;
 import org.mosaic.security.PrincipalNotFoundException;
 import org.mosaic.security.realm.MutableUser;
-import org.mosaic.util.collect.RequiredKeyMissingException;
-
-import static java.lang.String.format;
+import org.mosaic.util.collect.EmptyMapEx;
+import org.mosaic.util.collect.MapEx;
 
 /**
  * @author arik
  */
 public class AnonymousUserImpl implements MutableUser
 {
+    @Nonnull
+    @Override
+    public MapEx<String, Object> getAttributes()
+    {
+        return EmptyMapEx.emptyMapEx();
+    }
+
     @Override
     public boolean isAnonymous()
     {
@@ -113,112 +119,5 @@ public class AnonymousUserImpl implements MutableUser
     public Collection<Object> getCredentials()
     {
         return Collections.emptyList();
-    }
-
-    @Override
-    public Object get( @Nonnull String key, @Nullable Object defaultValue )
-    {
-        return defaultValue;
-    }
-
-    @Nonnull
-    @Override
-    public Object require( @Nonnull String key )
-    {
-        throw new RequiredKeyMissingException( format( "no value for key '%s'", key ), key );
-    }
-
-    @Override
-    public <T> T get( @Nonnull String key, @Nonnull Class<T> type )
-    {
-        return null;
-    }
-
-    @Nonnull
-    @Override
-    public <T> T require( @Nonnull String key, @Nonnull Class<T> type )
-    {
-        throw new RequiredKeyMissingException( format( "no value for key '%s'", key ), key );
-    }
-
-    @Override
-    public <T> T get( @Nonnull String key, @Nonnull Class<T> type, @Nullable T defaultValue )
-    {
-        return defaultValue;
-    }
-
-    @Override
-    public int size()
-    {
-        return 0;
-    }
-
-    @Override
-    public boolean isEmpty()
-    {
-        return true;
-    }
-
-    @Override
-    public boolean containsKey( Object key )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean containsValue( Object value )
-    {
-        return false;
-    }
-
-    @Override
-    public Object get( Object key )
-    {
-        return null;
-    }
-
-    @Override
-    public Object put( String key, Object value )
-    {
-        throw new UnsupportedOperationException( "Anonymous user is read-only" );
-    }
-
-    @Override
-    public Object remove( Object key )
-    {
-        throw new UnsupportedOperationException( "Anonymous user is read-only" );
-    }
-
-    @Override
-    public void putAll( @Nonnull Map<? extends String, ?> m )
-    {
-        throw new UnsupportedOperationException( "Anonymous user is read-only" );
-    }
-
-    @Override
-    public void clear()
-    {
-        throw new UnsupportedOperationException( "Anonymous user is read-only" );
-    }
-
-    @Nonnull
-    @Override
-    public Set<String> keySet()
-    {
-        return Collections.emptySet();
-    }
-
-    @Nonnull
-    @Override
-    public Collection<Object> values()
-    {
-        return Collections.emptyList();
-    }
-
-    @Nonnull
-    @Override
-    public Set<Entry<String, Object>> entrySet()
-    {
-        return Collections.emptySet();
     }
 }

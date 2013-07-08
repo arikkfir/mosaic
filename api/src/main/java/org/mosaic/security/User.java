@@ -10,8 +10,11 @@ import org.mosaic.util.collect.MapEx;
 /**
  * @author arik
  */
-public interface User extends MapEx<String, Object>
+public interface User
 {
+    @Nonnull
+    MapEx<String, Object> getAttributes();
+
     boolean isAnonymous();
 
     @Nonnull
