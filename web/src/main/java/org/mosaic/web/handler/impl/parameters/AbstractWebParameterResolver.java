@@ -6,7 +6,6 @@ import javax.annotation.Nullable;
 import org.mosaic.util.collect.MapEx;
 import org.mosaic.util.convert.ConversionService;
 import org.mosaic.util.reflection.MethodHandle;
-import org.mosaic.web.handler.impl.RequestExecutionPlan;
 import org.mosaic.web.request.WebRequest;
 
 /**
@@ -28,15 +27,9 @@ public abstract class AbstractWebParameterResolver implements MethodHandle.Param
     }
 
     @Nonnull
-    public RequestExecutionPlan getPlan( @Nonnull MapEx<String, Object> context )
-    {
-        return context.require( "plan", RequestExecutionPlan.class );
-    }
-
-    @Nonnull
     public WebRequest getRequest( @Nonnull MapEx<String, Object> context )
     {
-        return getPlan( context ).getRequest();
+        return context.require( "request", WebRequest.class );
     }
 
     @Nonnull

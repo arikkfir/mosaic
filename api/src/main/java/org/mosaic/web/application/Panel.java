@@ -1,15 +1,16 @@
 package org.mosaic.web.application;
 
 import java.util.Collection;
+import java.util.List;
 import javax.annotation.Nonnull;
 
 /**
  * @author arik
  */
-public interface Block
+public interface Panel
 {
     @Nonnull
-    Panel getPanel();
+    Template getTemplate();
 
     @Nonnull
     String getName();
@@ -18,8 +19,8 @@ public interface Block
     String getDisplayName();
 
     @Nonnull
-    Snippet getSnippet();
+    Collection<ContextProviderRef> getContext();
 
     @Nonnull
-    Collection<ContextProviderRef> getContext();
+    List<Block> getBlocks();
 }

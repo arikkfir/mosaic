@@ -45,14 +45,16 @@ import static org.mosaic.web.request.impl.WebSessionImpl.WEB_SESSION_ATTR_KEY;
 /**
  * @author arik
  */
-public class WebRequestImpl extends HashMapEx<String, Object>
-        implements WebRequest, WebRequest.Uri, WebRequest.Headers, WebRequest.Body
+public class WebRequestImpl implements WebRequest, WebRequest.Uri, WebRequest.Headers, WebRequest.Body
 {
     private static final Logger LOG = LoggerFactory.getLogger( WebRequestImpl.class );
 
     private static final List<MediaType> DEFAULT_ACCEPT = Arrays.asList( MediaType.PLAIN_TEXT );
 
     private static final List<Charset> DEFAULT_CHARSET = Arrays.asList( Charset.forName( "UTF-8" ) );
+
+    @Nonnull
+    private final HashMapEx<String, Object> attributes;
 
     @Nonnull
     private final Request request;
@@ -117,7 +119,7 @@ public class WebRequestImpl extends HashMapEx<String, Object>
                            @Nonnull LoadingCache<Pair<String, String>, MapEx<String, String>> pathTemplatesCache )
             throws UnsupportedHttpMethodException
     {
-        super( 20, conversionService );
+        this.attributes = new HashMapEx<>( 10, conversionService );
         this.request = request;
         this.response = new WebResponseImpl( this, request.getResponse() );
         this.application = application;
@@ -191,6 +193,13 @@ public class WebRequestImpl extends HashMapEx<String, Object>
         this.headers = headers;
 
         this.device = new WebDeviceImpl();
+    }
+
+    @Nonnull
+    @Override
+    public MapEx<String, Object> getAttributes()
+    {
+        return this.attributes;
     }
 
     @Nonnull
@@ -294,7 +303,7 @@ public class WebRequestImpl extends HashMapEx<String, Object>
                     return ( WebSession ) webSessionAttr;
                 }
             }
-            return new WebSessionImpl( session, this.conversionService );
+            return new WebSessionImpl( session, this.attributes.getConversionService() );
         }
     }
 
@@ -526,7 +535,7 @@ public class WebRequestImpl extends HashMapEx<String, Object>
     public MediaType getContentType()
     {
         String value = this.request.getHttpFields().getStringField( HttpHeader.CONTENT_TYPE );
-        return value == null ? null : this.conversionService.convert( value, MediaType.class );
+        return value == null ? null : this.attributes.getConversionService().convert( value, MediaType.class );
     }
 
     @Nullable
@@ -651,7 +660,7 @@ public class WebRequestImpl extends HashMapEx<String, Object>
         Set<T> values = new LinkedHashSet<>();
         for( String rawValue : list( rawValues ) )
         {
-            values.add( this.conversionService.convert( HttpFields.valueParameters( rawValue, null ), type ) );
+            values.add( this.attributes.getConversionService().convert( HttpFields.valueParameters( rawValue, null ), type ) );
         }
         return values;
     }
@@ -679,7 +688,7 @@ public class WebRequestImpl extends HashMapEx<String, Object>
         List<T> values = new LinkedList<>();
         for( String rawValue : sortedRawValues )
         {
-            values.add( this.conversionService.convert( HttpFields.valueParameters( rawValue, null ), type ) );
+            values.add( this.attributes.getConversionService().convert( HttpFields.valueParameters( rawValue, null ), type ) );
         }
         return values;
     }

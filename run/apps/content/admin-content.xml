@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+
+<web-content xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns="https://github.com/arikkfir/mosaic/web/content"
+             xsi:schemaLocation="https://github.com/arikkfir/mosaic/web/content https://github.com/arikkfir/mosaic/web/content-5.0.0">
+
+    <snippets>
+        <snippet name="___default">
+            <content><![CDATA[
+                    <!doctype html>
+                    <html th:inline="text">
+                    <head>
+                        <title>This is the template title~</title>
+                    </head>
+                    <body>
+                        <h1>Title here :)</h1>
+                        <div mc:panel="header"/>
+                    </body>
+                    </html>
+            ]]></content>
+        </snippet>
+        <snippet name="product-logo">
+            <content><![CDATA[
+                <h2>[[${request.method}]]</h2>
+            ]]></content>
+        </snippet>
+        <snippet name="product-name">
+            <content><![CDATA[
+                <h3>PRODUCT NAME</h3>
+            ]]></content>
+        </snippet>
+        <snippet name="company-logo">
+            <content><![CDATA[
+                <h4>COMPANY LOGO [[${request.method}]]</h4>
+            ]]></content>
+        </snippet>
+    </snippets>
+
+    <templates>
+        <template name="default" display-name="Default Template">
+            <panels>
+                <panel name="header" display-name="Page Header">
+                    <blocks>
+                        <block name="product-logo" snippet="product-logo"/>
+                        <block name="product-name" snippet="product-name"/>
+                        <block name="company-logo" snippet="company-logo"/>
+                    </blocks>
+                </panel>
+            </panels>
+        </template>
+    </templates>
+
+    <pages>
+        <page name="index" active="true" display-name="Home page" template="default">
+            <url-paths>
+                <path languages="en">
+                    /
+                    /home
+                    /index.htm
+                    /index.html
+                </path>
+            </url-paths>
+            <blocks>
+                <block name="page-block" snippet="company-logo" panel="header"/>
+            </blocks>
+        </page>
+    </pages>
+
+</web-content>

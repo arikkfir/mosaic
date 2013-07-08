@@ -20,12 +20,22 @@
                 <configuration>
                     <instructions>
                         <Embed-Dependency>
+                            javassist,
                             javax.servlet,
-                            jetty-*
+                            jetty-*,
+                            ognl,
+                            thymeleaf,
+                            xercesImpl
                         </Embed-Dependency>
-                        <Embed-Transitive>false</Embed-Transitive>
+                        <Embed-Transitive>true</Embed-Transitive>
                         <Import-Package>
+                            !com.sun.jdi*,
+                            !javassist*,
+                            !ognl*,
+                            !org.apache.xml*,
+                            !org.cyberneko*,
                             !org.eclipse.jetty*,
+                            org.w3c.dom,
                             *
                         </Import-Package>
                     </instructions>
@@ -54,6 +64,18 @@
         <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.thymeleaf</groupId>
+            <artifactId>thymeleaf</artifactId>
+            <!-- make provided so these dependencies are not included by IDEA in run classpath -->
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>xerces</groupId>
+            <artifactId>xercesImpl</artifactId>
+            <!-- make provided so these dependencies are not included by IDEA in run classpath -->
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty.orbit</groupId>

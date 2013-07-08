@@ -16,5 +16,6 @@
     <logger name="org.osgi" level="INFO"/>
     <logger name="org.quartz" level="WARN"/>
     <logger name="org.springframework" level="WARN"/>
+    <logger name="org.thymeleaf" level="WARN"/>
 
 </included>

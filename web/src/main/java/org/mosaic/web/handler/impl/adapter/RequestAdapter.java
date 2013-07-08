@@ -1,6 +1,6 @@
 package org.mosaic.web.handler.impl.adapter;
 
-import java.util.Collection;
+import java.lang.annotation.Annotation;
 import java.util.LinkedList;
 import java.util.List;
 import javax.annotation.Nonnull;
@@ -8,11 +8,19 @@ import javax.annotation.Nullable;
 import org.mosaic.util.collect.HashMapEx;
 import org.mosaic.util.collect.MapEx;
 import org.mosaic.util.convert.ConversionService;
+import org.mosaic.web.handler.annotation.Method;
+import org.mosaic.web.handler.annotation.WebAppFilter;
 import org.mosaic.web.handler.impl.RequestExecutionPlan;
 import org.mosaic.web.handler.impl.action.Participator;
 import org.mosaic.web.handler.impl.filter.Filter;
+import org.mosaic.web.handler.impl.filter.HttpMethodFilter;
+import org.mosaic.web.handler.impl.filter.PathFilter;
+import org.mosaic.web.handler.impl.filter.WebApplicationFilter;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableList;
+import static org.mosaic.web.net.HttpMethod.GET;
+import static org.mosaic.web.net.HttpMethod.POST;
 
 /**
  * @author arik
@@ -20,39 +28,86 @@ import static java.util.Collections.unmodifiableList;
 public class RequestAdapter implements Comparable<RequestAdapter>
 {
     @Nonnull
-    private final ConversionService conversionService;
+    protected final ConversionService conversionService;
 
     private final long id;
 
-    private final int rank;
+    private int rank;
+
+    @Nullable
+    private Participator participator;
 
     @Nonnull
-    private final List<Filter> filters;
+    private List<Filter> filters = emptyList();
 
-    @Nonnull
-    private final Participator Participator;
-
-    public RequestAdapter( @Nonnull ConversionService conversionService,
-                           long id,
-                           int rank,
-                           @Nonnull Participator participator,
-                           @Nonnull Collection<Filter> filters )
+    public RequestAdapter( @Nonnull ConversionService conversionService, long id )
     {
         this.conversionService = conversionService;
         this.id = id;
-        this.rank = rank;
-        this.Participator = participator;
-        this.filters = unmodifiableList( new LinkedList<>( filters ) );
     }
 
     public final long getId()
     {
-        return id;
+        return this.id;
     }
 
     public final int getRank()
     {
-        return rank;
+        return this.rank;
+    }
+
+    public void setRank( int rank )
+    {
+        this.rank = rank;
+    }
+
+    public void setParticipator( @Nullable Participator participator )
+    {
+        this.participator = participator;
+    }
+
+    public void addFilter( @Nonnull Filter filter )
+    {
+        List<Filter> newFilters = new LinkedList<>( this.filters );
+        newFilters.add( filter );
+        this.filters = unmodifiableList( newFilters );
+    }
+
+    public void addWebAppFilter( @Nullable WebAppFilter webAppFilterAnn )
+    {
+        if( webAppFilterAnn != null )
+        {
+            addFilter( new WebApplicationFilter( webAppFilterAnn.value() ) );
+        }
+    }
+
+    public void addHttpMethodFilter( @Nullable Method methodAnn )
+    {
+        if( methodAnn != null )
+        {
+            addFilter( new HttpMethodFilter( methodAnn.value() ) );
+        }
+        else
+        {
+            addFilter( new HttpMethodFilter( GET, POST ) );
+        }
+    }
+
+    public void addPathFilter( @Nullable Annotation annotation, boolean emptyPathListMatchesAll )
+    {
+        if( annotation != null )
+        {
+            try
+            {
+                Class<? extends Annotation> annotationType = annotation.annotationType();
+                java.lang.reflect.Method method = annotationType.getDeclaredMethod( "value" );
+                addFilter( new PathFilter( emptyPathListMatchesAll, ( String[] ) method.invoke( annotation ) ) );
+            }
+            catch( Exception e )
+            {
+                throw new IllegalArgumentException( "Could not extract URL paths from '" + annotation + "': " + e.getMessage(), e );
+            }
+        }
     }
 
     @Override
@@ -87,14 +142,17 @@ public class RequestAdapter implements Comparable<RequestAdapter>
 
     public final void apply( @Nonnull RequestExecutionPlan plan )
     {
-        MapEx<String, Object> context = new HashMapEx<>( 50, this.conversionService );
-        for( Filter filter : this.filters )
+        if( this.participator != null )
         {
-            if( !filter.matches( plan, context ) )
+            MapEx<String, Object> context = new HashMapEx<>( 50, this.conversionService );
+            for( Filter filter : this.filters )
             {
-                return;
+                if( !filter.matches( plan, context ) )
+                {
+                    return;
+                }
             }
+            this.participator.apply( plan, context );
         }
-        this.Participator.apply( plan, context );
     }
 }

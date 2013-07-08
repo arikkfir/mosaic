@@ -7,6 +7,7 @@ import javax.servlet.http.HttpSessionBindingListener;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 import org.mosaic.util.collect.ConcurrentHashMapEx;
+import org.mosaic.util.collect.MapEx;
 import org.mosaic.util.convert.ConversionService;
 import org.mosaic.web.request.WebSession;
 import org.slf4j.Logger;
@@ -15,19 +16,21 @@ import org.slf4j.LoggerFactory;
 /**
  * @author arik
  */
-public class WebSessionImpl extends ConcurrentHashMapEx<String, Object>
-        implements WebSession, HttpSessionBindingListener
+public class WebSessionImpl implements WebSession, HttpSessionBindingListener
 {
     private static final Logger LOG = LoggerFactory.getLogger( WebSessionImpl.class );
 
     public static final String WEB_SESSION_ATTR_KEY = WebSession.class.getName() + "#" + WebSession.class.hashCode();
 
     @Nonnull
+    private final ConcurrentHashMapEx<String, Object> attributes;
+
+    @Nonnull
     private final HttpSession session;
 
     public WebSessionImpl( @Nonnull HttpSession session, @Nonnull ConversionService conversionService )
     {
-        super( 100, conversionService );
+        this.attributes = new ConcurrentHashMapEx<>( 10, conversionService );
         this.session = session;
         this.session.setAttribute( WEB_SESSION_ATTR_KEY, this );
     }
@@ -42,6 +45,13 @@ public class WebSessionImpl extends ConcurrentHashMapEx<String, Object>
     public void valueUnbound( HttpSessionBindingEvent event )
     {
         LOG.debug( "Destroyed Mosaic web session '{}'", this );
+    }
+
+    @Nonnull
+    @Override
+    public MapEx<String, Object> getAttributes()
+    {
+        return this.attributes;
     }
 
     @Nonnull

@@ -1,19 +1,24 @@
 package org.mosaic.web.application.impl;
 
 import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.xml.xpath.XPathException;
 import org.mosaic.util.convert.ConversionService;
 import org.mosaic.util.xml.XmlElement;
 import org.mosaic.web.application.*;
 
+import static java.util.Collections.unmodifiableList;
+
 /**
  * @author arik
  */
-public class BlockImpl implements Block
+public class PanelImpl implements Panel
 {
     @Nonnull
-    private final Panel panel;
+    private final Template template;
 
     @Nonnull
     private final String name;
@@ -22,25 +27,19 @@ public class BlockImpl implements Block
     private final String displayName;
 
     @Nonnull
-    private final Snippet snippet;
-
-    @Nonnull
     private final ContextImpl context;
 
-    public BlockImpl( @Nonnull ConversionService conversionService, @Nonnull Panel panel, @Nonnull XmlElement element )
-            throws WebApplicationParseException
+    @Nonnull
+    private final List<Block> blocks;
+
+    public PanelImpl( @Nonnull ConversionService conversionService,
+                      @Nonnull Template template,
+                      @Nonnull XmlElement element )
+            throws XPathException, WebApplicationParseException
     {
-        this.panel = panel;
+        this.template = template;
         this.name = element.requireAttribute( "name" );
         this.displayName = element.getAttribute( "display-name" );
-
-        String snippetId = element.requireAttribute( "snippet" );
-        Snippet snippet = this.panel.getTemplate().getApplication().getSnippet( snippetId );
-        if( snippet == null )
-        {
-            throw new WebApplicationParseException( "Block '" + this + "' uses unknown snippet: " + snippetId );
-        }
-        this.snippet = snippet;
 
         XmlElement contextElement = element.getFirstChildElement( "context" );
         if( contextElement != null )
@@ -51,19 +50,20 @@ public class BlockImpl implements Block
         {
             this.context = new ContextImpl();
         }
-    }
 
-    @Override
-    public String toString()
-    {
-        return "Block[" + this.name + "]";
+        List<Block> blocks = new LinkedList<>();
+        for( XmlElement blockElement : element.findElements( "c:blocks/c:block" ) )
+        {
+            blocks.add( new BlockImpl( conversionService, this, blockElement ) );
+        }
+        this.blocks = unmodifiableList( blocks );
     }
 
     @Nonnull
     @Override
-    public Panel getPanel()
+    public Template getTemplate()
     {
-        return this.panel;
+        return this.template;
     }
 
     @Nonnull
@@ -82,15 +82,15 @@ public class BlockImpl implements Block
 
     @Nonnull
     @Override
-    public Snippet getSnippet()
+    public Collection<ContextProviderRef> getContext()
     {
-        return this.snippet;
+        return this.context.getContextProviderRefs();
     }
 
     @Nonnull
     @Override
-    public Collection<ContextProviderRef> getContext()
+    public List<Block> getBlocks()
     {
-        return this.context.getContextProviderRefs();
+        return this.blocks;
     }
 }

@@ -23,9 +23,9 @@ public class SecuredHandler implements Handler
     private final Handler handler;
 
     @Nonnull
-    private final String securityExpression;
+    private final Expression securityExpression;
 
-    public SecuredHandler( @Nonnull Handler handler, @Nonnull String securityExpression )
+    public SecuredHandler( @Nonnull Handler handler, @Nonnull Expression securityExpression )
     {
         this.handler = handler;
         this.securityExpression = securityExpression;
@@ -87,11 +87,9 @@ public class SecuredHandler implements Handler
     @Override
     public Object handle( @Nonnull WebRequest request, @Nonnull MapEx<String, Object> context ) throws Exception
     {
-        RequestExecutionPlan plan = context.require( "plan", RequestExecutionPlan.class );
-        Expression compiledExpression = plan.getExpressionParser().parseExpression( this.securityExpression );
         try
         {
-            if( !compiledExpression.createInvoker().withRoot( request ).expect( Boolean.class ).require() )
+            if( !this.securityExpression.createInvoker().withRoot( request ).expect( Boolean.class ).require() )
             {
                 if( request.getUser().isAnonymous() )
                 {

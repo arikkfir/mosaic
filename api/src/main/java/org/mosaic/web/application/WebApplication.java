@@ -2,7 +2,6 @@ package org.mosaic.web.application;
 
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -14,8 +13,11 @@ import org.mosaic.web.security.AuthenticatorType;
 /**
  * @author arik
  */
-public interface WebApplication extends Map<String, Object>
+public interface WebApplication
 {
+    @Nonnull
+    MapEx<String, Object> getAttributes();
+
     @Nonnull
     String getName();
 
@@ -77,14 +79,20 @@ public interface WebApplication extends Map<String, Object>
     @Nonnull
     Collection<ContextProviderRef> getContext();
 
-    @Nonnull
-    Map<String, Snippet> getSnippetMap();
+    @Nullable
+    Snippet getSnippet( @Nonnull String name );
 
     @Nonnull
     Collection<Snippet> getSnippets();
 
+    @Nullable
+    Template getTemplate( @Nonnull String name );
+
     @Nonnull
-    Map<String, Page> getPageMap();
+    Collection<Template> getTemplates();
+
+    @Nullable
+    Page getPage( @Nonnull String name );
 
     @Nonnull
     Collection<Page> getPages();

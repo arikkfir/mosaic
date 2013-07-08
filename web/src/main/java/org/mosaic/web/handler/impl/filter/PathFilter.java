@@ -33,6 +33,13 @@ public class PathFilter implements Filter
         this.pathTemplates = ( String[] ) method.invoke( endpointType );
     }
 
+    public PathFilter( boolean emptyPathListMatchesAll, @Nonnull String... paths )
+            throws NoSuchMethodException, InvocationTargetException, IllegalAccessException
+    {
+        this.emptyPathListMatchesAll = emptyPathListMatchesAll;
+        this.pathTemplates = paths;
+    }
+
     @Override
     public boolean matches( @Nonnull RequestExecutionPlan plan, @Nonnull MapEx<String, Object> context )
     {

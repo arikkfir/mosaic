@@ -9,6 +9,8 @@ import org.mosaic.util.convert.ConversionService;
 import org.mosaic.util.xml.XmlElement;
 import org.mosaic.web.application.ContextProviderRef;
 
+import static java.util.Collections.unmodifiableList;
+
 /**
  * @author arik
  */
@@ -29,7 +31,7 @@ public class ContextImpl
         {
             contextProviderRefs.add( new ContextProviderRefImpl( conversionService, providerElement ) );
         }
-        this.contextProviderRefs = Collections.unmodifiableList( contextProviderRefs );
+        this.contextProviderRefs = unmodifiableList( contextProviderRefs );
     }
 
     @Nonnull

@@ -10,22 +10,22 @@ import org.mosaic.web.application.Snippet;
 public class SnippetImpl implements Snippet
 {
     @Nonnull
-    private final String id;
+    private final String name;
 
     @Nullable
     private final String content;
 
-    public SnippetImpl( @Nonnull String id, @Nullable String content )
+    public SnippetImpl( @Nonnull String name, @Nullable String content )
     {
-        this.id = id;
+        this.name = name;
         this.content = content;
     }
 
     @Nonnull
     @Override
-    public String getId()
+    public String getName()
     {
-        return this.id;
+        return this.name;
     }
 
     @Nonnull

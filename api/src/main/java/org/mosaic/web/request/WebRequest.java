@@ -21,8 +21,11 @@ import org.mosaic.web.net.MediaType;
 /**
  * @author arik
  */
-public interface WebRequest extends MapEx<String, Object>
+public interface WebRequest
 {
+    @Nonnull
+    MapEx<String, Object> getAttributes();
+
     @Nonnull
     WebApplication getApplication();
 

@@ -8,8 +8,11 @@ import org.mosaic.util.collect.MapEx;
 /**
  * @author arik
  */
-public interface WebSession extends MapEx<String, Object>
+public interface WebSession
 {
+    @Nonnull
+    MapEx<String, Object> getAttributes();
+
     @Nonnull
     String getId();
 

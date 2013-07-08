@@ -6,7 +6,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.annotation.PostConstruct;
 import org.mosaic.lifecycle.MethodEndpoint;
 import org.mosaic.lifecycle.annotation.*;
 import org.mosaic.util.collect.MapEx;
@@ -15,25 +14,19 @@ import org.mosaic.util.expression.ExpressionParser;
 import org.mosaic.util.pair.ImmutablePair;
 import org.mosaic.util.pair.Pair;
 import org.mosaic.web.handler.InterceptorChain;
+import org.mosaic.web.handler.annotation.Context;
 import org.mosaic.web.handler.annotation.Controller;
-import org.mosaic.web.handler.annotation.Method;
-import org.mosaic.web.handler.annotation.Secured;
-import org.mosaic.web.handler.annotation.WebAppFilter;
-import org.mosaic.web.handler.impl.action.*;
+import org.mosaic.web.handler.impl.action.ExceptionHandler;
+import org.mosaic.web.handler.impl.action.Handler;
+import org.mosaic.web.handler.impl.action.Interceptor;
+import org.mosaic.web.handler.impl.action.Participator;
 import org.mosaic.web.handler.impl.adapter.*;
-import org.mosaic.web.handler.impl.filter.Filter;
-import org.mosaic.web.handler.impl.filter.HttpMethodFilter;
-import org.mosaic.web.handler.impl.filter.PathFilter;
-import org.mosaic.web.handler.impl.filter.WebApplicationFilter;
 import org.mosaic.web.marshall.MarshallingManager;
 import org.mosaic.web.net.HttpStatus;
 import org.mosaic.web.net.MediaType;
 import org.mosaic.web.request.WebRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.mosaic.web.net.HttpMethod.GET;
-import static org.mosaic.web.net.HttpMethod.POST;
 
 /**
  * @author arik
@@ -70,6 +63,12 @@ public class WebEndpointsManager
         this.marshallingManager = marshallingManager;
     }
 
+    @BeanRef
+    public void setPageAdapter( @Nonnull PageAdapter pageAdapter )
+    {
+        this.pageAdapter = pageAdapter;
+    }
+
     @ServiceRef
     public void setExpressionParser( @Nonnull ExpressionParser expressionParser )
     {
@@ -82,73 +81,50 @@ public class WebEndpointsManager
         this.conversionService = conversionService;
     }
 
-    @PostConstruct
-    public void init()
-    {
-        this.pageAdapter = new PageAdapter( this.conversionService );
-    }
-
-    @MethodEndpointBind( Controller.class )
+    @MethodEndpointBind(Controller.class)
     public void addController( @Nonnull MethodEndpoint endpoint, @ServiceId long id, @Rank int rank )
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException
     {
-        Handler handler = new MethodEndpointHandler( endpoint, this.conversionService );
-
-        Secured securedAnn = endpoint.getAnnotation( Secured.class );
-        if( securedAnn != null )
-        {
-            handler = new SecuredHandler( handler, securedAnn.value() );
-        }
-
-        this.handlerAdapters.add(
-                new HandlerAdapter( this.conversionService,
-                                    id,
-                                    rank,
-                                    handler,
-                                    createHandlerFilters( endpoint, false ) ) );
+        this.handlerAdapters.add( new HandlerAdapter( this.conversionService, this.expressionParser, id, rank, endpoint ) );
         LOG.info( "Added @Controller {}", endpoint );
     }
 
-    @MethodEndpointUnbind( Controller.class )
+    @MethodEndpointUnbind(Controller.class)
     public void removeController( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
     {
         removeEndpoint( id, this.handlerAdapters );
     }
 
-    @MethodEndpointBind( org.mosaic.web.handler.annotation.Interceptor.class )
+    @MethodEndpointBind(org.mosaic.web.handler.annotation.Interceptor.class)
     public void addInterceptorHandler( @Nonnull MethodEndpoint endpoint, @ServiceId long id, @Rank int rank )
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException
     {
-        this.interceptorAdapters.add(
-                new InterceptorAdapter( this.conversionService,
-                                        id,
-                                        rank,
-                                        new MethodEndpointInterceptor( endpoint, this.conversionService ),
-                                        createHandlerFilters( endpoint, false ) ) );
+        this.interceptorAdapters.add( new InterceptorAdapter( this.conversionService, id, rank, endpoint ) );
         LOG.info( "Added @Interceptor {}", endpoint );
     }
 
-    @MethodEndpointUnbind( org.mosaic.web.handler.annotation.Interceptor.class )
+    @MethodEndpointUnbind(org.mosaic.web.handler.annotation.Interceptor.class)
     public void removeInterceptorHandler( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
     {
         removeEndpoint( id, this.interceptorAdapters );
     }
 
-    @MethodEndpointBind( org.mosaic.web.handler.annotation.ExceptionHandler.class )
+    @MethodEndpointBind(org.mosaic.web.handler.annotation.ExceptionHandler.class)
     public void addExceptionHandler( @Nonnull MethodEndpoint endpoint, @ServiceId long id, @Rank int rank )
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException
     {
-        this.exceptionHandlerAdapters.add(
-                new ExceptionHandlerAdapter( this.conversionService,
-                                             id,
-                                             rank,
-                                             new MethodEndpointExceptionHandler( endpoint, this.conversionService ),
-                                             createHandlerFilters( endpoint, true ) ) );
+        this.exceptionHandlerAdapters.add( new ExceptionHandlerAdapter( this.conversionService, id, rank, endpoint ) );
         LOG.info( "Added @ExceptionHandler {}", endpoint );
     }
 
-    @MethodEndpointUnbind( org.mosaic.web.handler.annotation.ExceptionHandler.class )
+    @MethodEndpointUnbind(org.mosaic.web.handler.annotation.ExceptionHandler.class)
     public void removeExceptionHandler( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
+    {
+        removeEndpoint( id, this.exceptionHandlerAdapters );
+    }
+
+    @MethodEndpointUnbind(Context.class)
+    public void removeContextProvider( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
     {
         removeEndpoint( id, this.exceptionHandlerAdapters );
     }
@@ -157,38 +133,6 @@ public class WebEndpointsManager
     public RequestExecutionPlan createRequestExecutionPlan( @Nonnull WebRequest request )
     {
         return new RequestExecutionPlanImpl( request );
-    }
-
-    private List<Filter> createHandlerFilters( MethodEndpoint endpoint, boolean emptyPathListMatchesAll )
-            throws NoSuchMethodException, InvocationTargetException, IllegalAccessException
-    {
-        List<Filter> filters = new LinkedList<>();
-        applyWebAppFilter( endpoint, filters );
-        applyHttpMethodFilter( endpoint, filters );
-        filters.add( new PathFilter( endpoint, emptyPathListMatchesAll ) );
-        return filters;
-    }
-
-    private void applyHttpMethodFilter( MethodEndpoint endpoint, List<Filter> filters )
-    {
-        Method methodAnn = endpoint.getAnnotation( Method.class );
-        if( methodAnn != null )
-        {
-            filters.add( new HttpMethodFilter( methodAnn.value() ) );
-        }
-        else
-        {
-            filters.add( new HttpMethodFilter( GET, POST ) );
-        }
-    }
-
-    private void applyWebAppFilter( MethodEndpoint endpoint, List<Filter> filters )
-    {
-        WebAppFilter webAppFilterAnn = endpoint.getAnnotation( WebAppFilter.class );
-        if( webAppFilterAnn != null )
-        {
-            filters.add( new WebApplicationFilter( webAppFilterAnn.value() ) );
-        }
     }
 
     private void removeEndpoint( long id, @Nonnull Collection<? extends RequestAdapter> adapters )
@@ -227,20 +171,20 @@ public class WebEndpointsManager
         {
             this.request = request;
 
-            for( InterceptorAdapter interceptor : WebEndpointsManager.this.interceptorAdapters )
+            for( InterceptorAdapter adapter : WebEndpointsManager.this.interceptorAdapters )
             {
-                interceptor.apply( this );
+                adapter.apply( this );
             }
 
-            for( HandlerAdapter handler : WebEndpointsManager.this.handlerAdapters )
+            for( HandlerAdapter adapter : WebEndpointsManager.this.handlerAdapters )
             {
-                handler.apply( this );
+                adapter.apply( this );
             }
-            WebEndpointsManager.this.pageAdapter.apply( this );
+            WebEndpointsManager.this.pageAdapter.getRequestAdapter().apply( this );
 
-            for( ExceptionHandlerAdapter handler : WebEndpointsManager.this.exceptionHandlerAdapters )
+            for( ExceptionHandlerAdapter adapter : WebEndpointsManager.this.exceptionHandlerAdapters )
             {
-                handler.apply( this );
+                adapter.apply( this );
             }
         }
 
@@ -263,7 +207,6 @@ public class WebEndpointsManager
                                     @Nonnull MapEx<String, Object> context )
         {
             context.put( "request", this.request );
-            context.put( "plan", this );
             this.participatorContexts.put( interceptor, context );
             this.interceptors.add( interceptor );
         }
@@ -272,7 +215,6 @@ public class WebEndpointsManager
         public void addHandler( @Nonnull Handler handler, @Nonnull MapEx<String, Object> context )
         {
             context.put( "request", this.request );
-            context.put( "plan", this );
             this.participatorContexts.put( handler, context );
             this.handlers.add( handler );
         }
@@ -282,7 +224,6 @@ public class WebEndpointsManager
                                          @Nonnull MapEx<String, Object> context )
         {
             context.put( "request", this.request );
-            context.put( "plan", this );
             this.participatorContexts.put( exceptionHandler, context );
             this.exceptionHandlers.add( exceptionHandler );
         }

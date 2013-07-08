@@ -2,14 +2,15 @@ package org.mosaic.web.application;
 
 import java.util.Collection;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
  * @author arik
  */
-public interface Block
+public interface Template
 {
     @Nonnull
-    Panel getPanel();
+    WebApplication getApplication();
 
     @Nonnull
     String getName();
@@ -22,4 +23,10 @@ public interface Block
 
     @Nonnull
     Collection<ContextProviderRef> getContext();
+
+    @Nullable
+    Panel getPanel( @Nonnull String name );
+
+    @Nonnull
+    Collection<Panel> getPanels();
 }

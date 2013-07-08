@@ -16,11 +16,6 @@ public abstract class AnnotatedParameterResolver<AnnType extends Annotation> ext
     @Nonnull
     private final Class<AnnType> annotationType;
 
-    protected AnnotatedParameterResolver()
-    {
-        this( null );
-    }
-
     @SuppressWarnings("unchecked")
     protected AnnotatedParameterResolver( @Nullable ConversionService conversionService )
     {

@@ -4,9 +4,6 @@ import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
 import com.google.common.reflect.TypeToken;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.xml.xpath.XPathException;
@@ -14,11 +11,7 @@ import org.mosaic.util.convert.ConversionService;
 import org.mosaic.util.expression.Expression;
 import org.mosaic.util.expression.ExpressionParser;
 import org.mosaic.util.xml.XmlElement;
-import org.mosaic.web.application.Block;
-import org.mosaic.web.application.ContextProviderRef;
-import org.mosaic.web.application.Page;
-import org.mosaic.web.application.WebApplication;
-import org.mosaic.web.net.MediaType;
+import org.mosaic.web.application.*;
 
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Collections.unmodifiableSet;
@@ -28,19 +21,16 @@ import static java.util.Collections.unmodifiableSet;
  */
 public class PageImpl implements Page
 {
-    private static final Pattern CACHE_PATTERN = Pattern.compile( "(\\d+) (seconds|minutes|hours|days)" );
-
     private static final Splitter LANGUAGES_SPLITTER = Splitter.on( CharMatcher.anyOf( ":;,/\\ \t\r\n\f" ) )
                                                                .omitEmptyStrings()
                                                                .trimResults( CharMatcher.anyOf( "\"' \t\r\n\f" ) );
 
+    private static final Splitter PATHS_SPLITTER = Splitter.on( CharMatcher.anyOf( ",\t\r\n\f" ) )
+                                                           .omitEmptyStrings()
+                                                           .trimResults( CharMatcher.anyOf( " \t\r\n\f" ) );
+
     @Nonnull
-    private final WebApplication application;
-
-    private final boolean abstractPage;
-
-    @Nullable
-    private final String parentPageName;
+    private final WebApplicationFactory.WebApplicationImpl application;
 
     @Nonnull
     private final String name;
@@ -48,21 +38,13 @@ public class PageImpl implements Page
     @Nullable
     private final String displayName;
 
-    @Nonnull
-    private final Set<String> tags;
-
-    @Nullable
-    private final Expression security;
-
-    @Nullable
-    private final Expression filter;
-
     private final boolean active;
 
     @Nonnull
-    private final MediaType mediaType;
+    private final Template template;
 
-    private final long secondsToCache;
+    @Nullable
+    private final Expression security;
 
     @Nonnull
     private final Map<String, Set<String>> urlPaths;
@@ -71,34 +53,35 @@ public class PageImpl implements Page
     private final ContextImpl context;
 
     @Nonnull
-    private final Map<String, Block> blocks;
+    private final List<Block> blocks;
 
     public PageImpl( @Nonnull ExpressionParser expressionParser,
                      @Nonnull ConversionService conversionService,
-                     @Nonnull WebApplication application,
-                     @Nonnull XmlElement element ) throws XPathException
+                     @Nonnull WebApplicationFactory.WebApplicationImpl application,
+                     @Nonnull XmlElement element ) throws XPathException, WebApplicationParseException
     {
         this.application = application;
-        this.abstractPage = element.requireAttribute( "abstract", TypeToken.of( Boolean.class ), false );
-        this.parentPageName = element.getAttribute( "parent" );
         this.name = element.requireAttribute( "name" );
         this.displayName = element.getAttribute( "display-name" );
         this.active = element.requireAttribute( "active", TypeToken.of( Boolean.class ), true );
-        this.mediaType = element.find( "c:media-type", TypeToken.of( MediaType.class ), MediaType.TEXT_HTML );
-        this.secondsToCache = parseSecondsToCache( element.find( "c:seconds-to-cache", TypeToken.of( String.class ), "0" ) );
 
-        Set<String> tags = new LinkedHashSet<>();
-        for( String tag : element.findTexts( "c:tags/c:tag" ) )
+        String templateName = element.getAttribute( "template" );
+        if( templateName == null )
         {
-            tags.add( tag.toLowerCase() );
+            throw new WebApplicationParseException( "Page '" + this.name + "' has no template declaration" );
         }
-        this.tags = unmodifiableSet( tags );
+        Template template = this.application.getTemplate( templateName );
+        if( template == null )
+        {
+            throw new WebApplicationParseException( "Page '" + this.name + "' uses an unknown template: " + templateName );
+        }
+        else
+        {
+            this.template = template;
+        }
 
         String securityExpression = element.find( "c:security", TypeToken.of( String.class ) );
         this.security = securityExpression == null ? null : expressionParser.parseExpression( securityExpression );
-
-        String filterExpression = element.find( "c:filter", TypeToken.of( String.class ) );
-        this.filter = filterExpression == null ? null : expressionParser.parseExpression( filterExpression );
 
         this.urlPaths = unmodifiableMap( parseUrlPaths( element.findElements( "c:url-paths/c:path" ) ) );
 
@@ -112,13 +95,42 @@ public class PageImpl implements Page
             this.context = new ContextImpl();
         }
 
-        Map<String, Block> blocks = new HashMap<>();
+        List<Block> blocks = new LinkedList<>();
         for( XmlElement blockElement : element.findElements( "c:blocks/c:block" ) )
         {
-            Block block = new BlockImpl( conversionService, this, blockElement );
-            blocks.put( block.getName(), block );
+            String panelName = blockElement.getAttribute( "panel" );
+            if( panelName == null )
+            {
+                throw new WebApplicationParseException( "Found block with no panel declaration in page '" + this.name + "'" );
+            }
+
+            Panel panel = this.template.getPanel( panelName );
+            if( panel == null )
+            {
+                throw new WebApplicationParseException( "Found block with unknown panel declaration in page '" + this.name + "'" );
+            }
+
+            blocks.add( new BlockImpl( conversionService, panel, blockElement ) );
         }
         this.blocks = blocks;
+
+        // validate no duplicate block names
+        Set<String> blockNames = new HashSet<>();
+        for( Panel panel : this.template.getPanels() )
+        {
+            for( Block block : panel.getBlocks() )
+            {
+                blockNames.add( block.getName() );
+            }
+        }
+        for( Block block : this.blocks )
+        {
+            if( blockNames.contains( block.getName() ) )
+            {
+                throw new WebApplicationParseException( "Page '" + this.name + "' contains duplicate block names ('" + block.getName() + "')" );
+            }
+            blockNames.add( block.getName() );
+        }
     }
 
     @Nonnull
@@ -135,10 +147,11 @@ public class PageImpl implements Page
         return this.name;
     }
 
+    @Nonnull
     @Override
-    public boolean isAbstract()
+    public String getDisplayName()
     {
-        return this.abstractPage;
+        return this.displayName == null ? getName() : this.displayName;
     }
 
     @Override
@@ -147,25 +160,11 @@ public class PageImpl implements Page
         return this.active;
     }
 
-    @Nullable
-    @Override
-    public Page getParent()
-    {
-        return this.parentPageName == null ? null : getApplication().getPageMap().get( this.parentPageName );
-    }
-
     @Nonnull
     @Override
-    public String getDisplayName()
+    public Template getTemplate()
     {
-        return this.displayName == null ? getName() : this.displayName;
-    }
-
-    @Nonnull
-    @Override
-    public Set<String> getTags()
-    {
-        return this.tags;
+        return this.template;
     }
 
     @Nullable
@@ -173,26 +172,6 @@ public class PageImpl implements Page
     public Expression getSecurity()
     {
         return this.security;
-    }
-
-    @Nullable
-    @Override
-    public Expression getFilter()
-    {
-        return this.filter;
-    }
-
-    @Nonnull
-    @Override
-    public MediaType getMediaType()
-    {
-        return this.mediaType;
-    }
-
-    @Override
-    public long getSecondsToCache()
-    {
-        return this.secondsToCache;
     }
 
     @Nonnull
@@ -224,9 +203,28 @@ public class PageImpl implements Page
 
     @Nonnull
     @Override
-    public Map<String, Block> getBlocks()
+    public List<Block> getBlocks()
     {
         return this.blocks;
+    }
+
+    @Nonnull
+    @Override
+    public List<Block> getBlocks( @Nonnull String panelName )
+    {
+        List<Block> blocks = null;
+        for( Block block : this.blocks )
+        {
+            if( block.getPanel().getName().equals( panelName ) )
+            {
+                if( blocks == null )
+                {
+                    blocks = new LinkedList<>();
+                }
+                blocks.add( block );
+            }
+        }
+        return blocks == null ? Collections.<Block>emptyList() : blocks;
     }
 
     private Map<String, Set<String>> parseUrlPaths( List<XmlElement> pathElements )
@@ -245,37 +243,13 @@ public class PageImpl implements Page
                 Set<String> languagePaths = urlPaths.containsKey( language )
                                             ? new HashSet<>( urlPaths.get( language ) )
                                             : new HashSet<String>();
-                languagePaths.add( element.requireValue().trim() );
+                for( String path : PATHS_SPLITTER.split( element.requireValue() ) )
+                {
+                    languagePaths.add( path );
+                }
                 urlPaths.put( language, unmodifiableSet( languagePaths ) );
             }
         }
         return urlPaths;
-    }
-
-    private long parseSecondsToCache( @Nonnull String secondsToCacheString )
-    {
-        try
-        {
-            return Long.parseLong( secondsToCacheString );
-        }
-        catch( NumberFormatException e )
-        {
-            Matcher matcher = CACHE_PATTERN.matcher( secondsToCacheString );
-            if( matcher.matches() )
-            {
-                switch( matcher.group( 2 ) )
-                {
-                    case "seconds":
-                        return Long.parseLong( matcher.group( 1 ) );
-                    case "minutes":
-                        return TimeUnit.MINUTES.toSeconds( Long.parseLong( matcher.group( 1 ) ) );
-                    case "hours":
-                        return TimeUnit.HOURS.toSeconds( Long.parseLong( matcher.group( 1 ) ) );
-                    case "days":
-                        return TimeUnit.DAYS.toSeconds( Long.parseLong( matcher.group( 1 ) ) );
-                }
-            }
-        }
-        throw new IllegalArgumentException( "Illegal cache expression: " + secondsToCacheString );
     }
 }

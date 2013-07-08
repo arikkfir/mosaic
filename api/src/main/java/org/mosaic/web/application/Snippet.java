@@ -8,7 +8,7 @@ import javax.annotation.Nonnull;
 public interface Snippet
 {
     @Nonnull
-    String getId();
+    String getName();
 
     @Nonnull
     String getContent();

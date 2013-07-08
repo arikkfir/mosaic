@@ -9,11 +9,25 @@
     <xsd:element name="web-content">
         <xsd:complexType>
             <xsd:sequence>
-                <xsd:element name="context" type="contextType" minOccurs="0" maxOccurs="1"/>
+                <xsd:element name="context" type="contextProvidersList" minOccurs="0" maxOccurs="1"/>
                 <xsd:element name="snippets" minOccurs="0" maxOccurs="1">
                     <xsd:complexType>
                         <xsd:sequence>
-                            <xsd:element name="snippet" type="snippetType" minOccurs="0" maxOccurs="unbounded"/>
+                            <xsd:element name="snippet" minOccurs="0" maxOccurs="unbounded">
+                                <xsd:complexType>
+                                    <xsd:sequence>
+                                        <xsd:element name="content" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+                                    </xsd:sequence>
+                                    <xsd:attribute name="name" type="xsd:string" use="required"/>
+                                </xsd:complexType>
+                            </xsd:element>
+                        </xsd:sequence>
+                    </xsd:complexType>
+                </xsd:element>
+                <xsd:element name="templates" minOccurs="0" maxOccurs="1">
+                    <xsd:complexType>
+                        <xsd:sequence>
+                            <xsd:element name="template" type="templateType" minOccurs="0" maxOccurs="unbounded"/>
                         </xsd:sequence>
                     </xsd:complexType>
                 </xsd:element>
@@ -28,64 +42,7 @@
         </xsd:complexType>
     </xsd:element>
 
-    <xsd:complexType name="snippetType">
-        <xsd:sequence>
-            <!-- TODO arik: allow specifying which context items (providers) this snippet requires -->
-            <xsd:element name="content" type="xsd:string" minOccurs="1" maxOccurs="1"/>
-        </xsd:sequence>
-        <xsd:attribute name="id" type="xsd:string" use="required"/>
-    </xsd:complexType>
-
-    <xsd:complexType name="pageType">
-        <xsd:sequence>
-            <xsd:element name="tags" minOccurs="0" maxOccurs="1">
-                <xsd:complexType>
-                    <xsd:sequence>
-                        <xsd:element name="tag" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
-                    </xsd:sequence>
-                </xsd:complexType>
-            </xsd:element>
-            <xsd:element name="security" type="xsd:string" minOccurs="0" maxOccurs="1"/>
-            <xsd:element name="filter" type="xsd:string" minOccurs="0" maxOccurs="1"/>
-            <xsd:element name="media-type" type="xsd:string" minOccurs="0" maxOccurs="1"/>
-            <xsd:element name="seconds-to-cache" type="xsd:string" minOccurs="0" maxOccurs="1"/>
-            <xsd:element name="url-paths" minOccurs="0" maxOccurs="1">
-                <xsd:complexType>
-                    <xsd:sequence>
-                        <xsd:element name="path" minOccurs="0" maxOccurs="unbounded">
-                            <xsd:complexType mixed="true">
-                                <xsd:attribute name="languages" type="xsd:string" use="optional"/>
-                            </xsd:complexType>
-                        </xsd:element>
-                    </xsd:sequence>
-                </xsd:complexType>
-            </xsd:element>
-            <xsd:element name="context" type="contextType" minOccurs="0" maxOccurs="1"/>
-            <xsd:element name="blocks" minOccurs="0" maxOccurs="1">
-                <xsd:complexType>
-                    <xsd:sequence>
-                        <xsd:element name="block" type="blockType" minOccurs="0" maxOccurs="unbounded"/>
-                    </xsd:sequence>
-                </xsd:complexType>
-            </xsd:element>
-        </xsd:sequence>
-        <xsd:attribute name="name" type="xsd:string" use="required"/>
-        <xsd:attribute name="abstract" type="xsd:boolean" use="optional"/>
-        <xsd:attribute name="active" type="xsd:boolean" use="required"/>
-        <xsd:attribute name="parent" type="xsd:string" use="optional"/>
-        <xsd:attribute name="display-name" type="xsd:string" use="optional"/>
-    </xsd:complexType>
-
-    <xsd:complexType name="blockType">
-        <xsd:sequence>
-            <xsd:element name="context" type="contextType" minOccurs="0" maxOccurs="1"/>
-        </xsd:sequence>
-        <xsd:attribute name="name" type="xsd:string" use="required"/>
-        <xsd:attribute name="display-name" type="xsd:string" use="optional"/>
-        <xsd:attribute name="snippet-id" type="xsd:string" use="required"/>
-    </xsd:complexType>
-
-    <xsd:complexType name="contextType">
+    <xsd:complexType name="contextProvidersList">
         <xsd:sequence>
             <xsd:element name="provider" minOccurs="0" maxOccurs="unbounded">
                 <xsd:complexType>
@@ -102,6 +59,82 @@
                 </xsd:complexType>
             </xsd:element>
         </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="blockType">
+        <xsd:sequence>
+            <xsd:element name="context" type="contextProvidersList" minOccurs="0" maxOccurs="1"/>
+        </xsd:sequence>
+        <xsd:attribute name="name" type="xsd:string" use="required"/>
+        <xsd:attribute name="display-name" type="xsd:string" use="optional"/>
+        <xsd:attribute name="snippet" type="xsd:string" use="required"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="blockForPanelType">
+        <xsd:complexContent>
+            <xsd:extension base="blockType">
+                <xsd:attribute name="panel" type="xsd:string" use="required"/>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+
+    <xsd:complexType name="panelsList">
+        <xsd:sequence>
+            <xsd:element name="panel" minOccurs="0" maxOccurs="unbounded">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="context" type="contextProvidersList" minOccurs="0" maxOccurs="1"/>
+                        <xsd:element name="blocks" minOccurs="0" maxOccurs="1">
+                            <xsd:complexType>
+                                <xsd:sequence>
+                                    <xsd:element name="block" type="blockType" minOccurs="0" maxOccurs="unbounded"/>
+                                </xsd:sequence>
+                            </xsd:complexType>
+                        </xsd:element>
+                    </xsd:sequence>
+                    <xsd:attribute name="name" type="xsd:string" use="required"/>
+                    <xsd:attribute name="display-name" type="xsd:string" use="optional"/>
+                </xsd:complexType>
+            </xsd:element>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="templateType">
+        <xsd:sequence>
+            <xsd:element name="context" type="contextProvidersList" minOccurs="0" maxOccurs="1"/>
+            <xsd:element name="panels" type="panelsList" minOccurs="0" maxOccurs="1"/>
+        </xsd:sequence>
+        <xsd:attribute name="name" type="xsd:string" use="required"/>
+        <xsd:attribute name="display-name" type="xsd:string" use="optional"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="pageType">
+        <xsd:sequence>
+            <xsd:element name="url-paths" minOccurs="0" maxOccurs="1">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="path" minOccurs="0" maxOccurs="unbounded">
+                            <xsd:complexType mixed="true">
+                                <xsd:attribute name="languages" type="xsd:string" use="optional"/>
+                            </xsd:complexType>
+                        </xsd:element>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            <xsd:element name="context" type="contextProvidersList" minOccurs="0" maxOccurs="1"/>
+            <xsd:element name="blocks" minOccurs="0" maxOccurs="1">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="block" type="blockForPanelType" minOccurs="0" maxOccurs="unbounded"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+        </xsd:sequence>
+        <xsd:attribute name="name" type="xsd:string" use="required"/>
+        <xsd:attribute name="display-name" type="xsd:string" use="optional"/>
+        <xsd:attribute name="active" type="xsd:boolean" use="required"/>
+        <xsd:attribute name="template" type="xsd:string" use="required"/>
+        <xsd:attribute name="security" type="xsd:string" use="optional"/>
     </xsd:complexType>
 
 </xsd:schema>

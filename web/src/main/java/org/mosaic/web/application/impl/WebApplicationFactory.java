@@ -176,8 +176,11 @@ public class WebApplicationFactory
         return fileName.substring( 0, fileName.lastIndexOf( "." ) );
     }
 
-    public class WebApplicationImpl extends ConcurrentHashMapEx<String, Object> implements WebApplication
+    public class WebApplicationImpl implements WebApplication
     {
+        @Nonnull
+        private final ConcurrentHashMapEx<String, Object> attributes;
+
         @Nonnull
         private final String name;
 
@@ -240,6 +243,9 @@ public class WebApplicationFactory
         private Map<String, Snippet> snippets = emptyMap();
 
         @Nonnull
+        private Map<String, Template> templates = emptyMap();
+
+        @Nonnull
         private Map<String, Page> pages = emptyMap();
 
         @Nullable
@@ -254,7 +260,7 @@ public class WebApplicationFactory
         private WebApplicationImpl( @Nonnull Path file )
                 throws IOException, SAXException, ParserConfigurationException, XPathException
         {
-            super( WebApplicationFactory.this.conversionService );
+            this.attributes = new ConcurrentHashMapEx<>( 100, WebApplicationFactory.this.conversionService );
             this.file = file;
             this.name = getApplicationName( file );
             refresh();
@@ -291,7 +297,7 @@ public class WebApplicationFactory
             }
 
             // parameters
-            MapEx<String, String> parameters = new LinkedHashMapEx<>( 20, this.conversionService );
+            MapEx<String, String> parameters = new LinkedHashMapEx<>( 20, this.attributes.getConversionService() );
             for( XmlElement element : root.findElements( "a:parameters/a:parameter" ) )
             {
                 parameters.put( element.requireAttribute( "name" ), element.getValue() );
@@ -314,58 +320,67 @@ public class WebApplicationFactory
             }
 
             // web content
-            Map<String, Snippet> snippets;
-            Map<String, Page> pages;
-            ContextImpl context;
             Path contentFile = this.file.resolveSibling( "content" ).resolve( this.name + "-content.xml" );
             if( exists( contentFile ) )
             {
+                // parse
                 document = xmlParser.parse( contentFile, WEB_CONTENT_SCHEMA );
                 document.addNamespace( "c", WEB_CONTENT_SCHEMA_NS );
                 root = document.getRoot();
 
-                // context
-                XmlElement contextElement = root.getFirstChildElement( "context" );
-                if( contextElement != null )
-                {
-                    context = new ContextImpl( this.conversionService, contextElement );
-                }
-                else
-                {
-                    context = new ContextImpl();
-                }
-
-                // snippets
-                snippets = new HashMap<>( 500 );
-                for( XmlElement element : root.findElements( "c:snippets/c:snippet" ) )
-                {
-                    String id = element.requireAttribute( "id" );
-                    String content = element.find( "c:content", TypeToken.of( String.class ) );
-                    snippets.put( id, new SnippetImpl( id, content ) );
-                }
-
                 Map<String, Snippet> oldSnippets = this.snippets;
-                this.snippets = snippets;
+                Map<String, Template> oldTemplates = this.templates;
+                Map<String, Page> oldPages = this.pages;
+                ContextImpl oldContext = this.context;
                 try
                 {
+                    // context
+                    XmlElement contextElement = root.getFirstChildElement( "context" );
+                    this.context = contextElement != null ? new ContextImpl( this.attributes.getConversionService(), contextElement ) : new ContextImpl();
+
+                    // snippets
+                    Map<String, Snippet> snippets = new HashMap<>( 500 );
+                    for( XmlElement element : root.findElements( "c:snippets/c:snippet" ) )
+                    {
+                        String name = element.requireAttribute( "name" );
+                        String content = element.find( "c:content", TypeToken.of( String.class ) );
+                        snippets.put( name, new SnippetImpl( name, content ) );
+                    }
+                    this.snippets = snippets;
+
+                    // templates
+                    Map<String, Template> templates = new HashMap<>( 500 );
+                    for( XmlElement element : root.findElements( "c:templates/c:template" ) )
+                    {
+                        TemplateImpl template = new TemplateImpl( this.attributes.getConversionService(), this, element );
+                        templates.put( template.getName(), template );
+                    }
+                    this.templates = templates;
+
                     // pages
-                    pages = new HashMap<>( 100 );
+                    Map<String, Page> pages = new HashMap<>( 100 );
                     for( XmlElement element : root.findElements( "c:pages/c:page" ) )
                     {
-                        PageImpl page = new PageImpl( expressionParser, this.conversionService, this, element );
+                        PageImpl page = new PageImpl( expressionParser, this.attributes.getConversionService(), this, element );
                         pages.put( page.getName(), page );
                     }
+                    this.pages = pages;
                 }
-                finally
+                catch( Exception e )
                 {
                     this.snippets = oldSnippets;
+                    this.templates = oldTemplates;
+                    this.pages = oldPages;
+                    this.context = oldContext;
+                    throw e;
                 }
             }
             else
             {
-                snippets = emptyMap();
-                pages = emptyMap();
-                context = new ContextImpl();
+                this.snippets = emptyMap();
+                this.templates = emptyMap();
+                this.pages = emptyMap();
+                this.context = new ContextImpl();
             }
 
             this.displayName = displayName;
@@ -387,9 +402,6 @@ public class WebApplicationFactory
             this.formLoginUrl = formLoginUrl;
             this.accessDeniedPageName = accessDeniedPageName;
             this.contentRoots = unmodifiableSet( contentRoots );
-            this.snippets = snippets;
-            this.pages = pages;
-            this.context = context;
             if( this.export != null )
             {
                 this.export.update();
@@ -409,6 +421,13 @@ public class WebApplicationFactory
                 this.export.unregister();
                 this.export = null;
             }
+        }
+
+        @Nonnull
+        @Override
+        public MapEx<String, Object> getAttributes()
+        {
+            return this.attributes;
         }
 
         @Nonnull
@@ -571,11 +590,11 @@ public class WebApplicationFactory
             return this.context.getContextProviderRefs();
         }
 
-        @Nonnull
+        @Nullable
         @Override
-        public Map<String, Snippet> getSnippetMap()
+        public Snippet getSnippet( @Nonnull String name )
         {
-            return this.snippets;
+            return this.snippets.get( name );
         }
 
         @Nonnull
@@ -585,11 +604,25 @@ public class WebApplicationFactory
             return this.snippets.values();
         }
 
+        @Nullable
+        @Override
+        public Template getTemplate( @Nonnull String name )
+        {
+            return this.templates.get( name );
+        }
+
         @Nonnull
         @Override
-        public Map<String, Page> getPageMap()
+        public Collection<Template> getTemplates()
         {
-            return this.pages;
+            return this.templates.values();
+        }
+
+        @Nullable
+        @Override
+        public Page getPage( @Nonnull String name )
+        {
+            return this.pages.get( name );
         }
 
         @Nonnull

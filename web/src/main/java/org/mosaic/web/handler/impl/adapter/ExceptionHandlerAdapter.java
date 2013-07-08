@@ -1,10 +1,11 @@
 package org.mosaic.web.handler.impl.adapter;
 
-import java.util.Collection;
 import javax.annotation.Nonnull;
+import org.mosaic.lifecycle.MethodEndpoint;
 import org.mosaic.util.convert.ConversionService;
-import org.mosaic.web.handler.impl.action.ExceptionHandler;
-import org.mosaic.web.handler.impl.filter.Filter;
+import org.mosaic.web.handler.annotation.Method;
+import org.mosaic.web.handler.annotation.WebAppFilter;
+import org.mosaic.web.handler.impl.action.MethodEndpointExceptionHandler;
 
 /**
  * @author arik
@@ -14,9 +15,13 @@ public class ExceptionHandlerAdapter extends RequestAdapter
     public ExceptionHandlerAdapter( @Nonnull ConversionService conversionService,
                                     long id,
                                     int rank,
-                                    @Nonnull ExceptionHandler exceptionHandler,
-                                    @Nonnull Collection<Filter> filters )
+                                    @Nonnull MethodEndpoint endpoint )
     {
-        super( conversionService, id, rank, exceptionHandler, filters );
+        super( conversionService, id );
+        setRank( rank );
+        addHttpMethodFilter( endpoint.getAnnotation( Method.class ) );
+        addWebAppFilter( endpoint.getAnnotation( WebAppFilter.class ) );
+        addPathFilter( endpoint.getType(), true );
+        setParticipator( new MethodEndpointExceptionHandler( endpoint, conversionService ) );
     }
 }

@@ -3,7 +3,7 @@ package org.mosaic.web.application;
 /**
  * @author arik
  */
-public class WebApplicationParseException extends Exception
+public class WebApplicationParseException extends RuntimeException
 {
     public WebApplicationParseException( String message )
     {

@@ -16,6 +16,8 @@ public class MediaType implements Cloneable, Serializable
 
     public static final MediaType TEXT_HTML = new MediaType( "text", "html" );
 
+    public static final MediaType XHTML_XML = new MediaType( "application", "xhtml+xml" );
+
     private final com.google.common.net.MediaType mediaType;
 
     public MediaType( @Nonnull String mediaType )

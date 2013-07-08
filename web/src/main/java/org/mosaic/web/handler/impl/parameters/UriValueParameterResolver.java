@@ -25,7 +25,13 @@ public class UriValueParameterResolver extends AnnotatedParameterResolver<UriVal
                                             @Nonnull UriValue annotation ) throws Exception
     {
         String paramName = annotation.value().isEmpty() ? parameter.getName() : annotation.value();
-        Object value = context.require( "pathParameters", MapEx.class ).get( paramName );
+        MapEx pathParameters = context.get( "pathParameters", MapEx.class );
+        if( pathParameters == null )
+        {
+            return null;
+        }
+
+        Object value = pathParameters.get( paramName );
         if( value == null )
         {
             return null;
