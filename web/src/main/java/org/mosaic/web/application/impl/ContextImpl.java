@@ -1,7 +1,6 @@
 package org.mosaic.web.application.impl;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import javax.annotation.Nonnull;
@@ -9,6 +8,7 @@ import org.mosaic.util.convert.ConversionService;
 import org.mosaic.util.xml.XmlElement;
 import org.mosaic.web.application.ContextProviderRef;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableList;
 
 /**
@@ -21,7 +21,7 @@ public class ContextImpl
 
     public ContextImpl()
     {
-        this.contextProviderRefs = Collections.emptyList();
+        this.contextProviderRefs = emptyList();
     }
 
     public ContextImpl( @Nonnull ConversionService conversionService, @Nonnull XmlElement element )
