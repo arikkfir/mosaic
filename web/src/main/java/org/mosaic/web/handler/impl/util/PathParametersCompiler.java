@@ -2,9 +2,6 @@ package org.mosaic.web.handler.impl.util;
 
 import com.google.common.cache.CacheLoader;
 import com.google.common.reflect.TypeToken;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.regex.Matcher;
 import javax.annotation.Nonnull;
 import org.mosaic.lifecycle.annotation.Bean;
 import org.mosaic.lifecycle.annotation.ServiceRef;
@@ -13,10 +10,6 @@ import org.mosaic.util.collect.MapEx;
 import org.mosaic.util.collect.UnmodifiableMapEx;
 import org.mosaic.util.convert.ConversionService;
 import org.mosaic.util.pair.Pair;
-import org.mosaic.web.request.IllegalPathTemplateException;
-
-import static java.util.regex.Pattern.compile;
-import static java.util.regex.Pattern.quote;
 
 /**
  * @author arik
@@ -51,7 +44,7 @@ public class PathParametersCompiler extends CacheLoader<Pair<String, String>, Ma
     }
 
     @Override
-    public MapEx<String, String> load( Pair<String, String> key ) throws Exception
+    public MapEx<String, String> load( Pair<String, String> key )
     {
         String pathTemplate = key.getLeft();
         if( pathTemplate == null )
@@ -65,75 +58,11 @@ public class PathParametersCompiler extends CacheLoader<Pair<String, String>, Ma
             throw new IllegalArgumentException( "Illegal path template cache key: " + key );
         }
 
-        StringBuilder pathTemplateBuilder = new StringBuilder( pathTemplate.length() * 2 );
-        List<String> variableNames = new LinkedList<>();
+        MapEx<String, String> pathParameters = new HashMapEx<>( 5, this.conversionService );
 
-        StringBuilder buffer = new StringBuilder( pathTemplate.length() );
-        char[] chars = pathTemplate.toCharArray();
-        for( int i = 0; i < chars.length; i++ )
+        AntPathMatcher pathMatcher = new AntPathMatcher();
+        if( pathMatcher.doMatch( pathTemplate, encodedPath, true, pathParameters ) )
         {
-            char c = chars[ i ];
-            if( c == '{' )
-            {
-                pathTemplateBuilder.append( quote( buffer.toString() ) );
-                buffer.delete( 0, buffer.length() );
-
-                int end = pathTemplate.indexOf( '}', i );
-                if( end < 0 )
-                {
-                    throw new IllegalPathTemplateException( "open-ended curly brace at index " + i, pathTemplate );
-                }
-                else if( end == i + 1 )
-                {
-                    throw new IllegalPathTemplateException( "empty path variable name at index " + i, pathTemplate );
-                }
-
-                variableNames.add( new String( chars, i + 1, end - i - 1 ) );
-                i = end + 1;
-
-                pathTemplateBuilder.append( "([^/]+)" );
-            }
-            else if( c == '*' && i + 1 < chars.length && chars[ i + 1 ] == '*' )
-            {
-                // a "**" encountered
-
-                if( buffer.length() > 0 )
-                {
-                    pathTemplateBuilder.append( quote( buffer.toString() ) );
-                    buffer.delete( 0, buffer.length() );
-                }
-
-                pathTemplateBuilder.append( ".*" );
-
-                // skip the next "*" too
-                i++;
-            }
-            else if( c == '*' )
-            {
-                pathTemplateBuilder.append( "[^/]*" );
-            }
-            else
-            {
-                buffer.append( c );
-            }
-        }
-
-        if( buffer.length() > 0 )
-        {
-            pathTemplateBuilder.append( quote( buffer.toString() ) );
-            buffer.delete( 0, buffer.length() );
-        }
-
-        Matcher matcher = compile( pathTemplateBuilder.toString() ).matcher( encodedPath );
-        if( matcher.matches() )
-        {
-            MapEx<String, String> pathParameters = new HashMapEx<>( variableNames.size(), this.conversionService );
-            for( int i = 0; i < variableNames.size(); i++ )
-            {
-                String variableName = variableNames.get( i );
-                String variableValue = matcher.group( i );
-                pathParameters.put( variableName, variableValue );
-            }
             return new UnmodifiableMapEx<>( pathParameters );
         }
         else

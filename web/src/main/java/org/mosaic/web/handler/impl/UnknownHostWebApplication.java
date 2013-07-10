@@ -18,9 +18,11 @@ import static java.util.Collections.emptyList;
 /**
  * @author arik
  */
-public class UnknownHostWebApplication implements WebApplication
+public class UnknownHostWebApplication implements WebApplication, WebContent
 {
     private static final List<String> CONTENT_LANGUAGES = Arrays.asList( "en" );
+
+    private static final Period NO_CACHE = Period.millis( 0 );
 
     public static final WebApplication INSTANCE = new UnknownHostWebApplication();
 
@@ -29,6 +31,20 @@ public class UnknownHostWebApplication implements WebApplication
     public MapEx<String, Object> getAttributes()
     {
         return EmptyMapEx.emptyMapEx();
+    }
+
+    @Nonnull
+    @Override
+    public WebApplication getApplication()
+    {
+        return this;
+    }
+
+    @Nonnull
+    @Override
+    public WebContent getWebContent()
+    {
+        return this;
     }
 
     @Nonnull
@@ -216,5 +232,12 @@ public class UnknownHostWebApplication implements WebApplication
     public Collection<Page> getPages()
     {
         return emptyList();
+    }
+
+    @Nonnull
+    @Override
+    public Period getCachePeriod( @Nonnull String path )
+    {
+        return NO_CACHE;
     }
 }

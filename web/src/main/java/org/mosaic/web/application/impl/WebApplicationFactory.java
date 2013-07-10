@@ -21,6 +21,7 @@ import org.joda.time.format.PeriodFormatterBuilder;
 import org.mosaic.lifecycle.DP;
 import org.mosaic.lifecycle.Module;
 import org.mosaic.lifecycle.annotation.Bean;
+import org.mosaic.lifecycle.annotation.BeanRef;
 import org.mosaic.lifecycle.annotation.ModuleRef;
 import org.mosaic.lifecycle.annotation.ServiceRef;
 import org.mosaic.security.User;
@@ -32,17 +33,20 @@ import org.mosaic.util.collect.MapEx;
 import org.mosaic.util.collect.UnmodifiableMapEx;
 import org.mosaic.util.convert.ConversionService;
 import org.mosaic.util.expression.ExpressionParser;
+import org.mosaic.util.pair.ImmutablePair;
 import org.mosaic.util.xml.StrictErrorHandler;
 import org.mosaic.util.xml.XmlDocument;
 import org.mosaic.util.xml.XmlElement;
 import org.mosaic.util.xml.XmlParser;
 import org.mosaic.web.application.*;
+import org.mosaic.web.handler.impl.util.PathParametersCompiler;
 import org.mosaic.web.security.AuthenticatorType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 import static java.nio.file.Files.exists;
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.unmodifiableSet;
+import static java.util.Collections.*;
 import static org.mosaic.web.security.AuthenticatorType.*;
 
 /**
@@ -51,6 +55,8 @@ import static org.mosaic.web.security.AuthenticatorType.*;
 @Bean
 public class WebApplicationFactory
 {
+    private static final Logger LOG = LoggerFactory.getLogger( WebApplicationFactory.class );
+
     private static final String WEB_APP_SCHEMA_NS = "https://github.com/arikkfir/mosaic/web/application";
 
     private static final Schema WEB_APP_SCHEMA;
@@ -112,6 +118,9 @@ public class WebApplicationFactory
             .toFormatter();
 
     @Nonnull
+    private final PeriodFormatter periodFormatter;
+
+    @Nonnull
     private Module module;
 
     @Nonnull
@@ -125,6 +134,35 @@ public class WebApplicationFactory
 
     @Nonnull
     private XmlParser xmlParser;
+
+    @Nonnull
+    private PathParametersCompiler pathParametersCompiler;
+
+    public WebApplicationFactory()
+    {
+        this.periodFormatter = new PeriodFormatterBuilder()
+                .printZeroRarelyLast()
+                .appendYears()
+                .appendSuffix( " year", " years" )
+                .appendSeparator( ", ", " and " )
+                .appendMonths()
+                .appendSuffix( " month", " months" )
+                .appendDays()
+                .appendSuffix( " day", " days" )
+                .appendHours()
+                .appendSuffix( " hour", " hour" )
+                .appendMinutes()
+                .appendSuffix( " minute", " minutes" )
+                .appendSeconds()
+                .appendSuffix( " second", " seconds" )
+                .toFormatter();
+    }
+
+    @BeanRef
+    public void setPathParametersCompiler( @Nonnull PathParametersCompiler pathParametersCompiler )
+    {
+        this.pathParametersCompiler = pathParametersCompiler;
+    }
 
     @ModuleRef
     public void setModule( @Nonnull Module module )
@@ -237,25 +275,13 @@ public class WebApplicationFactory
         private String accessDeniedPageName;
 
         @Nonnull
-        private Set<Path> contentRoots;
-
-        @Nonnull
-        private Map<String, Snippet> snippets = emptyMap();
-
-        @Nonnull
-        private Map<String, Template> templates = emptyMap();
-
-        @Nonnull
-        private Map<String, Page> pages = emptyMap();
-
-        @Nullable
-        private Module.ServiceExport export;
-
-        @Nonnull
         private Period maxSessionAge;
 
         @Nonnull
-        private ContextImpl context = new ContextImpl();
+        private WebContentImpl webContent;
+
+        @Nullable
+        private Module.ServiceExport export;
 
         private WebApplicationImpl( @Nonnull Path file )
                 throws IOException, SAXException, ParserConfigurationException, XPathException
@@ -312,77 +338,19 @@ public class WebApplicationFactory
             String formLoginUrl = root.find( "a:security/a:authentication/a:form-login-url/@url", TypeToken.of( String.class ) );
             String accessDeniedPageName = root.find( "a:security/a:access-denied-page", TypeToken.of( String.class ) );
 
-            // content roots
-            Set<Path> contentRoots = new LinkedHashSet<>();
-            for( String value : root.findTexts( "a:content-roots/a:content-root" ) )
-            {
-                contentRoots.add( Paths.get( value ) );
-            }
-
             // web content
-            Path contentFile = this.file.resolveSibling( "content" ).resolve( this.name + "-content.xml" );
-            if( exists( contentFile ) )
+            WebContentImpl webContent;
+            try
             {
-                // parse
-                document = xmlParser.parse( contentFile, WEB_CONTENT_SCHEMA );
-                document.addNamespace( "c", WEB_CONTENT_SCHEMA_NS );
-                root = document.getRoot();
-
-                Map<String, Snippet> oldSnippets = this.snippets;
-                Map<String, Template> oldTemplates = this.templates;
-                Map<String, Page> oldPages = this.pages;
-                ContextImpl oldContext = this.context;
-                try
-                {
-                    // context
-                    XmlElement contextElement = root.getFirstChildElement( "context" );
-                    this.context = contextElement != null ? new ContextImpl( this.attributes.getConversionService(), contextElement ) : new ContextImpl();
-
-                    // snippets
-                    Map<String, Snippet> snippets = new HashMap<>( 500 );
-                    for( XmlElement element : root.findElements( "c:snippets/c:snippet" ) )
-                    {
-                        String name = element.requireAttribute( "name" );
-                        String content = element.find( "c:content", TypeToken.of( String.class ) );
-                        snippets.put( name, new SnippetImpl( name, content ) );
-                    }
-                    this.snippets = snippets;
-
-                    // templates
-                    Map<String, Template> templates = new HashMap<>( 500 );
-                    for( XmlElement element : root.findElements( "c:templates/c:template" ) )
-                    {
-                        TemplateImpl template = new TemplateImpl( this.attributes.getConversionService(), this, element );
-                        templates.put( template.getName(), template );
-                    }
-                    this.templates = templates;
-
-                    // pages
-                    Map<String, Page> pages = new HashMap<>( 100 );
-                    for( XmlElement element : root.findElements( "c:pages/c:page" ) )
-                    {
-                        PageImpl page = new PageImpl( expressionParser, this.attributes.getConversionService(), this, element );
-                        pages.put( page.getName(), page );
-                    }
-                    this.pages = pages;
-                }
-                catch( Exception e )
-                {
-                    this.snippets = oldSnippets;
-                    this.templates = oldTemplates;
-                    this.pages = oldPages;
-                    this.context = oldContext;
-                    throw e;
-                }
+                webContent = new WebContentImpl( root );
             }
-            else
+            catch( Exception e )
             {
-                this.snippets = emptyMap();
-                this.templates = emptyMap();
-                this.pages = emptyMap();
-                this.context = new ContextImpl();
+                LOG.warn( "Could not read web contents for app '{}': {}", this.name, e.getMessage(), e );
+                webContent = new WebContentImpl();
             }
 
+            // apply
             this.displayName = displayName;
             this.virtualHosts = virtualHosts;
             this.uriLanguageSelectionEnabled = uriLanguageSelectionEnabled;
@@ -401,7 +369,7 @@ public class WebApplicationFactory
             this.pageAuthenticators = pageAuthenticators;
             this.formLoginUrl = formLoginUrl;
             this.accessDeniedPageName = accessDeniedPageName;
-            this.contentRoots = unmodifiableSet( contentRoots );
+            this.webContent = webContent;
             if( this.export != null )
             {
                 this.export.update();
@@ -482,14 +450,14 @@ public class WebApplicationFactory
         @Override
         public Page getUnknownUrlPage()
         {
-            return this.unknownUrlPageName == null ? null : this.pages.get( this.unknownUrlPageName );
+            return this.unknownUrlPageName == null ? null : this.webContent.getPage( this.unknownUrlPageName );
         }
 
         @Nullable
         @Override
         public Page getInternalErrorPage()
         {
-            return this.internalErrorPageName == null ? null : this.pages.get( this.internalErrorPageName );
+            return this.internalErrorPageName == null ? null : this.webContent.getPage( this.internalErrorPageName );
         }
 
         @Override
@@ -573,63 +541,14 @@ public class WebApplicationFactory
         @Override
         public Page getAccessDeniedPage()
         {
-            return this.accessDeniedPageName == null ? null : this.pages.get( this.accessDeniedPageName );
+            return this.accessDeniedPageName == null ? null : this.webContent.getPage( this.accessDeniedPageName );
         }
 
         @Nonnull
         @Override
-        public Collection<Path> getContentRoots()
+        public WebContent getWebContent()
         {
-            return this.contentRoots;
-        }
-
-        @Nonnull
-        @Override
-        public Collection<ContextProviderRef> getContext()
-        {
-            return this.context.getContextProviderRefs();
-        }
-
-        @Nullable
-        @Override
-        public Snippet getSnippet( @Nonnull String name )
-        {
-            return this.snippets.get( name );
-        }
-
-        @Nonnull
-        @Override
-        public Collection<Snippet> getSnippets()
-        {
-            return this.snippets.values();
-        }
-
-        @Nullable
-        @Override
-        public Template getTemplate( @Nonnull String name )
-        {
-            return this.templates.get( name );
-        }
-
-        @Nonnull
-        @Override
-        public Collection<Template> getTemplates()
-        {
-            return this.templates.values();
-        }
-
-        @Nullable
-        @Override
-        public Page getPage( @Nonnull String name )
-        {
-            return this.pages.get( name );
-        }
-
-        @Nonnull
-        @Override
-        public Collection<Page> getPages()
-        {
-            return this.pages.values();
+            return this.webContent;
         }
 
         private Set<String> parseTexts( @Nonnull List<String> texts,
@@ -660,6 +579,201 @@ public class WebApplicationFactory
                 Collections.addAll( authenticatorTypes, defaultAuthenticatorTypes );
             }
             return unmodifiableSet( authenticatorTypes );
+        }
+
+        private class WebContentImpl implements WebContent
+        {
+            @Nonnull
+            private final Set<Path> contentRoots;
+
+            @Nonnull
+            private final Map<String, Snippet> snippets;
+
+            @Nonnull
+            private final Map<String, Template> templates;
+
+            @Nonnull
+            private final Map<String, Page> pages;
+
+            @Nonnull
+            private final ContextImpl context;
+
+            @Nonnull
+            private final Map<String, Period> cachePeriods;
+
+            private WebContentImpl()
+            {
+                this.contentRoots = emptySet();
+                this.snippets = emptyMap();
+                this.templates = emptyMap();
+                this.pages = emptyMap();
+                this.context = new ContextImpl();
+                this.cachePeriods = emptyMap();
+            }
+
+            private WebContentImpl( @Nonnull XmlElement root )
+                    throws XPathException, IOException, SAXException, ParserConfigurationException
+            {
+                // content roots
+                Set<Path> contentRoots = new LinkedHashSet<>();
+                for( String value : root.findTexts( "a:content-roots/a:content-root" ) )
+                {
+                    contentRoots.add( Paths.get( value ) );
+                }
+                this.contentRoots = unmodifiableSet( contentRoots );
+
+                // web content
+                Path contentFile = WebApplicationImpl.this.file.resolveSibling( "content" ).resolve( WebApplicationImpl.this.name + "-content.xml" );
+                if( exists( contentFile ) )
+                {
+                    // parse
+                    XmlDocument document = xmlParser.parse( contentFile, WEB_CONTENT_SCHEMA );
+                    document.addNamespace( "c", WEB_CONTENT_SCHEMA_NS );
+                    root = document.getRoot();
+
+                    // caching
+                    Map<String, Period> cachePeriods = new LinkedHashMap<>();
+                    for( XmlElement element : root.findElements( "c:caching/c:pattern" ) )
+                    {
+                        String pattern = element.getAttribute( "path" );
+                        String periodText = element.getAttribute( "period" );
+                        Period period;
+                        if( "0".equals( periodText ) || "disable".equalsIgnoreCase( periodText ) || "none".equalsIgnoreCase( periodText ) )
+                        {
+                            period = Period.ZERO;
+                        }
+                        else
+                        {
+                            period = WebApplicationFactory.this.periodFormatter.parsePeriod( periodText );
+                        }
+                        cachePeriods.put( pattern, period );
+                    }
+                    this.cachePeriods = cachePeriods;
+
+                    // context
+                    XmlElement contextElement = root.getFirstChildElement( "context" );
+                    this.context = contextElement != null
+                                   ? new ContextImpl( WebApplicationImpl.this.attributes.getConversionService(), contextElement )
+                                   : new ContextImpl();
+
+                    // snippets
+                    Map<String, Snippet> snippets = new HashMap<>( 500 );
+                    for( XmlElement element : root.findElements( "c:snippets/c:snippet" ) )
+                    {
+                        String name = element.requireAttribute( "name" );
+                        String content = element.find( "c:content", TypeToken.of( String.class ) );
+                        snippets.put( name, new SnippetImpl( name, content ) );
+                    }
+                    this.snippets = unmodifiableMap( snippets );
+
+                    // templates
+                    Map<String, Template> templates = new HashMap<>( 500 );
+                    for( XmlElement element : root.findElements( "c:templates/c:template" ) )
+                    {
+                        TemplateImpl template = new TemplateImpl( WebApplicationImpl.this.attributes.getConversionService(), this, element );
+                        templates.put( template.getName(), template );
+                    }
+                    this.templates = unmodifiableMap( templates );
+
+                    // pages
+                    Map<String, Page> pages = new HashMap<>( 100 );
+                    for( XmlElement element : root.findElements( "c:pages/c:page" ) )
+                    {
+                        PageImpl page = new PageImpl( expressionParser, WebApplicationImpl.this.attributes.getConversionService(), this, element );
+                        pages.put( page.getName(), page );
+                    }
+                    this.pages = pages;
+                }
+                else
+                {
+                    this.snippets = emptyMap();
+                    this.templates = emptyMap();
+                    this.pages = emptyMap();
+                    this.context = new ContextImpl();
+                    this.cachePeriods = emptyMap();
+                }
+            }
+
+            @Nonnull
+            @Override
+            public WebApplication getApplication()
+            {
+                return WebApplicationImpl.this;
+            }
+
+            @Nonnull
+            @Override
+            public Collection<Path> getContentRoots()
+            {
+                return this.contentRoots;
+            }
+
+            @Nonnull
+            @Override
+            public Collection<ContextProviderRef> getContext()
+            {
+                return this.context.getContextProviderRefs();
+            }
+
+            @Nullable
+            @Override
+            public Snippet getSnippet( @Nonnull String name )
+            {
+                return this.snippets.get( name );
+            }
+
+            @Nonnull
+            @Override
+            public Collection<Snippet> getSnippets()
+            {
+                return this.snippets.values();
+            }
+
+            @Nullable
+            @Override
+            public Template getTemplate( @Nonnull String name )
+            {
+                return this.templates.get( name );
+            }
+
+            @Nonnull
+            @Override
+            public Collection<Template> getTemplates()
+            {
+                return this.templates.values();
+            }
+
+            @Nullable
+            @Override
+            public Page getPage( @Nonnull String name )
+            {
+                return this.pages.get( name );
+            }
+
+            @Nonnull
+            @Override
+            public Collection<Page> getPages()
+            {
+                return this.pages.values();
+            }
+
+            @Nullable
+            @Override
+            public Period getCachePeriod( @Nonnull String path )
+            {
+                // TODO arik: cache these results
+
+                for( Map.Entry<String, Period> entry : this.cachePeriods.entrySet() )
+                {
+                    ImmutablePair<String, String> key = ImmutablePair.of( entry.getKey(), path );
+                    MapEx<String, String> match = WebApplicationFactory.this.pathParametersCompiler.load( key );
+                    if( match != PathParametersCompiler.NO_MATCH )
+                    {
+                        return entry.getValue();
+                    }
+                }
+                return null;
+            }
         }
     }
 }

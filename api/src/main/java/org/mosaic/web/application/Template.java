@@ -10,7 +10,7 @@ import javax.annotation.Nullable;
 public interface Template
 {
     @Nonnull
-    WebApplication getApplication();
+    WebContent getWebContent();
 
     @Nonnull
     String getName();

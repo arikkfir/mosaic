@@ -227,7 +227,7 @@ public class RequestDispatcher extends ContextHandlerCollection
         {
             ResourceCollection baseResources = new ResourceCollection();
 
-            Collection<Path> contentRoots = this.application.getContentRoots();
+            Collection<Path> contentRoots = this.application.getWebContent().getContentRoots();
             Path[] contentRootsArr = contentRoots.toArray( new Path[ contentRoots.size() ] );
             Resource[] contentRootResources = new Resource[ contentRootsArr.length ];
             for( int i = 0; i < contentRootsArr.length; i++ )
@@ -317,15 +317,26 @@ public class RequestDispatcher extends ContextHandlerCollection
                         }
                     }
 
+                    Period cachePeriod = request.getApplication().getWebContent().getCachePeriod( request.getEncodedPath() );
+                    if( cachePeriod != null )
+                    {
+                        if( cachePeriod.toStandardSeconds().getSeconds() == 0 )
+                        {
+                            request.getResponse().disableCaching();
+                        }
+                        else
+                        {
+                            request.getResponse().allowPublicCaches( cachePeriod );
+                        }
+                    }
+
                     RequestExecutionPlan plan = webEndpointsManager.createRequestExecutionPlan( request );
                     if( plan.canHandle() )
                     {
-                        request.getResponse().disableCaching();
                         plan.execute();
                     }
                     else
                     {
-                        request.getResponse().disableCaching();
                         switch( request.getMethod() )
                         {
                             case GET:

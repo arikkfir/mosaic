@@ -9,6 +9,18 @@
     <xsd:element name="web-content">
         <xsd:complexType>
             <xsd:sequence>
+                <xsd:element name="caching" minOccurs="0" maxOccurs="1">
+                    <xsd:complexType>
+                        <xsd:sequence>
+                            <xsd:element name="pattern" minOccurs="0" maxOccurs="unbounded">
+                                <xsd:complexType>
+                                    <xsd:attribute name="path" type="xsd:string" use="required"/>
+                                    <xsd:attribute name="period" type="xsd:string" use="required"/>
+                                </xsd:complexType>
+                            </xsd:element>
+                        </xsd:sequence>
+                    </xsd:complexType>
+                </xsd:element>
                 <xsd:element name="context" type="contextProvidersList" minOccurs="0" maxOccurs="1"/>
                 <xsd:element name="snippets" minOccurs="0" maxOccurs="1">
                     <xsd:complexType>

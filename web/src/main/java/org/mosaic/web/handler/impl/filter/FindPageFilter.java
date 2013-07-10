@@ -15,7 +15,7 @@ public class FindPageFilter implements Filter
     public boolean matches( @Nonnull RequestExecutionPlan plan, @Nonnull MapEx<String, Object> context )
     {
         WebRequest request = plan.getRequest();
-        for( Page page : request.getApplication().getPages() )
+        for( Page page : request.getApplication().getWebContent().getPages() )
         {
             String language = request.getHeaders().getAcceptLanguage().get( 0 ).getLanguage();
             for( String path : page.getPaths( language ) )

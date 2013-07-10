@@ -87,7 +87,7 @@ public class PageAdapter
         return this.requestAdapter;
     }
 
-    @MethodEndpointBind( Context.class )
+    @MethodEndpointBind(Context.class)
     public void addContextProvider( @Nonnull MethodEndpoint endpoint, @ServiceId long id, @Rank int rank )
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException
     {
@@ -95,7 +95,7 @@ public class PageAdapter
         LOG.info( "Added @Context provider {}", endpoint );
     }
 
-    @MethodEndpointUnbind( Context.class )
+    @MethodEndpointUnbind(Context.class)
     public void removeContextProvider( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
     {
         for( Iterator<? extends ContextProviderAdapter> iterator = this.contextProviderAdapters.iterator(); iterator.hasNext(); )
@@ -165,7 +165,7 @@ public class PageAdapter
 
             // build page context
             thymeleafContext.setVariables( handlerContext );
-            applyContextProviders( request, thymeleafContext, handlerContext, page.getApplication().getContext() );
+            applyContextProviders( request, thymeleafContext, handlerContext, page.getWebContent().getContext() );
             applyContextProviders( request, thymeleafContext, handlerContext, page.getTemplate().getContext() );
             applyContextProviders( request, thymeleafContext, handlerContext, page.getContext() );
 
@@ -374,7 +374,7 @@ public class PageAdapter
                     return null;
                 }
 
-                Snippet snippet = page.getApplication().getSnippet( resourceName );
+                Snippet snippet = page.getWebContent().getSnippet( resourceName );
                 if( snippet == null )
                 {
                     return null;

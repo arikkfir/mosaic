@@ -116,7 +116,7 @@ public interface WebResponse
         @Nullable
         String getLocation();
 
-        void setLocation( @Nullable String value );
+        void setLocation( @Nullable String value ) throws IOException;
 
         @Nullable
         String getPragma();

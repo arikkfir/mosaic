@@ -13,7 +13,7 @@ import org.mosaic.util.expression.Expression;
 public interface Page
 {
     @Nonnull
-    WebApplication getApplication();
+    WebContent getWebContent();
 
     @Nonnull
     String getName();

@@ -4,6 +4,11 @@
              xmlns="https://github.com/arikkfir/mosaic/web/content"
              xsi:schemaLocation="https://github.com/arikkfir/mosaic/web/content https://github.com/arikkfir/mosaic/web/content-5.0.0">
 
+    <caching>
+        <pattern path="/**/*.css" period="1 hour"/>
+        <pattern path="/**/*.*" period="0"/>
+    </caching>
+
     <snippets>
         <snippet name="___default">
             <content><![CDATA[

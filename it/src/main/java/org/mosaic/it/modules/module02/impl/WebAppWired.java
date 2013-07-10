@@ -32,8 +32,8 @@ public class WebAppWired
         {
             return -1;
         }
-        checkState( this.webApp.getContentRoots().size() == 1, "wrong content roots size: " + this.webApp.getContentRoots().size() );
-        checkState( this.webApp.getContentRoots().contains( Paths.get( "/some/dir/module02-updated" ) ), "wrong content roots: " + this.webApp.getContentRoots() );
+        checkState( this.webApp.getWebContent().getContentRoots().size() == 1, "wrong content roots size: " + this.webApp.getWebContent().getContentRoots().size() );
+        checkState( this.webApp.getWebContent().getContentRoots().contains( Paths.get( "/some/dir/module02-updated" ) ), "wrong content roots: " + this.webApp.getWebContent().getContentRoots() );
         return 0;
     }
 
@@ -66,8 +66,8 @@ public class WebAppWired
         checkState( this.webApp.getPermissionPolicy() != null, "null permission policy" );
         checkState( "/login".equals( this.webApp.getFormLoginUrl() ), "wrong form login url: " + this.webApp.getFormLoginUrl() );
         checkState( this.webApp.getAccessDeniedPage() != null, "null access denied page" );
-        checkState( this.webApp.getContentRoots().size() == 1, "wrong content roots size: " + this.webApp.getContentRoots().size() );
-        checkState( this.webApp.getContentRoots().contains( Paths.get( "/some/dir/module02" ) ), "wrong content roots: " + this.webApp.getContentRoots() );
+        checkState( this.webApp.getWebContent().getContentRoots().size() == 1, "wrong content roots size: " + this.webApp.getWebContent().getContentRoots().size() );
+        checkState( this.webApp.getWebContent().getContentRoots().contains( Paths.get( "/some/dir/module02" ) ), "wrong content roots: " + this.webApp.getWebContent().getContentRoots() );
         return 0;
     }
 }

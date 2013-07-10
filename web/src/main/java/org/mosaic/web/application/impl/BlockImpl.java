@@ -35,7 +35,7 @@ public class BlockImpl implements Block
         this.displayName = element.getAttribute( "display-name" );
 
         String snippetId = element.requireAttribute( "snippet" );
-        Snippet snippet = this.panel.getTemplate().getApplication().getSnippet( snippetId );
+        Snippet snippet = this.panel.getTemplate().getWebContent().getSnippet( snippetId );
         if( snippet == null )
         {
             throw new WebApplicationParseException( "Block '" + this + "' uses unknown snippet: " + snippetId );

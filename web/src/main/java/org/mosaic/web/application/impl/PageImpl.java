@@ -30,7 +30,7 @@ public class PageImpl implements Page
                                                            .trimResults( CharMatcher.anyOf( " \t\r\n\f" ) );
 
     @Nonnull
-    private final WebApplicationFactory.WebApplicationImpl application;
+    private final WebContent webContent;
 
     @Nonnull
     private final String name;
@@ -57,10 +57,10 @@ public class PageImpl implements Page
 
     public PageImpl( @Nonnull ExpressionParser expressionParser,
                      @Nonnull ConversionService conversionService,
-                     @Nonnull WebApplicationFactory.WebApplicationImpl application,
+                     @Nonnull WebContent webContent,
                      @Nonnull XmlElement element ) throws XPathException, WebApplicationParseException
     {
-        this.application = application;
+        this.webContent = webContent;
         this.name = element.requireAttribute( "name" );
         this.displayName = element.getAttribute( "display-name" );
         this.active = element.requireAttribute( "active", TypeToken.of( Boolean.class ), true );
@@ -70,7 +70,7 @@ public class PageImpl implements Page
         {
             throw new WebApplicationParseException( "Page '" + this.name + "' has no template declaration" );
         }
-        Template template = this.application.getTemplate( templateName );
+        Template template = this.webContent.getTemplate( templateName );
         if( template == null )
         {
             throw new WebApplicationParseException( "Page '" + this.name + "' uses an unknown template: " + templateName );
@@ -135,9 +135,9 @@ public class PageImpl implements Page
 
     @Nonnull
     @Override
-    public WebApplication getApplication()
+    public WebContent getWebContent()
     {
-        return this.application;
+        return this.webContent;
     }
 
     @Nonnull
@@ -236,7 +236,7 @@ public class PageImpl implements Page
             Iterator<String> languagesIterator =
                     languagesExpression != null
                     ? LANGUAGES_SPLITTER.split( languagesExpression ).iterator()
-                    : getApplication().getContentLanguages().iterator();
+                    : this.webContent.getApplication().getContentLanguages().iterator();
             while( languagesIterator.hasNext() )
             {
                 String language = languagesIterator.next();

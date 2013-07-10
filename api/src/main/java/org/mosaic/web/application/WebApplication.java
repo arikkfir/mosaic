@@ -1,6 +1,5 @@
 package org.mosaic.web.application;
 
-import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Set;
 import javax.annotation.Nonnull;
@@ -74,26 +73,5 @@ public interface WebApplication
     Page getAccessDeniedPage();
 
     @Nonnull
-    Collection<Path> getContentRoots();
-
-    @Nonnull
-    Collection<ContextProviderRef> getContext();
-
-    @Nullable
-    Snippet getSnippet( @Nonnull String name );
-
-    @Nonnull
-    Collection<Snippet> getSnippets();
-
-    @Nullable
-    Template getTemplate( @Nonnull String name );
-
-    @Nonnull
-    Collection<Template> getTemplates();
-
-    @Nullable
-    Page getPage( @Nonnull String name );
-
-    @Nonnull
-    Collection<Page> getPages();
+    WebContent getWebContent();
 }

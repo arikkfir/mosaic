@@ -16,7 +16,7 @@ import static java.util.Collections.unmodifiableMap;
 public class TemplateImpl implements Template
 {
     @Nonnull
-    private final WebApplication application;
+    private final WebContent webContent;
 
     @Nonnull
     private final String name;
@@ -34,14 +34,14 @@ public class TemplateImpl implements Template
     private final Map<String, Panel> panels;
 
     public TemplateImpl( @Nonnull ConversionService conversionService,
-                         @Nonnull WebApplication application,
+                         @Nonnull WebContent webContent,
                          @Nonnull XmlElement element ) throws XPathException, WebApplicationParseException
     {
-        this.application = application;
+        this.webContent = webContent;
         this.name = element.requireAttribute( "name" );
         this.displayName = element.getAttribute( "display-name" );
 
-        Snippet snippet = this.application.getSnippet( getSnippetName() );
+        Snippet snippet = this.webContent.getSnippet( getSnippetName() );
         if( snippet == null )
         {
             this.snippet = new SnippetImpl( getSnippetName(), "" );
@@ -84,16 +84,11 @@ public class TemplateImpl implements Template
         }
     }
 
-    private String getSnippetName()
-    {
-        return "___" + this.name;
-    }
-
     @Nonnull
     @Override
-    public WebApplication getApplication()
+    public WebContent getWebContent()
     {
-        return this.application;
+        return this.webContent;
     }
 
     @Nonnull
@@ -136,5 +131,10 @@ public class TemplateImpl implements Template
     public Collection<Panel> getPanels()
     {
         return this.panels.values();
+    }
+
+    private String getSnippetName()
+    {
+        return "___" + this.name;
     }
 }
