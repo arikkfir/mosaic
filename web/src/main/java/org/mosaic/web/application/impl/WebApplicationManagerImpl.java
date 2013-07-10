@@ -61,20 +61,30 @@ public class WebApplicationManagerImpl extends ModuleListenerAdapter implements 
     @FileWatcher(root = APPS, pattern = "*.xml", event = FILE_ADDED)
     public synchronized void onAppDescriptorAdded( @Nonnull Path file, @Nonnull WatchEvent event ) throws IOException
     {
-        try
+        String applicationName = this.webApplicationFactory.getApplicationName( file );
+        WebApplicationFactory.WebApplicationImpl application = this.applications.get( applicationName );
+        if( application != null )
         {
-            WebApplicationFactory.WebApplicationImpl application = this.webApplicationFactory.parseWebApplication( file );
-            this.applications.put( application.getName(), application );
-            application.register();
-            LOG.info( "Added application '{}' from '{}'", application.getName(), file );
+            LOG.warn( "Web application file '{}' already known! (updating app)", file );
+            onAppDescriptorModified( file, event );
         }
-        catch( WebApplicationParseException e )
+        else
         {
-            LOG.error( "Error parsing web application at '{}': {}", file, e.getMessage(), e );
+            try
+            {
+                application = this.webApplicationFactory.parseWebApplication( file );
+                this.applications.put( application.getName(), application );
+                application.register();
+                LOG.info( "Added application '{}' from '{}'", application.getName(), file );
+            }
+            catch( WebApplicationParseException e )
+            {
+                LOG.error( "Error parsing web application at '{}': {}", file, e.getMessage(), e );
+            }
         }
     }
 
-    @FileWatcher(root = APPS, pattern = "*.xml", event = FILE_MODIFIED)
+    @FileWatcher( root = APPS, pattern = "*.xml", event = FILE_MODIFIED )
     public synchronized void onAppDescriptorModified( @Nonnull Path file, @Nonnull WatchEvent event ) throws IOException
     {
         String applicationName = this.webApplicationFactory.getApplicationName( file );
@@ -82,21 +92,23 @@ public class WebApplicationManagerImpl extends ModuleListenerAdapter implements 
         if( application == null )
         {
             LOG.warn( "Web application file '{}' was modified, but Mosaic has no recollection of a web application from that path!", file );
-            return;
+            onAppDescriptorAdded( file, event );
         }
-
-        try
+        else
         {
-            application.refresh();
-            LOG.info( "Updated application '{}' from '{}'", application.getName(), file );
-        }
-        catch( Exception e )
-        {
-            LOG.error( "Error updating web application at '{}': {}", file, e.getMessage(), e );
+            try
+            {
+                application.refresh();
+                LOG.info( "Updated application '{}' from '{}'", application.getName(), file );
+            }
+            catch( Exception e )
+            {
+                LOG.error( "Error updating web application at '{}': {}", file, e.getMessage(), e );
+            }
         }
     }
 
-    @FileWatcher(root = APPS, pattern = "content/*-content.xml", event = { FILE_MODIFIED, FILE_DELETED })
+    @FileWatcher( root = APPS, pattern = "content/*-content.xml", event = { FILE_ADDED, FILE_MODIFIED, FILE_DELETED } )
     public synchronized void onAppContentModified( @Nonnull Path file, @Nonnull WatchEvent event ) throws IOException
     {
         Matcher matcher = Pattern.compile( "(.*)\\-content\\.xml" ).matcher( file.getFileName().toString() );
@@ -124,7 +136,7 @@ public class WebApplicationManagerImpl extends ModuleListenerAdapter implements 
         }
     }
 
-    @FileWatcher(root = APPS, pattern = "*.xml", event = FILE_DELETED)
+    @FileWatcher( root = APPS, pattern = "*.xml", event = FILE_DELETED )
     public synchronized void onAppDescriptorDeleted( @Nonnull Path file ) throws IOException
     {
         String appName = this.webApplicationFactory.getApplicationName( file );
