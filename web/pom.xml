@@ -35,6 +35,7 @@
                             !org.apache.xml*,
                             !org.cyberneko*,
                             !org.eclipse.jetty*,
+                            org.joda.time.base,
                             org.w3c.dom,
                             *
                         </Import-Package>
