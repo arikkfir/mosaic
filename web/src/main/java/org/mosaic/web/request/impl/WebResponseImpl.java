@@ -175,11 +175,11 @@ public class WebResponseImpl implements WebResponse, WebResponse.Headers
                 }
                 buffer.append( method );
             }
-            this.response.getHttpFields().put( HttpHeader.ALLOW, buffer.toString() );
+            this.response.setHeader( HttpHeader.ALLOW, buffer.toString() );
         }
         else
         {
-            this.response.getHttpFields().remove( HttpHeader.ALLOW );
+            this.response.setHeader( HttpHeader.ALLOW, null );
         }
     }
 
@@ -193,7 +193,7 @@ public class WebResponseImpl implements WebResponse, WebResponse.Headers
     @Override
     public void setCacheControl( @Nullable String value )
     {
-        this.response.getHttpFields().put( HttpHeader.CACHE_CONTROL, value );
+        this.response.setHeader( HttpHeader.CACHE_CONTROL, value );
     }
 
     @Nullable
@@ -206,7 +206,7 @@ public class WebResponseImpl implements WebResponse, WebResponse.Headers
     @Override
     public void setConnection( @Nullable String value )
     {
-        this.response.getHttpFields().put( HttpHeader.CONNECTION, value );
+        this.response.setHeader( HttpHeader.CONNECTION, value );
     }
 
     @Nullable
@@ -220,14 +220,14 @@ public class WebResponseImpl implements WebResponse, WebResponse.Headers
     @Override
     public void setContentLanguage( @Nullable Locale value )
     {
-        this.response.getHttpFields().put( HttpHeader.CONTENT_LANGUAGE, Objects.toString( value, null ) );
+        this.response.setHeader( HttpHeader.CONTENT_LANGUAGE, Objects.toString( value, null ) );
     }
 
     @Nullable
     @Override
     public Long getContentLength()
     {
-        long value = this.response.getHttpFields().getLongField( HttpHeader.CONTENT_LENGTH.toString() );
+        long value = this.response.getLongContentLength();
         return value < 0 ? null : value;
     }
 
@@ -236,11 +236,11 @@ public class WebResponseImpl implements WebResponse, WebResponse.Headers
     {
         if( value == null )
         {
-            this.response.getHttpFields().remove( HttpHeader.CONTENT_LENGTH );
+            this.response.setHeader( HttpHeader.CONTENT_LENGTH, null );
         }
         else
         {
-            this.response.getHttpFields().putLongField( HttpHeader.CONTENT_LENGTH, value );
+            this.response.setLongContentLength( value );
         }
     }
 
@@ -254,21 +254,21 @@ public class WebResponseImpl implements WebResponse, WebResponse.Headers
     @Override
     public void setContentLocation( @Nullable String value )
     {
-        this.response.getHttpFields().put( HttpHeader.CONTENT_LOCATION, value );
+        this.response.setHeader( HttpHeader.CONTENT_LOCATION, value );
     }
 
     @Nullable
     @Override
     public MediaType getContentType()
     {
-        String value = this.response.getHttpFields().getStringField( HttpHeader.CONTENT_TYPE );
+        String value = this.response.getContentType();
         return value == null ? null : new MediaType( value );
     }
 
     @Override
     public void setContentType( @Nullable MediaType value )
     {
-        this.response.getHttpFields().put( HttpHeader.CONTENT_TYPE, Objects.toString( value, null ) );
+        this.response.setContentType( Objects.toString( value, null ) );
     }
 
     @Nullable
@@ -284,11 +284,11 @@ public class WebResponseImpl implements WebResponse, WebResponse.Headers
     {
         if( value == null )
         {
-            this.response.getHttpFields().remove( HttpHeader.DATE );
+            this.response.setHeader( HttpHeader.DATE, null );
         }
         else
         {
-            this.response.getHttpFields().putDateField( HttpHeader.DATE, value.getMillis() );
+            this.response.setDateHeader( HttpHeader.DATE.toString(), value.getMillis() );
         }
     }
 
@@ -302,7 +302,7 @@ public class WebResponseImpl implements WebResponse, WebResponse.Headers
     @Override
     public void setETag( @Nullable String value )
     {
-        this.response.getHttpFields().put( HttpHeader.ETAG, value );
+        this.response.setHeader( HttpHeader.ETAG, value );
     }
 
     @Nullable
@@ -318,11 +318,11 @@ public class WebResponseImpl implements WebResponse, WebResponse.Headers
     {
         if( value == null )
         {
-            this.response.getHttpFields().remove( HttpHeader.EXPIRES );
+            this.response.setHeader( HttpHeader.EXPIRES, null );
         }
         else
         {
-            this.response.getHttpFields().putDateField( HttpHeader.EXPIRES, value.getMillis() );
+            this.response.setDateHeader( HttpHeader.EXPIRES.toString(), value.getMillis() );
         }
     }
 
@@ -339,11 +339,11 @@ public class WebResponseImpl implements WebResponse, WebResponse.Headers
     {
         if( value == null )
         {
-            this.response.getHttpFields().remove( HttpHeader.LAST_MODIFIED );
+            this.response.setHeader( HttpHeader.LAST_MODIFIED, null );
         }
         else
         {
-            this.response.getHttpFields().putDateField( HttpHeader.LAST_MODIFIED, value.getMillis() );
+            this.response.setDateHeader( HttpHeader.LAST_MODIFIED.toString(), value.getMillis() );
         }
     }
 
@@ -355,9 +355,9 @@ public class WebResponseImpl implements WebResponse, WebResponse.Headers
     }
 
     @Override
-    public void setLocation( @Nullable String value )
+    public void setLocation( @Nullable String value ) throws IOException
     {
-        this.response.getHttpFields().put( HttpHeader.LOCATION, value );
+        this.response.sendRedirect( value );
     }
 
     @Nullable
@@ -370,7 +370,7 @@ public class WebResponseImpl implements WebResponse, WebResponse.Headers
     @Override
     public void setPragma( @Nullable String value )
     {
-        this.response.getHttpFields().put( HttpHeader.PRAGMA, value );
+        this.response.setHeader( HttpHeader.PRAGMA, value );
     }
 
     @Nullable
@@ -386,11 +386,11 @@ public class WebResponseImpl implements WebResponse, WebResponse.Headers
     {
         if( value == null )
         {
-            this.response.getHttpFields().remove( HttpHeader.RETRY_AFTER );
+            this.response.setHeader( HttpHeader.RETRY_AFTER, null );
         }
         else
         {
-            this.response.getHttpFields().putLongField( HttpHeader.RETRY_AFTER, value );
+            this.response.setHeader( HttpHeader.RETRY_AFTER, value + "" );
         }
     }
 
@@ -404,7 +404,7 @@ public class WebResponseImpl implements WebResponse, WebResponse.Headers
     @Override
     public void setServer( @Nullable String value )
     {
-        this.response.getHttpFields().put( HttpHeader.SERVER, value );
+        this.response.setHeader( HttpHeader.SERVER, value );
     }
 
     @Nullable
@@ -417,13 +417,13 @@ public class WebResponseImpl implements WebResponse, WebResponse.Headers
     @Override
     public void setWwwAuthenticate( @Nullable String value )
     {
-        this.response.getHttpFields().put( HttpHeader.WWW_AUTHENTICATE, value );
+        this.response.setHeader( HttpHeader.WWW_AUTHENTICATE, value );
     }
 
     @Override
     public void setHeader( @Nonnull String name, @Nonnull String value )
     {
-        this.response.getHttpFields().put( name, value );
+        this.response.setHeader( name, value );
     }
 
     @Override
