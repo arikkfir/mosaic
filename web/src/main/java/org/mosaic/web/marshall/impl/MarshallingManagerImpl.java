@@ -33,7 +33,7 @@ public class MarshallingManagerImpl implements MarshallingManager
     @Nonnull
     private final Collection<UnmarshallerAdapter> unmarshallers = new ConcurrentSkipListSet<>();
 
-    @MethodEndpointBind(Marshaller.class)
+    @MethodEndpointBind( Marshaller.class )
     public void addMarshaller( @Nonnull MethodEndpoint endpoint, @ServiceId long id, @Rank int rank )
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException
     {

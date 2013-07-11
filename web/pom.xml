@@ -20,6 +20,7 @@
                 <configuration>
                     <instructions>
                         <Embed-Dependency>
+                            jackson*,
                             javassist,
                             javax.servlet,
                             jetty-*,
@@ -45,6 +46,14 @@
         </plugins>
     </build>
     <dependencies>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>api</artifactId>

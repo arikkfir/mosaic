@@ -1,5 +1,6 @@
 package org.mosaic.web.marshall.impl;
 
+import com.google.common.reflect.TypeToken;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -103,7 +104,21 @@ public class MarshallerAdapter implements Comparable<MarshallerAdapter>
                     public Object resolve( @Nonnull MethodParameter parameter,
                                            @Nonnull MapEx<String, Object> resolveContext ) throws IOException
                     {
-                        if( parameter.getType().isAssignableFrom( MediaType.class ) )
+                        if( parameter.hasAnnotation( Value.class ) )
+                        {
+                            return resolveContext.require( "value" );
+                        }
+                        return SKIP;
+                    }
+                },
+                new MethodHandle.ParameterResolver()
+                {
+                    @Nullable
+                    @Override
+                    public Object resolve( @Nonnull MethodParameter parameter,
+                                           @Nonnull MapEx<String, Object> resolveContext ) throws IOException
+                    {
+                        if( parameter.getType().equals( TypeToken.of( MediaType.class ) ) )
                         {
                             return MarshallerAdapter.this.targetMediaType;
                         }
@@ -117,7 +132,7 @@ public class MarshallerAdapter implements Comparable<MarshallerAdapter>
                     public Object resolve( @Nonnull MethodParameter parameter,
                                            @Nonnull MapEx<String, Object> resolveContext ) throws IOException
                     {
-                        if( parameter.getType().isAssignableFrom( OutputStream.class ) )
+                        if( parameter.getType().equals( TypeToken.of( OutputStream.class ) ) )
                         {
                             return resolveContext.require( "targetOutputStream", OutputStream.class );
                         }
@@ -131,23 +146,9 @@ public class MarshallerAdapter implements Comparable<MarshallerAdapter>
                     public Object resolve( @Nonnull MethodParameter parameter,
                                            @Nonnull MapEx<String, Object> resolveContext ) throws IOException
                     {
-                        if( parameter.getType().isAssignableFrom( Writer.class ) )
+                        if( parameter.getType().equals( TypeToken.of( Writer.class ) ) )
                         {
                             return resolveContext.require( "targetWriter", Writer.class );
-                        }
-                        return SKIP;
-                    }
-                },
-                new MethodHandle.ParameterResolver()
-                {
-                    @Nullable
-                    @Override
-                    public Object resolve( @Nonnull MethodParameter parameter,
-                                           @Nonnull MapEx<String, Object> resolveContext ) throws IOException
-                    {
-                        if( parameter.hasAnnotation( Value.class ) )
-                        {
-                            return resolveContext.require( "value" );
                         }
                         return SKIP;
                     }
@@ -194,7 +195,7 @@ public class MarshallerAdapter implements Comparable<MarshallerAdapter>
     }
 
     @Override
-    public int compareTo( MarshallerAdapter o )
+    public int compareTo( @Nonnull MarshallerAdapter o )
     {
         if( this.rank > o.rank )
         {
