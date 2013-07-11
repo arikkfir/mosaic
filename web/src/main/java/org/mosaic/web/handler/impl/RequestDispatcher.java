@@ -23,7 +23,6 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.FileResource;
@@ -212,7 +211,6 @@ public class RequestDispatcher extends ContextHandlerCollection
             this.setInitParameter( SessionManager.__MaxAgeProperty, application.getMaxSessionAge().toStandardSeconds().getSeconds() + "" );
             this.setErrorHandler( new ErrorHandler() );
             this.setLogger( Log.getLogger( "org.mosaic.web.application" ) );
-            this.setServletHandler( new ServletHandler() );
             this.setVirtualHosts( getApplicationVirtualHosts() );
 
             ServletHolder servletHolder = new ServletHolder( "dispatcher", new WebApplicationServlet() );
