@@ -62,7 +62,15 @@ public interface WebRequest
     @Nonnull
     WebResponse getResponse();
 
-    void dumpToLog( @Nullable String message, @Nullable Object... arguments );
+    void dumpToTraceLog( @Nullable String message, @Nullable Object... arguments );
+
+    void dumpToDebugLog( @Nullable String message, @Nullable Object... arguments );
+
+    void dumpToInfoLog( @Nullable String message, @Nullable Object... arguments );
+
+    void dumpToWarnLog( @Nullable String message, @Nullable Object... arguments );
+
+    void dumpToErrorLog( @Nullable String message, @Nullable Object... arguments );
 
     interface Uri
     {

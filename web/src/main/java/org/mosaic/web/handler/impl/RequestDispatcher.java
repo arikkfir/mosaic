@@ -121,7 +121,7 @@ public class RequestDispatcher extends ContextHandlerCollection
         this.userManager = userManager;
     }
 
-    @ServiceBind(updates = true)
+    @ServiceBind( updates = true )
     public void addWebApplication( @Nonnull WebApplication application ) throws IOException, URISyntaxException
     {
         // since this invocation might mean that the app was simply updated - lets completely remove it and add it a-new
@@ -363,7 +363,7 @@ public class RequestDispatcher extends ContextHandlerCollection
                 }
                 catch( Throwable e )
                 {
-                    request.dumpToLog( "Unexpected error during request handling: {}", e.getMessage(), e );
+                    request.dumpToErrorLog( "Unexpected error during request handling: {}", e.getMessage(), e );
                     resp.setStatus( HttpServletResponse.SC_INTERNAL_SERVER_ERROR );
                 }
             }

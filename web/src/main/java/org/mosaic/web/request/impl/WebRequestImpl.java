@@ -362,59 +362,33 @@ public class WebRequestImpl implements WebRequest, WebRequest.Uri, WebRequest.He
     }
 
     @Override
-    public void dumpToLog( @Nullable String message, @Nullable Object... arguments )
+    public void dumpToTraceLog( @Nullable String message, @Nullable Object... arguments )
     {
-        StringBuilder buffer = new StringBuilder( 1000 );
-        buffer.append( "\n" );
-        buffer.append( "GENERAL INFORMATION\n" );
-        buffer.append( "                      Method: " ).append( getMethod() ).append( "\n" );
-        buffer.append( "                   Jetty URL: " ).append( this.request.getUri() ).append( "\n" );
-        buffer.append( "                      Scheme: " ).append( getScheme() ).append( "\n" );
-        buffer.append( "                        Host: " ).append( getHost() ).append( "\n" );
-        buffer.append( "                        Port: " ).append( getPort() ).append( "\n" );
-        buffer.append( "                Decoded path: " ).append( getDecodedPath() ).append( "\n" );
-        buffer.append( "                Encoded path: " ).append( getEncodedPath() ).append( "\n" );
-        buffer.append( "               Encoded query: " ).append( getEncodedQueryString() ).append( "\n" );
-        buffer.append( "        Decoded query params: " ).append( getDecodedQueryParameters().isEmpty() ? "" : getDecodedQueryParameters() ).append( "\n" );
-        buffer.append( "                    Fragment: " ).append( getFragment() ).append( "\n" );
-        buffer.append( "\n" );
-        buffer.append( "CLIENT INFORMATION\n" );
-        buffer.append( "        Client address: " ).append( getClientAddress() ).append( "\n" );
-        buffer.append( "               Session: " ).append( getSession() ).append( "\n" );
-        buffer.append( "                Device: " ).append( getDevice() ).append( "\n" );
-        buffer.append( "                  User: " ).append( getUser() ).append( "\n" );
-        buffer.append( "\n" );
-        buffer.append( "HEADERS\n" );
+        LOG.trace( message + "\n" + getDebugString(), arguments );
+    }
 
-        for( String headerName : list( this.request.getHeaderNames() ) )
-        {
-            ArrayList<String> values = list( this.request.getHeaders( headerName ) );
+    @Override
+    public void dumpToDebugLog( @Nullable String message, @Nullable Object... arguments )
+    {
+        LOG.debug( message + "\n" + getDebugString(), arguments );
+    }
 
-            headerName = padStart( headerName, 20, ' ' );
-            buffer.append( "        " ).append( padStart( headerName, 20, ' ' ) ).append( ": " );
+    @Override
+    public void dumpToInfoLog( @Nullable String message, @Nullable Object... arguments )
+    {
+        LOG.info( message + "\n" + getDebugString(), arguments );
+    }
 
-            if( values.isEmpty() )
-            {
-                buffer.append( "\n" );
-            }
-            else
-            {
-                boolean first = true;
-                for( String value : values )
-                {
-                    if( first )
-                    {
-                        first = false;
-                    }
-                    else
-                    {
-                        buffer.append( ", " );
-                    }
-                    buffer.append( value ).append( "\n" );
-                }
-            }
-        }
-        LOG.info( message + "\n" + buffer.toString().replace( "{}", "\\{}" ), arguments );
+    @Override
+    public void dumpToWarnLog( @Nullable String message, @Nullable Object... arguments )
+    {
+        LOG.warn( message + "\n" + getDebugString(), arguments );
+    }
+
+    @Override
+    public void dumpToErrorLog( @Nullable String message, @Nullable Object... arguments )
+    {
+        LOG.error( message + "\n" + getDebugString(), arguments );
     }
 
     @Nonnull
@@ -630,6 +604,62 @@ public class WebRequestImpl implements WebRequest, WebRequest.Uri, WebRequest.He
     public Multimap<String, String> getAllHeaders()
     {
         return this.headers;
+    }
+
+    @Nonnull
+    private String getDebugString()
+    {
+        StringBuilder buffer = new StringBuilder( 5000 );
+        buffer.append( "\n" );
+        buffer.append( "GENERAL INFORMATION\n" );
+        buffer.append( "                      Method: " ).append( getMethod() ).append( "\n" );
+        buffer.append( "                   Jetty URL: " ).append( this.request.getUri() ).append( "\n" );
+        buffer.append( "                      Scheme: " ).append( getScheme() ).append( "\n" );
+        buffer.append( "                        Host: " ).append( getHost() ).append( "\n" );
+        buffer.append( "                        Port: " ).append( getPort() ).append( "\n" );
+        buffer.append( "                Decoded path: " ).append( getDecodedPath() ).append( "\n" );
+        buffer.append( "                Encoded path: " ).append( getEncodedPath() ).append( "\n" );
+        buffer.append( "               Encoded query: " ).append( getEncodedQueryString() ).append( "\n" );
+        buffer.append( "        Decoded query params: " ).append( getDecodedQueryParameters().isEmpty() ? "" : getDecodedQueryParameters() ).append( "\n" );
+        buffer.append( "                    Fragment: " ).append( getFragment() ).append( "\n" );
+        buffer.append( "\n" );
+        buffer.append( "CLIENT INFORMATION\n" );
+        buffer.append( "        Client address: " ).append( getClientAddress() ).append( "\n" );
+        buffer.append( "               Session: " ).append( getSession() ).append( "\n" );
+        buffer.append( "                Device: " ).append( getDevice() ).append( "\n" );
+        buffer.append( "                  User: " ).append( getUser() ).append( "\n" );
+        buffer.append( "\n" );
+        buffer.append( "HEADERS\n" );
+
+        for( String headerName : list( this.request.getHeaderNames() ) )
+        {
+            ArrayList<String> values = list( this.request.getHeaders( headerName ) );
+
+            headerName = padStart( headerName, 20, ' ' );
+            buffer.append( "        " ).append( padStart( headerName, 20, ' ' ) ).append( ": " );
+
+            if( values.isEmpty() )
+            {
+                buffer.append( "\n" );
+            }
+            else
+            {
+                boolean first = true;
+                for( String value : values )
+                {
+                    if( first )
+                    {
+                        first = false;
+                    }
+                    else
+                    {
+                        buffer.append( ", " );
+                    }
+                    buffer.append( value ).append( "\n" );
+                }
+            }
+        }
+        return buffer.toString().replace( "{}", "\\{}" );
     }
 
     @Nonnull

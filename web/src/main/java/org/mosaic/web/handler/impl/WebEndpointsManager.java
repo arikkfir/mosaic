@@ -81,7 +81,7 @@ public class WebEndpointsManager
         this.conversionService = conversionService;
     }
 
-    @MethodEndpointBind(Controller.class)
+    @MethodEndpointBind( Controller.class )
     public void addController( @Nonnull MethodEndpoint endpoint, @ServiceId long id, @Rank int rank )
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException
     {
@@ -89,13 +89,13 @@ public class WebEndpointsManager
         LOG.info( "Added @Controller {}", endpoint );
     }
 
-    @MethodEndpointUnbind(Controller.class)
+    @MethodEndpointUnbind( Controller.class )
     public void removeController( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
     {
         removeEndpoint( id, this.handlerAdapters );
     }
 
-    @MethodEndpointBind(org.mosaic.web.handler.annotation.Interceptor.class)
+    @MethodEndpointBind( org.mosaic.web.handler.annotation.Interceptor.class )
     public void addInterceptorHandler( @Nonnull MethodEndpoint endpoint, @ServiceId long id, @Rank int rank )
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException
     {
@@ -103,13 +103,13 @@ public class WebEndpointsManager
         LOG.info( "Added @Interceptor {}", endpoint );
     }
 
-    @MethodEndpointUnbind(org.mosaic.web.handler.annotation.Interceptor.class)
+    @MethodEndpointUnbind( org.mosaic.web.handler.annotation.Interceptor.class )
     public void removeInterceptorHandler( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
     {
         removeEndpoint( id, this.interceptorAdapters );
     }
 
-    @MethodEndpointBind(org.mosaic.web.handler.annotation.ExceptionHandler.class)
+    @MethodEndpointBind( org.mosaic.web.handler.annotation.ExceptionHandler.class )
     public void addExceptionHandler( @Nonnull MethodEndpoint endpoint, @ServiceId long id, @Rank int rank )
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException
     {
@@ -117,13 +117,13 @@ public class WebEndpointsManager
         LOG.info( "Added @ExceptionHandler {}", endpoint );
     }
 
-    @MethodEndpointUnbind(org.mosaic.web.handler.annotation.ExceptionHandler.class)
+    @MethodEndpointUnbind( org.mosaic.web.handler.annotation.ExceptionHandler.class )
     public void removeExceptionHandler( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
     {
         removeEndpoint( id, this.exceptionHandlerAdapters );
     }
 
-    @MethodEndpointUnbind(Context.class)
+    @MethodEndpointUnbind( Context.class )
     public void removeContextProvider( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
     {
         removeEndpoint( id, this.exceptionHandlerAdapters );
@@ -300,7 +300,7 @@ public class WebEndpointsManager
             }
             catch( Exception e )
             {
-                this.request.dumpToLog( "could not marshall '{}' to response: {}", result, e.getMessage(), e );
+                this.request.dumpToErrorLog( "could not marshall '{}' to response: {}", result, e.getMessage(), e );
                 this.request.getResponse().setStatus( HttpStatus.INTERNAL_SERVER_ERROR );
             }
         }
@@ -323,7 +323,7 @@ public class WebEndpointsManager
 
             if( handlerClosestToThrowableType == null )
             {
-                this.request.dumpToLog( "no exception handler found for handler exception", throwable );
+                this.request.dumpToErrorLog( "no exception handler found for handler exception", throwable );
                 this.request.getResponse().setStatus( HttpStatus.INTERNAL_SERVER_ERROR );
                 return null;
             }
@@ -337,7 +337,7 @@ public class WebEndpointsManager
                 }
                 catch( Exception exceptionHandlingException )
                 {
-                    this.request.dumpToLog( "no exception handler found for handler exception", exceptionHandlingException );
+                    this.request.dumpToWarnLog( "no exception handler found for handler exception", exceptionHandlingException );
                     return null;
                 }
             }
