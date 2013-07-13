@@ -20,7 +20,6 @@
                 <configuration>
                     <instructions>
                         <Embed-Dependency>
-                            jackson*,
                             javassist,
                             javax.servlet,
                             jetty-*,
@@ -84,6 +83,12 @@
         <dependency>
             <groupId>xerces</groupId>
             <artifactId>xercesImpl</artifactId>
+            <!-- make provided so these dependencies are not included by IDEA in run classpath -->
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>xml-apis</groupId>
+            <artifactId>xml-apis</artifactId>
             <!-- make provided so these dependencies are not included by IDEA in run classpath -->
             <scope>provided</scope>
         </dependency>
