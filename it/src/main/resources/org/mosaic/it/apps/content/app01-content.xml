@@ -1,29 +1,39 @@
 <?xml version="1.0"?>
 
-<web-content xmlns="https://github.com/arikkfir/mosaic/web/content"
-             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<web-content xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns="https://github.com/arikkfir/mosaic/web/content"
              xsi:schemaLocation="https://github.com/arikkfir/mosaic/web/content https://github.com/arikkfir/mosaic/web/content-5.0.0">
 
     <snippets>
-        <snippet id="main-snippet">
+        <snippet name="main-snippet">
             <content><![CDATA[Hello from snippet!]]></content>
         </snippet>
     </snippets>
 
+    <templates>
+        <template name="t">
+            <panels>
+                <panel name="p">
+
+                </panel>
+            </panels>
+        </template>
+    </templates>
+
     <pages>
-        <page name="403" active="true" display-name="Access denied">
+        <page name="403" active="true" display-name="Access denied" template="t">
             <blocks>
-                <block name="main" snippet-id="main-snippet"/>
+                <block name="main" snippet="main-snippet" panel="p"/>
             </blocks>
         </page>
-        <page name="404" active="true" display-name="Not found">
+        <page name="404" active="true" display-name="Not found" template="t">
             <blocks>
-                <block name="main" snippet-id="main-snippet"/>
+                <block name="main" snippet="main-snippet" panel="p"/>
             </blocks>
         </page>
-        <page name="500" active="true" display-name="Internal error">
+        <page name="500" active="true" display-name="Internal error" template="t">
             <blocks>
-                <block name="main" snippet-id="main-snippet"/>
+                <block name="main" snippet="main-snippet" panel="p"/>
             </blocks>
         </page>
     </pages>
