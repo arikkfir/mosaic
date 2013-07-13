@@ -124,4 +124,57 @@ public abstract class ServiceUtils
         }
         return null;
     }
+
+    public static <ServiceType> void doWithService( @Nonnull BundleContext bundleContext,
+                                                    @Nonnull ServiceReference<ServiceType> reference,
+                                                    @Nonnull ParameterizedRunnable<? super ServiceType> runnable )
+    {
+        ServiceType service = bundleContext.getService( reference );
+        try
+        {
+            runnable.run( service );
+        }
+        finally
+        {
+            try
+            {
+                bundleContext.ungetService( reference );
+            }
+            catch( Exception ignore )
+            {
+            }
+        }
+    }
+
+    public static <ServiceType, Result> Result doWithService(
+            @Nonnull BundleContext bundleContext,
+            @Nonnull ServiceReference<ServiceType> reference,
+            @Nonnull ParameterizedComputable<? super ServiceType, Result> runnable )
+    {
+        ServiceType service = bundleContext.getService( reference );
+        try
+        {
+            return runnable.run( service );
+        }
+        finally
+        {
+            try
+            {
+                bundleContext.ungetService( reference );
+            }
+            catch( Exception ignore )
+            {
+            }
+        }
+    }
+
+    public static interface ParameterizedRunnable<ServiceType>
+    {
+        void run( @Nonnull ServiceType service );
+    }
+
+    public static interface ParameterizedComputable<ServiceType, Result>
+    {
+        Result run( @Nonnull ServiceType service );
+    }
 }
