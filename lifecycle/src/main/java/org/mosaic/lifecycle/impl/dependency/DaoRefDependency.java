@@ -110,7 +110,10 @@ public class DaoRefDependency extends AbstractBeanDependency
     @Override
     public boolean isSatisfied()
     {
-        return this.daoFactoryTracker != null && !this.daoFactoryTracker.isEmpty();
+        return this.daoFactoryTracker != null
+               && !this.daoFactoryTracker.isEmpty()
+               && this.dataSourceTracker != null
+               && !this.dataSourceTracker.isEmpty();
     }
 
     @Override
@@ -120,6 +123,11 @@ public class DaoRefDependency extends AbstractBeanDependency
         {
             this.daoFactoryTracker.close();
             this.daoFactoryTracker = null;
+        }
+        if( this.dataSourceTracker != null )
+        {
+            this.dataSourceTracker.close();
+            this.dataSourceTracker = null;
         }
     }
 
