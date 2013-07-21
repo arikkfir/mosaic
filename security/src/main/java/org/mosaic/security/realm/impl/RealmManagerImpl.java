@@ -95,12 +95,7 @@ public class RealmManagerImpl implements RealmManager
         private RealmMethodEndpointAdapter( @Nonnull MethodEndpoint endpoint )
         {
             this.endpoint = endpoint;
-            org.mosaic.security.realm.annotation.Realm ann = this.endpoint.getAnnotation( org.mosaic.security.realm.annotation.Realm.class );
-            if( ann == null )
-            {
-                throw new IllegalStateException( "MethodEndpoint '" + endpoint + "' is not a @Realm endpoint" );
-            }
-            this.name = ann.value();
+            this.name = this.endpoint.requireAnnotation( org.mosaic.security.realm.annotation.Realm.class ).value();
         }
 
         @Nonnull
