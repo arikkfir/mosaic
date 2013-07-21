@@ -137,11 +137,7 @@ public class EventManagerImpl implements EventManager
             this.endpoint = endpoint;
             this.invoker = this.endpoint.createInvoker( this );
 
-            Subscribe ann = endpoint.getAnnotation( Subscribe.class );
-            if( ann == null )
-            {
-                throw new IllegalArgumentException( endpoint + " does not define @Subscribe" );
-            }
+            Subscribe ann = endpoint.requireAnnotation( Subscribe.class );
 
             StringBuilder patternBuffer = new StringBuilder( ann.value().length() );
             for( String token : PATTERN_TOKEN_SPLITTER.split( ann.value() ) )
