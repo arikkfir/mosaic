@@ -39,8 +39,18 @@ public interface MethodEndpoint
     @Nullable
     <T extends Annotation> T getAnnotation( @Nonnull Class<T> annotationType );
 
+    @Nullable
+    <T extends Annotation> T getAnnotation( @Nonnull Class<T> annotationType,
+                                            boolean checkOnClass,
+                                            boolean checkOnPackage );
+
     @Nonnull
     <T extends Annotation> T requireAnnotation( @Nonnull Class<T> annotationType );
+
+    @Nonnull
+    <T extends Annotation> T requireAnnotation( @Nonnull Class<T> annotationType,
+                                                boolean checkOnClass,
+                                                boolean checkOnPackage );
 
     @Nonnull
     Invoker createInvoker( @Nonnull MethodHandle.ParameterResolver... resolvers );
