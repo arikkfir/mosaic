@@ -472,7 +472,7 @@ public class ModuleImpl implements Module
         {
             activateInternal();
         }
-        catch( ModuleStartException ignore )
+        catch( ModuleDependencyMissingException ignore )
         {
         }
         catch( Exception e )
@@ -521,7 +521,7 @@ public class ModuleImpl implements Module
         }
         else if( !canBeActivated() )
         {
-            throw new ModuleStartException( this, "has unsatisfied dependencies" );
+            throw new ModuleDependencyMissingException( this );
         }
 
         // switch to ACTIVATING state
@@ -661,9 +661,9 @@ public class ModuleImpl implements Module
         {
             activateInternal();
         }
-        catch( ModuleStartException e )
+        catch( ModuleDependencyMissingException e )
         {
-            LOG.warn( e.getMessage(), e );
+            LOG.warn( e.getMessage() );
             for( Dependency dependency : getUnsatisfiedDependencies() )
             {
                 LOG.warn( "    -> {}", dependency );
