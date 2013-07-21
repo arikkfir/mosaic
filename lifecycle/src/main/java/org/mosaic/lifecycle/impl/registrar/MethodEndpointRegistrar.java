@@ -93,11 +93,62 @@ public class MethodEndpointRegistrar extends AbstractRegistrar implements Method
         return this.methodHandle.getAnnotation( annotationType );
     }
 
+    @Nullable
+    @Override
+    public <T extends Annotation> T getAnnotation( @Nonnull Class<T> annotationType,
+                                                   boolean checkOnClass,
+                                                   boolean checkOnPackage )
+    {
+        T methodAnn = getAnnotation( annotationType );
+        if( methodAnn != null )
+        {
+            return methodAnn;
+        }
+
+        Class<?> declaringClass = this.methodHandle.getDeclaringClass();
+        if( checkOnClass )
+        {
+            T classAnn = declaringClass.getAnnotation( annotationType );
+            if( classAnn != null )
+            {
+                return classAnn;
+            }
+        }
+
+        if( checkOnPackage )
+        {
+            T classAnn = declaringClass.getAnnotation( annotationType );
+            if( classAnn != null )
+            {
+                return classAnn;
+            }
+        }
+
+        return null;
+    }
+
     @Nonnull
     @Override
     public <T extends Annotation> T requireAnnotation( @Nonnull Class<T> annotationType )
     {
         return this.methodHandle.requireAnnotation( annotationType );
+    }
+
+    @Nonnull
+    @Override
+    public <T extends Annotation> T requireAnnotation( @Nonnull Class<T> annotationType,
+                                                       boolean checkOnClass,
+                                                       boolean checkOnPackage )
+    {
+        T ann = getAnnotation( annotationType, checkOnClass, checkOnPackage );
+        if( ann == null )
+        {
+            throw new IllegalStateException( "Annotation '" + annotationType.getName() + "' is required but not found on endpoint '" + this + "'" );
+        }
+        else
+        {
+            return ann;
+        }
     }
 
     @Nonnull
