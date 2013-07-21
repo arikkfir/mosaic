@@ -19,6 +19,8 @@ public class OptimisticServiceRefDependency extends AbstractSingleServiceDepende
 
     protected Object injectedServiceInstance;
 
+    private ServiceReference<?> temporarySatisfyingService;
+
     public OptimisticServiceRefDependency( @Nonnull ModuleImpl module,
                                            @Nullable String filterSpec,
                                            boolean required,
@@ -32,9 +34,16 @@ public class OptimisticServiceRefDependency extends AbstractSingleServiceDepende
     @Override
     public String toString()
     {
-        return String.format( "ServiceRef[%s] for %s",
-                              createFilter( this.serviceType, this.filter ),
-                              this.methodHandle );
+        if( this.serviceType == null )
+        {
+            return String.format( "ServiceRef[unknown] for %s", this.methodHandle );
+        }
+        else
+        {
+            return String.format( "ServiceRef[%s] for %s",
+                                  createFilter( this.serviceType, this.filter ),
+                                  this.methodHandle );
+        }
     }
 
     @Override
@@ -47,7 +56,7 @@ public class OptimisticServiceRefDependency extends AbstractSingleServiceDepende
     @Override
     public boolean isSatisfiedInternal( @Nonnull ServiceTracker<?, ?> tracker )
     {
-        return !this.required || !tracker.isEmpty();
+        return this.temporarySatisfyingService != null || !this.required || !tracker.isEmpty();
     }
 
     @Override
@@ -61,8 +70,19 @@ public class OptimisticServiceRefDependency extends AbstractSingleServiceDepende
     {
         if( this.tracker != null )
         {
-            ServiceReference<?> reference = this.tracker.getServiceReference();
-            Object service = this.tracker.getService();
+            ServiceReference<?> reference;
+            Object service;
+
+            if( this.temporarySatisfyingService != null )
+            {
+                reference = this.temporarySatisfyingService;
+                service = this.module.getBundle().getBundleContext().getService( this.temporarySatisfyingService );
+            }
+            else
+            {
+                reference = this.tracker.getServiceReference();
+                service = this.tracker.getService();
+            }
             inject( bean, reference, service );
             this.injectedServiceInstance = service;
         }
@@ -86,7 +106,15 @@ public class OptimisticServiceRefDependency extends AbstractSingleServiceDepende
             }
             else
             {
-                this.module.onDependencySatisfied();
+                this.temporarySatisfyingService = reference;
+                try
+                {
+                    this.module.onDependencySatisfied();
+                }
+                finally
+                {
+                    this.temporarySatisfyingService = null;
+                }
             }
         }
     }
