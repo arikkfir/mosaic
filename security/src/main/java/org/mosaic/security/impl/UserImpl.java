@@ -1,6 +1,5 @@
 package org.mosaic.security.impl;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.*;
 import javax.annotation.Nonnull;
@@ -17,15 +16,8 @@ import org.mosaic.util.convert.ConversionService;
 /**
  * @author arik
  */
-@JsonAutoDetect(
-        getterVisibility = JsonAutoDetect.Visibility.NONE,
-        fieldVisibility = JsonAutoDetect.Visibility.ANY,
-        isGetterVisibility = JsonAutoDetect.Visibility.NONE,
-        setterVisibility = JsonAutoDetect.Visibility.NONE
-)
 public class UserImpl implements MutableUser
 {
-    @JsonIgnore
     @Nonnull
     private final ConcurrentHashMapEx<String, Object> attributes;
 
@@ -38,11 +30,9 @@ public class UserImpl implements MutableUser
     @Nullable
     private MapEx<String, Principal> principalsByName;
 
-    @JsonIgnore
     @Nullable
     private MapEx<Class<? extends Principal>, Principal> principalsByType;
 
-    @JsonIgnore
     @Nullable
     private MapEx<Class<?>, Object> credentialsByType;
 
@@ -59,6 +49,7 @@ public class UserImpl implements MutableUser
         return this.attributes;
     }
 
+    @JsonIgnore
     @Override
     public boolean isAnonymous()
     {
@@ -198,6 +189,7 @@ public class UserImpl implements MutableUser
         }
     }
 
+    @JsonIgnore
     @Nonnull
     @Override
     public Collection<Object> getCredentials()
