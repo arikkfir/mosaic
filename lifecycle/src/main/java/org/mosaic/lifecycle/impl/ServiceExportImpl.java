@@ -21,7 +21,7 @@ public class ServiceExportImpl implements Module.ServiceExport
     private final ModuleManager moduleManager;
 
     @Nonnull
-    private final Module module;
+    private final Module provider;
 
     @Nonnull
     private final TypeToken<?> type;
@@ -33,14 +33,24 @@ public class ServiceExportImpl implements Module.ServiceExport
     private final ServiceReference<?> serviceReference;
 
     public ServiceExportImpl( @Nonnull ModuleManager moduleManager,
-                              @Nonnull Module module,
                               @Nonnull TypeToken<?> type,
                               @Nonnull ServiceReference<?> serviceReference )
     {
         this.moduleManager = moduleManager;
-        this.module = module;
         this.type = type;
         this.serviceReference = serviceReference;
+
+        Bundle providingBundle = this.serviceReference.getBundle();
+        if( providingBundle == null )
+        {
+            throw new IllegalStateException( "Service has already been unregistered" );
+        }
+        Module providingModule = moduleManager.getModuleFor( providingBundle );
+        if( providingModule == null )
+        {
+            throw new IllegalStateException( "Unknown module for: " + providingBundle.getSymbolicName() );
+        }
+        this.provider = providingModule;
 
         Method getRegistrationMethod = ReflectionUtils.findMethod( serviceReference.getClass(), "getRegistration" );
         getRegistrationMethod.setAccessible( true );
@@ -54,23 +64,11 @@ public class ServiceExportImpl implements Module.ServiceExport
         }
     }
 
-    public ServiceExportImpl( @Nonnull ModuleManager moduleManager,
-                              @Nonnull Module module,
-                              @Nonnull TypeToken<?> type,
-                              @Nonnull ServiceRegistration<?> serviceRegistration )
-    {
-        this.moduleManager = moduleManager;
-        this.module = module;
-        this.type = type;
-        this.serviceRegistration = serviceRegistration;
-        this.serviceReference = serviceRegistration.getReference();
-    }
-
     @Nonnull
     @Override
     public Module getProvider()
     {
-        return this.module;
+        return this.provider;
     }
 
     @Nonnull

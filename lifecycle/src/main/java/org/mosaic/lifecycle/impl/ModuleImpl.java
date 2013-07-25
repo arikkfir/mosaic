@@ -292,7 +292,8 @@ public class ModuleImpl implements Module
 
         // register & return
         ServiceRegistration<? super T> sr = this.bundle.getBundleContext().registerService( type, service, dict );
-        return new ServiceExportImpl( this.moduleManager, this, TypeToken.of( type ), sr );
+        ServiceReference<? super T> reference = sr.getReference();
+        return new ServiceExportImpl( this.moduleManager, TypeToken.of( type ), reference );
     }
 
     @Nullable
@@ -511,11 +512,11 @@ public class ModuleImpl implements Module
 
     private synchronized void activateInternal() throws ModuleStartException
     {
-        if( this.applicationContext != null )
+        if( this.state != ModuleState.STARTED )
         {
             return;
         }
-        else if( this.state == ModuleState.ACTIVE || this.state == ModuleState.ACTIVATING )
+        else if( this.applicationContext != null )
         {
             return;
         }
@@ -599,7 +600,7 @@ public class ModuleImpl implements Module
                 {
                     type = TypeToken.of( this.bundle.loadClass( className ) );
                 }
-                serviceExports.add( new ServiceExportImpl( this.moduleManager, this, type, serviceReference ) );
+                serviceExports.add( new ServiceExportImpl( this.moduleManager, type, serviceReference ) );
             }
             catch( ClassNotFoundException e )
             {
