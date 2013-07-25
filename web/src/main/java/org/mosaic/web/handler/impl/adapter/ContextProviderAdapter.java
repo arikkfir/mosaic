@@ -49,7 +49,7 @@ public class ContextProviderAdapter extends MethodEndpointWrapper implements Com
         Context ann = endpoint.requireAnnotation( Context.class );
         this.name = ann.value().isEmpty() ? endpoint.getName() : ann.value();
 
-        WebAppFilter webAppFilterAnn = endpoint.getAnnotation( WebAppFilter.class );
+        WebAppFilter webAppFilterAnn = endpoint.getAnnotation( WebAppFilter.class, true, true );
         this.webAppFilterExpression = webAppFilterAnn != null ? expressionParser.parseExpression( webAppFilterAnn.value() ) : null;
 
         addParameterResolvers(
@@ -149,6 +149,6 @@ public class ContextProviderAdapter extends MethodEndpointWrapper implements Com
     {
         MapEx<String, Object> providerInvocationContext = new HashMapEx<>( context, this.conversionService );
         providerInvocationContext.put( "parameters", parameters );
-        return invoke( context );
+        return invoke( providerInvocationContext );
     }
 }
