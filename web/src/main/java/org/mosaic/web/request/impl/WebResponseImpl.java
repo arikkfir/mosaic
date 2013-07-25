@@ -78,13 +78,13 @@ public class WebResponseImpl implements WebResponse, WebResponse.Headers
     @Override
     public void addCookie( @Nonnull String name, @Nonnull Object value )
     {
-        addCookie( name, value, this.request.getHost(), this.request.getEncodedPath() );
+        addCookie( name, value, this.request.getHost(), this.request.getUri().getEncodedPath() );
     }
 
     @Override
     public void addCookie( @Nonnull String name, @Nonnull Object value, @Nonnull String domain )
     {
-        addCookie( name, value, domain, this.request.getEncodedPath() );
+        addCookie( name, value, domain, this.request.getUri().getEncodedPath() );
     }
 
     @Override

@@ -45,7 +45,7 @@ import static org.mosaic.web.request.impl.WebSessionImpl.WEB_SESSION_ATTR_KEY;
 /**
  * @author arik
  */
-public class WebRequestImpl implements WebRequest, WebRequest.Uri, WebRequest.Headers, WebRequest.Body
+public class WebRequestImpl implements WebRequest, WebRequest.Headers, WebRequest.Body
 {
     private static final Logger LOG = LoggerFactory.getLogger( WebRequestImpl.class );
 
@@ -78,30 +78,7 @@ public class WebRequestImpl implements WebRequest, WebRequest.Uri, WebRequest.He
     private final HttpMethod method;
 
     @Nonnull
-    private final String scheme;
-
-    @Nonnull
-    private final String host;
-
-    private final int port;
-
-    @Nonnull
-    private final String decodedPath;
-
-    @Nonnull
-    private final String encodedPath;
-
-    @Nonnull
-    private final LoadingCache<Pair<String, String>, MapEx<String, String>> pathTemplatesCache;
-
-    @Nonnull
-    private final String encodedQueryString;
-
-    @Nonnull
-    private final Multimap<String, String> decodedQueryParameters;
-
-    @Nonnull
-    private final String fragment;
+    private final Uri uri;
 
     @Nonnull
     private final Map<String, RequestCookieImpl> cookies;
@@ -141,15 +118,7 @@ public class WebRequestImpl implements WebRequest, WebRequest.Uri, WebRequest.He
             throw new UnsupportedHttpMethodException( "Unsupported HTTP method: " + this.request.getMethod() );
         }
 
-        this.scheme = this.request.getScheme();
-        this.host = this.request.getServerName();
-        this.port = this.request.getServerPort();
-        this.decodedPath = canonicalPath( Objects.toString( this.request.getUri().getDecodedPath(), "/" ) );
-        this.encodedPath = canonicalPath( Objects.toString( this.request.getUri().getPath(), "/" ) );
-        this.pathTemplatesCache = pathTemplatesCache;
-        this.encodedQueryString = Objects.toString( this.request.getUri().getQuery(), "" );
-        this.decodedQueryParameters = extractDecodedQueryParameters();
-        this.fragment = Objects.toString( this.request.getUri().getFragment(), "" );
+        this.uri = new UriImpl( pathTemplatesCache );
 
         Cookie[] requestCookies = this.request.getCookies();
         if( requestCookies == null )
@@ -178,7 +147,7 @@ public class WebRequestImpl implements WebRequest, WebRequest.Uri, WebRequest.He
             for( String supportedLanguage : this.application.getContentLanguages() )
             {
                 String prefix = "/" + supportedLanguage;
-                if( this.decodedPath.startsWith( prefix + "/" ) || this.decodedPath.equals( prefix ) )
+                if( this.uri.getDecodedPath().startsWith( prefix + "/" ) || this.uri.getDecodedPath().equals( prefix ) )
                 {
                     headers.get( ACCEPT_LANGUAGE.toString() ).add( 0, supportedLanguage + ";q=1" );
                     break;
@@ -193,6 +162,12 @@ public class WebRequestImpl implements WebRequest, WebRequest.Uri, WebRequest.He
         this.headers = headers;
 
         this.device = new WebDeviceImpl();
+    }
+
+    @Override
+    public String toString()
+    {
+        return "WebRequest[" + getUri() + "]";
     }
 
     @Nonnull
@@ -241,7 +216,7 @@ public class WebRequestImpl implements WebRequest, WebRequest.Uri, WebRequest.He
     @Override
     public Uri getUri()
     {
-        return this;
+        return this.uri;
     }
 
     @Nonnull
@@ -393,69 +368,6 @@ public class WebRequestImpl implements WebRequest, WebRequest.Uri, WebRequest.He
 
     @Nonnull
     @Override
-    public String getScheme()
-    {
-        return this.scheme;
-    }
-
-    @Override
-    public int getPort()
-    {
-        return this.port;
-    }
-
-    @Nonnull
-    @Override
-    public String getHost()
-    {
-        return this.host;
-    }
-
-    @Nonnull
-    @Override
-    public String getDecodedPath()
-    {
-        return this.decodedPath;
-    }
-
-    @Nonnull
-    @Override
-    public String getEncodedPath()
-    {
-        return this.encodedPath;
-    }
-
-    @Nullable
-    @Override
-    public MapEx<String, String> getPathParameters( @Nonnull String pathTemplate )
-    {
-        MapEx<String, String> params = this.pathTemplatesCache.getUnchecked( ImmutablePair.of( pathTemplate, this.encodedPath ) );
-        return params == NO_MATCH ? null : params;
-    }
-
-    @Nonnull
-    @Override
-    public Multimap<String, String> getDecodedQueryParameters()
-    {
-        return this.decodedQueryParameters;
-    }
-
-    @Nonnull
-    @Override
-    public String getEncodedQueryString()
-    {
-        return this.encodedQueryString;
-    }
-
-    @Nonnull
-    @Override
-    public String getFragment()
-    {
-        return this.fragment;
-    }
-
-    @Nonnull
-    @Override
     public List<MediaType> getAccept()
     {
         return getOrderedHeaderValues( MediaType.class, HttpHeader.ACCEPT, DEFAULT_ACCEPT );
@@ -543,6 +455,13 @@ public class WebRequestImpl implements WebRequest, WebRequest.Uri, WebRequest.He
 
     @Nonnull
     @Override
+    public String getHost()
+    {
+        return this.uri.getHost();
+    }
+
+    @Nonnull
+    @Override
     public Set<String> getIfMatch()
     {
         return getHeaderValuesSet( String.class, HttpHeader.IF_MATCH, Collections.<String>emptySet() );
@@ -614,14 +533,14 @@ public class WebRequestImpl implements WebRequest, WebRequest.Uri, WebRequest.He
         buffer.append( "GENERAL INFORMATION\n" );
         buffer.append( "                      Method: " ).append( getMethod() ).append( "\n" );
         buffer.append( "                   Jetty URL: " ).append( this.request.getUri() ).append( "\n" );
-        buffer.append( "                      Scheme: " ).append( getScheme() ).append( "\n" );
+        buffer.append( "                      Scheme: " ).append( this.uri.getScheme() ).append( "\n" );
         buffer.append( "                        Host: " ).append( getHost() ).append( "\n" );
-        buffer.append( "                        Port: " ).append( getPort() ).append( "\n" );
-        buffer.append( "                Decoded path: " ).append( getDecodedPath() ).append( "\n" );
-        buffer.append( "                Encoded path: " ).append( getEncodedPath() ).append( "\n" );
-        buffer.append( "               Encoded query: " ).append( getEncodedQueryString() ).append( "\n" );
-        buffer.append( "        Decoded query params: " ).append( getDecodedQueryParameters().isEmpty() ? "" : getDecodedQueryParameters() ).append( "\n" );
-        buffer.append( "                    Fragment: " ).append( getFragment() ).append( "\n" );
+        buffer.append( "                        Port: " ).append( this.uri.getPort() ).append( "\n" );
+        buffer.append( "                Decoded path: " ).append( this.uri.getDecodedPath() ).append( "\n" );
+        buffer.append( "                Encoded path: " ).append( this.uri.getEncodedPath() ).append( "\n" );
+        buffer.append( "               Encoded query: " ).append( this.uri.getEncodedQueryString() ).append( "\n" );
+        buffer.append( "        Decoded query params: " ).append( this.uri.getDecodedQueryParameters().isEmpty() ? "" : this.uri.getDecodedQueryParameters() ).append( "\n" );
+        buffer.append( "                    Fragment: " ).append( this.uri.getFragment() ).append( "\n" );
         buffer.append( "\n" );
         buffer.append( "CLIENT INFORMATION\n" );
         buffer.append( "        Client address: " ).append( getClientAddress() ).append( "\n" );
@@ -721,5 +640,129 @@ public class WebRequestImpl implements WebRequest, WebRequest.Uri, WebRequest.He
             values.add( this.attributes.getConversionService().convert( HttpFields.valueParameters( rawValue, null ), type ) );
         }
         return values;
+    }
+
+    private class UriImpl implements Uri
+    {
+        @Nonnull
+        private final String scheme;
+
+        @Nonnull
+        private final String host;
+
+        private final int port;
+
+        @Nonnull
+        private final String decodedPath;
+
+        @Nonnull
+        private final String encodedPath;
+
+        @Nonnull
+        private final String encodedQueryString;
+
+        @Nonnull
+        private final Multimap<String, String> decodedQueryParameters;
+
+        @Nonnull
+        private final String fragment;
+
+        @Nonnull
+        private final LoadingCache<Pair<String, String>, MapEx<String, String>> pathTemplatesCache;
+
+        private UriImpl( @Nonnull LoadingCache<Pair<String, String>, MapEx<String, String>> pathTemplatesCache )
+        {
+            this.pathTemplatesCache = pathTemplatesCache;
+            this.scheme = WebRequestImpl.this.request.getScheme();
+            this.host = WebRequestImpl.this.request.getServerName();
+            this.port = WebRequestImpl.this.request.getServerPort();
+            this.decodedPath = canonicalPath( Objects.toString( WebRequestImpl.this.request.getUri().getDecodedPath(), "/" ) );
+            this.encodedPath = canonicalPath( Objects.toString( WebRequestImpl.this.request.getUri().getPath(), "/" ) );
+            this.encodedQueryString = Objects.toString( WebRequestImpl.this.request.getUri().getQuery(), "" );
+            this.decodedQueryParameters = extractDecodedQueryParameters();
+            this.fragment = Objects.toString( WebRequestImpl.this.request.getUri().getFragment(), "" );
+        }
+
+        @Nonnull
+        @Override
+        public String getScheme()
+        {
+            return this.scheme;
+        }
+
+        @Nonnull
+        @Override
+        public String getHost()
+        {
+            return this.host;
+        }
+
+        @Override
+        public int getPort()
+        {
+            return this.port;
+        }
+
+        @Nonnull
+        @Override
+        public String getDecodedPath()
+        {
+            return this.decodedPath;
+        }
+
+        @Nonnull
+        @Override
+        public String getEncodedPath()
+        {
+            return this.encodedPath;
+        }
+
+        @Nullable
+        @Override
+        public MapEx<String, String> getPathParameters( @Nonnull String pathTemplate )
+        {
+            ImmutablePair<String, String> key = ImmutablePair.of( pathTemplate, this.encodedPath );
+            MapEx<String, String> params = this.pathTemplatesCache.getUnchecked( key );
+            return params == NO_MATCH ? null : params;
+        }
+
+        @Nonnull
+        @Override
+        public Multimap<String, String> getDecodedQueryParameters()
+        {
+            return this.decodedQueryParameters;
+        }
+
+        @Nonnull
+        @Override
+        public String getEncodedQueryString()
+        {
+            return this.encodedQueryString;
+        }
+
+        @Nonnull
+        @Override
+        public String getFragment()
+        {
+            return this.fragment;
+        }
+
+        @Override
+        public String toString()
+        {
+            StringBuilder buf = new StringBuilder( 200 );
+            buf.append( getScheme() ).append( "://" );
+            buf.append( getHost() ).append( ":" ).append( getPort() );
+            buf.append( getEncodedPath() );
+            if( !this.encodedQueryString.isEmpty() )
+            {
+                buf.append( "?" ).append( getEncodedQueryString() );
+            }
+            if( !this.fragment.isEmpty() )
+            {
+                buf.append( "#" ).append( getFragment() );
+            }
+            return buf.toString();
+        }
     }
 }
