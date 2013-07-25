@@ -163,6 +163,13 @@
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
+            <artifactId>validation</artifactId>
+            <version>${project.version}</version>
+            <!-- included only so IDEA will compile these modules when running mosaic as a java main -->
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mosaic</groupId>
             <artifactId>web</artifactId>
             <version>${project.version}</version>
             <!-- included only so IDEA will compile these modules when running mosaic as a java main -->

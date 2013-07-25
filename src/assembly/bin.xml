@@ -113,6 +113,7 @@
                 <include>org.mosaic:metrics</include>
                 <include>org.mosaic:security</include>
                 <include>org.mosaic:shell</include>
+                <include>org.mosaic:validation</include>
                 <include>org.mosaic:web</include>
             </includes>
             <binaries>

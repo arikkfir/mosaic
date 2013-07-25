@@ -21,7 +21,7 @@
     </bean>
 
     <bean id="bundleContext"
-          class="org.mosaic.impl.MosaicActivator"
+          class="org.mosaic.lifecycle.impl.activation.MosaicActivator"
           factory-method="getBundleContext"/>
 
     <bean id="conversionService" class="org.mosaic.util.convert.impl.ConversionServiceImpl">

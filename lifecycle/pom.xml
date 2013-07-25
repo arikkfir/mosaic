@@ -19,13 +19,14 @@
                 <artifactId>maven-bundle-plugin</artifactId>
                 <configuration>
                     <instructions>
-                        <Bundle-Activator>org.mosaic.impl.MosaicActivator</Bundle-Activator>
+                        <Bundle-Activator>org.mosaic.lifecycle.impl.activation.MosaicActivator</Bundle-Activator>
                         <Embed-Dependency>
                             antlr,
                             com.springsource.org.aopalliance,
                             metrics-core,
                             jackson*,
                             javassist,
+                            javax.el*,
                             jcl-over-slf4j,
                             jgrapht,
                             log4j-over-slf4j,
@@ -34,7 +35,8 @@
                             org.springframework.context,
                             org.springframework.context.support,
                             org.springframework.core,
-                            org.springframework.expression
+                            org.springframework.expression,
+                            validation-api
                         </Embed-Dependency>
                         <Embed-Transitive>true</Embed-Transitive>
                         <Import-Package>
@@ -107,6 +109,21 @@
         <dependency>
             <groupId>biz.aQute</groupId>
             <artifactId>bndlib</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>javax.validation</groupId>
+            <artifactId>validation-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>javax.el</groupId>
+            <artifactId>javax.el-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.web</groupId>
+            <artifactId>javax.el</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.felix</groupId>

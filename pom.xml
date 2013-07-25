@@ -29,6 +29,7 @@
         <module>mail</module>
         <module>web</module>
         <module>admin</module>
+        <module>validation</module>
         <module>it</module>
     </modules>
 

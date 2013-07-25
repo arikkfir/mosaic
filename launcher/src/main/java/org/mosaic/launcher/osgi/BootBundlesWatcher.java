@@ -37,6 +37,18 @@ public class BootBundlesWatcher implements Runnable
 
     private static final String PATH_SEPARATOR = System.getProperty( "path.separator" );
 
+    private static final List<String> BOOT_BUNDLE_NAMES = asList( "api",
+                                                                  "lifecycle",
+                                                                  "config",
+                                                                  "database",
+                                                                  "event",
+                                                                  "mail",
+                                                                  "metrics",
+                                                                  "security",
+                                                                  "shell",
+                                                                  "validation",
+                                                                  "web" );
+
     @Nonnull
     private final List<Bundle> bundles;
 
@@ -48,7 +60,7 @@ public class BootBundlesWatcher implements Runnable
         Properties properties = mosaic.getProperties();
 
         List<Bundle> bundles = new LinkedList<>();
-        for( String name : asList( "api", "lifecycle", "config", "database", "event", "mail", "metrics", "security", "shell", "web" ) )
+        for( String name : BOOT_BUNDLE_NAMES )
         {
             Path bundlePath = null;
 
@@ -89,13 +101,22 @@ public class BootBundlesWatcher implements Runnable
             try
             {
                 BundleContext bc = felix.getBundleContext();
-                Bundle bundle = bc.installBundle( bundlePath.toUri().toString(), newInputStream( bundlePath, READ ) );
-                bundle.start();
-                bundles.add( bundle );
+                bundles.add( bc.installBundle( bundlePath.toUri().toString(), newInputStream( bundlePath, READ ) ) );
             }
             catch( Exception e )
             {
                 throw bootstrapError( "Could not install boot bundle at '{}': {}", bundlePath, e.getMessage(), e );
+            }
+        }
+        for( Bundle bundle : bundles )
+        {
+            try
+            {
+                bundle.start();
+            }
+            catch( Throwable e )
+            {
+                throw bootstrapError( "Could not start boot bundle at '{}': {}", bundle.getLocation(), e.getMessage(), e );
             }
         }
         this.bundles = bundles;
