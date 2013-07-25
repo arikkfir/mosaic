@@ -38,6 +38,7 @@ import org.mosaic.util.pair.Pair;
 import org.mosaic.web.application.WebApplication;
 import org.mosaic.web.handler.impl.util.PathParametersCompiler;
 import org.mosaic.web.net.HttpStatus;
+import org.mosaic.web.request.WebRequest;
 import org.mosaic.web.request.WebResponse;
 import org.mosaic.web.request.impl.UnsupportedHttpMethodException;
 import org.mosaic.web.request.impl.WebRequestImpl;
@@ -174,7 +175,7 @@ public class RequestDispatcher extends ContextHandlerCollection
     }
 
     @Nonnull
-    private WebRequestImpl createWebRequest( @Nonnull Request request, @Nonnull WebApplication webApplication )
+    private WebRequest createWebRequest( @Nonnull Request request, @Nonnull WebApplication webApplication )
             throws UnsupportedHttpMethodException
     {
         WebRequestImpl webRequest = new WebRequestImpl( request,
@@ -282,7 +283,7 @@ public class RequestDispatcher extends ContextHandlerCollection
 
             protected void handleRequest( @Nonnull HttpServletRequest req, @Nonnull HttpServletResponse resp )
             {
-                WebRequestImpl request;
+                WebRequest request;
                 try
                 {
                     request = createWebRequest( ( Request ) req, application );
@@ -303,7 +304,7 @@ public class RequestDispatcher extends ContextHandlerCollection
                 {
                     request.getResponse().setStatus( HttpStatus.OK );
 
-                    if( request.getMethod() == GET && "/jetty-dir.css".equals( request.getDecodedPath() ) )
+                    if( request.getMethod() == GET && "/jetty-dir.css".equals( request.getUri().getDecodedPath() ) )
                     {
                         URL jettyDirUrl = getClass().getClassLoader().getResource( "jetty-dir.css" );
                         if( jettyDirUrl != null )
@@ -315,7 +316,7 @@ public class RequestDispatcher extends ContextHandlerCollection
                         }
                     }
 
-                    Period cachePeriod = request.getApplication().getWebContent().getCachePeriod( request.getEncodedPath() );
+                    Period cachePeriod = request.getApplication().getWebContent().getCachePeriod( request.getUri().getEncodedPath() );
                     if( cachePeriod != null )
                     {
                         if( cachePeriod.toStandardSeconds().getSeconds() == 0 )
