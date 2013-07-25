@@ -6,7 +6,7 @@
              display-name="Administrationn Console">
 
     <virtual-hosts>
-        <virtual-host>admin.arik.local</virtual-host>
+        <virtual-host>admin.arik.home.local</virtual-host>
     </virtual-hosts>
 
     <content-languages default-language="en" support-uri-selection="true">
