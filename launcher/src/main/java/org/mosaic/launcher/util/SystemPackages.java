@@ -78,6 +78,10 @@ public final class SystemPackages
                             version = Utils.getArtifactVersion( "com.google.code.findbugs", "jsr305", "2.0.1" );
                             break;
 
+                        case "javax.validation.version":
+                            version = Utils.getArtifactVersion( "javax.validation", "validation-api", "1.1.0.Final" );
+                            break;
+
                         case "javax.mail.version":
                             version = "1.4.7";
                             break;
