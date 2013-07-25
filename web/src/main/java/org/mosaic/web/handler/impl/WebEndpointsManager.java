@@ -20,8 +20,13 @@ import org.mosaic.web.handler.impl.action.ExceptionHandler;
 import org.mosaic.web.handler.impl.action.Handler;
 import org.mosaic.web.handler.impl.action.Interceptor;
 import org.mosaic.web.handler.impl.action.Participator;
-import org.mosaic.web.handler.impl.adapter.*;
+import org.mosaic.web.handler.impl.adapter.ExceptionHandlerAdapter;
+import org.mosaic.web.handler.impl.adapter.HandlerAdapter;
+import org.mosaic.web.handler.impl.adapter.InterceptorAdapter;
+import org.mosaic.web.handler.impl.adapter.RequestAdapter;
+import org.mosaic.web.handler.impl.adapter.page.PageAdapter;
 import org.mosaic.web.marshall.MarshallingManager;
+import org.mosaic.web.net.HttpException;
 import org.mosaic.web.net.HttpStatus;
 import org.mosaic.web.net.MediaType;
 import org.mosaic.web.request.WebRequest;
@@ -81,49 +86,49 @@ public class WebEndpointsManager
         this.conversionService = conversionService;
     }
 
-    @MethodEndpointBind( Controller.class )
+    @MethodEndpointBind(Controller.class)
     public void addController( @Nonnull MethodEndpoint endpoint, @ServiceId long id, @Rank int rank )
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException
     {
         this.handlerAdapters.add( new HandlerAdapter( this.conversionService, this.expressionParser, id, rank, endpoint ) );
-        LOG.info( "Added @Controller {}", endpoint );
+        LOG.debug( "Added @Controller {}", endpoint );
     }
 
-    @MethodEndpointUnbind( Controller.class )
+    @MethodEndpointUnbind(Controller.class)
     public void removeController( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
     {
         removeEndpoint( id, this.handlerAdapters );
     }
 
-    @MethodEndpointBind( org.mosaic.web.handler.annotation.Interceptor.class )
+    @MethodEndpointBind(org.mosaic.web.handler.annotation.Interceptor.class)
     public void addInterceptorHandler( @Nonnull MethodEndpoint endpoint, @ServiceId long id, @Rank int rank )
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException
     {
         this.interceptorAdapters.add( new InterceptorAdapter( this.conversionService, id, rank, endpoint ) );
-        LOG.info( "Added @Interceptor {}", endpoint );
+        LOG.debug( "Added @Interceptor {}", endpoint );
     }
 
-    @MethodEndpointUnbind( org.mosaic.web.handler.annotation.Interceptor.class )
+    @MethodEndpointUnbind(org.mosaic.web.handler.annotation.Interceptor.class)
     public void removeInterceptorHandler( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
     {
         removeEndpoint( id, this.interceptorAdapters );
     }
 
-    @MethodEndpointBind( org.mosaic.web.handler.annotation.ExceptionHandler.class )
+    @MethodEndpointBind(org.mosaic.web.handler.annotation.ExceptionHandler.class)
     public void addExceptionHandler( @Nonnull MethodEndpoint endpoint, @ServiceId long id, @Rank int rank )
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException
     {
         this.exceptionHandlerAdapters.add( new ExceptionHandlerAdapter( this.conversionService, id, rank, endpoint ) );
-        LOG.info( "Added @ExceptionHandler {}", endpoint );
+        LOG.debug( "Added @ExceptionHandler {}", endpoint );
     }
 
-    @MethodEndpointUnbind( org.mosaic.web.handler.annotation.ExceptionHandler.class )
+    @MethodEndpointUnbind(org.mosaic.web.handler.annotation.ExceptionHandler.class)
     public void removeExceptionHandler( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
     {
         removeEndpoint( id, this.exceptionHandlerAdapters );
     }
 
-    @MethodEndpointUnbind( Context.class )
+    @MethodEndpointUnbind(Context.class)
     public void removeContextProvider( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
     {
         removeEndpoint( id, this.exceptionHandlerAdapters );
@@ -241,6 +246,11 @@ public class WebEndpointsManager
             try
             {
                 result = next();
+            }
+            catch( HttpException e )
+            {
+                this.request.getResponse().setStatus( e.getStatus(), e.getMessage() );
+                result = null;
             }
             catch( Throwable handleException )
             {
