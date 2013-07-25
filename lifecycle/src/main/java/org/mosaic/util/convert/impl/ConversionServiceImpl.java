@@ -169,12 +169,16 @@ public class ConversionServiceImpl implements ConversionService, InitializingBea
         }
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     @Nonnull
     @Override
     public <Source, Dest> Dest convert( @Nonnull Source source, @Nonnull TypeToken<Dest> targetTypeToken )
     {
         TypeToken<?> sourceTypeToken = TypeToken.of( source.getClass() );
+        if( targetTypeToken.isAssignableFrom( sourceTypeToken ) )
+        {
+            return ( Dest ) source;
+        }
 
         ImmutablePair<TypeToken<?>, TypeToken<?>> cacheKey = ImmutablePair.<TypeToken<?>, TypeToken<?>>of( sourceTypeToken, targetTypeToken );
         List<ConverterAdapter> path = this.pathCache.getIfPresent( cacheKey );
@@ -259,7 +263,7 @@ public class ConversionServiceImpl implements ConversionService, InitializingBea
         return convert( source, TypeToken.of( targetTypeToken ) );
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     @Nonnull
     private Object convert( @Nonnull Object source, @Nonnull List<ConverterAdapter> path )
     {
