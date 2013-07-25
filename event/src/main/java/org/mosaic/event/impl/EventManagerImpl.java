@@ -55,14 +55,14 @@ public class EventManagerImpl implements EventManager
     public void addEventSubscriber( @ServiceId long id, @Nonnull MethodEndpoint endpoint )
     {
         this.listeners.put( id, new EventListenerImpl( endpoint ) );
-        LOG.info( "Added event @Subscriber {}", endpoint );
+        LOG.debug( "Added event @Subscriber {}", endpoint );
     }
 
     @MethodEndpointUnbind(Subscribe.class)
     public void removeEventSubscriber( @ServiceId long id, @Nonnull MethodEndpoint endpoint )
     {
         this.listeners.remove( id );
-        LOG.info( "Removed event @Subscriber {}", endpoint );
+        LOG.debug( "Removed event @Subscriber {}", endpoint );
     }
 
     @PostConstruct
