@@ -77,10 +77,10 @@ public interface WebRequest
         @Nonnull
         String getScheme();
 
-        int getPort();
-
         @Nonnull
         String getHost();
+
+        int getPort();
 
         @Nonnull
         String getDecodedPath();
