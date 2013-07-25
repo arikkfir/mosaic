@@ -67,28 +67,28 @@ public class ConfigurationManagerImpl implements ConfigurationManager
         return new HashMapEx<>( Maps.fromProperties( properties ), conversionService );
     }
 
-    @MethodEndpointBind( Configurable.class )
+    @MethodEndpointBind(Configurable.class)
     public void addConfigurable( @Nonnull MethodEndpoint endpoint )
     {
         Configurable ann = ( Configurable ) endpoint.getType();
         this.endpoints.put( ann.value(), endpoint );
-        LOG.info( "Added @Configurable from {}", endpoint );
+        LOG.debug( "Added @Configurable from {}", endpoint );
 
         Properties properties = this.configurations.get( ann.value() );
         notifyConfigurable( properties != null ? properties : new Properties(), endpoint );
     }
 
-    @MethodEndpointUnbind( Configurable.class )
+    @MethodEndpointUnbind(Configurable.class)
     public void removeConfigurable( @Nonnull MethodEndpoint endpoint )
     {
         Configurable ann = ( Configurable ) endpoint.getType();
         this.endpoints.remove( ann.value(), endpoint );
-        LOG.info( "Removed @Configurable {}", endpoint );
+        LOG.debug( "Removed @Configurable {}", endpoint );
     }
 
-    @FileWatcher( root = WatchRoot.ETC,
-                  pattern = "*.properties",
-                  event = { WatchEvent.FILE_ADDED, WatchEvent.FILE_MODIFIED } )
+    @FileWatcher(root = WatchRoot.ETC,
+                 pattern = "*.properties",
+                 event = { WatchEvent.FILE_ADDED, WatchEvent.FILE_MODIFIED })
     public void onFileModified( @Nonnull Path file, @Nonnull BasicFileAttributes attrs ) throws IOException
     {
         // load configuration data
@@ -107,9 +107,9 @@ public class ConfigurationManagerImpl implements ConfigurationManager
         }
     }
 
-    @FileWatcher( root = WatchRoot.ETC,
-                  pattern = "*.properties",
-                  event = WatchEvent.FILE_DELETED )
+    @FileWatcher(root = WatchRoot.ETC,
+                 pattern = "*.properties",
+                 event = WatchEvent.FILE_DELETED)
     public void onFileDeleted( @Nonnull Path file ) throws IOException
     {
         // store (possibly replace previous) configuration in memory
