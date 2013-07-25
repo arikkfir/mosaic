@@ -103,13 +103,13 @@ public class CommandManager
         this.conversionService = conversionService;
     }
 
-    @MethodEndpointBind( org.mosaic.shell.annotation.Command.class )
+    @MethodEndpointBind(org.mosaic.shell.annotation.Command.class)
     public void addCommand( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
     {
         addCommand( id, new StandardCommandExecutor( new MethodEndpointCommandAdapter( endpoint ) ) );
     }
 
-    @MethodEndpointUnbind( org.mosaic.shell.annotation.Command.class )
+    @MethodEndpointUnbind(org.mosaic.shell.annotation.Command.class)
     public void removeCommand( @Nonnull MethodEndpoint endpoint, @ServiceId long id )
     {
         removeCommand( id );
@@ -214,7 +214,7 @@ public class CommandManager
     private void addCommand( long id, @Nonnull CommandExecutor commandExecutor )
     {
         this.commands.put( id, commandExecutor );
-        LOG.info( "Added {}", commandExecutor );
+        LOG.debug( "Added {}", commandExecutor );
     }
 
     private void removeCommand( long id )
@@ -222,7 +222,7 @@ public class CommandManager
         CommandExecutor removed = this.commands.remove( id );
         if( removed != null )
         {
-            LOG.info( "Removed {}", removed );
+            LOG.debug( "Removed {}", removed );
         }
     }
 
