@@ -5,13 +5,16 @@
              xsi:schemaLocation="https://github.com/arikkfir/mosaic/web/content https://github.com/arikkfir/mosaic/web/content-5.0.0">
 
     <snippets>
+        <snippet name="template-snippet">
+            <content><![CDATA[Hello from snippet!]]></content>
+        </snippet>
         <snippet name="main-snippet">
             <content><![CDATA[Hello from snippet!]]></content>
         </snippet>
     </snippets>
 
     <templates>
-        <template name="t">
+        <template name="t" snippet="template-snippet">
             <panels>
                 <panel name="p">
 
