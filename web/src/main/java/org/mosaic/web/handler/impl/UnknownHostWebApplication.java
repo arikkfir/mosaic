@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.*;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.joda.time.DateTime;
 import org.joda.time.Period;
 import org.joda.time.PeriodType;
 import org.mosaic.security.policy.PermissionPolicy;
@@ -27,6 +28,9 @@ public class UnknownHostWebApplication implements WebApplication, WebContent
     public static final WebApplication INSTANCE = new UnknownHostWebApplication();
 
     @Nonnull
+    private final DateTime lastModified = DateTime.now();
+
+    @Nonnull
     @Override
     public MapEx<String, Object> getAttributes()
     {
@@ -45,6 +49,13 @@ public class UnknownHostWebApplication implements WebApplication, WebContent
     public WebContent getWebContent()
     {
         return this;
+    }
+
+    @Nonnull
+    @Override
+    public DateTime getLastModified()
+    {
+        return this.lastModified;
     }
 
     @Nonnull

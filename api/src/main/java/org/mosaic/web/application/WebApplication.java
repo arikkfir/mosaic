@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.joda.time.DateTime;
 import org.joda.time.Period;
 import org.mosaic.security.policy.PermissionPolicy;
 import org.mosaic.util.collect.MapEx;
@@ -74,4 +75,7 @@ public interface WebApplication
 
     @Nonnull
     WebContent getWebContent();
+
+    @Nonnull
+    DateTime getLastModified();
 }

@@ -28,7 +28,7 @@ public class TemplateImpl implements Template
     private final Snippet snippet;
 
     @Nonnull
-    private final ContextImpl context;
+    private final Collection<ContextProviderRef> context;
 
     @Nonnull
     private final Map<String, Panel> panels;
@@ -41,25 +41,18 @@ public class TemplateImpl implements Template
         this.name = element.requireAttribute( "name" );
         this.displayName = element.getAttribute( "display-name" );
 
-        Snippet snippet = this.webContent.getSnippet( getSnippetName() );
+        String snippetId = element.requireAttribute( "snippet" );
+        Snippet snippet = this.webContent.getSnippet( snippetId );
         if( snippet == null )
         {
-            this.snippet = new SnippetImpl( getSnippetName(), "" );
+            throw new WebApplicationParseException( "Template '" + this.name + "' uses an unknown snippet '" + snippetId + "'" );
         }
         else
         {
             this.snippet = snippet;
         }
 
-        XmlElement contextElement = element.getFirstChildElement( "context" );
-        if( contextElement != null )
-        {
-            this.context = new ContextImpl( conversionService, contextElement );
-        }
-        else
-        {
-            this.context = new ContextImpl();
-        }
+        this.context = ContextImpl.getContextProviderRefs( conversionService, element );
 
         Map<String, Panel> panels = new LinkedHashMap<>( 5 );
         for( XmlElement blockElement : element.findElements( "c:panels/c:panel" ) )
@@ -116,7 +109,7 @@ public class TemplateImpl implements Template
     @Override
     public Collection<ContextProviderRef> getContext()
     {
-        return this.context.getContextProviderRefs();
+        return this.context;
     }
 
     @Nullable
@@ -131,10 +124,5 @@ public class TemplateImpl implements Template
     public Collection<Panel> getPanels()
     {
         return this.panels.values();
-    }
-
-    private String getSnippetName()
-    {
-        return "___" + this.name;
     }
 }

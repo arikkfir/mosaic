@@ -27,7 +27,7 @@ public class PanelImpl implements Panel
     private final String displayName;
 
     @Nonnull
-    private final ContextImpl context;
+    private final Collection<ContextProviderRef> context;
 
     @Nonnull
     private final List<Block> blocks;
@@ -40,21 +40,12 @@ public class PanelImpl implements Panel
         this.template = template;
         this.name = element.requireAttribute( "name" );
         this.displayName = element.getAttribute( "display-name" );
-
-        XmlElement contextElement = element.getFirstChildElement( "context" );
-        if( contextElement != null )
-        {
-            this.context = new ContextImpl( conversionService, contextElement );
-        }
-        else
-        {
-            this.context = new ContextImpl();
-        }
+        this.context = ContextImpl.getContextProviderRefs( conversionService, element );
 
         List<Block> blocks = new LinkedList<>();
         for( XmlElement blockElement : element.findElements( "c:blocks/c:block" ) )
         {
-            blocks.add( new BlockImpl( conversionService, this, blockElement ) );
+            blocks.add( new BlockImpl( conversionService, this, null, blockElement ) );
         }
         this.blocks = unmodifiableList( blocks );
     }
@@ -84,7 +75,7 @@ public class PanelImpl implements Panel
     @Override
     public Collection<ContextProviderRef> getContext()
     {
-        return this.context.getContextProviderRefs();
+        return this.context;
     }
 
     @Nonnull

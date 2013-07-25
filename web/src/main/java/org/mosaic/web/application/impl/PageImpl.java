@@ -13,8 +13,7 @@ import org.mosaic.util.expression.ExpressionParser;
 import org.mosaic.util.xml.XmlElement;
 import org.mosaic.web.application.*;
 
-import static java.util.Collections.unmodifiableMap;
-import static java.util.Collections.unmodifiableSet;
+import static java.util.Collections.*;
 
 /**
  * @author arik
@@ -50,10 +49,10 @@ public class PageImpl implements Page
     private final Map<String, Set<String>> urlPaths;
 
     @Nonnull
-    private final ContextImpl context;
+    private final Collection<ContextProviderRef> context;
 
     @Nonnull
-    private final List<Block> blocks;
+    private final Map<String, Map<String, Block>> blocks;
 
     public PageImpl( @Nonnull ExpressionParser expressionParser,
                      @Nonnull ConversionService conversionService,
@@ -65,11 +64,7 @@ public class PageImpl implements Page
         this.displayName = element.getAttribute( "display-name" );
         this.active = element.requireAttribute( "active", TypeToken.of( Boolean.class ), true );
 
-        String templateName = element.getAttribute( "template" );
-        if( templateName == null )
-        {
-            throw new WebApplicationParseException( "Page '" + this.name + "' has no template declaration" );
-        }
+        String templateName = element.requireAttribute( "template" );
         Template template = this.webContent.getTemplate( templateName );
         if( template == null )
         {
@@ -84,53 +79,47 @@ public class PageImpl implements Page
         this.security = securityExpression == null ? null : expressionParser.parseExpression( securityExpression );
 
         this.urlPaths = unmodifiableMap( parseUrlPaths( element.findElements( "c:url-paths/c:path" ) ) );
+        this.context = ContextImpl.getContextProviderRefs( conversionService, template.getContext(), element );
 
-        XmlElement contextElement = element.getFirstChildElement( "context" );
-        if( contextElement != null )
+        // start creating a compild blocks collection
+        Map<String, Map<String, Block>> blocksByPanels = new LinkedHashMap<>();
+
+        // populate template blocks first
+        for( Panel panel : this.template.getPanels() )
         {
-            this.context = new ContextImpl( conversionService, contextElement );
-        }
-        else
-        {
-            this.context = new ContextImpl();
+            Map<String, Block> panelBloks = new LinkedHashMap<>();
+            for( Block block : panel.getBlocks() )
+            {
+                panelBloks.put( block.getName(), block );
+            }
+            blocksByPanels.put( panel.getName(), panelBloks );
         }
 
-        List<Block> blocks = new LinkedList<>();
+        // iterate page blocks, overriding corresponding template block if any; adding them otherwise
         for( XmlElement blockElement : element.findElements( "c:blocks/c:block" ) )
         {
-            String panelName = blockElement.getAttribute( "panel" );
-            if( panelName == null )
-            {
-                throw new WebApplicationParseException( "Found block with no panel declaration in page '" + this.name + "'" );
-            }
+            String blockName = blockElement.requireAttribute( "name" );
 
+            String panelName = blockElement.requireAttribute( "panel" );
             Panel panel = this.template.getPanel( panelName );
             if( panel == null )
             {
-                throw new WebApplicationParseException( "Found block with unknown panel declaration in page '" + this.name + "'" );
+                throw new WebApplicationParseException( "Block declaration '" + blockName + "' specifies unknown panel( '" + panelName + "' ) in page '" + this.name + "' " );
             }
 
-            blocks.add( new BlockImpl( conversionService, panel, blockElement ) );
-        }
-        this.blocks = blocks;
-
-        // validate no duplicate block names
-        Set<String> blockNames = new HashSet<>();
-        for( Panel panel : this.template.getPanels() )
-        {
-            for( Block block : panel.getBlocks() )
+            Block templateBlock = blocksByPanels.get( panelName ).get( blockName );
+            if( templateBlock == null )
             {
-                blockNames.add( block.getName() );
+                // a new block, does not exist in template, just add it to the panel blocks
+                blocksByPanels.get( panelName ).put( blockName, new BlockImpl( conversionService, panel, null, blockElement ) );
+            }
+            else
+            {
+                // an extending block
+                blocksByPanels.get( panelName ).put( blockName, new BlockImpl( conversionService, panel, templateBlock, blockElement ) );
             }
         }
-        for( Block block : this.blocks )
-        {
-            if( blockNames.contains( block.getName() ) )
-            {
-                throw new WebApplicationParseException( "Page '" + this.name + "' contains duplicate block names ('" + block.getName() + "')" );
-            }
-            blockNames.add( block.getName() );
-        }
+        this.blocks = blocksByPanels;
     }
 
     @Nonnull
@@ -198,33 +187,22 @@ public class PageImpl implements Page
     @Override
     public Collection<ContextProviderRef> getContext()
     {
-        return this.context.getContextProviderRefs();
-    }
-
-    @Nonnull
-    @Override
-    public List<Block> getBlocks()
-    {
-        return this.blocks;
+        return this.context;
     }
 
     @Nonnull
     @Override
     public List<Block> getBlocks( @Nonnull String panelName )
     {
-        List<Block> blocks = null;
-        for( Block block : this.blocks )
+        Map<String, Block> blocks = this.blocks.get( panelName );
+        if( blocks == null )
         {
-            if( block.getPanel().getName().equals( panelName ) )
-            {
-                if( blocks == null )
-                {
-                    blocks = new LinkedList<>();
-                }
-                blocks.add( block );
-            }
+            return emptyList();
         }
-        return blocks == null ? Collections.<Block>emptyList() : blocks;
+        else
+        {
+            return new LinkedList<>( blocks.values() );
+        }
     }
 
     private Map<String, Set<String>> parseUrlPaths( List<XmlElement> pathElements )

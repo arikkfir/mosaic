@@ -20,23 +20,26 @@
                 <configuration>
                     <instructions>
                         <Embed-Dependency>
-                            javassist,
+                            freemarker,
                             javax.servlet,
                             jetty-*,
-                            ognl,
-                            thymeleaf,
-                            xercesImpl
+                            jsoup
                         </Embed-Dependency>
                         <Embed-Transitive>true</Embed-Transitive>
                         <Import-Package>
-                            !com.sun.jdi*,
-                            !javassist*,
-                            !ognl*,
-                            !org.apache.xml*,
-                            !org.cyberneko*,
+                            javax.servlet.jsp*;resolution:=optional,
+                            org.apache.log*;resolution:=optional,
+                            org.apache.tools.ant*;resolution:=optional,
+                            org.apache.xml*;resolution:=optional,
+                            org.apache.xpath*;resolution:=optional,
+                            org.dom4j*;resolution:=optional,
+                            org.jaxen*;resolution:=optional,
+                            org.jdom*;resolution:=optional,
                             !org.eclipse.jetty*,
                             org.joda.time.base,
-                            org.w3c.dom,
+                            org.mozilla.javascript*;resolution:=optional,
+                            org.python*;resolution:=optional,
+                            org.zeroturnaround.javarebel*;resolution:=optional,
                             *
                         </Import-Package>
                     </instructions>
@@ -63,6 +66,10 @@
             <artifactId>slf4j-api</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
         </dependency>
@@ -75,22 +82,8 @@
             <artifactId>joda-time</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.thymeleaf</groupId>
-            <artifactId>thymeleaf</artifactId>
-            <!-- make provided so these dependencies are not included by IDEA in run classpath -->
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>xerces</groupId>
-            <artifactId>xercesImpl</artifactId>
-            <!-- make provided so these dependencies are not included by IDEA in run classpath -->
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>xml-apis</groupId>
-            <artifactId>xml-apis</artifactId>
-            <!-- make provided so these dependencies are not included by IDEA in run classpath -->
-            <scope>provided</scope>
+            <groupId>org.freemarker</groupId>
+            <artifactId>freemarker</artifactId>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty.orbit</groupId>

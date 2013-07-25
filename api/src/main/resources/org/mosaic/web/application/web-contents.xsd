@@ -79,7 +79,7 @@
         </xsd:sequence>
         <xsd:attribute name="name" type="xsd:string" use="required"/>
         <xsd:attribute name="display-name" type="xsd:string" use="optional"/>
-        <xsd:attribute name="snippet" type="xsd:string" use="required"/>
+        <xsd:attribute name="snippet" type="xsd:string" use="optional"/>
     </xsd:complexType>
 
     <xsd:complexType name="blockForPanelType">
@@ -118,6 +118,7 @@
         </xsd:sequence>
         <xsd:attribute name="name" type="xsd:string" use="required"/>
         <xsd:attribute name="display-name" type="xsd:string" use="optional"/>
+        <xsd:attribute name="snippet" type="xsd:string" use="required"/>
     </xsd:complexType>
 
     <xsd:complexType name="pageType">

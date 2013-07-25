@@ -1,6 +1,8 @@
 package org.mosaic.web.application.impl;
 
+import com.google.common.reflect.TypeToken;
 import java.util.Collection;
+import java.util.Collections;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.util.convert.ConversionService;
@@ -25,32 +27,54 @@ public class BlockImpl implements Block
     private final Snippet snippet;
 
     @Nonnull
-    private final ContextImpl context;
+    private final Collection<ContextProviderRef> context;
 
-    public BlockImpl( @Nonnull ConversionService conversionService, @Nonnull Panel panel, @Nonnull XmlElement element )
+    public BlockImpl( @Nonnull ConversionService conversionService,
+                      @Nonnull Panel panel,
+                      @Nullable Block parentBlock,
+                      @Nonnull XmlElement element )
             throws WebApplicationParseException
     {
         this.panel = panel;
         this.name = element.requireAttribute( "name" );
-        this.displayName = element.getAttribute( "display-name" );
+        this.displayName =
+                parentBlock != null
+                ? element.requireAttribute( "display-name", TypeToken.of( String.class ), parentBlock.getDisplayName() )
+                : element.getAttribute( "display-name" );
 
-        String snippetId = element.requireAttribute( "snippet" );
-        Snippet snippet = this.panel.getTemplate().getWebContent().getSnippet( snippetId );
-        if( snippet == null )
+        if( parentBlock != null )
         {
-            throw new WebApplicationParseException( "Block '" + this + "' uses unknown snippet: " + snippetId );
-        }
-        this.snippet = snippet;
-
-        XmlElement contextElement = element.getFirstChildElement( "context" );
-        if( contextElement != null )
-        {
-            this.context = new ContextImpl( conversionService, contextElement );
+            String snippetId = element.getAttribute( "snippet" );
+            if( snippetId == null )
+            {
+                this.snippet = parentBlock.getSnippet();
+            }
+            else
+            {
+                Snippet snippet = this.panel.getTemplate().getWebContent().getSnippet( snippetId );
+                if( snippet == null )
+                {
+                    throw new WebApplicationParseException( "Block '" + this + "' uses unknown snippet: " + snippetId );
+                }
+                this.snippet = snippet;
+            }
         }
         else
         {
-            this.context = new ContextImpl();
+            String snippetId = element.requireAttribute( "snippet" );
+            Snippet snippet = this.panel.getTemplate().getWebContent().getSnippet( snippetId );
+            if( snippet == null )
+            {
+                throw new WebApplicationParseException( "Block '" + this.name + "' uses unknown snippet: " + snippetId );
+            }
+            this.snippet = snippet;
         }
+
+        Collection<ContextProviderRef> prexistingProviders =
+                parentBlock == null
+                ? Collections.<ContextProviderRef>emptyList()
+                : parentBlock.getContext();
+        this.context = ContextImpl.getContextProviderRefs( conversionService, prexistingProviders, element );
     }
 
     @Override
@@ -91,6 +115,6 @@ public class BlockImpl implements Block
     @Override
     public Collection<ContextProviderRef> getContext()
     {
-        return this.context.getContextProviderRefs();
+        return this.context;
     }
 }

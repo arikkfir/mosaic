@@ -39,8 +39,5 @@ public interface Page
     Collection<ContextProviderRef> getContext();
 
     @Nonnull
-    List<Block> getBlocks();
-
-    @Nonnull
     List<Block> getBlocks( @Nonnull String panelName );
 }

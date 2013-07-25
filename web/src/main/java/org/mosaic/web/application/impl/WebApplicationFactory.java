@@ -14,6 +14,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import javax.xml.xpath.XPathException;
+import org.joda.time.DateTime;
 import org.joda.time.Period;
 import org.joda.time.PeriodType;
 import org.joda.time.format.PeriodFormatter;
@@ -283,6 +284,9 @@ public class WebApplicationFactory
         @Nullable
         private Module.ServiceExport export;
 
+        @Nonnull
+        private DateTime lastModified = DateTime.now();
+
         private WebApplicationImpl( @Nonnull Path file )
                 throws IOException, SAXException, ParserConfigurationException, XPathException
         {
@@ -351,6 +355,7 @@ public class WebApplicationFactory
             }
 
             // apply
+            this.lastModified = DateTime.now();
             this.displayName = displayName;
             this.virtualHosts = virtualHosts;
             this.uriLanguageSelectionEnabled = uriLanguageSelectionEnabled;
@@ -551,6 +556,13 @@ public class WebApplicationFactory
             return this.webContent;
         }
 
+        @Nonnull
+        @Override
+        public DateTime getLastModified()
+        {
+            return this.lastModified;
+        }
+
         private Set<String> parseTexts( @Nonnull List<String> texts,
                                         @Nonnull String... defaultTexts )
         {
@@ -596,7 +608,7 @@ public class WebApplicationFactory
             private final Map<String, Page> pages;
 
             @Nonnull
-            private final ContextImpl context;
+            private final Collection<ContextProviderRef> context;
 
             @Nonnull
             private final Map<String, Period> cachePeriods;
@@ -607,7 +619,7 @@ public class WebApplicationFactory
                 this.snippets = emptyMap();
                 this.templates = emptyMap();
                 this.pages = emptyMap();
-                this.context = new ContextImpl();
+                this.context = emptyList();
                 this.cachePeriods = emptyMap();
             }
 
@@ -651,10 +663,8 @@ public class WebApplicationFactory
                     this.cachePeriods = cachePeriods;
 
                     // context
-                    XmlElement contextElement = root.getFirstChildElement( "context" );
-                    this.context = contextElement != null
-                                   ? new ContextImpl( WebApplicationImpl.this.attributes.getConversionService(), contextElement )
-                                   : new ContextImpl();
+                    this.context = ContextImpl.getContextProviderRefs(
+                            WebApplicationImpl.this.attributes.getConversionService(), root );
 
                     // snippets
                     Map<String, Snippet> snippets = new HashMap<>( 500 );
@@ -689,7 +699,7 @@ public class WebApplicationFactory
                     this.snippets = emptyMap();
                     this.templates = emptyMap();
                     this.pages = emptyMap();
-                    this.context = new ContextImpl();
+                    this.context = emptyList();
                     this.cachePeriods = emptyMap();
                 }
             }
@@ -712,7 +722,7 @@ public class WebApplicationFactory
             @Override
             public Collection<ContextProviderRef> getContext()
             {
-                return this.context.getContextProviderRefs();
+                return this.context;
             }
 
             @Nullable
