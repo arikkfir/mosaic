@@ -189,6 +189,15 @@ public class Modules
     private void displayModuleServices( @Nonnull Console console, @Nonnull Module module ) throws IOException
     {
         console.println();
+        console.println( "DEPENDENCIES" );
+        Collection<Module.Dependency> dependencies = module.getDependencies();
+        for( Module.Dependency dependency : dependencies )
+        {
+            console.print( 8, dependency ).println( dependency.isSatisfied() ? " (OK)" : " (UNSATISFIED)" );
+        }
+
+
+        console.println();
         console.println( "EXPORTED SERVICES" );
         Collection<Module.ServiceExport> exportedServices = module.getExportedServices();
         for( Module.ServiceExport export : exportedServices )
