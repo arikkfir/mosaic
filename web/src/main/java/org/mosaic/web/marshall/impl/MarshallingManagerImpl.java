@@ -33,12 +33,12 @@ public class MarshallingManagerImpl implements MarshallingManager
     @Nonnull
     private final Collection<UnmarshallerAdapter> unmarshallers = new ConcurrentSkipListSet<>();
 
-    @MethodEndpointBind( Marshaller.class )
+    @MethodEndpointBind(Marshaller.class)
     public void addMarshaller( @Nonnull MethodEndpoint endpoint, @ServiceId long id, @Rank int rank )
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException
     {
         this.marshallers.add( new MarshallerAdapter( id, rank, endpoint ) );
-        LOG.info( "Added @Marshaller {}", endpoint );
+        LOG.debug( "Added @Marshaller {}", endpoint );
     }
 
     @MethodEndpointUnbind(Marshaller.class)
@@ -50,7 +50,7 @@ public class MarshallingManagerImpl implements MarshallingManager
             if( adapter.getId() == id )
             {
                 iterator.remove();
-                LOG.info( "Removed @Marshaller {}", endpoint );
+                LOG.debug( "Removed @Marshaller {}", endpoint );
                 return;
             }
         }
@@ -61,7 +61,7 @@ public class MarshallingManagerImpl implements MarshallingManager
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException
     {
         this.unmarshallers.add( new UnmarshallerAdapter( id, rank, endpoint ) );
-        LOG.info( "Added @Unmarshaller {}", endpoint );
+        LOG.debug( "Added @Unmarshaller {}", endpoint );
     }
 
     @MethodEndpointUnbind(Unmarshaller.class)
@@ -73,7 +73,7 @@ public class MarshallingManagerImpl implements MarshallingManager
             if( adapter.getId() == id )
             {
                 iterator.remove();
-                LOG.info( "Removed @Unmarshaller {}", endpoint );
+                LOG.debug( "Removed @Unmarshaller {}", endpoint );
                 return;
             }
         }
