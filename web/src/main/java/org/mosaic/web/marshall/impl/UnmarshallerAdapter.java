@@ -57,24 +57,16 @@ public class UnmarshallerAdapter implements Comparable<UnmarshallerAdapter>
 
         this.targetType = getEndpoint().getReturnType();
 
-        Unmarshaller unmarshallerAnn = getEndpoint().getAnnotation( Unmarshaller.class );
-        if( unmarshallerAnn == null )
+        Unmarshaller unmarshallerAnn = getEndpoint().requireAnnotation( Unmarshaller.class );
+        MediaType sourceMediaType = new MediaType( unmarshallerAnn.consumes() );
+        if( sourceMediaType.hasWildcard() )
         {
-            LOG.warn( "Unmarshaller {} has no @Unmarshaller annotation - it will not be activated", getEndpoint() );
+            LOG.warn( "Unmarshaller {} has a wildcard in its media type declaration '{}' - it will not be activated", getEndpoint(), sourceMediaType );
             this.sourceMediaType = null;
         }
         else
         {
-            MediaType sourceMediaType = new MediaType( unmarshallerAnn.consumes() );
-            if( sourceMediaType.hasWildcard() )
-            {
-                LOG.warn( "Unmarshaller {} has a wildcard in its media type declaration '{}' - it will not be activated", getEndpoint(), sourceMediaType );
-                this.sourceMediaType = null;
-            }
-            else
-            {
-                this.sourceMediaType = sourceMediaType;
-            }
+            this.sourceMediaType = sourceMediaType;
         }
 
         addParameterResolvers(
@@ -156,7 +148,7 @@ public class UnmarshallerAdapter implements Comparable<UnmarshallerAdapter>
                && sourceMediaType.is( this.sourceMediaType );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     @Nullable
     public <T> T unmarshall( @Nonnull InputStream sourceInputStream,
                              @Nonnull MediaType sourceMediaType,
@@ -178,7 +170,7 @@ public class UnmarshallerAdapter implements Comparable<UnmarshallerAdapter>
     }
 
     @Override
-    public int compareTo( UnmarshallerAdapter o )
+    public int compareTo( @Nonnull UnmarshallerAdapter o )
     {
         if( this.rank > o.rank )
         {

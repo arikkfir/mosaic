@@ -76,24 +76,16 @@ public class MarshallerAdapter implements Comparable<MarshallerAdapter>
             this.marshallableType = marshallableType;
         }
 
-        Marshaller marshallerAnn = getEndpoint().getAnnotation( Marshaller.class );
-        if( marshallerAnn == null )
+        Marshaller marshallerAnn = getEndpoint().requireAnnotation( Marshaller.class );
+        MediaType targetMediaType = new MediaType( marshallerAnn.produces() );
+        if( targetMediaType.hasWildcard() )
         {
-            LOG.warn( "Marshaller {} has no @Marshaller annotation - it will not be activated", getEndpoint() );
+            LOG.warn( "Marshaller {} has a wildcard in its media type declaration '{}' - it will not be activated", getEndpoint(), targetMediaType );
             this.targetMediaType = null;
         }
         else
         {
-            MediaType targetMediaType = new MediaType( marshallerAnn.produces() );
-            if( targetMediaType.hasWildcard() )
-            {
-                LOG.warn( "Marshaller {} has a wildcard in its media type declaration '{}' - it will not be activated", getEndpoint(), targetMediaType );
-                this.targetMediaType = null;
-            }
-            else
-            {
-                this.targetMediaType = targetMediaType;
-            }
+            this.targetMediaType = targetMediaType;
         }
 
         addParameterResolvers(
