@@ -48,7 +48,6 @@ public class MosaicActivator implements BundleActivator
 
         deployEmbeddedBundle( "jcl-over-slf4j" );
         deployEmbeddedBundle( "log4j-over-slf4j" );
-        deployEmbeddedBundle( "validation-api" );
         deployEmbeddedBundle( "javax.el-api" );
         deployEmbeddedBundle( "javax.el" );
         deployEmbeddedBundle( "jackson-annotations" );
