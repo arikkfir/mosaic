@@ -21,15 +21,10 @@ public abstract class BootTask
         this.name = name;
     }
 
-    public void reset()
-    {
-        this.executed = false;
-    }
-
     public final boolean execute()
     {
         this.executed = true;
-        LOG.info( "Executing boot phase: {}", this.name );
+        LOG.debug( "Executing boot phase: {}", this.name );
         try
         {
             executeInternal();
@@ -48,7 +43,7 @@ public abstract class BootTask
         {
             try
             {
-                LOG.info( "Reverting boot phase: {}", this.name );
+                LOG.debug( "Reverting boot phase: {}", this.name );
                 revertInternal();
             }
             catch( Exception e )

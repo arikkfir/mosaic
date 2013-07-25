@@ -115,13 +115,13 @@ public class MosaicInstance implements Closeable
                     {
                         if( MosaicInstance.this.devMode )
                         {
-                            LOG.warn( "Cleaning logs directory..." );
+                            LOG.debug( "Cleaning logs directory..." );
                             if( exists( MosaicInstance.this.logs ) )
                             {
                                 Utils.deleteContents( MosaicInstance.this.logs );
                             }
 
-                            LOG.warn( "Cleaning work directory..." );
+                            LOG.debug( "Cleaning work directory..." );
                             if( exists( MosaicInstance.this.work ) )
                             {
                                 Utils.deleteContents( MosaicInstance.this.work );
@@ -129,7 +129,7 @@ public class MosaicInstance implements Closeable
                         }
                         else if( exists( MosaicInstance.this.felixWork ) )
                         {
-                            LOG.warn( "Cleaning OSGi cache..." );
+                            LOG.debug( "Cleaning OSGi cache..." );
                             Utils.deletePath( MosaicInstance.this.felixWork );
                         }
                         createDirectories( apps );
