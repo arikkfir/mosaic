@@ -19,8 +19,8 @@ public class InterceptorAdapter extends RequestAdapter
     {
         super( conversionService, id );
         setRank( rank );
-        addHttpMethodFilter( endpoint.getAnnotation( Method.class ) );
-        addWebAppFilter( endpoint.getAnnotation( WebAppFilter.class ) );
+        addHttpMethodFilter( endpoint.getAnnotation( Method.class, true, true ) );
+        addWebAppFilter( endpoint.getAnnotation( WebAppFilter.class, true, true ) );
         addPathFilter( endpoint.getType(), false );
         setParticipator( new MethodEndpointInterceptor( endpoint, conversionService ) );
     }

@@ -25,12 +25,12 @@ public class HandlerAdapter extends RequestAdapter
         super( conversionService, id );
         setRank( rank );
 
-        addHttpMethodFilter( endpoint.getAnnotation( Method.class ) );
-        addWebAppFilter( endpoint.getAnnotation( WebAppFilter.class ) );
+        addHttpMethodFilter( endpoint.getAnnotation( Method.class, true, true ) );
+        addWebAppFilter( endpoint.getAnnotation( WebAppFilter.class, true, true ) );
         addPathFilter( endpoint.getType(), false );
 
         Handler handler = new MethodEndpointHandler( endpoint, conversionService );
-        Secured securedAnn = endpoint.getAnnotation( Secured.class );
+        Secured securedAnn = endpoint.getAnnotation( Secured.class, true, true );
         if( securedAnn != null )
         {
             String securityExpressionString = securedAnn.value();
