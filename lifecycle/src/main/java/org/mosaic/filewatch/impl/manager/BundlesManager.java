@@ -217,7 +217,7 @@ public class BundlesManager extends AbstractFileWatcherAdapter implements Proper
 
     private void handleJarFileAddedOrModified( @Nonnull ScanContext context, @Nonnull Path path )
     {
-        @SuppressWarnings( "unchecked" )
+        @SuppressWarnings("unchecked")
         List<Bundle> bundlesToStart = context.getAttributes().require( "bundlesToStart", List.class );
 
         // check whether we need to install a new bundle or update an existing bundle
@@ -277,7 +277,7 @@ public class BundlesManager extends AbstractFileWatcherAdapter implements Proper
 
     private void handleScanFinished( ScanContext context )
     {
-        @SuppressWarnings( "unchecked" )
+        @SuppressWarnings("unchecked")
         final List<Bundle> bundlesToStart = context.getAttributes().require( "bundlesToStart", List.class );
 
         // check bundles installed from jars/maven files
@@ -442,7 +442,20 @@ public class BundlesManager extends AbstractFileWatcherAdapter implements Proper
         }
         catch( BundleException e )
         {
-            LOG.error( "Could not START bundle '{}': {}", BundleUtils.toString( bundle ), e.getMessage(), e );
+            switch( e.getType() )
+            {
+                case BundleException.MANIFEST_ERROR:
+                case BundleException.DUPLICATE_BUNDLE_ERROR:
+                case BundleException.RESOLVE_ERROR:
+                case BundleException.START_TRANSIENT_ERROR:
+                case BundleException.SECURITY_ERROR:
+                    LOG.error( "Could not START bundle '{}': {}", BundleUtils.toString( bundle ), e.getMessage() );
+                    break;
+
+                default:
+                    LOG.error( "Could not START bundle '{}': {}", BundleUtils.toString( bundle ), e.getMessage(), e );
+                    break;
+            }
             try
             {
                 bundle.stop();
