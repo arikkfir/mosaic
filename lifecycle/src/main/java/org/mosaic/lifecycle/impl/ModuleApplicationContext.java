@@ -6,6 +6,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import org.mosaic.lifecycle.Module;
+import org.mosaic.lifecycle.ModuleBeanNameNotFoundException;
+import org.mosaic.lifecycle.ModuleBeanTypeNotFoundException;
 import org.mosaic.lifecycle.ModuleState;
 import org.mosaic.lifecycle.annotation.BeanRef;
 import org.osgi.framework.BundleContext;
@@ -90,7 +92,7 @@ public class ModuleApplicationContext extends StaticApplicationContext
             }
             catch( BeansException e )
             {
-                throw new IllegalArgumentException( "Could not get or find bean of type '" + type.getName() + "' in module '" + this + "': " + e.getMessage(), e );
+                throw new ModuleBeanTypeNotFoundException( e, this.module, type );
             }
         }
     }
@@ -109,7 +111,7 @@ public class ModuleApplicationContext extends StaticApplicationContext
             }
             catch( BeansException e )
             {
-                throw new IllegalArgumentException( "Could not get or find bean of type '" + type.getName() + "' in module '" + this + "': " + e.getMessage(), e );
+                throw new ModuleBeanNameNotFoundException( e, this.module, beanName, type );
             }
         }
     }
