@@ -52,6 +52,7 @@ public class MethodEndpointExceptionHandler extends MethodEndpointWrapper implem
         else
         {
             this.exceptionType = exceptionType;
+            addParameterResolvers( new ExceptionParameterResolver( conversionService, this.exceptionType ) );
         }
 
         this.distanceCache = CacheBuilder
@@ -83,7 +84,6 @@ public class MethodEndpointExceptionHandler extends MethodEndpointWrapper implem
 
         addParameterResolvers(
                 new CookieParameterResolver( conversionService ),
-                new ExceptionParameterResolver(),
                 new HeaderParameterResolver( conversionService ),
                 new QueryValueParameterResolver( conversionService ),
                 new WebApplicationParameterResolver(),
