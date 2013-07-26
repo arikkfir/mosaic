@@ -7,4 +7,9 @@ import org.mosaic.web.request.WebDevice;
  */
 public class WebDeviceImpl implements WebDevice
 {
+    @Override
+    public String toString()
+    {
+        return "WebDevice[]";
+    }
 }

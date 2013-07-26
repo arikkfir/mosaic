@@ -18,6 +18,12 @@ import org.mosaic.util.collect.MapEx;
  */
 public class AnonymousUserImpl implements MutableUser
 {
+    @Override
+    public String toString()
+    {
+        return "User[anonymous]";
+    }
+
     @Nonnull
     @Override
     public MapEx<String, Object> getAttributes()
