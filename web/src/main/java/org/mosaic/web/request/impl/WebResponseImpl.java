@@ -421,6 +421,12 @@ public class WebResponseImpl implements WebResponse, WebResponse.Headers
     }
 
     @Override
+    public void addHeader( @Nonnull String name, @Nonnull String value )
+    {
+        this.response.addHeader( name, value );
+    }
+
+    @Override
     public void setHeader( @Nonnull String name, @Nonnull String value )
     {
         this.response.setHeader( name, value );

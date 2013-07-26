@@ -138,6 +138,8 @@ public interface WebResponse
 
         void setWwwAuthenticate( @Nullable String value );
 
+        void addHeader( @Nonnull String name, @Nonnull String value );
+
         void setHeader( @Nonnull String name, @Nonnull String value );
 
         void setHeader( @Nonnull String name, @Nonnull Collection<String> values );
