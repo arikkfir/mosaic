@@ -548,7 +548,7 @@ public class WebRequestImpl implements WebRequest, WebRequest.Headers, WebReques
         buffer.append( "                Device: " ).append( getDevice() ).append( "\n" );
         buffer.append( "                  User: " ).append( getUser() ).append( "\n" );
         buffer.append( "\n" );
-        buffer.append( "HEADERS\n" );
+        buffer.append( "REQUEST HEADERS\n" );
 
         for( String headerName : list( this.request.getHeaderNames() ) )
         {
