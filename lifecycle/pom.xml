@@ -35,8 +35,7 @@
                             org.springframework.context,
                             org.springframework.context.support,
                             org.springframework.core,
-                            org.springframework.expression,
-                            validation-api
+                            org.springframework.expression
                         </Embed-Dependency>
                         <Embed-Transitive>true</Embed-Transitive>
                         <Import-Package>
@@ -58,7 +57,6 @@
                             javax.jms*;resolution:=optional,
                             javax.mail*;resolution:=optional,
                             javax.persistence*;resolution:=optional,
-                            javax.validation*;resolution:=optional,
                             joptsimple*;resolution:=optional,
                             net.sf.ehcache*;resolution:=optional,
                             net.sf.jasperreports*;resolution:=optional,

@@ -87,21 +87,28 @@ public class BundlesManager extends AbstractFileWatcherAdapter implements Proper
     }
 
     @Override
-    protected boolean matchesEvent( @Nonnull WatchEvent event )
+    protected boolean matchesEvent( @Nonnull WatchEvent event, @Nullable Path path )
     {
-        switch( event )
+        if( Boolean.getBoolean( "mosaic.started" ) )
         {
-            case SCAN_STARTING:
-            case DIR_ENTER:
-            case FILE_ADDED:
-            case FILE_MODIFIED:
-            case FILE_DELETED:
-            case DIR_EXIT:
-            case SCAN_FINISHED:
-                return true;
-            default:
-                return false;
+            switch( event )
+            {
+                case SCAN_STARTING:
+                case SCAN_FINISHED:
+                    return true;
+
+                case DIR_ENTER:
+                case FILE_ADDED:
+                case FILE_MODIFIED:
+                case FILE_DELETED:
+                case DIR_EXIT:
+                    if( path != null )
+                    {
+                        return path.startsWith( this.server.getLib() ) || path.startsWith( this.server.getHome().resolve( "boot" ) );
+                    }
+            }
         }
+        return false;
     }
 
     @Override
@@ -114,7 +121,7 @@ public class BundlesManager extends AbstractFileWatcherAdapter implements Proper
     @Override
     protected Path getRoot()
     {
-        return this.server.getLib();
+        return this.server.getHome();
     }
 
     @Nullable
@@ -132,6 +139,8 @@ public class BundlesManager extends AbstractFileWatcherAdapter implements Proper
     {
         if( event == WatchEvent.SCAN_STARTING )
         {
+            LOG.debug( "Bundles scan starting" );
+
             context.getAttributes().put( "bundlesToStart", new LinkedList<>() );
             context.getAttributes().put( "bundlesWereUninstalled", false );
         }
@@ -145,10 +154,12 @@ public class BundlesManager extends AbstractFileWatcherAdapter implements Proper
             String lowerCasedFileName = path.getFileName().toString().toLowerCase();
             if( lowerCasedFileName.endsWith( ".jar" ) )
             {
+                LOG.debug( "Deleted JAR detected at: {}", path );
                 handleJarFileDeleted( context, path );
             }
             else if( lowerCasedFileName.endsWith( ".jars" ) || lowerCasedFileName.endsWith( ".maven" ) )
             {
+                LOG.debug( "Deleted JAR collection detected at: {}", path );
                 handleJarCollectionFileDeleted( context, path );
             }
         }
@@ -162,16 +173,19 @@ public class BundlesManager extends AbstractFileWatcherAdapter implements Proper
             String lowerCasedFileName = path.getFileName().toString().toLowerCase();
             if( lowerCasedFileName.endsWith( ".jar" ) )
             {
+                LOG.debug( "Added/modified JAR detected at: {}", path );
                 handleJarFileAddedOrModified( context, path );
             }
             else if( lowerCasedFileName.endsWith( ".jars" ) || lowerCasedFileName.endsWith( ".maven" ) )
             {
+                LOG.debug( "Added/modified JAR collection detected at: {}", path );
                 handleJarCollectionFileAddedOrModified( context, path, attrs );
             }
         }
         else if( event == WatchEvent.SCAN_FINISHED )
         {
             handleScanFinished( context );
+            LOG.debug( "Bundles scan finished" );
         }
     }
 
@@ -217,7 +231,7 @@ public class BundlesManager extends AbstractFileWatcherAdapter implements Proper
 
     private void handleJarFileAddedOrModified( @Nonnull ScanContext context, @Nonnull Path path )
     {
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         List<Bundle> bundlesToStart = context.getAttributes().require( "bundlesToStart", List.class );
 
         // check whether we need to install a new bundle or update an existing bundle
@@ -277,7 +291,7 @@ public class BundlesManager extends AbstractFileWatcherAdapter implements Proper
 
     private void handleScanFinished( ScanContext context )
     {
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         final List<Bundle> bundlesToStart = context.getAttributes().require( "bundlesToStart", List.class );
 
         // check bundles installed from jars/maven files

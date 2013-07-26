@@ -3,6 +3,7 @@ package org.mosaic.validation.impl;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -10,20 +11,26 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.validation.*;
-import javax.validation.bootstrap.ProviderSpecificBootstrap;
 import javax.validation.executable.ExecutableValidator;
+import javax.validation.spi.ValidationProvider;
 import org.hibernate.validator.HibernateValidator;
 import org.hibernate.validator.HibernateValidatorConfiguration;
 import org.hibernate.validator.messageinterpolation.ResourceBundleMessageInterpolator;
 import org.hibernate.validator.spi.resourceloading.ResourceBundleLocator;
 import org.mosaic.config.ResourceBundleManager;
 import org.mosaic.lifecycle.Module;
+import org.mosaic.lifecycle.ModuleBeanNotFoundException;
 import org.mosaic.lifecycle.ModuleManager;
 import org.mosaic.lifecycle.annotation.Service;
 import org.mosaic.lifecycle.annotation.ServiceRef;
 import org.mosaic.util.reflection.MethodHandle;
+import org.mosaic.util.reflection.MethodParameter;
 import org.mosaic.util.weaving.MethodInterceptor;
 import org.mosaic.validation.MethodValidationException;
+import org.mosaic.web.handler.annotation.ExceptionHandler;
+import org.mosaic.web.net.HttpStatus;
+import org.mosaic.web.request.WebRequest;
+import org.mosaic.web.request.WebResponse;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 
 import static java.util.Arrays.asList;
@@ -31,7 +38,7 @@ import static java.util.Arrays.asList;
 /**
  * @author arik
  */
-@Service(MethodInterceptor.class)
+@Service( MethodInterceptor.class )
 public class ValidationMethodInterceptor implements MethodInterceptor
 {
     @Nonnull
@@ -50,19 +57,22 @@ public class ValidationMethodInterceptor implements MethodInterceptor
             @Override
             public Validator load( Module module ) throws Exception
             {
-                ProviderSpecificBootstrap<HibernateValidatorConfiguration> bootstrap = Validation.byProvider( HibernateValidator.class );
-                HibernateValidatorConfiguration configuration = bootstrap.configure();
-
-                MessageInterpolator messageInterpolator =
-                        new ResourceBundleMessageInterpolator( new MosaicResourceBundleLocator( module ) );
-
-                ParameterNameProvider parameterNameProvider =
-                        new MosaicValidationParameterNameProvider( configuration.getDefaultParameterNameProvider() );
+                HibernateValidatorConfiguration configuration =
+                        Validation.byProvider( HibernateValidator.class )
+                                  .providerResolver( new ValidationProviderResolver()
+                                  {
+                                      @Override
+                                      public List<ValidationProvider<?>> getValidationProviders()
+                                      {
+                                          return Arrays.<ValidationProvider<?>>asList( new HibernateValidator() );
+                                      }
+                                  } )
+                                  .configure();
 
                 ValidatorFactory validatorFactory = configuration
-                        .constraintValidatorFactory( new MosaicConstraintValidatorFactory() )
-                        .messageInterpolator( messageInterpolator )
-                        .parameterNameProvider( parameterNameProvider )
+                        .constraintValidatorFactory( new MosaicConstraintValidatorFactory( configuration.getDefaultConstraintValidatorFactory() ) )
+                        .messageInterpolator( new ResourceBundleMessageInterpolator( new MosaicResourceBundleLocator( module ) ) )
+                        .parameterNameProvider( new MosaicValidationParameterNameProvider( configuration.getDefaultParameterNameProvider() ) )
                         .ignoreXmlConfiguration()
                         .buildValidatorFactory();
 
@@ -90,6 +100,22 @@ public class ValidationMethodInterceptor implements MethodInterceptor
         this.moduleManager = moduleManager;
     }
 
+    @ExceptionHandler
+    public void handleWebHandlersValidationErrors( @Nonnull WebRequest request,
+                                                   @Nonnull MethodValidationException exception )
+    {
+        WebResponse response = request.getResponse();
+        response.setStatus( HttpStatus.BAD_REQUEST );
+        response.disableCaching();
+
+        for( ConstraintViolation<?> violation : exception.getViolations() )
+        {
+            response.getHeaders().addHeader( "X-Mosaic-Validation-Violation",
+                                             violation.getPropertyPath() + ": " + violation.getMessage() );
+        }
+    }
+
+    @SuppressWarnings( "unchecked" )
     @Nullable
     @Override
     public Object intercept( @Nonnull MethodInvocation invocation ) throws Exception
@@ -97,7 +123,34 @@ public class ValidationMethodInterceptor implements MethodInterceptor
         MethodHandle methodHandle = invocation.getMethodHandle();
         if( !methodHandle.hasAnnotation( Valid.class ) )
         {
-            return invocation.proceed();
+            boolean found = false;
+            for( MethodParameter parameter : methodHandle.getParameters() )
+            {
+                if( parameter.hasAnnotation( Valid.class ) )
+                {
+                    found = true;
+                    break;
+                }
+                else
+                {
+                    for( Annotation annotation : parameter.getAnnotations() )
+                    {
+                        if( annotation.annotationType().isAnnotationPresent( Constraint.class ) )
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if( found )
+                    {
+                        break;
+                    }
+                }
+            }
+            if( !found )
+            {
+                return invocation.proceed();
+            }
         }
 
         Module module = this.moduleManager.getModuleFor( methodHandle.getDeclaringClass() );
@@ -106,46 +159,53 @@ public class ValidationMethodInterceptor implements MethodInterceptor
 
         Method method = methodHandle.getNativeMethod();
         ExecutableValidator execValidator = this.validators.get( module ).forExecutables();
-        Set<ConstraintViolation<Object>> violations =
+        Set violations =
                 execValidator.validateParameters( object, method, arguments );
         if( !violations.isEmpty() )
         {
-            throw new MethodValidationException( methodHandle, getViolationMessages( violations ) );
+            throw new MethodValidationException( methodHandle, violations );
         }
 
         Object result = invocation.proceed();
         violations = execValidator.validateReturnValue( object, method, result );
         if( !violations.isEmpty() )
         {
-            throw new MethodValidationException( methodHandle, getViolationMessages( violations ) );
+            throw new MethodValidationException( methodHandle, violations );
         }
         return result;
     }
 
-    @Nonnull
-    private Collection<String> getViolationMessages( @Nonnull Set<ConstraintViolation<Object>> violations )
-    {
-        List<String> messages = new LinkedList<>();
-        for( ConstraintViolation<?> violation : violations )
-        {
-            messages.add( violation.getMessage() );
-        }
-        return messages;
-    }
-
     private class MosaicConstraintValidatorFactory implements ConstraintValidatorFactory
     {
+        @Nonnull
+        private final ConstraintValidatorFactory defaultConstraintValidatorFactory;
+
+        public MosaicConstraintValidatorFactory( @Nonnull ConstraintValidatorFactory defaultConstraintValidatorFactory )
+        {
+            this.defaultConstraintValidatorFactory = defaultConstraintValidatorFactory;
+        }
+
         @Override
         public <T extends ConstraintValidator<?, ?>> T getInstance( Class<T> key )
         {
-            // TODO arik: implement getInstance([key])
-            return null;
+            Module module = moduleManager.getModuleFor( key );
+            if( module != null )
+            {
+                try
+                {
+                    return module.getBean( key );
+                }
+                catch( ModuleBeanNotFoundException ignore )
+                {
+                }
+            }
+            return this.defaultConstraintValidatorFactory.getInstance( key );
         }
 
         @Override
         public void releaseInstance( ConstraintValidator<?, ?> instance )
         {
-            // TODO arik: implement releaseInstance([instance])
+            // no-op
         }
     }
 

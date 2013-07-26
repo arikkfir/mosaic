@@ -7,6 +7,7 @@ import java.util.WeakHashMap;
 import javassist.*;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.validation.Valid;
 import org.mosaic.lifecycle.impl.util.ServiceUtils;
 import org.mosaic.util.weaving.EnableWeaving;
 import org.osgi.framework.BundleContext;
@@ -164,33 +165,67 @@ public class MethodInterceptorWeaver implements WeavingHook, InitializingBean, D
             }
         }
 
-        // iterate method annotations - if any of the annotations is itself annotated with @EnableWeaving - intercept the method
+        boolean enableWeaving = false;
+
+        // check if the method is annotated with a weaving-triggering annotation (such as @EnableWeaving)
         for( Object annObject : ctMethod.getAvailableAnnotations() )
         {
-            Annotation annotation = ( Annotation ) annObject;
-            boolean enableWeaving = false;
-            for( Annotation metaAnnotation : annotation.annotationType().getAnnotations() )
+            if( isWeavingTriggeringAnnotation( ( Annotation ) annObject ) )
             {
-                if( metaAnnotation.annotationType().getName().equals( EnableWeaving.class.getName() ) )
+                enableWeaving = true;
+                break;
+            }
+        }
+
+        // check if one of the method parameters is annotated with a weaving-triggering annotation (such as @EnableWeaving)
+        if( !enableWeaving )
+        {
+            for( Object[] parameterAnnObjects : ctMethod.getAvailableParameterAnnotations() )
+            {
+                for( Object parameterAnnObject : parameterAnnObjects )
                 {
-                    if( Modifier.isStatic( ctMethod.getModifiers() ) )
+                    if( isWeavingTriggeringAnnotation( ( Annotation ) parameterAnnObject ) )
                     {
-                        throw new IllegalStateException( "Annotations with @EnableWeaving can only be used on non-static methods (found in " + ctMethod.getLongName() + " )" );
+                        enableWeaving = true;
+                        break;
                     }
-                    enableWeaving = true;
+                }
+                if( enableWeaving )
+                {
                     break;
                 }
             }
-            if( enableWeaving )
+        }
+
+        if( enableWeaving )
+        {
+            //noinspection UnnecessaryLocalVariable
+            CtMethod origMethod = ctMethod;
+            CtMethod implMethod = CtNewMethod.copy( origMethod, origMethod.getName() + "$$Impl", ctClass, null );
+            implMethod.setModifiers( Modifier.setPublic( implMethod.getModifiers() ) );
+            ctClass.addMethod( implMethod );
+            origMethod.setBody( createDelegatorBody( ctClass, origMethod, implMethod ) );
+        }
+    }
+
+    private boolean isWeavingTriggeringAnnotation( @Nonnull Annotation annotation )
+    {
+        if( annotation.annotationType().getName().equals( Valid.class.getName() ) )
+        {
+            return true;
+        }
+
+        for( Annotation metaAnnotation : annotation.annotationType().getAnnotations() )
+        {
+            Class<? extends Annotation> metaAnnotationType = metaAnnotation.annotationType();
+            if( metaAnnotationType.getName().equals( EnableWeaving.class.getName() )
+                || metaAnnotationType.getName().startsWith( "org.hibernate.validator.constraints." )
+                || metaAnnotationType.getName().startsWith( "javax.validation.constraints." ) )
             {
-                //noinspection UnnecessaryLocalVariable
-                CtMethod origMethod = ctMethod;
-                CtMethod implMethod = CtNewMethod.copy( origMethod, origMethod.getName() + "$$Impl", ctClass, null );
-                implMethod.setModifiers( Modifier.setPublic( implMethod.getModifiers() ) );
-                ctClass.addMethod( implMethod );
-                origMethod.setBody( createDelegatorBody( ctClass, origMethod, implMethod ) );
+                return true;
             }
         }
+        return false;
     }
 
     private String createDelegatorBody( CtClass ctClass, CtMethod origMethod, CtMethod implMethod )
@@ -203,17 +238,13 @@ public class MethodInterceptorWeaver implements WeavingHook, InitializingBean, D
         body.append( "  Class[] paramTypes$$ = new Class[" ).append( parameterTypes.length ).append( "];\n" );
         for( int i = 0; i < parameterTypes.length; i++ )
         {
-            if( i > 0 )
-            {
-                body.append( ", " );
-            }
-            body.append( "  paramTypes$$[" ).append( i ).append( "] = " ).append( parameterTypes[ i ].getName() ).append( ".class;" );
+            body.append( "  paramTypes$$[" ).append( i ).append( "] = " ).append( parameterTypes[ i ].getName() ).append( ".class;\n" );
         }
         if( !"void".equals( type ) )
         {
-            body.append( "return " );
+            body.append( "  return " );
         }
-        body.append( "  org.mosaic.util.weaving.spi.WeavingSpi.getInstance().intercept( \n" );
+        body.append( "org.mosaic.util.weaving.spi.WeavingSpi.getInstance().intercept( \n" );
         body.append( "    this, \n" );
         body.append( "    " ).append( ctClass.getName() ).append( ".class, \n" );
         body.append( "    \"" ).append( origMethod.getName() ).append( "\", \n" );

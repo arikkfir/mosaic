@@ -18,7 +18,7 @@ import org.apache.felix.framework.Felix;
 import org.mosaic.launcher.logging.JavaUtilLoggingConfigurator;
 import org.mosaic.launcher.logging.ServerLoggingConfigurator;
 import org.mosaic.launcher.logging.SimpleLoggingConfigurator;
-import org.mosaic.launcher.osgi.BootBundlesWatcher;
+import org.mosaic.launcher.osgi.BootBundlesInstaller;
 import org.mosaic.launcher.osgi.MosaicFelix;
 import org.mosaic.launcher.util.SystemError;
 import org.mosaic.launcher.util.Utils;
@@ -92,7 +92,7 @@ public class MosaicInstance implements Closeable
     private Felix felix;
 
     @Nullable
-    private BootBundlesWatcher bootBundlesWatcher;
+    private BootBundlesInstaller bootBundlesInstaller;
 
     MosaicInstance( @Nonnull Properties properties )
     {
@@ -210,7 +210,7 @@ public class MosaicInstance implements Closeable
                         Felix felix = MosaicInstance.this.felix;
                         if( felix != null )
                         {
-                            MosaicInstance.this.bootBundlesWatcher = new BootBundlesWatcher( MosaicInstance.this, felix );
+                            MosaicInstance.this.bootBundlesInstaller = new BootBundlesInstaller( MosaicInstance.this, felix );
                         }
                         else
                         {
@@ -221,16 +221,16 @@ public class MosaicInstance implements Closeable
                     @Override
                     protected void revertInternal() throws Exception
                     {
-                        BootBundlesWatcher bootBundlesWatcher = MosaicInstance.this.bootBundlesWatcher;
-                        if( bootBundlesWatcher != null )
+                        BootBundlesInstaller bootBundlesInstaller = MosaicInstance.this.bootBundlesInstaller;
+                        if( bootBundlesInstaller != null )
                         {
-                            bootBundlesWatcher.stop();
+                            bootBundlesInstaller.stop();
                         }
                         else
                         {
                             throw new IllegalStateException( "Boot bundles watcher has not been initialized" );
                         }
-                        MosaicInstance.this.bootBundlesWatcher = null;
+                        MosaicInstance.this.bootBundlesInstaller = null;
                     }
                 },
                 new BootTask( "control-listener" )

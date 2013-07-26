@@ -2,6 +2,7 @@ package org.mosaic.validation;
 
 import java.util.Collection;
 import javax.annotation.Nonnull;
+import javax.validation.ConstraintViolation;
 import org.mosaic.util.reflection.MethodHandle;
 
 /**
@@ -13,10 +14,10 @@ public class MethodValidationException extends RuntimeException
     private final MethodHandle methodHandle;
 
     @Nonnull
-    private final Collection<String> violations;
+    private final Collection<ConstraintViolation<?>> violations;
 
     public MethodValidationException( @Nonnull MethodHandle methodHandle,
-                                      @Nonnull Collection<String> violations )
+                                      @Nonnull Collection<ConstraintViolation<?>> violations )
     {
         super( "method validation failed" );
         this.methodHandle = methodHandle;
@@ -30,7 +31,7 @@ public class MethodValidationException extends RuntimeException
     }
 
     @Nonnull
-    public Collection<String> getViolations()
+    public Collection<ConstraintViolation<?>> getViolations()
     {
         return violations;
     }

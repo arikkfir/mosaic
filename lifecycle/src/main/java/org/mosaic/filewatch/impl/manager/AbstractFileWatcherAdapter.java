@@ -23,7 +23,7 @@ public abstract class AbstractFileWatcherAdapter
 
     public void scanStarting( @Nonnull ScanContext context )
     {
-        if( matchesEvent( SCAN_STARTING ) )
+        if( matchesEvent( SCAN_STARTING, null ) )
         {
             notify( context, SCAN_STARTING, null, null );
         }
@@ -31,7 +31,7 @@ public abstract class AbstractFileWatcherAdapter
 
     public void handleDirectoryEnter( @Nonnull ScanContext context, @Nonnull Path path, BasicFileAttributes attrs )
     {
-        if( matchesEvent( DIR_ENTER ) )
+        if( matchesEvent( DIR_ENTER, path ) )
         {
             notify( context, DIR_ENTER, path, attrs );
         }
@@ -52,12 +52,12 @@ public abstract class AbstractFileWatcherAdapter
         this.knownFiles.put( path, fileModTime );
         if( knownModTime != null )
         {
-            if( matchesEvent( FILE_MODIFIED ) && fileModTime > knownModTime )
+            if( matchesEvent( FILE_MODIFIED, path ) && fileModTime > knownModTime )
             {
                 notify( context, FILE_MODIFIED, path, attrs );
             }
         }
-        else if( matchesEvent( FILE_ADDED ) )
+        else if( matchesEvent( FILE_ADDED, path ) )
         {
             notify( context, FILE_ADDED, path, attrs );
         }
@@ -66,7 +66,7 @@ public abstract class AbstractFileWatcherAdapter
     public void handleDirectoryExit( @Nonnull ScanContext context, @Nonnull Path path )
     {
         // detect file deletions
-        if( matchesEvent( FILE_DELETED ) )
+        if( matchesEvent( FILE_DELETED, path ) )
         {
             for( Iterator<Path> iterator = this.knownFiles.keySet().iterator(); iterator.hasNext(); )
             {
@@ -82,7 +82,7 @@ public abstract class AbstractFileWatcherAdapter
             }
         }
 
-        if( matchesEvent( DIR_EXIT ) )
+        if( matchesEvent( DIR_EXIT, path ) )
         {
             notify( context, DIR_EXIT, path, null );
         }
@@ -90,13 +90,21 @@ public abstract class AbstractFileWatcherAdapter
 
     public void scanFinished( @Nonnull ScanContext context )
     {
-        if( matchesEvent( SCAN_FINISHED ) )
+        if( matchesEvent( SCAN_FINISHED, null ) )
         {
             notify( context, SCAN_FINISHED, null, null );
         }
     }
 
-    protected abstract boolean matchesEvent( @Nonnull WatchEvent event );
+    protected boolean matchesEvent( @Nonnull WatchEvent event )
+    {
+        return false;
+    }
+
+    protected boolean matchesEvent( @Nonnull WatchEvent event, @Nullable Path path )
+    {
+        return matchesEvent( event );
+    }
 
     protected abstract boolean matchesSvnDir();
 

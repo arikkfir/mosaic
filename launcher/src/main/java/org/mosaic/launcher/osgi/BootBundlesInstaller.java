@@ -1,27 +1,17 @@
 package org.mosaic.launcher.osgi;
 
-import java.io.IOException;
 import java.lang.management.ManagementFactory;
-import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
 import java.util.StringTokenizer;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import org.apache.felix.framework.Felix;
 import org.mosaic.launcher.MosaicInstance;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.BundleException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static java.nio.file.Files.*;
 import static java.nio.file.StandardOpenOption.READ;
@@ -31,10 +21,8 @@ import static org.mosaic.launcher.util.SystemError.bootstrapError;
 /**
  * @author arik
  */
-public class BootBundlesWatcher implements Runnable
+public class BootBundlesInstaller
 {
-    private static final Logger LOG = LoggerFactory.getLogger( BootBundlesWatcher.class );
-
     private static final String PATH_SEPARATOR = System.getProperty( "path.separator" );
 
     private static final List<String> BOOT_BUNDLE_NAMES = asList( "api",
@@ -49,13 +37,7 @@ public class BootBundlesWatcher implements Runnable
                                                                   "validation",
                                                                   "web" );
 
-    @Nonnull
-    private final List<Bundle> bundles;
-
-    @Nullable
-    private ScheduledExecutorService executorService;
-
-    public BootBundlesWatcher( @Nonnull MosaicInstance mosaic, @Nonnull Felix felix )
+    public BootBundlesInstaller( @Nonnull MosaicInstance mosaic, @Nonnull Felix felix )
     {
         Properties properties = mosaic.getProperties();
 
@@ -119,56 +101,12 @@ public class BootBundlesWatcher implements Runnable
                 throw bootstrapError( "Could not start boot bundle at '{}': {}", bundle.getLocation(), e.getMessage(), e );
             }
         }
-        this.bundles = bundles;
-
-        this.executorService = Executors.newSingleThreadScheduledExecutor();
-        this.executorService.scheduleWithFixedDelay( this, 3, 1, TimeUnit.SECONDS );
+        System.setProperty( "mosaic.started", "true" );
     }
 
     public void stop() throws InterruptedException
     {
-        ScheduledExecutorService service = this.executorService;
-        if( service != null )
-        {
-            service.shutdown();
-            service.awaitTermination( 30, TimeUnit.SECONDS );
-            this.executorService = null;
-        }
-    }
-
-    @Override
-    public synchronized void run()
-    {
-        for( Bundle bundle : this.bundles )
-        {
-            // find the bundle file's modification time
-            long bundleFileModTime;
-            try
-            {
-                URI bundleLocationUri = URI.create( bundle.getLocation() );
-                bundleFileModTime = Files.getLastModifiedTime( Paths.get( bundleLocationUri ) ).toMillis();
-            }
-            catch( IOException ignore )
-            {
-                continue;
-            }
-
-            // check if it hasn't been modified in the last 2 seconds, and that it's newer than the bundle's modification time
-            if( bundleFileModTime < System.currentTimeMillis() - 2000 && bundleFileModTime > bundle.getLastModified() )
-            {
-                try
-                {
-                    bundle.update();
-                }
-                catch( BundleException e )
-                {
-                    LOG.error( "Bundle {}-{}[{}] has been updated ({}) but the reload failed: {}",
-                               bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId(),
-                               bundle.getLocation(),
-                               e.getMessage(), e );
-                }
-            }
-        }
+        System.setProperty( "mosaic.started", "false" );
     }
 
     private void verifyInstallableBundle( @Nonnull String name, @Nonnull Path file )

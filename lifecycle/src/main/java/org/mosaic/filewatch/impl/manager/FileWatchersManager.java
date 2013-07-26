@@ -92,7 +92,7 @@ public class FileWatchersManager implements Runnable
 
         // schedule a pass every second
         this.scheduler = newSingleThreadScheduledExecutor( new FileVisitorThreadFactory() );
-        this.scheduler.scheduleWithFixedDelay( this, 1, 1, SECONDS );
+        this.scheduler.scheduleWithFixedDelay( this, 0, 1, SECONDS );
     }
 
     @Override
@@ -122,7 +122,10 @@ public class FileWatchersManager implements Runnable
         {
             adaptersByRoot.put( adapter.root, adapter );
         }
-        adaptersByRoot.put( this.bundlesManager.getRoot(), this.bundlesManager );
+        if( Boolean.getBoolean( "mosaic.started" ) )
+        {
+            adaptersByRoot.put( this.bundlesManager.getRoot(), this.bundlesManager );
+        }
 
         final ScanContext context = new ScanContext( this.conversionService );
 

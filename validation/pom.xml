@@ -25,7 +25,7 @@
                             jboss-logging,
                             classmate
                         </Embed-Dependency>
-                        <Embed-Transitive>false</Embed-Transitive>
+                        <Embed-Transitive>true</Embed-Transitive>
                         <_exportcontents>org.hibernate.validator.constraints</_exportcontents>
                         <Import-Package>
                             com.fasterxml.classmate*;resolution:=optional,
@@ -35,6 +35,7 @@
                             org.aspectj*;resolution:=optional,
                             !org.hibernate.validator*,
                             !org.jboss.logging*,
+                            !org.jboss.logmanager*,
                             org.jsoup*;resolution:=optional,
                             !org.springframework*,
                             *
