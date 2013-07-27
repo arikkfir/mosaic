@@ -34,7 +34,7 @@ public class UserImpl implements MutableUser
     private MapEx<Class<? extends Principal>, Principal> principalsByType;
 
     @Nullable
-    private MapEx<Class<?>, Object> credentialsByType;
+    private Collection<Object> credentials;
 
     public UserImpl( @Nonnull ConversionService conversionService, @Nonnull String name )
     {
@@ -160,18 +160,28 @@ public class UserImpl implements MutableUser
     @Override
     public <T> T getCredential( @Nonnull Class<T> type )
     {
-        return this.credentialsByType == null ? null : this.credentialsByType.get( type, type );
+        if( this.credentials != null )
+        {
+            for( Object credential : this.credentials )
+            {
+                if( type.isInstance( credential ) )
+                {
+                    return type.cast( credential );
+                }
+            }
+        }
+        return null;
     }
 
     @Nonnull
     @Override
     public MutableUser addCredential( @Nonnull Object credential )
     {
-        if( this.credentialsByType == null )
+        if( this.credentials == null )
         {
-            this.credentialsByType = new HashMapEx<>( this.attributes.getConversionService() );
+            this.credentials = new LinkedList<>();
         }
-        this.credentialsByType.put( credential.getClass(), credential );
+        this.credentials.add( credential );
         return this;
     }
 
@@ -179,13 +189,14 @@ public class UserImpl implements MutableUser
     @Override
     public <T> T requireCredential( @Nonnull Class<T> type )
     {
-        if( this.credentialsByType == null )
+        T credential = getCredential( type );
+        if( credential == null )
         {
             throw new CredentialNotFoundException( "Credential of type '" + type.getName() + "' not found for user '" + this.name + "'" );
         }
         else
         {
-            return this.credentialsByType.require( type, type );
+            return credential;
         }
     }
 
@@ -194,13 +205,13 @@ public class UserImpl implements MutableUser
     @Override
     public Collection<Object> getCredentials()
     {
-        if( this.credentialsByType == null )
+        if( this.credentials == null )
         {
             return Collections.emptyList();
         }
         else
         {
-            return this.credentialsByType.values();
+            return Collections.unmodifiableCollection( this.credentials );
         }
     }
 }
