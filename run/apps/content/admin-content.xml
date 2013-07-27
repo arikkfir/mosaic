@@ -1,8 +1,6 @@
 <?xml version="1.0"?>
 
-<web-content xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-             xmlns="https://github.com/arikkfir/mosaic/web/content"
-             xsi:schemaLocation="https://github.com/arikkfir/mosaic/web/content https://github.com/arikkfir/mosaic/web/content-5.0.0">
+<web-content xmlns="https://github.com/arikkfir/mosaic/web/content-1.0.0">
 
     <caching>
         <pattern path="/**/*.css" period="1 hour"/>

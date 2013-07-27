@@ -1,9 +1,6 @@
 <?xml version="1.0"?>
 
-<application xmlns="https://github.com/arikkfir/mosaic/web/application"
-             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-             xsi:schemaLocation="https://github.com/arikkfir/mosaic/web/application https://github.com/arikkfir/mosaic/web/application-5.0.0"
-             display-name="Administrationn Console">
+<application xmlns="https://github.com/arikkfir/mosaic/web/application-1.0.0" display-name="Administrationn Console">
 
     <virtual-hosts>
         <virtual-host>admin.arik.home.local</virtual-host>
