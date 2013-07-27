@@ -3,7 +3,9 @@ package org.mosaic.security.policy.impl;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.io.Resources;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -12,6 +14,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Source;
+import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import org.mosaic.filewatch.WatchEvent;
@@ -34,26 +38,13 @@ import org.xml.sax.SAXException;
 /**
  * @author arik
  */
-@Service(PermissionPoliciesManager.class)
+@Service( PermissionPoliciesManager.class )
 public class PermissionPoliciesManagerImpl implements PermissionPoliciesManager
 {
     private static final Logger LOG = LoggerFactory.getLogger( PermissionPoliciesManagerImpl.class );
 
-    private static final Schema PERMISSION_POLICY_SCHEMA;
-
-    static
-    {
-        SchemaFactory schemaFactory = SchemaFactory.newInstance( XMLConstants.W3C_XML_SCHEMA_NS_URI );
-        schemaFactory.setErrorHandler( StrictErrorHandler.INSTANCE );
-        try
-        {
-            PERMISSION_POLICY_SCHEMA = schemaFactory.newSchema( PermissionPoliciesManager.class.getResource( "permission-policy.xsd" ) );
-        }
-        catch( SAXException e )
-        {
-            throw new IllegalStateException( "Could not find 'users.xsd' schema resource in Mosaic API bundle: " + e.getMessage(), e );
-        }
-    }
+    @Nonnull
+    private final Schema permissionPolicySchema;
 
     @Nonnull
     private final Map<String, PermissionPolicy> permissionPolicies = new ConcurrentHashMap<>();
@@ -67,8 +58,18 @@ public class PermissionPoliciesManagerImpl implements PermissionPoliciesManager
     @Nonnull
     private XmlParser xmlParser;
 
-    public PermissionPoliciesManagerImpl()
+    public PermissionPoliciesManagerImpl() throws IOException, SAXException
     {
+        SchemaFactory schemaFactory = SchemaFactory.newInstance( XMLConstants.W3C_XML_SCHEMA_NS_URI );
+        schemaFactory.setErrorHandler( StrictErrorHandler.INSTANCE );
+
+        try( InputStream stream100 = Resources.getResource( PermissionPoliciesManager.class, "permission-policy-1.0.0.xsd" ).openStream() )
+        {
+            this.permissionPolicySchema = schemaFactory.newSchema( new Source[] {
+                    new StreamSource( stream100, "https://github.com/arikkfir/mosaic/permission-policy-1.0.0" )
+            } );
+        }
+
         this.permissionsCache = CacheBuilder.newBuilder()
                                             .concurrencyLevel( 100 )
                                             .expireAfterAccess( 1, TimeUnit.HOURS )
@@ -111,18 +112,18 @@ public class PermissionPoliciesManagerImpl implements PermissionPoliciesManager
         return this.permissionPolicies.get( name );
     }
 
-    @FileWatcher(root = WatchRoot.ETC,
-                 pattern = "permission-policies/**/*.xml",
-                 event = {
-                         WatchEvent.FILE_ADDED,
-                         WatchEvent.FILE_MODIFIED
-                 })
+    @FileWatcher( root = WatchRoot.ETC,
+                  pattern = "permission-policies/**/*.xml",
+                  event = {
+                          WatchEvent.FILE_ADDED,
+                          WatchEvent.FILE_MODIFIED
+                  } )
     public void onFileModified( @Nonnull Path file ) throws IOException, ParserConfigurationException, SAXException
     {
         String fileName = file.getFileName().toString();
         String name = fileName.substring( 0, fileName.lastIndexOf( '.' ) );
 
-        XmlDocument doc = this.xmlParser.parse( file, PERMISSION_POLICY_SCHEMA );
+        XmlDocument doc = this.xmlParser.parse( file, permissionPolicySchema );
 
         PermissionPolicyImpl policy = new PermissionPolicyImpl();
 
@@ -158,9 +159,9 @@ public class PermissionPoliciesManagerImpl implements PermissionPoliciesManager
         }
     }
 
-    @FileWatcher(root = WatchRoot.ETC,
-                 pattern = "permission-policies/**/*.xml",
-                 event = WatchEvent.FILE_DELETED)
+    @FileWatcher( root = WatchRoot.ETC,
+                  pattern = "permission-policies/**/*.xml",
+                  event = WatchEvent.FILE_DELETED )
     public void onFileDeleted( @Nonnull Path file ) throws IOException
     {
         String fileName = file.getFileName().toString();

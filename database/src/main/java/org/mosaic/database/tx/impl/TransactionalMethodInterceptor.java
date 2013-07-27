@@ -13,7 +13,7 @@ import org.mosaic.util.weaving.MethodInterceptor;
 /**
  * @author arik
  */
-@Service( MethodInterceptor.class )
+@Service(MethodInterceptor.class)
 public class TransactionalMethodInterceptor implements MethodInterceptor
 {
     @Nonnull
@@ -27,7 +27,7 @@ public class TransactionalMethodInterceptor implements MethodInterceptor
 
     @Nullable
     @Override
-    public Object intercept( @Nonnull MethodInvocation invocation ) throws Exception
+    public Object intercept( @Nonnull MethodInvocation invocation ) throws Throwable
     {
         MethodHandle methodHandle = invocation.getMethodHandle();
 

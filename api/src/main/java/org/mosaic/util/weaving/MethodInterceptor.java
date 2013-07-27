@@ -10,7 +10,7 @@ import org.mosaic.util.reflection.MethodHandle;
 public interface MethodInterceptor
 {
     @Nullable
-    Object intercept( @Nonnull MethodInvocation invocation ) throws Exception;
+    Object intercept( @Nonnull MethodInvocation invocation ) throws Throwable;
 
     interface MethodInvocation
     {
@@ -24,9 +24,9 @@ public interface MethodInterceptor
         Object[] getArguments();
 
         @Nullable
-        Object proceed() throws Exception;
+        Object proceed() throws Throwable;
 
         @Nullable
-        Object proceed( @Nonnull Object[] arguments ) throws Exception;
+        Object proceed( @Nonnull Object[] arguments ) throws Throwable;
     }
 }

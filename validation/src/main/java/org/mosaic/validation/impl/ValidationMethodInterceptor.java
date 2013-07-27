@@ -110,15 +110,15 @@ public class ValidationMethodInterceptor implements MethodInterceptor
 
         for( ConstraintViolation<?> violation : exception.getViolations() )
         {
-            response.getHeaders().addHeader( "X-Mosaic-Validation-Violation",
-                                             violation.getPropertyPath() + ": " + violation.getMessage() );
+            response.getHeaders().addHeader( "X-Mosaic-Validation-" + violation.getPropertyPath(),
+                                             violation.getMessage() );
         }
     }
 
     @SuppressWarnings( "unchecked" )
     @Nullable
     @Override
-    public Object intercept( @Nonnull MethodInvocation invocation ) throws Exception
+    public Object intercept( @Nonnull MethodInvocation invocation ) throws Throwable
     {
         MethodHandle methodHandle = invocation.getMethodHandle();
         if( !methodHandle.hasAnnotation( Valid.class ) )
@@ -159,8 +159,18 @@ public class ValidationMethodInterceptor implements MethodInterceptor
 
         Method method = methodHandle.getNativeMethod();
         ExecutableValidator execValidator = this.validators.get( module ).forExecutables();
-        Set violations =
-                execValidator.validateParameters( object, method, arguments );
+
+        ClassLoader prevTccl = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader( getClass().getClassLoader() );
+        Set violations;
+        try
+        {
+            violations = execValidator.validateParameters( object, method, arguments );
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader( prevTccl );
+        }
         if( !violations.isEmpty() )
         {
             throw new MethodValidationException( methodHandle, violations );

@@ -1,6 +1,7 @@
 package org.mosaic.util.weaving.spi;
 
 import com.google.common.collect.ComparisonChain;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -98,7 +99,7 @@ public final class WeavingSpi implements ServiceTrackerCustomizer<MethodIntercep
                              @Nonnull Class<?> type,
                              @Nonnull String methodName,
                              @Nonnull Class<?>[] parameterTypes,
-                             @Nonnull Object[] parameterValues ) throws Exception
+                             @Nonnull Object[] parameterValues ) throws Throwable
     {
         return new MethodInvocationImpl( object, type, methodName, parameterTypes, parameterValues ).proceed();
     }
@@ -137,7 +138,7 @@ public final class WeavingSpi implements ServiceTrackerCustomizer<MethodIntercep
         }
 
         @Override
-        public int compareTo( MethodInterceptorAdapter o )
+        public int compareTo( @Nonnull MethodInterceptorAdapter o )
         {
             return ComparisonChain.start()
                                   .compare( o.rank, this.rank )
@@ -147,7 +148,7 @@ public final class WeavingSpi implements ServiceTrackerCustomizer<MethodIntercep
 
         @Nullable
         @Override
-        public Object intercept( @Nonnull MethodInvocation invocation ) throws Exception
+        public Object intercept( @Nonnull MethodInvocation invocation ) throws Throwable
         {
             return this.target.intercept( invocation );
         }
@@ -227,14 +228,14 @@ public final class WeavingSpi implements ServiceTrackerCustomizer<MethodIntercep
 
         @Nullable
         @Override
-        public Object proceed() throws Exception
+        public Object proceed() throws Throwable
         {
             return proceed( this.arguments );
         }
 
         @Nullable
         @Override
-        public Object proceed( @Nonnull Object[] arguments ) throws Exception
+        public Object proceed( @Nonnull Object[] arguments ) throws Throwable
         {
             this.arguments = arguments;
             if( this.nextInterceptorIndex < this.interceptors.size() )
@@ -243,7 +244,14 @@ public final class WeavingSpi implements ServiceTrackerCustomizer<MethodIntercep
             }
             else
             {
-                return this.realMethodHandle.getNativeMethod().invoke( this.object, this.arguments );
+                try
+                {
+                    return this.realMethodHandle.getNativeMethod().invoke( this.object, this.arguments );
+                }
+                catch( InvocationTargetException e )
+                {
+                    throw e.getCause();
+                }
             }
         }
     }

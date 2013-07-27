@@ -29,6 +29,8 @@
                         <_exportcontents>org.hibernate.validator.constraints</_exportcontents>
                         <Import-Package>
                             com.fasterxml.classmate*;resolution:=optional,
+                            com.sun.el;version="[2.2.4,3)",
+                            javax.el;version="[2.2.4,3)",
                             javax.persistence*;resolution:=optional,
                             joptsimple*;resolution:=optional,
                             org.apache.tools.ant*;resolution:=optional,

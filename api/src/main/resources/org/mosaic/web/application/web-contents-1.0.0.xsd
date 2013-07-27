@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 
-<xsd:schema xmlns="https://github.com/arikkfir/mosaic/web/content"
+<xsd:schema xmlns="https://github.com/arikkfir/mosaic/web/content-1.0.0"
             xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-            targetNamespace="https://github.com/arikkfir/mosaic/web/content"
+            targetNamespace="https://github.com/arikkfir/mosaic/web/content-1.0.0"
             elementFormDefault="qualified"
             attributeFormDefault="unqualified">
 

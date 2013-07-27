@@ -27,7 +27,7 @@ public class MetricsMethodInterceptor implements MethodInterceptor
 
     @Nullable
     @Override
-    public Object intercept( @Nonnull MethodInvocation invocation ) throws Exception
+    public Object intercept( @Nonnull MethodInvocation invocation ) throws Throwable
     {
         MethodHandle methodHandle = invocation.getMethodHandle();
         Class<?> declaringClass = methodHandle.getDeclaringClass();

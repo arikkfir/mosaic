@@ -1,6 +1,8 @@
 package org.mosaic.security.localusers.impl;
 
+import com.google.common.io.Resources;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
@@ -8,6 +10,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Source;
+import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import org.mosaic.filewatch.annotation.FileWatcher;
@@ -35,27 +39,27 @@ import static org.mosaic.filewatch.WatchRoot.ETC;
 @Service(value = Realm.class, properties = @Service.P(key = "name", value = "local"))
 public class LocalUsersRealm implements Realm
 {
-    private static final Schema USERS_SCHEMA;
-
-    static
-    {
-        SchemaFactory schemaFactory = SchemaFactory.newInstance( XMLConstants.W3C_XML_SCHEMA_NS_URI );
-        schemaFactory.setErrorHandler( StrictErrorHandler.INSTANCE );
-        try
-        {
-            USERS_SCHEMA = schemaFactory.newSchema( LocalUser.class.getResource( "users.xsd" ) );
-        }
-        catch( SAXException e )
-        {
-            throw new IllegalStateException( "Could not find 'users.xsd' schema resource in Mosaic API bundle: " + e.getMessage(), e );
-        }
-    }
+    @Nonnull
+    private final Schema usersSchema;
 
     @Nonnull
     private XmlParser xmlParser;
 
     @Nonnull
     private Map<String, UserInfo> users = emptyMap();
+
+    public LocalUsersRealm() throws IOException, SAXException
+    {
+        SchemaFactory schemaFactory = SchemaFactory.newInstance( XMLConstants.W3C_XML_SCHEMA_NS_URI );
+        schemaFactory.setErrorHandler( StrictErrorHandler.INSTANCE );
+
+        try( InputStream stream100 = Resources.getResource( LocalUser.class, "users-1.0.0.xsd" ).openStream() )
+        {
+            this.usersSchema = schemaFactory.newSchema( new Source[] {
+                    new StreamSource( stream100, "https://github.com/arikkfir/mosaic/users-1.0.0" )
+            } );
+        }
+    }
 
     @ServiceRef
     public void setXmlParser( @Nonnull XmlParser xmlParser )
@@ -109,7 +113,7 @@ public class LocalUsersRealm implements Realm
     public void onFileModified( @Nonnull Path file, @Nonnull BasicFileAttributes attrs )
             throws IOException, ParserConfigurationException, SAXException
     {
-        XmlDocument doc = this.xmlParser.parse( file, USERS_SCHEMA );
+        XmlDocument doc = this.xmlParser.parse( file, this.usersSchema );
 
         Map<String, UserInfo> users = new HashMap<>();
         for( XmlElement userElement : doc.getRoot().getChildElements( "user" ) )

@@ -3,7 +3,7 @@ package org.mosaic.web.application.impl;
 import com.google.common.io.Resources;
 import com.google.common.reflect.TypeToken;
 import java.io.IOException;
-import java.net.URL;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -11,6 +11,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Source;
+import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import javax.xml.xpath.XPathException;
@@ -58,13 +60,9 @@ public class WebApplicationFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger( WebApplicationFactory.class );
 
-    private static final String WEB_APP_SCHEMA_NS = "https://github.com/arikkfir/mosaic/web/application";
+    private static final String WEB_APP_SCHEMA_NS = "https://github.com/arikkfir/mosaic/web/application-1.0.0";
 
-    private static final Schema WEB_APP_SCHEMA;
-
-    private static final String WEB_CONTENT_SCHEMA_NS = "https://github.com/arikkfir/mosaic/web/content";
-
-    private static final Schema WEB_CONTENT_SCHEMA;
+    private static final String WEB_CONTENT_SCHEMA_NS = "https://github.com/arikkfir/mosaic/web/content-1.0.0";
 
     public static final PermissionPolicy NO_OP_PERMISSION_POLICY = new WebApplicationFactory.NoOpPermissionPolicy();
 
@@ -77,31 +75,9 @@ public class WebApplicationFactory
         }
     }
 
-    static
-    {
-        SchemaFactory schemaFactory = SchemaFactory.newInstance( XMLConstants.W3C_XML_SCHEMA_NS_URI );
-        schemaFactory.setErrorHandler( StrictErrorHandler.INSTANCE );
-        try
-        {
-            URL webAppSchemaResource = Resources.getResource( WebApplication.class, "web-application.xsd" );
-            if( webAppSchemaResource == null )
-            {
-                throw new IllegalStateException( "Could not find 'web-application.xsd' in class-path!" );
-            }
-            WEB_APP_SCHEMA = schemaFactory.newSchema( webAppSchemaResource );
+    private final Schema webAppSchema;
 
-            URL webContextSchemaResource = Resources.getResource( WebApplication.class, "web-contents.xsd" );
-            if( webContextSchemaResource == null )
-            {
-                throw new IllegalStateException( "Could not find 'web-content.xsd' in class-path!" );
-            }
-            WEB_CONTENT_SCHEMA = schemaFactory.newSchema( webContextSchemaResource );
-        }
-        catch( SAXException e )
-        {
-            throw new IllegalStateException( "Could not find 'web-application.xsd' schema resource in Mosaic API bundle: " + e.getMessage(), e );
-        }
-    }
+    private final Schema webContentSchema;
 
     @Nonnull
     private final PeriodFormatter maxSessionAgePeriodFormatter = new PeriodFormatterBuilder()
@@ -139,7 +115,7 @@ public class WebApplicationFactory
     @Nonnull
     private PathParametersCompiler pathParametersCompiler;
 
-    public WebApplicationFactory()
+    public WebApplicationFactory() throws IOException, SAXException
     {
         this.periodFormatter = new PeriodFormatterBuilder()
                 .printZeroRarelyLast()
@@ -157,6 +133,25 @@ public class WebApplicationFactory
                 .appendSeconds()
                 .appendSuffix( " second", " seconds" )
                 .toFormatter();
+
+        SchemaFactory schemaFactory = SchemaFactory.newInstance( XMLConstants.W3C_XML_SCHEMA_NS_URI );
+        schemaFactory.setErrorHandler( StrictErrorHandler.INSTANCE );
+
+        // load web app schema
+        try( InputStream stream100 = Resources.getResource( WebApplication.class, "web-application-1.0.0.xsd" ).openStream() )
+        {
+            this.webAppSchema = schemaFactory.newSchema( new Source[] {
+                    new StreamSource( stream100, "https://github.com/arikkfir/mosaic/web/application-1.0.0" )
+            } );
+        }
+
+        // load web app schema
+        try( InputStream stream100 = Resources.getResource( WebApplication.class, "web-contents-1.0.0.xsd" ).openStream() )
+        {
+            this.webContentSchema = schemaFactory.newSchema( new Source[] {
+                    new StreamSource( stream100, "https://github.com/arikkfir/mosaic/web/content-1.0.0" )
+            } );
+        }
     }
 
     @BeanRef
@@ -302,7 +297,7 @@ public class WebApplicationFactory
                               ParserConfigurationException,
                               XPathException
         {
-            XmlDocument document = xmlParser.parse( this.file, WEB_APP_SCHEMA );
+            XmlDocument document = xmlParser.parse( this.file, webAppSchema );
             document.addNamespace( "a", WEB_APP_SCHEMA_NS );
             XmlElement root = document.getRoot();
 
@@ -639,7 +634,7 @@ public class WebApplicationFactory
                 if( exists( contentFile ) )
                 {
                     // parse
-                    XmlDocument document = xmlParser.parse( contentFile, WEB_CONTENT_SCHEMA );
+                    XmlDocument document = xmlParser.parse( contentFile, webContentSchema );
                     document.addNamespace( "c", WEB_CONTENT_SCHEMA_NS );
                     root = document.getRoot();
 
