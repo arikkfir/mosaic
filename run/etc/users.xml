@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+
+<users xmlns="https://github.com/arikkfir/mosaic/users-1.0.0">
+
+    <user name="arik">
+        <password value="arik" encryption="plain"/>
+        <roles>
+            <role>admin</role>
+        </roles>
+    </user>
+
+</users>
