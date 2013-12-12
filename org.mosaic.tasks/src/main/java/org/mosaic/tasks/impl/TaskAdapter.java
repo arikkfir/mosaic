@@ -1,7 +1,6 @@
 package org.mosaic.tasks.impl;
 
 import java.util.Collections;
-import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.modules.MethodEndpoint;
@@ -37,10 +36,10 @@ final class TaskAdapter
                                            @Nonnull MapEx<String, Object> resolveContext )
                             throws Exception
                     {
-                        Map properties = resolveContext.require( "properties", Map.class );
+                        MapEx properties = resolveContext.require( "properties", MapEx.class );
                         if( properties.containsKey( parameter.getName() ) )
                         {
-                            return properties.get( parameter.getName() );
+                            return properties.get( parameter.getName(), ( Class ) parameter.getType().getRawType() );
                         }
                         else
                         {
