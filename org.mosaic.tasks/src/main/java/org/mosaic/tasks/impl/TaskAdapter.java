@@ -30,6 +30,7 @@ final class TaskAdapter
         this.invoker = this.endpoint.createInvoker(
                 new ParameterResolver()
                 {
+                    @SuppressWarnings( "unchecked" )
                     @Nullable
                     @Override
                     public Object resolve( @Nonnull MethodParameter parameter,
