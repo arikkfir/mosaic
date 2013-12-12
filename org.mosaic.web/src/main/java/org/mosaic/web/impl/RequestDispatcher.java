@@ -50,7 +50,7 @@ final class RequestDispatcher extends HttpServlet
 
         WebRequest request = new WebRequestImpl( application, ( Request ) req );
         request.dumpToInfoLog( LOG, "The request" );
-        // TODO arik: implement org.mosaic.web.impl.RequestDispatcher.doGet([req, resp])
+        // TODO arik: implement org.mosaic.web.impl.RequestDispatcher.service([req, resp])
     }
 
     @Nullable
