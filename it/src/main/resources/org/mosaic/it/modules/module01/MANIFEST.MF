@@ -1,9 +1,0 @@
-Manifest-Version: 1.0
-Bundle-Description: Test module 01
-Bundle-ManifestVersion: 2
-Bundle-Name: Test module 01
-Bundle-SymbolicName: org.mosaic.it.modules.module01
-Bundle-Version: 1.0.0
-Import-Package: org.mosaic.lifecycle.annotation;version="[1,2)",org.mo
- saic;version="[1,2)",org.mosaic.shell.annotation;version="[1,2)",org.
- mosaic.shell;version="[1,2)"
