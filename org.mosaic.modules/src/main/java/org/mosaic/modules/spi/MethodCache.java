@@ -86,6 +86,11 @@ public final class MethodCache
                                 @Nonnull String methodName,
                                 @Nonnull String[] argumentTypeNames )
     {
+        while( this.idGenerator.get() <= id )
+        {
+            this.idGenerator.incrementAndGet();
+        }
+
         if( this.knownMethods.containsKey( id ) )
         {
             throw new IllegalArgumentException( "method ID '" + id + "' already used!" );
