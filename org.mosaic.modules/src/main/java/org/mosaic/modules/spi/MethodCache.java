@@ -4,12 +4,9 @@ import java.lang.reflect.Method;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.osgi.framework.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.mosaic.util.osgi.BundleUtils.requireBundleContext;
 
@@ -18,8 +15,6 @@ import static org.mosaic.util.osgi.BundleUtils.requireBundleContext;
  */
 public final class MethodCache
 {
-    private static final Logger LOG = LoggerFactory.getLogger( MethodCache.class );
-
     @Nonnull
     private static final MethodCache instance = new MethodCache();
 
@@ -30,9 +25,6 @@ public final class MethodCache
     }
 
     @Nonnull
-    private final AtomicLong idGenerator = new AtomicLong();
-
-    @Nonnull
     private final Map<Long, MethodEntry> knownMethods = new ConcurrentHashMap<>();
 
     private MethodCache()
@@ -40,64 +32,50 @@ public final class MethodCache
         Bundle bundle = FrameworkUtil.getBundle( getClass() );
         if( bundle == null )
         {
-            LOG.warn( "MethodCache running outside OSGi context!" );
+            throw new IllegalStateException( "cannot use MethodCache outside OSGi context" );
         }
-        else
+
+        BundleContext bundleContext = bundle.getBundleContext();
+        if( bundleContext != null )
         {
-            BundleContext bundleContext = bundle.getBundleContext();
-            if( bundleContext != null )
+            bundleContext.addBundleListener( new BundleListener()
             {
-                bundleContext.addBundleListener( new BundleListener()
+                @Override
+                public void bundleChanged( @Nonnull BundleEvent event )
                 {
-                    @Override
-                    public void bundleChanged( @Nonnull BundleEvent event )
+                    if( event.getType() == BundleEvent.UNRESOLVED )
                     {
-                        if( event.getType() == BundleEvent.UNRESOLVED )
+                        long bundleId = event.getBundle().getBundleId();
+                        for( Iterator<MethodEntry> iterator = knownMethods.values().iterator(); iterator.hasNext(); )
                         {
-                            long bundleId = event.getBundle().getBundleId();
-                            for( Iterator<MethodEntry> iterator = knownMethods.values().iterator(); iterator.hasNext(); )
+                            MethodEntry entry = iterator.next();
+                            if( entry.moduleId == bundleId )
                             {
-                                MethodEntry entry = iterator.next();
-                                if( entry.moduleId == bundleId )
-                                {
-                                    iterator.remove();
-                                }
+                                iterator.remove();
                             }
                         }
                     }
-                } );
-            }
+                }
+            } );
         }
-    }
-
-    public long registerMethod( long moduleId,
-                                @Nonnull String className,
-                                @Nonnull String methodName,
-                                @Nonnull String[] argumentTypeNames )
-    {
-        long id = this.idGenerator.incrementAndGet();
-        registerMethod( id, moduleId, className, methodName, argumentTypeNames );
-        return id;
     }
 
     public void registerMethod( long id,
                                 long moduleId,
                                 @Nonnull String className,
                                 @Nonnull String methodName,
-                                @Nonnull String[] argumentTypeNames )
+                                @Nonnull String[] argumentTypeNames ) throws MethodAlreadyRegisteredException
     {
-        while( this.idGenerator.get() <= id )
+        MethodEntry newEntry = new MethodEntry( id, moduleId, className, methodName, argumentTypeNames );
+        MethodEntry existingEntry = this.knownMethods.get( id );
+        if( existingEntry != null )
         {
-            this.idGenerator.incrementAndGet();
+            throw new MethodAlreadyRegisteredException( id, existingEntry, newEntry );
         }
-
-        if( this.knownMethods.containsKey( id ) )
+        else
         {
-            throw new IllegalArgumentException( "method ID '" + id + "' already used!" );
+            this.knownMethods.put( id, newEntry );
         }
-
-        MethodEntry entry = new MethodEntry( moduleId, className, methodName, argumentTypeNames );
-        this.knownMethods.put( id, entry );
     }
 
     @Nonnull
@@ -114,8 +92,10 @@ public final class MethodCache
         }
     }
 
-    private class MethodEntry
+    class MethodEntry
     {
+        private final long id;
+
         private final long moduleId;
 
         @Nonnull
@@ -130,18 +110,31 @@ public final class MethodCache
         @Nullable
         private Method method;
 
-        private MethodEntry( long moduleId,
+        private MethodEntry( long id,
+                             long moduleId,
                              @Nonnull String className,
                              @Nonnull String methodName,
                              @Nonnull String[] argumentTypeNames )
         {
+            this.id = id;
             this.moduleId = moduleId;
             this.className = className;
             this.methodName = methodName;
             this.argumentTypeNames = argumentTypeNames;
         }
 
-        public Method getMethod() throws ClassNotFoundException
+        @Override
+        public String toString()
+        {
+            return "MethodEntry[id=" + this.id + ",moduleId=" + moduleId + ",class=" + this.className + ",methodName=" + this.methodName + "]";
+        }
+
+        long getModuleId()
+        {
+            return moduleId;
+        }
+
+        Method getMethod() throws ClassNotFoundException
         {
             if( this.method == null )
             {

@@ -2,9 +2,8 @@ package org.mosaic.modules.impl;
 
 import java.io.*;
 import java.lang.annotation.Annotation;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -15,6 +14,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.modules.Component;
 import org.mosaic.modules.Service;
+import org.mosaic.modules.spi.MethodAlreadyRegisteredException;
 import org.mosaic.modules.spi.MethodCache;
 import org.mosaic.modules.spi.MethodInterceptor;
 import org.mosaic.modules.spi.ModulesSpi;
@@ -80,6 +80,32 @@ final class ModuleWeavingHook implements WeavingHook
             throw new WeavingException( "could not read modification time for bundle " + bundle.getSymbolicName() + "[" + bundleId + "] at '" + bundleFile + "' while weaving class '" + wovenClass.getClassName() + "': " + e.getMessage(), e );
         }
 
+        synchronized( this )
+        {
+            Path nextIdFile = this.weavingCacheDir.resolve( "id" );
+            if( notExists( nextIdFile ) )
+            {
+                try
+                {
+                    deletePath( this.weavingCacheDir );
+                    createDirectories( this.weavingCacheDir );
+                }
+                catch( IOException e )
+                {
+                    throw new WeavingException( "could not clean cache dir (due to missing next-id file)", e );
+                }
+
+                try
+                {
+                    Files.write( nextIdFile, "0".getBytes(), StandardOpenOption.CREATE, StandardOpenOption.WRITE );
+                }
+                catch( IOException e )
+                {
+                    throw new WeavingException( "cannot create next-id file", e );
+                }
+            }
+        }
+
         Path bundleCacheDir = this.weavingCacheDir.resolve( bundle.getSymbolicName() + "-" + bundle.getVersion() + "/" + bundleFileModTime );
         Path bytesCacheFile = bundleCacheDir.resolve( wovenClass.getClassName() + ".class.bytes" );
         if( exists( bytesCacheFile ) )
@@ -114,44 +140,47 @@ final class ModuleWeavingHook implements WeavingHook
                     byte[] bytecode = new byte[ bytecodeLength ];
                     if( dataInputStream.read( bytecode ) != bytecodeLength )
                     {
-                        throw new IllegalStateException( "illegal format of bytecode cache at '" + bytesCacheFile + "'" );
+                        throw new WeavingException( "illegal format of bytecode cache at '" + bytesCacheFile + "'" );
                     }
                     wovenClass.setBytes( bytecode );
                 }
             }
-            catch( IOException e )
+            catch( MethodAlreadyRegisteredException e )
+            {
+                throw new WeavingException( "could not register all weaved methods for '" + wovenClass.getClassName() + "'", e );
+            }
+            catch( Throwable e )
             {
                 throw new WeavingException( "could not read cached bytecode for class '" + wovenClass.getClassName() + "': " + e.getMessage(), e );
             }
         }
         else
         {
-            try
+            ensureImported( wovenClass, ModulesSpi.class.getPackage().getName() );
+
+            CtClass ctClass = loadConcreteClass( wovenClass );
+            if( ctClass != null )
             {
-                ensureImported( wovenClass, ModulesSpi.class.getPackage().getName() );
+                weaveFieldInjections( wovenClass, ctClass );
+                weaveNonnullChecks( ctClass );
+                Collection<InterceptedMethodInfo> interceptedMethodInfos = weaveMethodInterception( bundle, ctClass );
 
-                CtClass ctClass = loadConcreteClass( wovenClass );
-                if( ctClass != null )
+                if( ctClass.isModified() )
                 {
-                    weaveFieldInjections( wovenClass, ctClass );
-                    weaveNonnullChecks( ctClass );
-                    Collection<InterceptedMethodInfo> interceptedMethodInfos = weaveMethodInterception( bundle, ctClass );
-
-                    if( ctClass.isModified() )
+                    byte[] bytes;
+                    try
                     {
-                        byte[] bytes = ctClass.toBytecode();
-
+                        bytes = ctClass.toBytecode();
                         wovenClass.setBytes( bytes );
+                    }
+                    catch( Throwable e )
+                    {
+                        throw new WeavingException( "could not compile class '" + wovenClass.getClassName() + "': " + e.getMessage(), e );
+                    }
 
-                        try
-                        {
-                            createDirectories( bytesCacheFile.getParent() );
-                        }
-                        catch( IOException e )
-                        {
-                            throw new WeavingException( "could not create bytecode cache dir for class '" + wovenClass.getClassName() + "' for file at '" + bytesCacheFile + "': " + e.getMessage(), e );
-                        }
-
+                    try
+                    {
+                        createDirectories( bytesCacheFile.getParent() );
                         try( OutputStream outputStream = Files.newOutputStream( bytesCacheFile ) )
                         {
                             DataOutputStream dataOutputStream = new DataOutputStream( outputStream );
@@ -170,178 +199,213 @@ final class ModuleWeavingHook implements WeavingHook
                             dataOutputStream.write( bytes );
                             dataOutputStream.flush();
                         }
-                        catch( IOException e )
-                        {
-                            throw new WeavingException( "could not write cached bytecode for class '" + wovenClass.getClassName() + "' into file '" + bytesCacheFile + "': " + e.getMessage(), e );
-                        }
+                    }
+                    catch( Throwable e )
+                    {
+                        throw new WeavingException( "could not write cached bytecode for class '" + wovenClass.getClassName() + "' into file '" + bytesCacheFile + "': " + e.getMessage(), e );
                     }
                 }
-            }
-            catch( Exception e )
-            {
-                throw new WeavingException( "could not compile class '" + wovenClass.getClassName() + "': " + e.getMessage(), e );
             }
         }
     }
 
     private void weaveFieldInjections( @Nonnull WovenClass wovenClass, @Nonnull CtClass ctClass )
-            throws ClassNotFoundException, NotFoundException, CannotCompileException
     {
         // list of constructors that should be weaved with our modifications
-        Collection<CtConstructor> superCallingConstructors = getSuperCallingConstructors( ctClass );
-        for( CtField field : ctClass.getDeclaredFields() )
+        try
         {
-            int modifiers = field.getModifiers();
-            if( !isStatic( modifiers ) && !isFinal( modifiers ) )
+            Collection<CtConstructor> superCallingConstructors = getSuperCallingConstructors( ctClass );
+            for( CtField field : ctClass.getDeclaredFields() )
             {
-                if( field.hasAnnotation( Component.class ) || field.hasAnnotation( Service.class ) )
+                int modifiers = field.getModifiers();
+                if( !isStatic( modifiers ) && !isFinal( modifiers ) )
                 {
-                    addBeforeBody(
-                            superCallingConstructors,
-                            process( "this.%s = (%s) ModulesSpi.getValueForField( %dl, %s.class, \"%s\" );",
-                                     field.getName(),
-                                     field.getType().getName(),
-                                     wovenClass.getBundleWiring().getBundle().getBundleId(),
-                                     ctClass.getName(),
-                                     field.getName() ) );
-                }
-            }
-        }
-    }
-
-    private void weaveNonnullChecks( @Nonnull CtClass ctClass ) throws CannotCompileException, NotFoundException
-    {
-        for( CtBehavior behavior : ctClass.getDeclaredBehaviors() )
-        {
-            if( isAbstract( behavior.getModifiers() ) || isNative( behavior.getModifiers() ) )
-            {
-                continue;
-            }
-
-            // weave checks for @Nonnull parameters
-            Object[][] availableParameterAnnotations = behavior.getAvailableParameterAnnotations();
-            for( int i = 0; i < availableParameterAnnotations.length; i++ )
-            {
-                for( Object annotationObject : availableParameterAnnotations[ i ] )
-                {
-                    Annotation annotation = ( Annotation ) annotationObject;
-                    if( annotation.annotationType().equals( Nonnull.class ) )
+                    if( field.hasAnnotation( Component.class ) || field.hasAnnotation( Service.class ) )
                     {
-                        behavior.insertBefore(
-                                process( "if( $%d == null )                                                                                                     \n" +
-                                         "{                                                                                                                     \n" +
-                                         "  throw new NullPointerException( \"Method parameter %d of method '%s' is null, but is annotated with @Nonnull\" );   \n" +
-                                         "}                                                                                                                     \n",
-                                         i + 1, i, behavior.getLongName()
-                                )
-                        );
+                        addBeforeBody(
+                                superCallingConstructors,
+                                process( "this.%s = (%s) ModulesSpi.getValueForField( %dl, %s.class, \"%s\" );",
+                                         field.getName(),
+                                         field.getType().getName(),
+                                         wovenClass.getBundleWiring().getBundle().getBundleId(),
+                                         ctClass.getName(),
+                                         field.getName() ) );
                     }
                 }
             }
+        }
+        catch( Throwable e )
+        {
+            throw new WeavingException( "could not weave fields of '" + wovenClass.getClassName() + "': " + e.getMessage(), e );
+        }
+    }
 
-            // weave check for return type of @Nonnull methods
-            if( behavior instanceof CtMethod )
+    private void weaveNonnullChecks( @Nonnull CtClass ctClass )
+    {
+        try
+        {
+            for( CtBehavior behavior : ctClass.getDeclaredBehaviors() )
             {
-                CtMethod method = ( CtMethod ) behavior;
-                if( method.hasAnnotation( Nonnull.class ) && !method.getReturnType().getName().equals( Void.class.getName() ) )
+                if( isAbstract( behavior.getModifiers() ) || isNative( behavior.getModifiers() ) )
                 {
-                    method.insertAfter( process(
-                            "if( $_ == null )                                                                                       \n" +
-                            "{                                                                                                      \n" +
-                            "   throw new NullPointerException( \"Method '%s' returned null, but is annotated with @Nonnull\" );    \n" +
-                            "}                                                                                                      \n",
-                            method.getLongName()
-                    ) );
+                    continue;
+                }
+
+                // weave checks for @Nonnull parameters
+                Object[][] availableParameterAnnotations = behavior.getAvailableParameterAnnotations();
+                for( int i = 0; i < availableParameterAnnotations.length; i++ )
+                {
+                    for( Object annotationObject : availableParameterAnnotations[ i ] )
+                    {
+                        Annotation annotation = ( Annotation ) annotationObject;
+                        if( annotation.annotationType().equals( Nonnull.class ) )
+                        {
+                            behavior.insertBefore(
+                                    process( "if( $%d == null )                                                                                                     \n" +
+                                             "{                                                                                                                     \n" +
+                                             "  throw new NullPointerException( \"Method parameter %d of method '%s' is null, but is annotated with @Nonnull\" );   \n" +
+                                             "}                                                                                                                     \n",
+                                             i + 1, i, behavior.getLongName()
+                                    )
+                            );
+                        }
+                    }
+                }
+
+                // weave check for return type of @Nonnull methods
+                if( behavior instanceof CtMethod )
+                {
+                    CtMethod method = ( CtMethod ) behavior;
+                    if( method.hasAnnotation( Nonnull.class ) && !method.getReturnType().getName().equals( Void.class.getName() ) )
+                    {
+                        method.insertAfter( process(
+                                "if( $_ == null )                                                                                       \n" +
+                                "{                                                                                                      \n" +
+                                "   throw new NullPointerException( \"Method '%s' returned null, but is annotated with @Nonnull\" );    \n" +
+                                "}                                                                                                      \n",
+                                method.getLongName()
+                        ) );
+                    }
                 }
             }
+        }
+        catch( Throwable e )
+        {
+            throw new WeavingException( "could not weave @Nonnull checks for '" + ctClass.getName() + "': " + e.getMessage(), e );
         }
     }
 
     @Nonnull
     private Collection<InterceptedMethodInfo> weaveMethodInterception( @Nonnull Bundle bundle,
                                                                        @Nonnull CtClass ctClass )
-            throws CannotCompileException, NotFoundException, ClassNotFoundException
     {
-        Collection<InterceptedMethodInfo> interceptedMethodInfos = null;
-        if( !isSubtypeOf( ctClass, MethodInterceptor.class.getName() ) )
+        try
         {
-            for( CtMethod method : ctClass.getDeclaredMethods() )
+            Collection<InterceptedMethodInfo> interceptedMethodInfos = null;
+            if( !isSubtypeOf( ctClass, MethodInterceptor.class.getName() ) )
             {
-                int acc = AccessFlag.of( method.getModifiers() );
-                if( ( acc & BRIDGE ) == 0 && ( acc & SYNTHETIC ) == 0 )
+                for( CtMethod method : ctClass.getDeclaredMethods() )
                 {
-                    int modifiers = method.getModifiers();
-                    if( !isAbstract( modifiers ) && !isNative( modifiers ) )
+                    int acc = AccessFlag.of( method.getModifiers() );
+                    if( ( acc & BRIDGE ) == 0 && ( acc & SYNTHETIC ) == 0 )
                     {
-                        if( interceptedMethodInfos == null )
+                        int modifiers = method.getModifiers();
+                        if( !isAbstract( modifiers ) && !isNative( modifiers ) )
                         {
-                            interceptedMethodInfos = new LinkedList<>();
+                            if( interceptedMethodInfos == null )
+                            {
+                                interceptedMethodInfos = new LinkedList<>();
+                            }
+                            interceptedMethodInfos.add( weaveMethod( bundle, method ) );
                         }
-                        interceptedMethodInfos.add( weaveMethod( bundle, method ) );
                     }
                 }
             }
+            return interceptedMethodInfos == null ? Collections.<InterceptedMethodInfo>emptyList() : interceptedMethodInfos;
         }
-        return interceptedMethodInfos == null ? Collections.<InterceptedMethodInfo>emptyList() : interceptedMethodInfos;
+        catch( Throwable e )
+        {
+            throw new WeavingException( "could not weave method interception for '" + ctClass.getName() + "': " + e.getMessage(), e );
+        }
     }
 
     @Nonnull
     private InterceptedMethodInfo weaveMethod( @Nonnull Bundle bundle, @Nonnull CtMethod method )
-            throws CannotCompileException, ClassNotFoundException, NotFoundException
     {
-        // generate method id
-        String[] methodParameterTypeNames = getMethodParameterTypeNames( method );
-        long id = MethodCache.getInstance().registerMethod( bundle.getBundleId(),
-                                                            method.getDeclaringClass().getName(),
-                                                            method.getName(),
-                                                            methodParameterTypeNames );
-        InterceptedMethodInfo interceptedMethodInfo = new InterceptedMethodInfo( id, method.getName(), methodParameterTypeNames );
+        try
+        {
+            // generate method id
+            long id;
+            synchronized( this )
+            {
+                Path nextIdFile = this.weavingCacheDir.resolve( "id" );
+                try
+                {
+                    id = Long.parseLong( new String( readAllBytes( nextIdFile ) ) );
+                    write( nextIdFile, ( ( id + 1 ) + "" ).getBytes(), StandardOpenOption.WRITE );
+                }
+                catch( IOException e )
+                {
+                    throw new WeavingException( "cannot update next-id file", e );
+                }
+            }
 
-        // add code that invokes the 'after' interception
-        method.insertAfter(
-                process( getReturnStatement( method.getReturnType(), "ModulesSpi.afterSuccessfulInvocation( ($w)$_ )" ) ),
-                false
-        );
+            String[] methodParameterTypeNames = getMethodParameterTypeNames( method );
+            MethodCache.getInstance().registerMethod( id,
+                                                      bundle.getBundleId(),
+                                                      method.getDeclaringClass().getName(),
+                                                      method.getName(),
+                                                      methodParameterTypeNames );
+            InterceptedMethodInfo interceptedMethodInfo = new InterceptedMethodInfo( id, method.getName(), methodParameterTypeNames );
 
-        // add code that catches exceptions
-        method.addCatch(
-                process( "{" +
-                         "   " + getReturnStatement( method.getReturnType(), "ModulesSpi.afterThrowable( $e )" ) +
-                         "   throw $e;" +
-                         "}" ),
-                method.getDeclaringClass().getClassPool().get( Throwable.class.getName() ),
-                "$e"
-        );
+            // add code that invokes the 'after' interception
+            method.insertAfter(
+                    process( getReturnStatement( method.getReturnType(), "ModulesSpi.afterSuccessfulInvocation( ($w)$_ )" ) ),
+                    false
+            );
 
-        // add code that invokes the 'before' interception
-        method.insertBefore( process(
-                "if( !ModulesSpi.beforeInvocation( %s, %s, $args ) ) " +
-                "{" +
-                "   %s;" +
-                "}",
-                id + "l",
-                isStatic( method.getModifiers() ) ? "null" : "this",
-                getReturnStatement( method.getReturnType(), "ModulesSpi.afterAbortedInvocation()" ) )
-        );
+            // add code that catches exceptions
+            method.addCatch(
+                    process( "{" +
+                             "   " + getReturnStatement( method.getReturnType(), "ModulesSpi.afterThrowable( $e )" ) +
+                             "   throw $e;" +
+                             "}" ),
+                    method.getDeclaringClass().getClassPool().get( Throwable.class.getName() ),
+                    "$e"
+            );
 
-        // add code that invokes the 'after' interception
-        method.insertAfter( process( "ModulesSpi.cleanup( %dl );", id ), true );
-        return interceptedMethodInfo;
+            // add code that invokes the 'before' interception
+            method.insertBefore( process(
+                    "if( !ModulesSpi.beforeInvocation( %s, %s, $args ) ) " +
+                    "{" +
+                    "   %s;" +
+                    "}",
+                    id + "l",
+                    isStatic( method.getModifiers() ) ? "null" : "this",
+                    getReturnStatement( method.getReturnType(), "ModulesSpi.afterAbortedInvocation()" ) )
+            );
+
+            // add code that invokes the 'after' interception
+            method.insertAfter( process( "ModulesSpi.cleanup( %dl );", id ), true );
+            return interceptedMethodInfo;
+        }
+        catch( Throwable e )
+        {
+            throw new WeavingException( "could not weave method '" + method.getLongName() + "' of '" + method.getDeclaringClass().getName() + "': " + e.getMessage(), e );
+        }
     }
 
     @Nullable
     private CtClass loadConcreteClass( @Nonnull WovenClass wovenClass )
     {
-        ClassPool classPool = new ClassPool( false );
-        classPool.appendSystemPath();
-        classPool.appendClassPath( new LoaderClassPath( ModuleWeavingHook.class.getClassLoader() ) );
-        classPool.appendClassPath( new LoaderClassPath( wovenClass.getBundleWiring().getClassLoader() ) );
-
-        // create CtClass from bytes
-        CtClass ctClass;
         try
         {
-            ctClass = classPool.makeClass( new ByteArrayInputStream( wovenClass.getBytes() ) );
+            ClassPool classPool = new ClassPool( false );
+            classPool.appendSystemPath();
+            classPool.appendClassPath( new LoaderClassPath( ModuleWeavingHook.class.getClassLoader() ) );
+            classPool.appendClassPath( new LoaderClassPath( wovenClass.getBundleWiring().getClassLoader() ) );
+
+            CtClass ctClass = classPool.makeClass( new ByteArrayInputStream( wovenClass.getBytes() ) );
             if( ctClass.isArray() || ctClass.isPrimitive() || ctClass.isAnnotation() || ctClass.isEnum() || ctClass.isInterface() )
             {
                 return null;
@@ -400,51 +464,38 @@ final class ModuleWeavingHook implements WeavingHook
 
     @Nonnull
     private Collection<CtConstructor> getSuperCallingConstructors( @Nonnull CtClass ctClass )
+            throws CannotCompileException
     {
-        try
+        List<CtConstructor> initializers = new LinkedList<>();
+        CtConstructor[] declaredConstructors = ctClass.getDeclaredConstructors();
+        for( CtConstructor ctor : declaredConstructors )
         {
-            List<CtConstructor> initializers = new LinkedList<>();
-            CtConstructor[] declaredConstructors = ctClass.getDeclaredConstructors();
-            for( CtConstructor ctor : declaredConstructors )
+            if( ctor.callsSuper() )
             {
-                if( ctor.callsSuper() )
-                {
-                    initializers.add( ctor );
-                }
+                initializers.add( ctor );
             }
-            return initializers;
         }
-        catch( Exception e )
-        {
-            throw new WeavingException( "could not introspect constructors of class '" + ctClass.getName() + "': " + e.getMessage(), e );
-        }
+        return initializers;
     }
 
-    private boolean isSubtypeOf( @Nonnull CtClass type, @Nonnull String superTypeName )
+    private boolean isSubtypeOf( @Nonnull CtClass type, @Nonnull String superTypeName ) throws NotFoundException
     {
-        try
+        if( type.getName().equals( superTypeName ) )
         {
-            if( type.getName().equals( superTypeName ) )
+            return true;
+        }
+
+        for( String intercaceName : type.getClassFile2().getInterfaces() )
+        {
+            if( intercaceName.equals( MethodInterceptor.class.getName() )
+                || isSubtypeOf( type.getClassPool().get( intercaceName ), superTypeName ) )
             {
                 return true;
             }
-
-            for( String intercaceName : type.getClassFile2().getInterfaces() )
-            {
-                if( intercaceName.equals( MethodInterceptor.class.getName() )
-                    || isSubtypeOf( type.getClassPool().get( intercaceName ), superTypeName ) )
-                {
-                    return true;
-                }
-            }
-
-            String supername = type.getClassFile2().getSuperclass();
-            return supername != null && isSubtypeOf( type.getClassPool().get( supername ), superTypeName );
         }
-        catch( Throwable e )
-        {
-            throw new WeavingException( "could not check if class ' " + type.getName() + "' is a method interceptor: " + e.getMessage(), e );
-        }
+
+        String supername = type.getClassFile2().getSuperclass();
+        return supername != null && isSubtypeOf( type.getClassPool().get( supername ), superTypeName );
     }
 
     private void addBeforeBody( @Nonnull Collection<CtConstructor> ctors, @Nonnull String statement )
@@ -470,6 +521,41 @@ final class ModuleWeavingHook implements WeavingHook
             {
                 wovenClass.getDynamicImports().add( packageName );
             }
+        }
+    }
+
+    private void deletePath( @Nonnull Path path ) throws IOException
+    {
+        if( Files.isDirectory( path ) )
+        {
+            Files.walkFileTree( path, new SimpleFileVisitor<Path>()
+            {
+                @Nonnull
+                @Override
+                public FileVisitResult visitFile( @Nonnull Path file, @Nonnull BasicFileAttributes attrs )
+                        throws IOException
+                {
+                    Files.delete( file );
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Nonnull
+                @Override
+                public FileVisitResult postVisitDirectory( @Nonnull Path dir, @Nullable IOException exc )
+                        throws IOException
+                {
+                    if( exc != null )
+                    {
+                        throw exc;
+                    }
+                    Files.delete( dir );
+                    return FileVisitResult.CONTINUE;
+                }
+            } );
+        }
+        else if( exists( path ) )
+        {
+            Files.delete( path );
         }
     }
 
