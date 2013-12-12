@@ -1,5 +1,6 @@
 package org.mosaic.datasource.impl;
 
+import com.mchange.v2.c3p0.C3P0ProxyConnection;
 import java.sql.Connection;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -17,6 +18,8 @@ import org.slf4j.LoggerFactory;
 public class TransactionManagerImpl implements TransactionManager
 {
     private static final Logger LOG = LoggerFactory.getLogger( TransactionManagerImpl.class );
+
+    private static final Object[] EMPTY_OBJECTS_ARRAY = new Object[ 0 ];
 
     @Nonnull
     private final ThreadLocal<TransactionImpl> transactionHolder = new ThreadLocal<>();
@@ -150,8 +153,8 @@ public class TransactionManagerImpl implements TransactionManager
                     }
                     catch( Exception e )
                     {
-                        // TODO: kill connection
-                        throw new TransactionRollbackException( "could not rollback '" + this.name + "': " + e.getMessage(), e );
+                        killConnection( connection );
+                        throw new TransactionRollbackException( "could not rollback '" + this.name + "', connection possibly killed. Message was: " + e.getMessage(), e );
                     }
                 }
             }
@@ -171,12 +174,27 @@ public class TransactionManagerImpl implements TransactionManager
                     }
                     catch( Exception e )
                     {
-                        // TODO: kill connection
-                        LOG.error( "Could not close transaction '{}': {}", e.getMessage(), e );
+                        killConnection( connection );
+                        LOG.error( "Could not close transaction '{}', connection possibly killed. Message was: {}", e.getMessage(), e );
                     }
                 }
             }
             TransactionManagerImpl.this.transactionHolder.set( this.parent );
+        }
+
+        private void killConnection( @Nonnull Connection connection )
+        {
+            try
+            {
+                C3P0ProxyConnection proxyConnection = ( C3P0ProxyConnection ) connection;
+                proxyConnection.rawConnectionOperation( Connection.class.getMethod( "close" ),
+                                                        C3P0ProxyConnection.RAW_CONNECTION,
+                                                        EMPTY_OBJECTS_ARRAY );
+            }
+            catch( Exception killEx )
+            {
+                LOG.warn( "Error killing connection '{}' after failed release or rollback: {}", connection, killEx.getMessage(), killEx );
+            }
         }
     }
 }
