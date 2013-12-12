@@ -80,7 +80,7 @@ final class ModuleWeavingHook implements WeavingHook
             throw new WeavingException( "could not read modification time for bundle " + bundle.getSymbolicName() + "[" + bundleId + "] at '" + bundleFile + "' while weaving class '" + wovenClass.getClassName() + "': " + e.getMessage(), e );
         }
 
-        Path bundleCacheDir = this.weavingCacheDir.resolve( bundle.getBundleId() + "/" + bundleFileModTime );
+        Path bundleCacheDir = this.weavingCacheDir.resolve( bundle.getSymbolicName() + "-" + bundle.getVersion() + "/" + bundleFileModTime );
         Path bytesCacheFile = bundleCacheDir.resolve( wovenClass.getClassName() + ".class.bytes" );
         if( exists( bytesCacheFile ) )
         {
