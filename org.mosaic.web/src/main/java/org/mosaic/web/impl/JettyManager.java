@@ -17,8 +17,10 @@ import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.eclipse.jetty.servlets.GzipFilter;
 import org.eclipse.jetty.servlets.MultiPartFilter;
 import org.eclipse.jetty.util.ConcurrentHashSet;
@@ -127,15 +129,50 @@ final class JettyManager
         ContextHandlerCollection contextHandlerCollection = this.contextHandlerCollection;
         if( contextHandlerCollection != null )
         {
+            MapEx<String, String> appCtx = application.getContext();
+
             ServletContextHandler contextHandler = new ServletContextHandler( ServletContextHandler.SESSIONS );
             contextHandler.setAllowNullPathInfo( false );
             contextHandler.setAttribute( Application.class.getName(), application );
+            contextHandler.setAttribute( "javax.servlet.context.tempdir", this.module.getContext().getServerWorkHome().resolve( "web" ).resolve( application.getId() ).resolve( "temp" ).toString() );
             contextHandler.setCompactPath( true );
             contextHandler.setDisplayName( application.getName() );
             contextHandler.setErrorHandler( new NoErrorPageErrorHandler() );
             contextHandler.setVirtualHosts( Iterables.toArray( application.getVirtualHosts(), String.class ) );
-            contextHandler.addFilter( MultiPartFilter.class, "/", EnumSet.of( DispatcherType.REQUEST ) );
-            contextHandler.addFilter( GzipFilter.class, "/", EnumSet.of( DispatcherType.REQUEST ) ); // TODO: configure gzip filter
+
+            FilterHolder gzipFilter = new FilterHolder( GzipFilter.class );
+            gzipFilter.setInitParameter( "bufferSize", appCtx.get( "gzip.bufferSize" ) );
+            gzipFilter.setInitParameter( "minGzipSize", appCtx.get( "gzip.minGzipSize" ) );
+            gzipFilter.setInitParameter( "deflateCompressionLevel", appCtx.get( "gzip.deflateCompressionLevel" ) );
+            gzipFilter.setInitParameter( "deflateNoWrap", appCtx.get( "gzip.deflateNoWrap" ) );
+            gzipFilter.setInitParameter( "checkGzExists", appCtx.get( "gzip.checkGzExists" ) );
+            gzipFilter.setInitParameter( "methods", appCtx.get( "gzip.methods" ) );
+            gzipFilter.setInitParameter( "mimeTypes", appCtx.get( "gzip.mimeTypes" ) );
+            gzipFilter.setInitParameter( "excludedMimeTypes", appCtx.get( "gzip.excludedMimeTypes" ) );
+            gzipFilter.setInitParameter( "excludedAgents", appCtx.get( "gzip.excludedAgents" ) );
+            gzipFilter.setInitParameter( "excludeAgentPatterns", appCtx.get( "gzip.excludeAgentPatterns" ) );
+            gzipFilter.setInitParameter( "excludePaths", appCtx.get( "gzip.excludePaths" ) );
+            gzipFilter.setInitParameter( "excludePathPatterns", appCtx.get( "gzip.excludePathPatterns" ) );
+            gzipFilter.setInitParameter( "vary", appCtx.get( "gzip.vary" ) );
+            contextHandler.addFilter( gzipFilter, "/", EnumSet.of( DispatcherType.REQUEST ) );
+
+            FilterHolder crossOriginFilter = new FilterHolder( CrossOriginFilter.class );
+            crossOriginFilter.setInitParameter( "allowedOrigins", appCtx.get( "crossOrigin.allowedOrigins", "bad://bad.com" ) );
+            crossOriginFilter.setInitParameter( "allowedMethods", appCtx.get( "crossOrigin.allowedMethods" ) );
+            crossOriginFilter.setInitParameter( "allowedHeaders", appCtx.get( "crossOrigin.allowedHeaders" ) );
+            crossOriginFilter.setInitParameter( "preflightMaxAge", appCtx.get( "crossOrigin.preflightMaxAge" ) );
+            crossOriginFilter.setInitParameter( "allowCredentials", appCtx.get( "crossOrigin.allowCredentials" ) );
+            crossOriginFilter.setInitParameter( "exposeHeaders", appCtx.get( "crossOrigin.exposeHeaders" ) );
+            crossOriginFilter.setInitParameter( "chainPreflight", appCtx.get( "crossOrigin.chainPreflight" ) );
+            contextHandler.addFilter( crossOriginFilter, "/", EnumSet.of( DispatcherType.REQUEST ) );
+
+            FilterHolder multipartFilter = new FilterHolder( MultiPartFilter.class );
+            multipartFilter.setInitParameter( "delete", "true" );
+            multipartFilter.setInitParameter( "deleteFiles", "true" );
+            multipartFilter.setInitParameter( "maxFileSize", appCtx.get( "upload.maxFileSize", 1024 * 1000 * 5 + "" ) );
+            multipartFilter.setInitParameter( "maxRequestSize", appCtx.get( "upload.maxRequestSize" ) );
+            contextHandler.addFilter( multipartFilter, "/", EnumSet.of( DispatcherType.REQUEST ) );
+
             contextHandler.addServlet( new ServletHolder( "requestDispatcher", this.requestDispatcher ), "/" );
 
             Period maxSessionAge = application.getMaxSessionAge();
