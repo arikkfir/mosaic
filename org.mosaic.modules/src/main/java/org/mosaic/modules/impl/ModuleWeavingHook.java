@@ -80,6 +80,7 @@ final class ModuleWeavingHook implements WeavingHook
             throw new WeavingException( "could not read modification time for bundle " + bundle.getSymbolicName() + "[" + bundleId + "] at '" + bundleFile + "' while weaving class '" + wovenClass.getClassName() + "': " + e.getMessage(), e );
         }
 
+        ensureImported( wovenClass, ModulesSpi.class.getPackage().getName() );
         synchronized( this )
         {
             Path nextIdFile = this.weavingCacheDir.resolve( "id" );
@@ -142,7 +143,7 @@ final class ModuleWeavingHook implements WeavingHook
                     {
                         throw new WeavingException( "illegal format of bytecode cache at '" + bytesCacheFile + "'" );
                     }
-                    wovenClass.setBytes( bytecode );
+                    wovenClass.setBytes( loadConcreteClass( wovenClass, bytecode ).toBytecode() );
                 }
             }
             catch( MethodAlreadyRegisteredException e )
@@ -156,8 +157,6 @@ final class ModuleWeavingHook implements WeavingHook
         }
         else
         {
-            ensureImported( wovenClass, ModulesSpi.class.getPackage().getName() );
-
             CtClass ctClass = loadConcreteClass( wovenClass );
             if( ctClass != null )
             {
@@ -392,6 +391,23 @@ final class ModuleWeavingHook implements WeavingHook
         catch( Throwable e )
         {
             throw new WeavingException( "could not weave method '" + method.getLongName() + "' of '" + method.getDeclaringClass().getName() + "': " + e.getMessage(), e );
+        }
+    }
+
+    @Nonnull
+    private CtClass loadConcreteClass( @Nonnull WovenClass wovenClass, @Nonnull byte[] bytes )
+    {
+        try
+        {
+            ClassPool classPool = new ClassPool( false );
+            classPool.appendSystemPath();
+            classPool.appendClassPath( new LoaderClassPath( ModuleWeavingHook.class.getClassLoader() ) );
+            classPool.appendClassPath( new LoaderClassPath( wovenClass.getBundleWiring().getClassLoader() ) );
+            return classPool.makeClass( new ByteArrayInputStream( bytes ) );
+        }
+        catch( Throwable e )
+        {
+            throw new WeavingException( "could not read class '" + wovenClass.getClassName() + "': " + e.getMessage(), e );
         }
     }
 
