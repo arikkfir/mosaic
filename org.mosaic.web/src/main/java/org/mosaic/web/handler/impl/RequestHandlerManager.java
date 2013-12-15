@@ -16,7 +16,7 @@ import static java.util.Collections.singletonList;
  * @author arik
  */
 @Component
-public class RequestHandlerManager
+public final class RequestHandlerManager
 {
     @Nonnull
     @Service
