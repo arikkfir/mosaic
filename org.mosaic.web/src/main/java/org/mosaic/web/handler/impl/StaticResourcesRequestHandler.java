@@ -14,6 +14,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.B64Code;
 import org.joda.time.DateTime;
 import org.joda.time.Period;
+import org.mosaic.modules.Ranking;
 import org.mosaic.modules.Service;
 import org.mosaic.web.application.Application;
 import org.mosaic.web.handler.RequestHandler;
@@ -28,6 +29,7 @@ import static org.mosaic.web.request.HttpStatus.*;
  * @author arik
  */
 @Service
+@Ranking( -1 )
 public class StaticResourcesRequestHandler implements RequestHandler
 {
     private static final HashSet<String> SUPPORTED_HTTP_METHODS = Sets.newHashSet( "GET", "HEAD" );
@@ -83,6 +85,8 @@ public class StaticResourcesRequestHandler implements RequestHandler
     private void serveFile( @Nonnull WebRequest request, @Nonnull Application.ApplicationResources.Resource resource )
             throws IOException
     {
+        // TODO: support gzip
+
         Path file = resource.getPath();
         WebResponse response = request.getResponse();
 
