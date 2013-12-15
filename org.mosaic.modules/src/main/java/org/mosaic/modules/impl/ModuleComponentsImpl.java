@@ -15,6 +15,7 @@ import javax.annotation.Nullable;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 import org.mosaic.modules.*;
+import org.mosaic.modules.spi.ModuleActivator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +25,7 @@ import static java.util.Arrays.asList;
 /**
  * @author arik
  */
-@SuppressWarnings( "unchecked" )
+@SuppressWarnings("unchecked")
 final class ModuleComponentsImpl extends Lifecycle implements ModuleComponents
 {
     private static final Logger COMPONENTS_LOG = LoggerFactory.getLogger( ModuleComponentsImpl.class.getName() + ".components" );
@@ -43,6 +44,12 @@ final class ModuleComponentsImpl extends Lifecycle implements ModuleComponents
 
     @Nonnull
     private Map<Class<?>, ComponentDescriptorImpl<?>> componentDescriptors = Collections.emptyMap();
+
+    @Nullable
+    private String moduleActivatorClassName;
+
+    @Nullable
+    private ModuleActivator activator;
 
     ModuleComponentsImpl( @Nonnull ModuleImpl module )
     {
@@ -109,6 +116,9 @@ final class ModuleComponentsImpl extends Lifecycle implements ModuleComponents
         LoadingCache<Class<?>, ComponentDescriptorImpl<?>> componentDescriptorsCache = createComponentTypeCache( componentDescriptors );
         SimpleDirectedGraph<ComponentDescriptorImpl<?>, ComponentDependency> componentsGraph = createComponentsGraph( componentDescriptors, componentDescriptorsCache );
 
+        // find the module activator, if any
+        String moduleActivatorClassName = this.module.getBundle().getHeaders().get( "Module-Activator" );
+
         // clear old components
         clearChildren();
 
@@ -130,6 +140,59 @@ final class ModuleComponentsImpl extends Lifecycle implements ModuleComponents
         // save
         this.componentDescriptors = componentDescriptors;
         this.componentLookupCache = componentDescriptorsCache;
+        this.moduleActivatorClassName = moduleActivatorClassName;
+    }
+
+    @Override
+    protected synchronized void onBeforeActivate()
+    {
+        if( this.moduleActivatorClassName != null )
+        {
+            Class<?> activatorClass;
+            try
+            {
+                activatorClass = this.module.getBundle().loadClass( this.moduleActivatorClassName );
+            }
+            catch( Throwable e )
+            {
+                throw new IllegalStateException( "could not load activator class '" + this.moduleActivatorClassName + "' for module '" + this.module + "': " + e.getMessage(), e );
+            }
+
+            try
+            {
+                this.activator = activatorClass.asSubclass( ModuleActivator.class ).newInstance();
+            }
+            catch( Throwable e )
+            {
+                throw new IllegalStateException( "could not create activator '" + this.moduleActivatorClassName + "' for module '" + this.module + "': " + e.getMessage(), e );
+            }
+
+            this.activator.onBeforeActivate( this.module );
+        }
+
+        super.onBeforeActivate();
+    }
+
+    @Override
+    protected synchronized void onAfterDeactivate()
+    {
+        super.onAfterDeactivate();
+
+        if( this.activator != null )
+        {
+            try
+            {
+                this.activator.onAfterDeactivate( this.module );
+            }
+            catch( Throwable e )
+            {
+                COMPONENTS_LOG.error( "Module activator '{}' threw exception: {}", this.activator, e.getMessage(), e );
+            }
+            finally
+            {
+                this.activator = null;
+            }
+        }
     }
 
     @Override
