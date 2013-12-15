@@ -1,8 +1,11 @@
 package org.mosaic.web.impl;
 
+import com.google.common.collect.Sets;
 import com.google.common.net.HttpHeaders;
 import java.io.IOException;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.servlet.ServletException;
@@ -22,6 +25,9 @@ import org.mosaic.web.request.WebResponse;
 import org.mosaic.web.request.impl.WebRequestImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 
 /**
  * @author arik
@@ -56,28 +62,56 @@ final class RequestDispatcher extends HttpServlet
         }
 
         WebRequest request = new WebRequestImpl( application, ( Request ) req );
-
-        RequestHandler requestHandler = this.requestHandlerManager.findRequestHandler( request );
-        if( requestHandler == null )
+        if( request.getMethod().equals( "OPTIONS" ) )
         {
-            // TODO: add application-specific not-found handling, maybe error page, etc
-            WebResponse response = request.getResponse();
-            response.setStatus( HttpStatus.NOT_FOUND );
-            response.disableCaching();
-            return;
+            List<RequestHandler> handlers = this.requestHandlerManager.findRequestHandlers( request, Integer.MAX_VALUE );
+            if( handlers.isEmpty() )
+            {
+                request.getResponse().getHeaders().setAllow( singletonList( "OPTIONS" ) );
+            }
+            else
+            {
+                Set<String> httpMethods = Sets.newHashSet( "OPTIONS" );
+                for( RequestHandler handler : handlers )
+                {
+                    Set<String> handlerHttpMethods = handler.getHttpMethods();
+                    if( handlerHttpMethods == null )
+                    {
+                        httpMethods.addAll( asList( "GET", "HEAD" ) );
+                    }
+                    else
+                    {
+                        httpMethods.addAll( handlerHttpMethods );
+                    }
+                }
+                request.getResponse().getHeaders().setAllow( new LinkedList<>( httpMethods ) );
+            }
         }
+        else
+        {
+            List<RequestHandler> requestHandlers = this.requestHandlerManager.findRequestHandlers( request, 1 );
+            if( requestHandlers.isEmpty() )
+            {
+                // TODO: add application-specific not-found handling, maybe error page, etc
+                WebResponse response = request.getResponse();
+                response.setStatus( HttpStatus.NOT_FOUND );
+                response.disableCaching();
+                return;
+            }
 
-        try
-        {
-            requestHandler.handle( request );
-        }
-        catch( Throwable throwable )
-        {
-            // TODO: add application-specific error handling, maybe error page, etc
-            WebResponse response = request.getResponse();
-            response.setStatus( HttpStatus.INTERNAL_SERVER_ERROR );
-            response.disableCaching();
-            request.dumpToErrorLog( LOG, "Request handler '{}' failed: {}", throwable.getMessage(), throwable );
+            RequestHandler requestHandler = requestHandlers.get( 0 );
+            try
+            {
+                requestHandler.handle( request );
+            }
+            catch( Throwable throwable )
+            {
+                // TODO: add application-specific error handling, maybe error page, etc
+                WebResponse response = request.getResponse();
+                response.setStatus( HttpStatus.INTERNAL_SERVER_ERROR );
+                response.disableCaching();
+                request.dumpToErrorLog( LOG, "Request handler '{}' failed: {}", throwable.getMessage(), throwable );
+            }
         }
     }
 

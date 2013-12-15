@@ -1,11 +1,13 @@
 package org.mosaic.web.handler.impl;
 
+import com.google.common.collect.Sets;
 import com.google.common.net.MediaType;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.eclipse.jetty.http.MimeTypes;
@@ -27,8 +29,17 @@ import static org.mosaic.web.request.HttpStatus.*;
 @Service
 public class StaticResourcesRequestHandler implements RequestHandler
 {
+    private static final HashSet<String> SUPPORTED_HTTP_METHODS = Sets.newHashSet( "GET", "HEAD" );
+
     @Nonnull
     private final MimeTypes mimeTypes = new MimeTypes();
+
+    @Nullable
+    @Override
+    public Set<String> getHttpMethods()
+    {
+        return SUPPORTED_HTTP_METHODS;
+    }
 
     @Override
     public boolean canHandle( @Nonnull WebRequest request )
@@ -80,11 +91,7 @@ public class StaticResourcesRequestHandler implements RequestHandler
         DateTime lastModified = applyLastModified( file, response );
         String etag = applyETag( file, response );
 
-        if( request.getMethod().equalsIgnoreCase( "OPTIONS" ) )
-        {
-            response.getHeaders().setAllow( Arrays.asList( "GET", "HEAD", "OPTIONS" ) );
-        }
-        else if( request.getMethod().equalsIgnoreCase( "GET" ) )
+        if( request.getMethod().equalsIgnoreCase( "GET" ) )
         {
             Collection<String> ifMatch = request.getHeaders().getIfMatch();
             if( !ifMatch.isEmpty() )

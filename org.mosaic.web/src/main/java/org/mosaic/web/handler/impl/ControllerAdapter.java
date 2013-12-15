@@ -1,6 +1,5 @@
 package org.mosaic.web.handler.impl;
 
-import com.google.common.collect.Sets;
 import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.HashSet;
@@ -41,7 +40,7 @@ public class ControllerAdapter implements RequestHandler
     @Nullable
     private final Expression<Boolean> applicationExpression;
 
-    @Nonnull
+    @Nullable
     private final Set<String> httpMethods;
 
     @Nonnull
@@ -76,7 +75,7 @@ public class ControllerAdapter implements RequestHandler
                 httpMethods.add( annotation.annotationType().getSimpleName().toUpperCase() );
             }
         }
-        this.httpMethods = httpMethods.isEmpty() ? Sets.newHashSet( "GET" ) : httpMethods;
+        this.httpMethods = httpMethods.isEmpty() ? null : httpMethods;
 
         // TODO: add more parameter resolvers
         this.invoker = this.endpoint.createInvoker(
@@ -84,14 +83,16 @@ public class ControllerAdapter implements RequestHandler
         );
     }
 
+    @Nullable
+    @Override
+    public Set<String> getHttpMethods()
+    {
+        return this.httpMethods;
+    }
+
     @Override
     public boolean canHandle( @Nonnull WebRequest request )
     {
-        if( !this.httpMethods.contains( request.getMethod() ) )
-        {
-            return false;
-        }
-
         if( this.applicationExpression != null && !this.applicationExpression.createInvocation( request ).require() )
         {
             return false;
