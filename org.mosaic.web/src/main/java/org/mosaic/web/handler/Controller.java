@@ -14,7 +14,7 @@ import org.mosaic.modules.spi.MethodEndpointMarker;
 @MethodEndpointMarker
 public @interface Controller
 {
-    String app();
+    String app() default "";
 
     String uri();
 }

@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author arik
  */
-@Adapter(RequestHandler.class)
+@Adapter( RequestHandler.class )
 public class ControllerAdapter implements RequestHandler
 {
     private static final Logger LOG = LoggerFactory.getLogger( ControllerAdapter.class );
@@ -38,7 +38,7 @@ public class ControllerAdapter implements RequestHandler
     @Nonnull
     private final MethodEndpoint.Invoker invoker;
 
-    @Nonnull
+    @Nullable
     private final Expression<Boolean> applicationExpression;
 
     @Nonnull
@@ -55,7 +55,17 @@ public class ControllerAdapter implements RequestHandler
     public ControllerAdapter( @Nonnull MethodEndpoint<Controller> endpoint )
     {
         this.endpoint = endpoint;
-        this.applicationExpression = this.expressionParser.parseExpression( this.endpoint.getType().app(), Boolean.class );
+
+        String appExpr = this.endpoint.getType().app();
+        if( appExpr.isEmpty() )
+        {
+            this.applicationExpression = null;
+        }
+        else
+        {
+            this.applicationExpression = this.expressionParser.parseExpression( appExpr, Boolean.class );
+        }
+
         this.uri = this.endpoint.getType().uri();
 
         Set<String> httpMethods = new HashSet<>();
@@ -82,7 +92,7 @@ public class ControllerAdapter implements RequestHandler
             return false;
         }
 
-        if( !this.applicationExpression.createInvocation( request ).require() )
+        if( this.applicationExpression != null && !this.applicationExpression.createInvocation( request ).require() )
         {
             return false;
         }
