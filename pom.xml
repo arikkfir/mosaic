@@ -105,6 +105,7 @@
         <module>org.mosaic.event</module>
         <module>org.mosaic.jsr305</module>
         <module>org.mosaic.launcher</module>
+        <module>org.mosaic.management</module>
         <module>org.mosaic.modules</module>
         <module>org.mosaic.parent</module>
         <module>org.mosaic.pathwatchers</module>

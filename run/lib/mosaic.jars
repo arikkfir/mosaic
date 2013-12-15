@@ -4,6 +4,7 @@
 ../../org.mosaic.dao/target/org.mosaic.dao-${mosaic.version}.jar
 ../../org.mosaic.datasource/target/org.mosaic.datasource-${mosaic.version}.jar
 ../../org.mosaic.event/target/org.mosaic.event-${mosaic.version}.jar
+../../org.mosaic.management/target/org.mosaic.management-${mosaic.version}.jar
 ../../org.mosaic.pathwatchers/target/org.mosaic.pathwatchers-${mosaic.version}.jar
 ../../org.mosaic.security/target/org.mosaic.security-${mosaic.version}.jar
 ../../org.mosaic.tasks/target/org.mosaic.tasks-${mosaic.version}.jar

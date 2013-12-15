@@ -321,6 +321,11 @@
             </dependency>
             <dependency>
                 <groupId>org.mosaic</groupId>
+                <artifactId>org.mosaic.management</artifactId>
+                <version>[${project.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mosaic</groupId>
                 <artifactId>org.mosaic.modules</artifactId>
                 <version>[${project.version}]</version>
             </dependency>

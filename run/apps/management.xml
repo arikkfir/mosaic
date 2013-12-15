@@ -29,7 +29,7 @@
 
     <resources>
         <content-roots>
-            <content-root>${mosaic.home}/org.mosaic.management</content-root>
+            <content-root>${mosaic.home}/../org.mosaic.management/src/main/web</content-root>
         </content-roots>
     </resources>
 
