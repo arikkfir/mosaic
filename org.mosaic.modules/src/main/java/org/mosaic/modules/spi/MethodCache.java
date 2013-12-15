@@ -1,6 +1,7 @@
 package org.mosaic.modules.spi;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -70,7 +71,14 @@ public final class MethodCache
         MethodEntry existingEntry = this.knownMethods.get( id );
         if( existingEntry != null )
         {
-            throw new MethodAlreadyRegisteredException( id, existingEntry, newEntry );
+            if( !newEntry.equals( existingEntry ) )
+            {
+                throw new MethodAlreadyRegisteredException( id, existingEntry, newEntry );
+            }
+            else
+            {
+                existingEntry.method = null;
+            }
         }
         else
         {
@@ -123,6 +131,57 @@ public final class MethodCache
             this.argumentTypeNames = argumentTypeNames;
         }
 
+        @SuppressWarnings( "RedundantIfStatement" )
+        @Override
+        public boolean equals( Object o )
+        {
+            if( this == o )
+            {
+                return true;
+            }
+            if( o == null || getClass() != o.getClass() )
+            {
+                return false;
+            }
+
+            MethodEntry that = ( MethodEntry ) o;
+            if( this.id != that.id )
+            {
+                return false;
+            }
+            else if( this.moduleId != that.moduleId )
+            {
+                return false;
+            }
+            else if( !Arrays.equals( this.argumentTypeNames, that.argumentTypeNames ) )
+            {
+                return false;
+            }
+            else if( !this.className.equals( that.className ) )
+            {
+                return false;
+            }
+            else if( !this.methodName.equals( that.methodName ) )
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = ( int ) ( this.id ^ ( this.id >>> 32 ) );
+            result = 31 * result + ( int ) ( this.moduleId ^ ( this.moduleId >>> 32 ) );
+            result = 31 * result + this.className.hashCode();
+            result = 31 * result + this.methodName.hashCode();
+            result = 31 * result + Arrays.hashCode( this.argumentTypeNames );
+            return result;
+        }
+
         @Override
         public String toString()
         {
@@ -138,48 +197,42 @@ public final class MethodCache
         {
             if( this.method == null )
             {
-                synchronized( this )
+                // resolve declaring class
+                Class<?> declaringClass;
+                ClassLoader classLoader;
+                try
                 {
-                    if( this.method == null )
+                    Bundle entryBundle = requireBundleContext( getClass() ).getBundle( this.moduleId );
+                    declaringClass = entryBundle.loadClass( this.className );
+                    classLoader = declaringClass.getClassLoader();
+                }
+                catch( Throwable e )
+                {
+                    throw new IllegalStateException( "Could not load class '" + this.className + "' declaring method '" + this.className + "." + this.methodName + "': " + e.getMessage(), e );
+                }
+
+                // resolve argument types
+                Class<?>[] argumentTypes = new Class<?>[ this.argumentTypeNames.length ];
+                for( int i = 0; i < this.argumentTypeNames.length; i++ )
+                {
+                    try
                     {
-                        // resolve declaring class
-                        Class<?> declaringClass;
-                        ClassLoader classLoader;
-                        try
-                        {
-                            Bundle entryBundle = requireBundleContext( getClass() ).getBundle( this.moduleId );
-                            declaringClass = entryBundle.loadClass( this.className );
-                            classLoader = declaringClass.getClassLoader();
-                        }
-                        catch( Throwable e )
-                        {
-                            throw new IllegalStateException( "Could not load class '" + this.className + "' declaring method '" + this.className + "." + this.methodName + "': " + e.getMessage(), e );
-                        }
-
-                        // resolve argument types
-                        Class<?>[] argumentTypes = new Class<?>[ this.argumentTypeNames.length ];
-                        for( int i = 0; i < this.argumentTypeNames.length; i++ )
-                        {
-                            try
-                            {
-                                argumentTypes[ i ] = resolveType( classLoader, this.argumentTypeNames[ i ] );
-                            }
-                            catch( ClassNotFoundException e )
-                            {
-                                throw new IllegalStateException( "Could not find argument type '" + this.className + "' for declaring method '" + this.className + "." + this.methodName + "': " + e.getMessage(), e );
-                            }
-                        }
-
-                        // resolve method and cache it
-                        try
-                        {
-                            this.method = declaringClass.getDeclaredMethod( this.methodName, argumentTypes );
-                        }
-                        catch( Throwable e )
-                        {
-                            throw new IllegalStateException( "Could not find method '" + this.className + "' declaring method '" + this.className + "." + this.methodName + "': " + e.getMessage(), e );
-                        }
+                        argumentTypes[ i ] = resolveType( classLoader, this.argumentTypeNames[ i ] );
                     }
+                    catch( ClassNotFoundException e )
+                    {
+                        throw new IllegalStateException( "Could not find argument type '" + this.className + "' for declaring method '" + this.className + "." + this.methodName + "': " + e.getMessage(), e );
+                    }
+                }
+
+                // resolve method and cache it
+                try
+                {
+                    this.method = declaringClass.getDeclaredMethod( this.methodName, argumentTypes );
+                }
+                catch( Throwable e )
+                {
+                    throw new IllegalStateException( "Could not find method '" + this.className + "' declaring method '" + this.className + "." + this.methodName + "': " + e.getMessage(), e );
                 }
             }
             return this.method;

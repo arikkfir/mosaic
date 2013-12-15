@@ -55,7 +55,7 @@ final class ModuleWeavingHook implements WeavingHook
     }
 
     @Override
-    public synchronized void weave( @Nonnull WovenClass wovenClass )
+    public void weave( @Nonnull WovenClass wovenClass )
     {
         Bundle bundle = wovenClass.getBundleWiring().getBundle();
         if( bundle.getBundleId() <= this.bundleId )
