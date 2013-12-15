@@ -19,6 +19,8 @@ import org.mosaic.modules.Service;
 import org.mosaic.web.application.Application;
 import org.mosaic.web.handler.RequestHandler;
 import org.mosaic.web.handler.impl.RequestHandlerManager;
+import org.mosaic.web.marshall.UnmarshallableContentException;
+import org.mosaic.web.marshall.impl.MarshallerManager;
 import org.mosaic.web.request.HttpStatus;
 import org.mosaic.web.request.WebRequest;
 import org.mosaic.web.request.WebResponse;
@@ -48,6 +50,10 @@ final class RequestDispatcher extends HttpServlet
     @Nonnull
     @Component
     private RequestHandlerManager requestHandlerManager;
+
+    @Nonnull
+    @Component
+    private MarshallerManager marshallerManager;
 
     @Override
     protected void service( HttpServletRequest req, HttpServletResponse resp ) throws ServletException, IOException
@@ -100,9 +106,10 @@ final class RequestDispatcher extends HttpServlet
             }
 
             RequestHandler requestHandler = requestHandlers.get( 0 );
+            Object result;
             try
             {
-                requestHandler.handle( request );
+                result = requestHandler.handle( request );
             }
             catch( Throwable throwable )
             {
@@ -110,7 +117,30 @@ final class RequestDispatcher extends HttpServlet
                 WebResponse response = request.getResponse();
                 response.setStatus( HttpStatus.INTERNAL_SERVER_ERROR );
                 response.disableCaching();
-                request.dumpToErrorLog( LOG, "Request handler '{}' failed: {}", throwable.getMessage(), throwable );
+                request.dumpToErrorLog( LOG, "Request handler '{}' failed: {}", requestHandler, throwable.getMessage(), throwable );
+                return;
+            }
+
+            if( result != null )
+            {
+                LOG.debug( "Marshalling result '{}' from request handler '{}'", result, requestHandler );
+                try
+                {
+                    this.marshallerManager.marshall( result, request.getHeaders().getAccept(), request.getResponse().stream() );
+                }
+                catch( UnmarshallableContentException e )
+                {
+                    request.getResponse().setStatus( HttpStatus.NOT_ACCEPTABLE );
+                    request.getResponse().disableCaching();
+                }
+                catch( Throwable throwable )
+                {
+                    // TODO: add application-specific error handling, maybe error page, @ErrorHandler(s), etc
+                    WebResponse response = request.getResponse();
+                    response.setStatus( HttpStatus.INTERNAL_SERVER_ERROR );
+                    response.disableCaching();
+                    request.dumpToErrorLog( LOG, "Marshalling of '{}' from handler '{}' failed: {}", result, requestHandler, throwable.getMessage(), throwable );
+                }
             }
         }
     }

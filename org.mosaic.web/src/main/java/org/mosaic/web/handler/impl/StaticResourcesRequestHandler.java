@@ -30,7 +30,7 @@ import static org.mosaic.web.request.HttpStatus.*;
  */
 @Service
 @Ranking( -1 )
-public class StaticResourcesRequestHandler implements RequestHandler
+final class StaticResourcesRequestHandler implements RequestHandler
 {
     private static final HashSet<String> SUPPORTED_HTTP_METHODS = Sets.newHashSet( "GET", "HEAD" );
 
@@ -60,8 +60,9 @@ public class StaticResourcesRequestHandler implements RequestHandler
         }
     }
 
+    @Nullable
     @Override
-    public void handle( @Nonnull WebRequest request ) throws Throwable
+    public Object handle( @Nonnull WebRequest request ) throws Throwable
     {
         Application.ApplicationResources.Resource resource = request.getAttributes().require( "resource", Application.ApplicationResources.Resource.class );
         if( isDirectory( resource.getPath() ) )
@@ -72,6 +73,7 @@ public class StaticResourcesRequestHandler implements RequestHandler
         {
             serveFile( request, resource );
         }
+        return null;
     }
 
     private void serveDirectory( @Nonnull WebRequest request,

@@ -15,5 +15,6 @@ public interface RequestHandler
 
     boolean canHandle( @Nonnull WebRequest request );
 
-    void handle( @Nonnull WebRequest request ) throws Throwable;
+    @Nullable
+    Object handle( @Nonnull WebRequest request ) throws Throwable;
 }
