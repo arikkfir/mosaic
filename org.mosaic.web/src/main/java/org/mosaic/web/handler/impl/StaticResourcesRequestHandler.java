@@ -107,7 +107,7 @@ public class StaticResourcesRequestHandler implements RequestHandler
             }
 
             DateTime ifModifiedSince = request.getHeaders().getIfModifiedSince();
-            if( ifModifiedSince != null && lastModified != null && lastModified.isBefore( ifModifiedSince ) )
+            if( ifModifiedSince != null && lastModified != null && ( ifModifiedSince.equals( lastModified ) || ifModifiedSince.isAfter( lastModified ) ) )
             {
                 // TODO: according to RFC-2616 14.26, "If-Modified-Since" can override "If-None-Match", we need to support that
                 response.setStatus( NOT_MODIFIED );
@@ -115,7 +115,7 @@ public class StaticResourcesRequestHandler implements RequestHandler
             }
 
             DateTime ifUnmodifiedSince = request.getHeaders().getIfUnmodifiedSince();
-            if( ifUnmodifiedSince != null && lastModified != null && lastModified.isAfter( ifUnmodifiedSince ) )
+            if( ifUnmodifiedSince != null && lastModified != null && ( ifUnmodifiedSince.equals( lastModified ) || ifUnmodifiedSince.isBefore( lastModified ) ) )
             {
                 response.setStatus( PRECONDITION_FAILED );
                 return;
