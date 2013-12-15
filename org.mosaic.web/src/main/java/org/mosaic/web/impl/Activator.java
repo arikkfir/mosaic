@@ -9,7 +9,7 @@ import org.mosaic.modules.spi.ModuleActivator;
 /**
  * @author arik
  */
-public class Activator implements ModuleActivator
+final class Activator implements ModuleActivator
 {
     @Override
     public void onBeforeActivate( @Nonnull Module module )
