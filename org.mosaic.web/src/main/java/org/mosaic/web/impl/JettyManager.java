@@ -21,7 +21,6 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
-import org.eclipse.jetty.servlets.GzipFilter;
 import org.eclipse.jetty.servlets.MultiPartFilter;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -73,7 +72,7 @@ final class JettyManager
     @Nullable
     private ContextHandlerCollection contextHandlerCollection;
 
-    @Configurable( "web" )
+    @Configurable("web")
     void configure( @Nonnull final MapEx<String, String> cfg )
     {
         LOG.info( "Web server configured - {}", this.server != null ? "restarting" : "starting" );
@@ -134,12 +133,14 @@ final class JettyManager
             ServletContextHandler contextHandler = new ServletContextHandler( ServletContextHandler.SESSIONS );
             contextHandler.setAllowNullPathInfo( false );
             contextHandler.setAttribute( Application.class.getName(), application );
-            contextHandler.setAttribute( "javax.servlet.context.tempdir", this.module.getContext().getServerWorkHome().resolve( "web" ).resolve( application.getId() ).resolve( "temp" ).toString() );
+            contextHandler.setAttribute( "javax.servlet.context.tempdir", this.module.getContext().getServerWorkHome().resolve( "web" ).resolve( application.getId() ).resolve( "temp" ).toFile() );
             contextHandler.setCompactPath( true );
             contextHandler.setDisplayName( application.getName() );
             contextHandler.setErrorHandler( new NoErrorPageErrorHandler() );
             contextHandler.setVirtualHosts( Iterables.toArray( application.getVirtualHosts(), String.class ) );
 
+            // TODO: rethink GZipFilter and implement it in StaticResourcesRequestHandler, and on @Resource handlers
+/*
             FilterHolder gzipFilter = new FilterHolder( GzipFilter.class );
             gzipFilter.setInitParameter( "bufferSize", appCtx.get( "gzip.bufferSize" ) );
             gzipFilter.setInitParameter( "minGzipSize", appCtx.get( "gzip.minGzipSize" ) );
@@ -155,6 +156,7 @@ final class JettyManager
             gzipFilter.setInitParameter( "excludePathPatterns", appCtx.get( "gzip.excludePathPatterns" ) );
             gzipFilter.setInitParameter( "vary", appCtx.get( "gzip.vary" ) );
             contextHandler.addFilter( gzipFilter, "/", EnumSet.of( DispatcherType.REQUEST ) );
+*/
 
             FilterHolder crossOriginFilter = new FilterHolder( CrossOriginFilter.class );
             crossOriginFilter.setInitParameter( "allowedOrigins", appCtx.get( "crossOrigin.allowedOrigins", "bad://bad.com" ) );

@@ -31,6 +31,13 @@ final class WebResponseImpl implements WebResponse
     }
 
     @Override
+    @Nonnull
+    public WebResponseHeaders getHeaders()
+    {
+        return this.headers;
+    }
+
+    @Override
     public boolean isCommitted()
     {
         return this.response.isCommitted();

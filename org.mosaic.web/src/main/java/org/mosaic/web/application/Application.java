@@ -79,6 +79,8 @@ public interface Application
 
             boolean isBrowsingEnabled();
 
+            boolean isDirectory();
+
             @Nullable
             Period getCachePeriod();
         }

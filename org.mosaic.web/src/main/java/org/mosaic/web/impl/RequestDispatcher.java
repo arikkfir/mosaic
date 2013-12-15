@@ -14,7 +14,11 @@ import org.mosaic.modules.Component;
 import org.mosaic.modules.Module;
 import org.mosaic.modules.Service;
 import org.mosaic.web.application.Application;
+import org.mosaic.web.handler.RequestHandler;
+import org.mosaic.web.handler.impl.RequestHandlerManager;
+import org.mosaic.web.request.HttpStatus;
 import org.mosaic.web.request.WebRequest;
+import org.mosaic.web.request.WebResponse;
 import org.mosaic.web.request.impl.WebRequestImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,15 +35,18 @@ final class RequestDispatcher extends HttpServlet
     @Component
     private Module module;
 
-    @SuppressWarnings( "MismatchedQueryAndUpdateOfCollection" )
     @Nonnull
     @Service
     private List<Application> applications;
 
+    @Nonnull
+    @Component
+    private RequestHandlerManager requestHandlerManager;
+
     @Override
     protected void service( HttpServletRequest req, HttpServletResponse resp ) throws ServletException, IOException
     {
-        resp.setHeader( HttpHeaders.SERVER, "Mosaic Web Server / " + this.module.getContext().getServerVersion() );
+        resp.setHeader( HttpHeaders.SERVER, "Mosaic Web Server/" + this.module.getContext().getServerVersion() );
 
         Application application = findApplication( req );
         if( application == null )
@@ -49,8 +56,29 @@ final class RequestDispatcher extends HttpServlet
         }
 
         WebRequest request = new WebRequestImpl( application, ( Request ) req );
-        request.dumpToInfoLog( LOG, "The request" );
-        // TODO arik: implement org.mosaic.web.impl.RequestDispatcher.service([req, resp])
+
+        RequestHandler requestHandler = this.requestHandlerManager.findRequestHandler( request );
+        if( requestHandler == null )
+        {
+            // TODO: add application-specific not-found handling, maybe error page, etc
+            WebResponse response = request.getResponse();
+            response.setStatus( HttpStatus.NOT_FOUND );
+            response.disableCaching();
+            return;
+        }
+
+        try
+        {
+            requestHandler.handle( request );
+        }
+        catch( Throwable throwable )
+        {
+            // TODO: add application-specific error handling, maybe error page, etc
+            WebResponse response = request.getResponse();
+            response.setStatus( HttpStatus.INTERNAL_SERVER_ERROR );
+            response.disableCaching();
+            request.dumpToErrorLog( LOG, "Request handler '{}' failed: {}", throwable.getMessage(), throwable );
+        }
     }
 
     @Nullable

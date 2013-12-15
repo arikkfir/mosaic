@@ -17,6 +17,4 @@ public @interface Controller
     String app();
 
     String uri();
-
-    boolean cachable() default false;
 }

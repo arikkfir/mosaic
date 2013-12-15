@@ -1,11 +1,8 @@
 package org.mosaic.web.request.impl;
 
 import com.google.common.base.Function;
-import com.google.common.base.Splitter;
 import com.google.common.net.MediaType;
 import java.nio.charset.Charset;
-import java.util.Enumeration;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import javax.annotation.Nonnull;
@@ -15,6 +12,7 @@ import org.joda.time.DateTime;
 
 import static com.google.common.collect.Lists.transform;
 import static java.util.Collections.enumeration;
+import static java.util.Collections.list;
 import static org.eclipse.jetty.http.HttpFields.qualityList;
 
 /**
@@ -22,8 +20,6 @@ import static org.eclipse.jetty.http.HttpFields.qualityList;
  */
 final class Header
 {
-    private static final Splitter HEADER_MULTIVALUE_SPLITTER = Splitter.on( ',' ).trimResults().omitEmptyStrings();
-
     @Nullable
     static String getString( @Nonnull HttpFields httpFields, @Nonnull String headerName )
     {
@@ -47,13 +43,7 @@ final class Header
     @Nonnull
     static List<String> getStrings( @Nonnull HttpFields httpFields, @Nonnull String headerName )
     {
-        Enumeration<String> unparsed = httpFields.getValues( headerName );
-        List<String> values = new LinkedList<>();
-        while( unparsed.hasMoreElements() )
-        {
-            values.addAll( HEADER_MULTIVALUE_SPLITTER.splitToList( unparsed.nextElement() ) );
-        }
-        return values;
+        return list( httpFields.getValues( headerName, HttpFields.__separators ) );
     }
 
     @Nonnull

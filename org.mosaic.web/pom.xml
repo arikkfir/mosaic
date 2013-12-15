@@ -23,6 +23,7 @@
                         <Embed-Dependency>
                             jetty*,javax.servlet
                         </Embed-Dependency>
+                        <Module-Activator>org.mosaic.web.impl.Activator</Module-Activator>
                     </instructions>
                 </configuration>
             </plugin>

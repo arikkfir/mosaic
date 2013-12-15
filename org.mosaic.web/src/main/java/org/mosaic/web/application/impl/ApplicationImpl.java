@@ -238,14 +238,14 @@ final class ApplicationImpl implements Application, Application.ApplicationSecur
         {
             return null;
         }
-        else
+        else if( !p.toString().isEmpty() )
         {
             p = p.normalize();
         }
 
         for( Path contentRoot : this.contentRoots )
         {
-            Path resolved = contentRoot.resolve( p ).toAbsolutePath();
+            Path resolved = contentRoot.resolve( p ).toAbsolutePath().normalize();
             if( exists( resolved ) )
             {
                 return new ResourceImpl( contentRoot, resolved );
@@ -287,7 +287,7 @@ final class ApplicationImpl implements Application, Application.ApplicationSecur
         Set<Path> contentRoots = new LinkedHashSet<>();
         for( String contentRootPath : appElt.findTexts( "m:resources/m:content-roots/m:content-root" ) )
         {
-            contentRoots.add( Paths.get( PROPERTY_PLACEHOLDER_RESOLVER.resolve( contentRootPath ) ) );
+            contentRoots.add( Paths.get( PROPERTY_PLACEHOLDER_RESOLVER.resolve( contentRootPath ) ).normalize() );
         }
 
         this.name = name;

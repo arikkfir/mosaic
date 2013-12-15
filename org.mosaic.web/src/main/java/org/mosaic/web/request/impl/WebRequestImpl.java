@@ -35,6 +35,9 @@ public final class WebRequestImpl implements WebRequest
     private final InetAddress clientAddress;
 
     @Nonnull
+    private final String httpMethod;
+
+    @Nonnull
     private final WebRequestUri uri;
 
     @Nonnull
@@ -53,6 +56,7 @@ public final class WebRequestImpl implements WebRequest
     {
         this.application = application;
         this.request = request;
+        this.httpMethod = this.request.getMethod().toUpperCase();
 
         String remoteAddr = this.request.getRemoteAddr();
         try
@@ -95,7 +99,7 @@ public final class WebRequestImpl implements WebRequest
     @Override
     public String getMethod()
     {
-        return this.request.getMethod();
+        return this.httpMethod;
     }
 
     @Nonnull

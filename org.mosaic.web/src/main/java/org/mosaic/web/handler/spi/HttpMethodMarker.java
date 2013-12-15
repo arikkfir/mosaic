@@ -1,17 +1,15 @@
-package org.mosaic.web.handler;
+package org.mosaic.web.handler.spi;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.mosaic.web.handler.spi.HttpMethodMarker;
 
 /**
  * @author arik
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-@HttpMethodMarker
-public @interface PUT
+@Target(ElementType.ANNOTATION_TYPE)
+public @interface HttpMethodMarker
 {
 }

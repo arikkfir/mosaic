@@ -12,6 +12,9 @@ import org.joda.time.Period;
  */
 public interface WebResponse
 {
+    @Nonnull
+    WebResponseHeaders getHeaders();
+
     boolean isCommitted();
 
     @Nullable
