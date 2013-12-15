@@ -72,7 +72,7 @@ final class JettyManager
     @Nullable
     private ContextHandlerCollection contextHandlerCollection;
 
-    @Configurable("web")
+    @Configurable( "web" )
     void configure( @Nonnull final MapEx<String, String> cfg )
     {
         LOG.info( "Web server configured - {}", this.server != null ? "restarting" : "starting" );
@@ -138,25 +138,6 @@ final class JettyManager
             contextHandler.setDisplayName( application.getName() );
             contextHandler.setErrorHandler( new NoErrorPageErrorHandler() );
             contextHandler.setVirtualHosts( Iterables.toArray( application.getVirtualHosts(), String.class ) );
-
-            // TODO: rethink GZipFilter and implement it in StaticResourcesRequestHandler, and on @Resource handlers
-/*
-            FilterHolder gzipFilter = new FilterHolder( GzipFilter.class );
-            gzipFilter.setInitParameter( "bufferSize", appCtx.get( "gzip.bufferSize" ) );
-            gzipFilter.setInitParameter( "minGzipSize", appCtx.get( "gzip.minGzipSize" ) );
-            gzipFilter.setInitParameter( "deflateCompressionLevel", appCtx.get( "gzip.deflateCompressionLevel" ) );
-            gzipFilter.setInitParameter( "deflateNoWrap", appCtx.get( "gzip.deflateNoWrap" ) );
-            gzipFilter.setInitParameter( "checkGzExists", appCtx.get( "gzip.checkGzExists" ) );
-            gzipFilter.setInitParameter( "methods", appCtx.get( "gzip.methods" ) );
-            gzipFilter.setInitParameter( "mimeTypes", appCtx.get( "gzip.mimeTypes" ) );
-            gzipFilter.setInitParameter( "excludedMimeTypes", appCtx.get( "gzip.excludedMimeTypes" ) );
-            gzipFilter.setInitParameter( "excludedAgents", appCtx.get( "gzip.excludedAgents" ) );
-            gzipFilter.setInitParameter( "excludeAgentPatterns", appCtx.get( "gzip.excludeAgentPatterns" ) );
-            gzipFilter.setInitParameter( "excludePaths", appCtx.get( "gzip.excludePaths" ) );
-            gzipFilter.setInitParameter( "excludePathPatterns", appCtx.get( "gzip.excludePathPatterns" ) );
-            gzipFilter.setInitParameter( "vary", appCtx.get( "gzip.vary" ) );
-            contextHandler.addFilter( gzipFilter, "/", EnumSet.of( DispatcherType.REQUEST ) );
-*/
 
             FilterHolder crossOriginFilter = new FilterHolder( CrossOriginFilter.class );
             crossOriginFilter.setInitParameter( "allowedOrigins", appCtx.get( "crossOrigin.allowedOrigins", "bad://bad.com" ) );
