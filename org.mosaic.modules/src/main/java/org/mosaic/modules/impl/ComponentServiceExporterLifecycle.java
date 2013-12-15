@@ -26,7 +26,7 @@ final class ComponentServiceExporterLifecycle extends Lifecycle implements Servi
     private final Class<?>[] serviceTypes;
 
     @Nonnull
-    private final Map<String, String> serviceProperties;
+    private final Map<String, Object> serviceProperties;
 
     @Nullable
     private List<ServiceRegistration<?>> serviceRegistrations;
@@ -63,6 +63,12 @@ final class ComponentServiceExporterLifecycle extends Lifecycle implements Servi
         {
             this.serviceProperties.put( property.key(), property.value() );
         }
+
+        Ranking rankingAnn = this.componentDescriptor.getComponentType().getAnnotation( Ranking.class );
+        if( rankingAnn != null )
+        {
+            this.serviceProperties.put( Constants.SERVICE_RANKING, rankingAnn.value() );
+        }
     }
 
     @Override
@@ -90,7 +96,7 @@ final class ComponentServiceExporterLifecycle extends Lifecycle implements Servi
     protected synchronized void onAfterActivate()
     {
         Dictionary<String, Object> properties = new Hashtable<>();
-        for( Map.Entry<String, String> entry : this.serviceProperties.entrySet() )
+        for( Map.Entry<String, Object> entry : this.serviceProperties.entrySet() )
         {
             properties.put( entry.getKey(), entry.getValue() );
         }

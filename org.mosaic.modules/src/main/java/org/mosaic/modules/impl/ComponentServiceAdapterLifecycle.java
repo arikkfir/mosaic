@@ -42,7 +42,7 @@ final class ComponentServiceAdapterLifecycle extends Lifecycle
     private final Class<?>[] serviceTypes;
 
     @Nonnull
-    private final Map<String, String> serviceProperties;
+    private final Map<String, Object> serviceProperties;
 
     @Nonnull
     private final ServiceTracker serviceTracker;
@@ -57,6 +57,13 @@ final class ComponentServiceAdapterLifecycle extends Lifecycle
         Adapter adapterAnn = this.componentDescriptor.getComponentType().getAnnotation( Adapter.class );
         this.serviceTypes = adapterAnn.value();
         this.serviceProperties = new LinkedHashMap<>();
+
+        Ranking rankingAnn = this.componentDescriptor.getComponentType().getAnnotation( Ranking.class );
+        if( rankingAnn != null )
+        {
+            this.serviceProperties.put( Constants.SERVICE_RANKING, rankingAnn.value() );
+        }
+
         for( Adapter.P property : adapterAnn.properties() )
         {
             this.serviceProperties.put( property.key(), property.value() );
@@ -208,7 +215,7 @@ final class ComponentServiceAdapterLifecycle extends Lifecycle
         }
 
         Dictionary<String, Object> properties = new Hashtable<>();
-        for( Map.Entry<String, String> entry : this.serviceProperties.entrySet() )
+        for( Map.Entry<String, Object> entry : this.serviceProperties.entrySet() )
         {
             properties.put( entry.getKey(), entry.getValue() );
         }

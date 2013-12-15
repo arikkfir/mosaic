@@ -6,10 +6,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.mosaic.modules.ComponentDefinitionException;
-import org.mosaic.modules.MethodEndpoint;
-import org.mosaic.modules.Module;
-import org.mosaic.modules.ModuleWiring;
+import org.mosaic.modules.*;
 import org.mosaic.util.collections.EmptyMapEx;
 import org.mosaic.util.collections.HashMapEx;
 import org.mosaic.util.collections.MapEx;
@@ -18,6 +15,8 @@ import org.mosaic.util.reflection.MethodHandle;
 import org.mosaic.util.reflection.MethodHandleFactory;
 import org.mosaic.util.reflection.ParameterResolver;
 import org.osgi.framework.*;
+import org.osgi.framework.ServiceReference;
+import org.osgi.framework.ServiceRegistration;
 
 /**
  * @author arik
@@ -66,6 +65,12 @@ final class ComponentMethodEndpointLifecycle extends Lifecycle implements Method
                     throw new ComponentDefinitionException( msg, e, this.componentDescriptor.getComponentType(), this.componentDescriptor.getModule() );
                 }
             }
+        }
+
+        Ranking rankingAnn = this.method.getAnnotation( Ranking.class );
+        if( rankingAnn != null )
+        {
+            this.properties.put( Constants.SERVICE_RANKING, rankingAnn.value() );
         }
     }
 

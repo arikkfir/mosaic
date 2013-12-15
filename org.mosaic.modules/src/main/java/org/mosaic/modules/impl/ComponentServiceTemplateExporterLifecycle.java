@@ -5,14 +5,16 @@ import java.util.Dictionary;
 import java.util.Hashtable;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.mosaic.modules.Ranking;
 import org.mosaic.modules.ServiceTemplate;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceRegistration;
 
 /**
  * @author arik
  */
-@SuppressWarnings( "unchecked" )
+@SuppressWarnings("unchecked")
 final class ComponentServiceTemplateExporterLifecycle extends Lifecycle implements ServiceTemplate
 {
     @Nonnull
@@ -24,11 +26,20 @@ final class ComponentServiceTemplateExporterLifecycle extends Lifecycle implemen
     @Nullable
     private ServiceRegistration<ServiceTemplate> registration;
 
+    @Nullable
+    private Integer ranking;
+
     ComponentServiceTemplateExporterLifecycle( @Nonnull ComponentDescriptorImpl<?> componentDescriptor,
                                                @Nonnull Annotation type )
     {
         this.componentDescriptor = componentDescriptor;
         this.type = type;
+
+        Ranking rankingAnn = this.componentDescriptor.getComponentType().getAnnotation( Ranking.class );
+        if( rankingAnn != null )
+        {
+            this.ranking = rankingAnn.value();
+        }
     }
 
     @Override
@@ -62,6 +73,10 @@ final class ComponentServiceTemplateExporterLifecycle extends Lifecycle implemen
 
         Dictionary<String, Object> dict = new Hashtable<>();
         dict.put( "type", this.type.annotationType().getName() );
+        if( this.ranking != null )
+        {
+            dict.put( Constants.SERVICE_RANKING, this.ranking );
+        }
         this.registration = bundleContext.registerService( ServiceTemplate.class, this, dict );
     }
 
