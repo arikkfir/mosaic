@@ -1,12 +1,12 @@
 package org.mosaic.web.application.impl;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.reflect.TypeToken;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.*;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.xml.xpath.XPathException;
@@ -21,8 +21,12 @@ import org.mosaic.util.collections.*;
 import org.mosaic.util.properties.PropertyPlaceholderResolver;
 import org.mosaic.util.resource.AntPathMatcher;
 import org.mosaic.util.resource.PathMatcher;
+import org.mosaic.util.resource.PathWatcher;
+import org.mosaic.util.resource.PathWatcherContext;
 import org.mosaic.util.xml.XmlElement;
 import org.mosaic.web.application.Application;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.nio.file.Files.exists;
 
@@ -31,9 +35,40 @@ import static java.nio.file.Files.exists;
  */
 final class ApplicationImpl implements Application, Application.ApplicationSecurity, Application.ApplicationResources
 {
+    private static final Logger LOG = LoggerFactory.getLogger( ApplicationImpl.class );
+
     private static final String UNKNOWN_REALM = "org.mosaic.security.realm.unknown";
 
     private static final String UNKNOWN_PERMISSION_POLICY = "org.mosaic.security.permissionPolicies.unknown";
+
+    private static final Resource UNKNOWN_RESOURCE = new Resource()
+    {
+        @Nonnull
+        @Override
+        public Path getPath()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean isCompressionEnabled()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean isBrowsingEnabled()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Nullable
+        @Override
+        public Period getCachePeriod()
+        {
+            throw new UnsupportedOperationException();
+        }
+    };
 
     static final PropertyPlaceholderResolver PROPERTY_PLACEHOLDER_RESOLVER = new PropertyPlaceholderResolver();
 
@@ -83,11 +118,17 @@ final class ApplicationImpl implements Application, Application.ApplicationSecur
     private final String id;
 
     @Nonnull
+    private final LoadingCache<String, Resource> resourceCache;
+
+    @Nonnull
     @Component
     private Module module;
 
     @Nullable
-    private ServiceRegistration<Application> registration;
+    private ServiceRegistration<Application> applicationRegistration;
+
+    @Nullable
+    private Collection<ServiceRegistration<PathWatcher>> watcherRegistrations;
 
     @Nonnull
     private String name = "Unknown";
@@ -119,6 +160,42 @@ final class ApplicationImpl implements Application, Application.ApplicationSecur
     ApplicationImpl( @Nonnull String id, @Nonnull XmlElement appElt ) throws XPathException
     {
         this.id = id;
+        this.resourceCache = CacheBuilder.from( "concurrencyLevel=100," +
+                                                "initialCapacity=1000," +
+                                                "maximumSize=1000000" ).build( new CacheLoader<String, Resource>()
+        {
+            @Nonnull
+            @Override
+            public Resource load( @Nonnull String path ) throws Exception
+            {
+                if( path.startsWith( "/" ) )
+                {
+                    path = path.substring( 1 );
+                }
+
+                Path p = Paths.get( path );
+                if( p.isAbsolute() )
+                {
+                    return UNKNOWN_RESOURCE;
+                }
+                else if( !p.toString().isEmpty() )
+                {
+                    p = p.normalize();
+                }
+
+                for( Path contentRoot : ApplicationImpl.this.contentRoots )
+                {
+                    Path resolved = contentRoot.resolve( p ).toAbsolutePath().normalize();
+                    if( exists( resolved ) )
+                    {
+                        return new ResourceImpl( contentRoot, resolved );
+                    }
+                }
+
+                return UNKNOWN_RESOURCE;
+            }
+        } );
+
         parse( appElt );
     }
 
@@ -228,34 +305,18 @@ final class ApplicationImpl implements Application, Application.ApplicationSecur
     @Override
     public Resource getResource( @Nonnull String path )
     {
-        if( path.startsWith( "/" ) )
-        {
-            path = path.substring( 1 );
-        }
-
-        Path p = Paths.get( path );
-        if( p.isAbsolute() )
+        Resource resource = this.resourceCache.getUnchecked( path );
+        if( resource == UNKNOWN_RESOURCE )
         {
             return null;
         }
-        else if( !p.toString().isEmpty() )
+        else
         {
-            p = p.normalize();
+            return resource;
         }
-
-        for( Path contentRoot : this.contentRoots )
-        {
-            Path resolved = contentRoot.resolve( p ).toAbsolutePath().normalize();
-            if( exists( resolved ) )
-            {
-                return new ResourceImpl( contentRoot, resolved );
-            }
-        }
-
-        return null;
     }
 
-    void parse( @Nonnull XmlElement appElt ) throws XPathException
+    synchronized void parse( @Nonnull XmlElement appElt ) throws XPathException
     {
         String name = appElt.find( "m:name", TypeToken.of( String.class ), this.id );
         Period maxSessionAge = parsePeriod( appElt.find( "m:max-session-age", TypeToken.of( String.class ), "30 minutes" ) );
@@ -300,15 +361,48 @@ final class ApplicationImpl implements Application, Application.ApplicationSecur
         this.contentRoots = Collections.unmodifiableSet( contentRoots );
 
         unregister();
-        this.registration = this.module.getModuleWiring().register( Application.class, this, Property.property( "name", this.name ) );
+        this.applicationRegistration = this.module.getModuleWiring().register( Application.class, this, Property.property( "name", this.name ) );
+
+        Collection<ServiceRegistration<PathWatcher>> watcherRegistrations = new LinkedList<>();
+        for( Path contentRoot : this.contentRoots )
+        {
+            try
+            {
+                watcherRegistrations.add( this.module.getModuleWiring().register(
+                        PathWatcher.class,
+                        new PathWatcher()
+                        {
+                            @Override
+                            public void handle( @Nonnull PathWatcherContext context ) throws Exception
+                            {
+                                ApplicationImpl.this.resourceCache.invalidateAll();
+                            }
+                        },
+                        Property.property( "location", contentRoot ) )
+                );
+            }
+            catch( Exception e )
+            {
+                LOG.warn( "Could not register content root watcher for '{}' at '{}': {}", this.id, contentRoot, e.getMessage(), e );
+            }
+        }
+        this.watcherRegistrations = watcherRegistrations;
     }
 
-    void unregister()
+    synchronized void unregister()
     {
-        if( this.registration != null )
+        if( this.applicationRegistration != null )
         {
-            this.registration.unregister();
-            this.registration = null;
+            this.applicationRegistration.unregister();
+            this.applicationRegistration = null;
+        }
+        if( this.watcherRegistrations != null )
+        {
+            for( ServiceRegistration<PathWatcher> registration : this.watcherRegistrations )
+            {
+                registration.unregister();
+            }
+            this.watcherRegistrations = null;
         }
     }
 }

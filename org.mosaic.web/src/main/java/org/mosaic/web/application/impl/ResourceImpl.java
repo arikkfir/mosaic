@@ -2,7 +2,6 @@ package org.mosaic.web.application.impl;
 
 import java.io.Reader;
 import java.nio.charset.Charset;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 import javax.annotation.Nonnull;
@@ -31,14 +30,9 @@ final class ResourceImpl implements Application.ApplicationResources.Resource
     @Nullable
     private final Period cachePeriod;
 
-    private final boolean directory;
-
     ResourceImpl( @Nonnull Path contentRoot, @Nonnull Path path )
     {
-        // TODO: cache mosaic.properties files for paths
-
         this.path = path;
-        this.directory = Files.isDirectory( this.path );
 
         Boolean compressionEnabled = null;
         Boolean browsingEnabled = null;
@@ -98,7 +92,7 @@ final class ResourceImpl implements Application.ApplicationResources.Resource
         }
 
         this.compressionEnabled = compressionEnabled != null && compressionEnabled;
-        this.browsingEnabled = this.directory && browsingEnabled != null && browsingEnabled;
+        this.browsingEnabled = isDirectory( this.path ) && browsingEnabled != null && browsingEnabled;
         this.cachePeriod = cachePeriod;
     }
 
@@ -119,12 +113,6 @@ final class ResourceImpl implements Application.ApplicationResources.Resource
     public boolean isBrowsingEnabled()
     {
         return this.browsingEnabled;
-    }
-
-    @Override
-    public boolean isDirectory()
-    {
-        return this.directory;
     }
 
     @Nullable
