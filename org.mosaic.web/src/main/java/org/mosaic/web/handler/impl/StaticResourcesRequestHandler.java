@@ -21,6 +21,7 @@ import org.mosaic.web.request.WebRequest;
 import org.mosaic.web.request.WebResponse;
 
 import static java.nio.file.Files.copy;
+import static java.nio.file.Files.isDirectory;
 import static org.mosaic.web.request.HttpStatus.*;
 
 /**
@@ -61,7 +62,7 @@ public class StaticResourcesRequestHandler implements RequestHandler
     public void handle( @Nonnull WebRequest request ) throws Throwable
     {
         Application.ApplicationResources.Resource resource = request.getAttributes().require( "resource", Application.ApplicationResources.Resource.class );
-        if( resource.isDirectory() )
+        if( isDirectory( resource.getPath() ) )
         {
             serveDirectory( request, resource );
         }
