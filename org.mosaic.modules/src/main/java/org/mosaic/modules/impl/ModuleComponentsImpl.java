@@ -4,6 +4,7 @@ import com.google.common.base.Joiner;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -160,7 +161,9 @@ final class ModuleComponentsImpl extends Lifecycle implements ModuleComponents
 
             try
             {
-                this.activator = activatorClass.asSubclass( ModuleActivator.class ).newInstance();
+                Constructor<? extends ModuleActivator> ctor = activatorClass.asSubclass( ModuleActivator.class ).getConstructor();
+                ctor.setAccessible( true );
+                this.activator = ctor.newInstance();
             }
             catch( Throwable e )
             {
