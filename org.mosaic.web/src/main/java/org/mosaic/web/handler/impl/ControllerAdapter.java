@@ -3,10 +3,12 @@ package org.mosaic.web.handler.impl;
 import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.modules.Adapter;
+import org.mosaic.modules.Component;
 import org.mosaic.modules.MethodEndpoint;
 import org.mosaic.modules.Service;
 import org.mosaic.util.collections.MapEx;
@@ -17,6 +19,9 @@ import org.mosaic.util.reflection.ParameterResolver;
 import org.mosaic.web.handler.Controller;
 import org.mosaic.web.handler.RequestHandler;
 import org.mosaic.web.handler.spi.HttpMethodMarker;
+import org.mosaic.web.marshall.UnmarshallableContentException;
+import org.mosaic.web.marshall.impl.MarshallerManager;
+import org.mosaic.web.request.HttpStatus;
 import org.mosaic.web.request.WebRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +54,10 @@ public class ControllerAdapter implements RequestHandler
     @Nonnull
     @Service
     private ExpressionParser expressionParser;
+
+    @Nonnull
+    @Component
+    private MarshallerManager marshallerManager;
 
     @Service
     public ControllerAdapter( @Nonnull MethodEndpoint<Controller> endpoint )
@@ -112,10 +121,23 @@ public class ControllerAdapter implements RequestHandler
     public void handle( @Nonnull WebRequest request ) throws Exception
     {
         LOG.debug( "Invoking method endpoint '{}'", this.endpoint );
-        this.invoker.resolve( Collections.<String, Object>singletonMap( "request", request ) ).invoke();
 
-        // TODO: apply common headers/status if not set
-        // TODO: error handling
+        Map<String, Object> context = Collections.<String, Object>singletonMap( "request", request );
+        Object result = this.invoker.resolve( context ).invoke();
+
+        if( result != null )
+        {
+            LOG.debug( "Marshalling result '{}' from method endpoint '{}'", result, this.endpoint );
+            try
+            {
+                this.marshallerManager.marshall( result, request.getHeaders().getAccept(), request.getResponse().stream() );
+            }
+            catch( UnmarshallableContentException e )
+            {
+                request.getResponse().setStatus( HttpStatus.NOT_ACCEPTABLE );
+                request.getResponse().disableCaching();
+            }
+        }
     }
 
     private class WebRequestParameterResolver implements ParameterResolver
