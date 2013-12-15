@@ -33,6 +33,7 @@ public class MarshallerManager
                     try
                     {
                         marshaller.marshall( value, mediaType, outputStream );
+                        return;
                     }
                     finally
                     {
