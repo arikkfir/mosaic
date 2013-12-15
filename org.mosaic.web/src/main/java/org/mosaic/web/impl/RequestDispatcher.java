@@ -106,7 +106,7 @@ final class RequestDispatcher extends HttpServlet
             }
             catch( Throwable throwable )
             {
-                // TODO: add application-specific error handling, maybe error page, etc
+                // TODO: add application-specific error handling, maybe error page, @ErrorHandler(s), etc
                 WebResponse response = request.getResponse();
                 response.setStatus( HttpStatus.INTERNAL_SERVER_ERROR );
                 response.disableCaching();
