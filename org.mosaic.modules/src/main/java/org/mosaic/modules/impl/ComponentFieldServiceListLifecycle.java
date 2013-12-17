@@ -15,8 +15,6 @@ import org.osgi.framework.*;
 import org.osgi.util.tracker.ServiceTracker;
 import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
-import static java.util.Arrays.asList;
-
 /**
  * @author arik
  */
@@ -315,8 +313,7 @@ final class ComponentFieldServiceListLifecycle extends ComponentField implements
         List services = this.services;
         if( services == null )
         {
-            Object[] serviceArray = this.serviceTracker.getServices();
-            services = serviceArray == null ? Collections.emptyList() : asList( serviceArray );
+            services = new ArrayList( this.serviceTracker.getTracked().values() );
             this.services = services;
         }
         return services;
