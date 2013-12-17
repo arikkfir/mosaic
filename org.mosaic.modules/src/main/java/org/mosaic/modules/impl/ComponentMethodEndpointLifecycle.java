@@ -50,28 +50,22 @@ final class ComponentMethodEndpointLifecycle extends Lifecycle implements Method
         this.properties = new Hashtable<>();
         this.properties.put( "name", getName() );
         this.properties.put( "type", this.annotation.annotationType().getName() );
-        for( Method endpointTypeMethod : this.annotation.annotationType().getMethods() )
+        for( Method endpointTypeMethod : this.annotation.annotationType().getDeclaredMethods() )
         {
             String name = endpointTypeMethod.getName();
-            if( !"equals".equals( name ) )
+            try
             {
-                try
-                {
-                    this.properties.put( name, endpointTypeMethod.invoke( this.annotation ) );
-                }
-                catch( Throwable e )
-                {
-                    String msg = "error adding attribute '" + name + "' from annotation '" + this.annotation.annotationType().getName() + "'";
-                    throw new ComponentDefinitionException( msg, e, this.componentDescriptor.getComponentType(), this.componentDescriptor.getModule() );
-                }
+                this.properties.put( name, endpointTypeMethod.invoke( this.annotation ) );
+            }
+            catch( Throwable e )
+            {
+                String msg = "error adding attribute '" + name + "' from annotation '" + this.annotation.annotationType().getName() + "'";
+                throw new ComponentDefinitionException( msg, e, this.componentDescriptor.getComponentType(), this.componentDescriptor.getModule() );
             }
         }
 
         Ranking rankingAnn = this.method.getAnnotation( Ranking.class );
-        if( rankingAnn != null )
-        {
-            this.properties.put( Constants.SERVICE_RANKING, rankingAnn.value() );
-        }
+        this.properties.put( Constants.SERVICE_RANKING, rankingAnn == null ? 0 : rankingAnn.value() );
     }
 
     @Override
