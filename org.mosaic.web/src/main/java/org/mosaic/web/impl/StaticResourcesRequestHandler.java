@@ -1,4 +1,4 @@
-package org.mosaic.web.handler.impl;
+package org.mosaic.web.impl;
 
 import com.google.common.collect.Sets;
 import com.google.common.net.MediaType;
@@ -29,7 +29,7 @@ import static org.mosaic.web.request.HttpStatus.*;
  * @author arik
  */
 @Service
-@Ranking( -1 )
+@Ranking(-1)
 final class StaticResourcesRequestHandler implements RequestHandler
 {
     private static final HashSet<String> SUPPORTED_HTTP_METHODS = Sets.newHashSet( "GET", "HEAD" );
@@ -37,7 +37,7 @@ final class StaticResourcesRequestHandler implements RequestHandler
     @Nonnull
     private final MimeTypes mimeTypes = new MimeTypes();
 
-    @Nullable
+    @Nonnull
     @Override
     public Set<String> getHttpMethods()
     {

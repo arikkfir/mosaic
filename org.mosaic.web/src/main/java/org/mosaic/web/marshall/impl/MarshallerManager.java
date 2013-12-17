@@ -1,8 +1,6 @@
 package org.mosaic.web.marshall.impl;
 
 import com.google.common.net.MediaType;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.List;
 import javax.annotation.Nonnull;
 import org.mosaic.modules.Component;
@@ -20,34 +18,20 @@ public class MarshallerManager
     @Service
     private List<MessageMarshaller> marshallers;
 
-    public void marshall( @Nonnull Object value,
-                          @Nonnull List<MediaType> allowedMediaTypes,
-                          @Nonnull OutputStream outputStream ) throws Exception
+    public void marshall( @Nonnull MessageMarshaller.MarshallingSink sink,
+                          @Nonnull List<MediaType> allowedMediaTypes ) throws Exception
     {
         for( MediaType mediaType : allowedMediaTypes )
         {
             for( MessageMarshaller marshaller : this.marshallers )
             {
-                if( marshaller.canMarshall( value, mediaType ) )
+                if( marshaller.canMarshall( sink.getValue(), mediaType ) )
                 {
-                    try
-                    {
-                        marshaller.marshall( value, mediaType, outputStream );
-                        return;
-                    }
-                    finally
-                    {
-                        try
-                        {
-                            outputStream.flush();
-                        }
-                        catch( IOException ignore )
-                        {
-                        }
-                    }
+                    sink.setContentType( mediaType );
+                    marshaller.marshall( sink );
                 }
             }
         }
-        throw new UnmarshallableContentException( value, allowedMediaTypes );
+        throw new UnmarshallableContentException( sink.getValue(), allowedMediaTypes );
     }
 }

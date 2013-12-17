@@ -1,4 +1,4 @@
-package org.mosaic.web.request.impl;
+package org.mosaic.web.impl;
 
 import com.google.common.base.Function;
 import com.google.common.net.MediaType;
@@ -18,7 +18,7 @@ import static org.eclipse.jetty.http.HttpFields.qualityList;
 /**
  * @author arik
  */
-final class Header
+final class HeaderUtil
 {
     @Nullable
     static String getString( @Nonnull HttpFields httpFields, @Nonnull String headerName )
@@ -43,13 +43,14 @@ final class Header
     @Nonnull
     static List<String> getStrings( @Nonnull HttpFields httpFields, @Nonnull String headerName )
     {
-        return list( httpFields.getValues( headerName, HttpFields.__separators ) );
+        return list( httpFields.getValues( headerName, "," ) );
     }
 
     @Nonnull
     static List<String> getQualityStrings( @Nonnull HttpFields httpFields, @Nonnull String headerName )
     {
-        List<String> values = qualityList( enumeration( getStrings( httpFields, headerName ) ) );
+        List<String> strings = getStrings( httpFields, headerName );
+        List<String> values = qualityList( enumeration( strings ) );
         return transform( values, new Function<String, String>()
         {
             @Nullable
@@ -103,7 +104,7 @@ final class Header
         } );
     }
 
-    private Header()
+    private HeaderUtil()
     {
         // no-op
     }

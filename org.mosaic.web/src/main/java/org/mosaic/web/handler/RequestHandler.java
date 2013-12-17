@@ -10,7 +10,7 @@ import org.mosaic.web.request.WebRequest;
  */
 public interface RequestHandler
 {
-    @Nullable
+    @Nonnull
     Set<String> getHttpMethods();
 
     boolean canHandle( @Nonnull WebRequest request );

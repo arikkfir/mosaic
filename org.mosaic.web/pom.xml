@@ -21,7 +21,7 @@
                 <configuration>
                     <instructions>
                         <Embed-Dependency>
-                            jetty*,javax.servlet
+                            jackson*,jetty*,javax.servlet
                         </Embed-Dependency>
                         <Module-Activator>org.mosaic.web.impl.Activator</Module-Activator>
                     </instructions>
@@ -32,20 +32,24 @@
 
     <dependencies>
         <dependency>
+            <groupId>biz.aQute.bnd</groupId>
+            <artifactId>bndlib</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.config</artifactId>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
-            <artifactId>org.mosaic.event</artifactId>
+            <artifactId>org.mosaic.jsr305</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mosaic</groupId>
+            <artifactId>org.mosaic.pathwatchers</artifactId>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.modules</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.mosaic</groupId>
-            <artifactId>org.mosaic.security</artifactId>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
@@ -56,17 +60,43 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>joda-time</groupId>
+            <artifactId>joda-time</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <optional>true</optional>
+        </dependency>
 
+        <!-- fasterxml -->
         <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-client</artifactId>
-            <optional>true</optional>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-continuation</artifactId>
-            <optional>true</optional>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-csv</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-guava</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-joda</artifactId>
+        </dependency>
+
+        <!-- jetty -->
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-http</artifactId>
@@ -74,12 +104,8 @@
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-io</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-jmx</artifactId>
+            <scope>runtime</scope>
             <optional>true</optional>
         </dependency>
         <dependency>
@@ -87,11 +113,13 @@
             <artifactId>jetty-monitor</artifactId>
             <optional>true</optional>
         </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-security</artifactId>
-            <optional>true</optional>
-        </dependency>
+        <!--
+                <dependency>
+                    <groupId>org.eclipse.jetty</groupId>
+                    <artifactId>jetty-security</artifactId>
+                    <optional>true</optional>
+                </dependency>
+        -->
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>
@@ -109,27 +137,7 @@
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-start</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-util</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-util-ajax</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-webapp</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-xml</artifactId>
             <optional>true</optional>
         </dependency>
         <dependency>

@@ -1,4 +1,4 @@
-package org.mosaic.web.request.impl;
+package org.mosaic.web.impl;
 
 import javax.annotation.Nonnull;
 import javax.servlet.http.HttpSession;

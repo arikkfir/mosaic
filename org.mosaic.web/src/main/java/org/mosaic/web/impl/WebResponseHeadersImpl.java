@@ -1,4 +1,4 @@
-package org.mosaic.web.request.impl;
+package org.mosaic.web.impl;
 
 import com.google.common.base.Joiner;
 import com.google.common.net.HttpHeaders;
@@ -14,7 +14,7 @@ import org.joda.time.DateTime;
 import org.mosaic.web.request.WebResponseHeaders;
 
 import static com.google.common.net.HttpHeaders.*;
-import static org.mosaic.web.request.impl.Header.*;
+import static org.mosaic.web.impl.HeaderUtil.*;
 
 /**
  * @author arik
@@ -39,7 +39,7 @@ final class WebResponseHeadersImpl implements WebResponseHeaders
     @Override
     public List<String> getAllow()
     {
-        return Header.getStrings( this.response.getHttpFields(), ALLOW );
+        return HeaderUtil.getStrings( this.response.getHttpFields(), ALLOW );
     }
 
     @Override

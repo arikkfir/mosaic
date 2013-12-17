@@ -72,7 +72,7 @@ final class JettyManager
     @Nullable
     private ContextHandlerCollection contextHandlerCollection;
 
-    @Configurable( "web" )
+    @Configurable("web")
     void configure( @Nonnull final MapEx<String, String> cfg )
     {
         LOG.info( "Web server configured - {}", this.server != null ? "restarting" : "starting" );
@@ -210,7 +210,6 @@ final class JettyManager
         try
         {
             server = createServer( cfg );
-            server.setHandler( new ContextHandlerCollection() );
             server.start();
             this.server = server;
 
@@ -251,7 +250,7 @@ final class JettyManager
         }
     }
 
-    private Server createServer( MapEx<String, String> cfg )
+    private Server createServer( MapEx<String, String> cfg ) throws Exception
     {
         Server server = new Server();
         server.setDumpAfterStart( false );
@@ -261,6 +260,7 @@ final class JettyManager
         server.setConnectors( createConnectors( server, cfg ) );
         server.setAttribute( "org.eclipse.jetty.server.Request.maxFormContentSize", cfg.get( "maxFormContentSize", Integer.class, 100000 ) );
         server.setAttribute( "org.eclipse.jetty.server.Request.maxFormKeys", cfg.get( "maxFormKeys", Integer.class, 2000 ) );
+        server.setHandler( new ContextHandlerCollection() );
         return server;
     }
 

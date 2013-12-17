@@ -1,4 +1,4 @@
-package org.mosaic.web.request.impl;
+package org.mosaic.web.impl;
 
 import org.mosaic.web.request.WebDevice;
 

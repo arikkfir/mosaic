@@ -1,4 +1,4 @@
-package org.mosaic.web.request.impl;
+package org.mosaic.web.impl;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;

@@ -1,4 +1,4 @@
-package org.mosaic.web.request.impl;
+package org.mosaic.web.impl;
 
 import com.google.common.net.MediaType;
 import java.net.URI;
@@ -15,7 +15,7 @@ import org.joda.time.DateTime;
 import org.mosaic.web.request.WebRequestHeaders;
 
 import static com.google.common.net.HttpHeaders.*;
-import static org.mosaic.web.request.impl.Header.*;
+import static org.mosaic.web.impl.HeaderUtil.*;
 
 /**
  * @author arik

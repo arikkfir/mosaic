@@ -1,4 +1,4 @@
-package org.mosaic.web.request.impl;
+package org.mosaic.web.impl;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -21,7 +21,7 @@ import static java.util.Collections.list;
 /**
  * @author arik
  */
-public final class WebRequestImpl implements WebRequest
+final class WebRequestImpl implements WebRequest
 {
     private static final Logger LOG = LoggerFactory.getLogger( WebRequestImpl.class );
 
@@ -52,7 +52,7 @@ public final class WebRequestImpl implements WebRequest
     @Nonnull
     private final WebResponse response;
 
-    public WebRequestImpl( @Nonnull Application application, @Nonnull Request request )
+    WebRequestImpl( @Nonnull Application application, @Nonnull Request request )
     {
         this.application = application;
         this.request = request;
