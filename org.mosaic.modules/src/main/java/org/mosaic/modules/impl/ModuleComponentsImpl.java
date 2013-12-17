@@ -149,10 +149,10 @@ final class ModuleComponentsImpl extends Lifecycle implements ModuleComponents
     {
         if( this.moduleActivatorClassName != null )
         {
-            Class<?> activatorClass;
+            Class<?> clazz;
             try
             {
-                activatorClass = this.module.getBundle().loadClass( this.moduleActivatorClassName );
+                clazz = this.module.getBundle().loadClass( this.moduleActivatorClassName );
             }
             catch( Throwable e )
             {
@@ -161,7 +161,8 @@ final class ModuleComponentsImpl extends Lifecycle implements ModuleComponents
 
             try
             {
-                Constructor<? extends ModuleActivator> ctor = activatorClass.asSubclass( ModuleActivator.class ).getConstructor();
+                Class<? extends ModuleActivator> activatorClass = clazz.asSubclass( ModuleActivator.class );
+                Constructor<? extends ModuleActivator> ctor = activatorClass.getDeclaredConstructor();
                 ctor.setAccessible( true );
                 this.activator = ctor.newInstance();
             }
