@@ -598,6 +598,13 @@
                 <version>[1.7,2)</version>
             </dependency>
 
+            <!-- freemarker -->
+            <dependency>
+                <groupId>org.freemarker</groupId>
+                <artifactId>freemarker</artifactId>
+                <version>[2.3.20]</version>
+            </dependency>
+
             <!-- fasterxml -->
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
