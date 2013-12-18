@@ -32,7 +32,7 @@ final class PasswordAuthenticatorImpl implements org.apache.sshd.server.Password
         {
             try
             {
-                AuthenticationToken authenticationToken = new UsernamePasswordAuthToken( username, password.toCharArray(), false );
+                AuthenticationToken authenticationToken = new UsernamePasswordAuthToken( username, password.toCharArray() );
                 Subject subject = this.security.authenticate( "localUsers", "shell", authenticationToken );
                 session.setAttribute( SshServer.SUBJECT_KEY, subject );
                 return true;

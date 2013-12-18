@@ -28,21 +28,18 @@ public class UsernamePasswordAuthToken implements AuthenticationToken
     @Nullable
     private final byte[] password;
 
-    private final boolean rememberMe;
-
-    public UsernamePasswordAuthToken( @Nonnull String username, @Nullable char[] password, boolean rememberMe )
+    public UsernamePasswordAuthToken( @Nonnull String username, @Nullable char[] password )
     {
-        this( username, password != null ? new String( password ) : null, rememberMe );
+        this( username, password != null ? new String( password ) : null );
     }
 
-    public UsernamePasswordAuthToken( @Nonnull String username, @Nullable String password, boolean rememberMe )
+    public UsernamePasswordAuthToken( @Nonnull String username, @Nullable String password )
     {
-        this( username, getPasswordBytes( password ), rememberMe );
+        this( username, getPasswordBytes( password ) );
     }
 
-    public UsernamePasswordAuthToken( @Nonnull String username, @Nullable byte[] password, boolean rememberMe )
+    public UsernamePasswordAuthToken( @Nonnull String username, @Nullable byte[] password )
     {
-        this.rememberMe = rememberMe;
         this.username = username;
         this.password = password;
     }
@@ -57,11 +54,5 @@ public class UsernamePasswordAuthToken implements AuthenticationToken
     public final byte[] getPassword()
     {
         return this.password;
-    }
-
-    @Override
-    public final boolean rememberMe()
-    {
-        return this.rememberMe;
     }
 }

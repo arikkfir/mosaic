@@ -1,9 +1,8 @@
 package org.mosaic.security;
 
 /**
-* @author arik
-*/
+ * @author arik
+ */
 public interface AuthenticationToken
 {
-    boolean rememberMe();
 }

@@ -25,7 +25,7 @@ final class PublickeyAuthenticatorImpl implements PublickeyAuthenticator
     {
         try
         {
-            AuthenticationToken authenticationToken = new PublicKeyAuthenticationToken( username, key, false );
+            AuthenticationToken authenticationToken = new PublicKeyAuthenticationToken( username, key );
             Subject subject = this.security.authenticate( "localUsers", "shell", authenticationToken );
             session.setAttribute( SshServer.SUBJECT_KEY, subject );
             return true;

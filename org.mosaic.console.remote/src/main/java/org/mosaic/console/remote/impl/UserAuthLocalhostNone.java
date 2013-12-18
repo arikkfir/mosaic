@@ -57,7 +57,7 @@ final class UserAuthLocalhostNone extends UserAuthNone
             {
                 try
                 {
-                    AuthenticationToken authenticationToken = new UsernameNoneAuthToken( username, inetSocketAddress, false );
+                    AuthenticationToken authenticationToken = new UsernameNoneAuthToken( username, inetSocketAddress );
                     Subject subject = this.security.authenticate( "localUsers", "shell", authenticationToken );
                     session.setAttribute( SshServer.SUBJECT_KEY, subject );
                     return true;

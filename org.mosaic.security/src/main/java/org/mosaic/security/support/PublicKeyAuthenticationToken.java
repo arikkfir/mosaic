@@ -15,13 +15,10 @@ public class PublicKeyAuthenticationToken implements AuthenticationToken
     @Nonnull
     private final PublicKey publicKey;
 
-    private final boolean rememberMe;
-
-    public PublicKeyAuthenticationToken( @Nonnull String username, @Nonnull PublicKey publicKey, boolean rememberMe )
+    public PublicKeyAuthenticationToken( @Nonnull String username, @Nonnull PublicKey publicKey )
     {
         this.username = username;
         this.publicKey = publicKey;
-        this.rememberMe = rememberMe;
     }
 
     @Nonnull
@@ -34,11 +31,5 @@ public class PublicKeyAuthenticationToken implements AuthenticationToken
     public PublicKey getPublicKey()
     {
         return this.publicKey;
-    }
-
-    @Override
-    public boolean rememberMe()
-    {
-        return this.rememberMe;
     }
 }

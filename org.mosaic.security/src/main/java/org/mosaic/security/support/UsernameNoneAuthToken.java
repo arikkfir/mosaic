@@ -16,11 +16,8 @@ public class UsernameNoneAuthToken implements AuthenticationToken
     @Nullable
     private final InetSocketAddress address;
 
-    private final boolean rememberMe;
-
-    public UsernameNoneAuthToken( @Nonnull String username, @Nullable InetSocketAddress address, boolean rememberMe )
+    public UsernameNoneAuthToken( @Nonnull String username, @Nullable InetSocketAddress address )
     {
-        this.rememberMe = rememberMe;
         this.username = username;
         this.address = address;
     }
@@ -35,11 +32,5 @@ public class UsernameNoneAuthToken implements AuthenticationToken
     public final InetSocketAddress getAddress()
     {
         return this.address;
-    }
-
-    @Override
-    public final boolean rememberMe()
-    {
-        return this.rememberMe;
     }
 }
