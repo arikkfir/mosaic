@@ -70,7 +70,11 @@ final class InitFelixTask extends InitTask
         felixConfig.put( BundleCache.CACHE_BUFSIZE_PROP, FELIX_CACHE_BUFSIZE + "" );                // buffer size for reading from storage
         felixConfig.put( FelixConstants.LOG_LEVEL_PROP, "0" );                                      // disable Felix logging output (we'll only log OSGi events)
         felixConfig.put( FelixConstants.FRAMEWORK_SYSTEMPACKAGES_EXTRA, getExtraSystemPackages() ); // extra packages exported by system bundle
-        felixConfig.put( FelixConstants.FRAMEWORK_BOOTDELEGATION, "javax.xml.*,org.w3c.*,sun.*,com.yourkit.*" ); // extra packages available via classloader delegation (ie. not "Import-Package" necessary)
+        felixConfig.put( FelixConstants.FRAMEWORK_BOOTDELEGATION, "javax.*," +
+                                                                  "org.w3c.*," +
+                                                                  "com.sun.*," +
+                                                                  "sun.*," +
+                                                                  "com.yourkit.*" ); // extra packages available via classloader delegation (ie. not "Import-Package" necessary)
         felixConfig.put( FelixConstants.FRAMEWORK_BUNDLE_PARENT, FelixConstants.FRAMEWORK_BUNDLE_PARENT_EXT ); // parent class-loader of all bundles
 
         // mosaic configurations
