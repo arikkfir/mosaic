@@ -2,6 +2,7 @@ package org.mosaic.management;
 
 import org.mosaic.modules.Component;
 import org.mosaic.web.handler.Controller;
+import org.mosaic.web.handler.GET;
 
 /**
  * @author arik
@@ -9,9 +10,20 @@ import org.mosaic.web.handler.Controller;
 @Component
 public class ManagementServices
 {
-    @Controller( app = "application.id == 'management'", uri = "/hello" )
-    public String helloService()
+    @GET
+    @Controller(uri = "/hello", app = "application.id == 'management'")
+    public Hello helloService()
     {
-        return "Hello World!";
+        return new Hello( "Hello There!" );
+    }
+
+    public static class Hello
+    {
+        public final String greeting;
+
+        public Hello( String greeting )
+        {
+            this.greeting = greeting;
+        }
     }
 }

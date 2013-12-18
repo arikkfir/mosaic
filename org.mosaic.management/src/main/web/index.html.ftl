@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <title>Mosaic Management Console</title>
     <meta name="description" content="Mosaic management console">
@@ -11,34 +11,42 @@
 </head>
 <body>
 
-    <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
-        <div class="container">
-            <div class="navbar-header">
-                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-                    <span class="sr-only">Toggle navigation</span>
-                    <span class="icon-bar">a</span>
-                    <span class="icon-bar">b</span>
-                    <span class="icon-bar">c</span>
-                </button>
-                <a class="navbar-brand" href="#">Mosaic Management Console</a>
-            </div>
-            <div class="navbar-collapse collapse">
-                <form class="navbar-form navbar-right" role="form">
-                    <div class="form-group">
-                        <input type="text" placeholder="Email" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <input type="password" placeholder="Password" class="form-control">
-                    </div>
-                    <button type="submit" class="btn btn-success">Sign in</button>
-                </form>
-            </div>
+    <nav class="navbar navbar-default" role="navigation">
+
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#top-navbar-collapse-1">
+                <span class="sr-only">Navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">Mosaic Management Console</a>
         </div>
-    </div>
+
+        <div class="collapse navbar-collapse" id="top-navbar-collapse-1">
+            <ul class="nav navbar-nav navbar-right">
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-cog"></span></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="#" onclick="testMarshalling()">Something else here</a></li>
+                        <li class="divider"></li>
+                        <li><a href="/admin">Administration</a></li>
+                        <li class="divider"></li>
+                        <li><a href="#" onclick="logout()">Log-out</a></li>
+                    </ul>
+                </li>
+            </ul>
+            <form class="navbar-form navbar-right" role="search" action="/search">
+                <div class="form-group">
+                    <input type="text" class="form-control" name="q" placeholder="Search">
+                </div>
+            </form>
+        </div>
+    </nav>
 
     <div class="jumbotron">
         <div class="container">
-            <h1>Management Console</h1>
+            <h1>Mosaic Management Console</h1>
             <p>Mosaic Management Console is your one-stop shop for managing Mosaic servers.</p>
             <p><a class="btn btn-primary btn-lg" role="button">Learn more &raquo;</a></p>
         </div>
@@ -74,5 +82,6 @@
     <script src="lib/underscore-1.5.2.min.js"></script>
     <script src="lib/backbone-1.1.0.min.js"></script>
     <script src="lib/bootstrap/js/bootstrap.min.js"></script>
+    <script src="/index.js"></script>
 </body>
 </html>
