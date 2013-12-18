@@ -25,3 +25,4 @@ web
 * implement @TypedInterceptor and @UriInterceptor
 * implement statistics for request handling
     * maybe use Jetty's org.eclipse.jetty.util.statistic.[CounterStatistic|SampleStatistic]
+* implement security
