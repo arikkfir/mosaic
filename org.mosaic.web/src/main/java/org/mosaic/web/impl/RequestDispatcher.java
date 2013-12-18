@@ -14,7 +14,9 @@ import org.mosaic.modules.Component;
 import org.mosaic.modules.Module;
 import org.mosaic.modules.Service;
 import org.mosaic.web.application.Application;
+import org.mosaic.web.handler.spi.RequestPlanFactory;
 import org.mosaic.web.request.WebRequest;
+import org.mosaic.web.request.spi.WebRequestFactory;
 
 /**
  * @author arik
@@ -30,6 +32,14 @@ final class RequestDispatcher extends HttpServlet
     @Service
     private List<Application> applications;
 
+    @Nonnull
+    @Component
+    private RequestPlanFactory requestPlanFactory;
+
+    @Nonnull
+    @Component
+    private WebRequestFactory webRequestFactory;
+
     @Override
     protected void service( HttpServletRequest req, HttpServletResponse resp ) throws ServletException, IOException
     {
@@ -42,9 +52,9 @@ final class RequestDispatcher extends HttpServlet
             return;
         }
 
-        WebRequest request = new WebRequestImpl( application, ( Request ) req );
-        RequestPlan plan = new RequestPlan( request );
-        plan.execute();
+        WebRequest request = this.webRequestFactory.createRequest( application, ( Request ) req );
+        Runnable plan = this.requestPlanFactory.createRequestPlanExecutor( request );
+        plan.run();
     }
 
     @Nullable

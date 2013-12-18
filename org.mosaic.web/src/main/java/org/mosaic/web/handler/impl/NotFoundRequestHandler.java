@@ -1,4 +1,4 @@
-package org.mosaic.web.impl;
+package org.mosaic.web.handler.impl;
 
 import com.google.common.collect.Sets;
 import java.util.Set;
@@ -23,7 +23,7 @@ final class NotFoundRequestHandler implements RequestHandler
 
     @Nonnull
     @Component
-    private RequestHandlerManager requestHandlerManager;
+    private RequestHandlersManagerImpl requestHandlersManager;
 
     @Nonnull
     @Override

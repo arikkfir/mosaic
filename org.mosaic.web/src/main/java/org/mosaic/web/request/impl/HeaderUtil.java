@@ -1,4 +1,4 @@
-package org.mosaic.web.impl;
+package org.mosaic.web.request.impl;
 
 import com.google.common.base.Function;
 import com.google.common.net.MediaType;

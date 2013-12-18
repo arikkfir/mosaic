@@ -1,4 +1,4 @@
-package org.mosaic.web.impl;
+package org.mosaic.web.request.impl;
 
 import com.google.common.base.Joiner;
 import com.google.common.net.HttpHeaders;
@@ -14,7 +14,6 @@ import org.joda.time.DateTime;
 import org.mosaic.web.request.WebResponseHeaders;
 
 import static com.google.common.net.HttpHeaders.*;
-import static org.mosaic.web.impl.HeaderUtil.*;
 
 /**
  * @author arik
@@ -52,7 +51,7 @@ final class WebResponseHeadersImpl implements WebResponseHeaders
     @Override
     public List<String> getAcceptRanges()
     {
-        return getStrings( this.response.getHttpFields(), ACCEPT_RANGES );
+        return HeaderUtil.getStrings( this.response.getHttpFields(), ACCEPT_RANGES );
     }
 
     @Override
@@ -65,7 +64,7 @@ final class WebResponseHeadersImpl implements WebResponseHeaders
     @Override
     public String getCacheControl()
     {
-        return getString( this.response.getHttpFields(), CACHE_CONTROL );
+        return HeaderUtil.getString( this.response.getHttpFields(), CACHE_CONTROL );
     }
 
     @Override
@@ -78,7 +77,7 @@ final class WebResponseHeadersImpl implements WebResponseHeaders
     @Override
     public String getConnection()
     {
-        return getString( this.response.getHttpFields(), CONNECTION );
+        return HeaderUtil.getString( this.response.getHttpFields(), CONNECTION );
     }
 
     @Override
@@ -91,7 +90,7 @@ final class WebResponseHeadersImpl implements WebResponseHeaders
     @Override
     public List<String> getContentEncoding()
     {
-        return getStrings( this.response.getHttpFields(), CONTENT_ENCODING );
+        return HeaderUtil.getStrings( this.response.getHttpFields(), CONTENT_ENCODING );
     }
 
     @Override
@@ -138,7 +137,7 @@ final class WebResponseHeadersImpl implements WebResponseHeaders
     @Override
     public String getContentLocation()
     {
-        return getString( this.response.getHttpFields(), CONTENT_LOCATION );
+        return HeaderUtil.getString( this.response.getHttpFields(), CONTENT_LOCATION );
     }
 
     @Override
@@ -151,7 +150,7 @@ final class WebResponseHeadersImpl implements WebResponseHeaders
     @Override
     public String getContentMd5()
     {
-        return getString( this.response.getHttpFields(), CONTENT_MD5 );
+        return HeaderUtil.getString( this.response.getHttpFields(), CONTENT_MD5 );
     }
 
     @Override
@@ -164,7 +163,7 @@ final class WebResponseHeadersImpl implements WebResponseHeaders
     @Override
     public String getContentRange()
     {
-        return getString( this.request.getHttpFields(), CONTENT_RANGE );
+        return HeaderUtil.getString( this.request.getHttpFields(), CONTENT_RANGE );
     }
 
     @Override
@@ -191,7 +190,7 @@ final class WebResponseHeadersImpl implements WebResponseHeaders
     @Override
     public DateTime getExpires()
     {
-        return getDateTime( this.response.getHttpFields(), EXPIRES );
+        return HeaderUtil.getDateTime( this.response.getHttpFields(), EXPIRES );
     }
 
     @Override
@@ -211,7 +210,7 @@ final class WebResponseHeadersImpl implements WebResponseHeaders
     @Override
     public DateTime getDate()
     {
-        return getDateTime( this.response.getHttpFields(), DATE );
+        return HeaderUtil.getDateTime( this.response.getHttpFields(), DATE );
     }
 
     @Override
@@ -231,7 +230,7 @@ final class WebResponseHeadersImpl implements WebResponseHeaders
     @Override
     public String getETag()
     {
-        return getString( this.response.getHttpFields(), ETAG );
+        return HeaderUtil.getString( this.response.getHttpFields(), ETAG );
     }
 
     @Override
@@ -244,7 +243,7 @@ final class WebResponseHeadersImpl implements WebResponseHeaders
     @Override
     public String getLocation()
     {
-        return getString( this.response.getHttpFields(), LOCATION );
+        return HeaderUtil.getString( this.response.getHttpFields(), LOCATION );
     }
 
     @Override
@@ -264,7 +263,7 @@ final class WebResponseHeadersImpl implements WebResponseHeaders
     @Override
     public DateTime getLastModified()
     {
-        return getDateTime( this.response.getHttpFields(), LAST_MODIFIED );
+        return HeaderUtil.getDateTime( this.response.getHttpFields(), LAST_MODIFIED );
     }
 
     @Override
@@ -284,7 +283,7 @@ final class WebResponseHeadersImpl implements WebResponseHeaders
     @Override
     public String getPragma()
     {
-        return getString( this.response.getHttpFields(), PRAGMA );
+        return HeaderUtil.getString( this.response.getHttpFields(), PRAGMA );
     }
 
     @Override
@@ -297,7 +296,7 @@ final class WebResponseHeadersImpl implements WebResponseHeaders
     @Override
     public Integer getRetryAfter()
     {
-        return getInteger( this.response.getHttpFields(), RETRY_AFTER );
+        return HeaderUtil.getInteger( this.response.getHttpFields(), RETRY_AFTER );
     }
 
     @Override
@@ -317,7 +316,7 @@ final class WebResponseHeadersImpl implements WebResponseHeaders
     @Override
     public String getServer()
     {
-        return getString( this.response.getHttpFields(), SERVER );
+        return HeaderUtil.getString( this.response.getHttpFields(), SERVER );
     }
 
     @Override
@@ -330,7 +329,7 @@ final class WebResponseHeadersImpl implements WebResponseHeaders
     @Override
     public List<String> getVary()
     {
-        return getStrings( this.response.getHttpFields(), VARY );
+        return HeaderUtil.getStrings( this.response.getHttpFields(), VARY );
     }
 
     @Override
@@ -343,7 +342,7 @@ final class WebResponseHeadersImpl implements WebResponseHeaders
     @Override
     public String getWarning()
     {
-        return getString( this.response.getHttpFields(), WARNING );
+        return HeaderUtil.getString( this.response.getHttpFields(), WARNING );
     }
 
     @Override
@@ -356,7 +355,7 @@ final class WebResponseHeadersImpl implements WebResponseHeaders
     @Override
     public String getWwwAuthenticate()
     {
-        return getString( this.response.getHttpFields(), WWW_AUTHENTICATE );
+        return HeaderUtil.getString( this.response.getHttpFields(), WWW_AUTHENTICATE );
     }
 
     @Override

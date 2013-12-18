@@ -1,4 +1,4 @@
-package org.mosaic.web.impl;
+package org.mosaic.web.request.impl;
 
 import java.io.IOException;
 import java.io.OutputStream;

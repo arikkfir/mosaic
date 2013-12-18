@@ -1,4 +1,4 @@
-package org.mosaic.web.impl;
+package org.mosaic.web.handler.impl;
 
 import java.lang.annotation.Annotation;
 import java.util.HashMap;

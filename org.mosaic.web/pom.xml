@@ -21,8 +21,22 @@
                 <configuration>
                     <instructions>
                         <Embed-Dependency>
-                            jackson*,jetty*,javax.servlet
+                            jackson-datatype-guava,jackson-datatype-joda,freemarker,jetty*,javax.servlet
                         </Embed-Dependency>
+                        <Import-Package>
+                            !javax.servlet.jsp*,
+                            !org.apache.log,
+                            !org.apache.tools.ant*,
+                            !org.apache.xml*,
+                            !org.apache.xpath*,
+                            !org.dom4j*,
+                            !org.jaxen*,
+                            !org.jdom*,
+                            !org.mozilla.javascript*,
+                            !org.python*,
+                            !org.zeroturnaround*,
+                            *
+                        </Import-Package>
                         <Module-Activator>org.mosaic.web.impl.Activator</Module-Activator>
                     </instructions>
                 </configuration>
@@ -53,6 +67,10 @@
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
+            <artifactId>org.mosaic.security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.util</artifactId>
         </dependency>
 
@@ -77,10 +95,6 @@
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>
         <dependency>
@@ -96,6 +110,13 @@
             <artifactId>jackson-datatype-joda</artifactId>
         </dependency>
 
+        <!-- freemarker -->
+        <dependency>
+            <groupId>org.freemarker</groupId>
+            <artifactId>freemarker</artifactId>
+            <version>[2.3.20]</version>
+        </dependency>
+
         <!-- jetty -->
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
@@ -106,11 +127,6 @@
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-jmx</artifactId>
             <scope>runtime</scope>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-monitor</artifactId>
             <optional>true</optional>
         </dependency>
         <!--

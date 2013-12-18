@@ -1,4 +1,4 @@
-package org.mosaic.web.impl;
+package org.mosaic.web.request.impl;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -8,6 +8,8 @@ import javax.annotation.Nullable;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.server.Request;
+import org.mosaic.modules.Service;
+import org.mosaic.security.Security;
 import org.mosaic.util.collections.ConcurrentHashMapEx;
 import org.mosaic.util.collections.MapEx;
 import org.mosaic.web.application.Application;
@@ -52,6 +54,10 @@ final class WebRequestImpl implements WebRequest
     @Nonnull
     private final WebResponse response;
 
+    @Nonnull
+    @Service
+    private Security security;
+
     WebRequestImpl( @Nonnull Application application, @Nonnull Request request )
     {
         this.application = application;
@@ -72,6 +78,9 @@ final class WebRequestImpl implements WebRequest
         this.device = new WebDeviceImpl();
         this.headers = new WebRequestHeadersImpl( this.request );
         this.response = new WebResponseImpl( this.request );
+
+        // TODO: authenticate
+
     }
 
     @Nonnull

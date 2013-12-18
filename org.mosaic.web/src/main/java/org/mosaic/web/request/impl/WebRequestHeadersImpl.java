@@ -1,4 +1,4 @@
-package org.mosaic.web.impl;
+package org.mosaic.web.request.impl;
 
 import com.google.common.net.MediaType;
 import java.net.URI;
@@ -15,7 +15,6 @@ import org.joda.time.DateTime;
 import org.mosaic.web.request.WebRequestHeaders;
 
 import static com.google.common.net.HttpHeaders.*;
-import static org.mosaic.web.impl.HeaderUtil.*;
 
 /**
  * @author arik
@@ -34,56 +33,56 @@ final class WebRequestHeadersImpl implements WebRequestHeaders
     @Override
     public List<MediaType> getAccept()
     {
-        return getQualityMediaTypes( this.request.getHttpFields(), ACCEPT );
+        return HeaderUtil.getQualityMediaTypes( this.request.getHttpFields(), ACCEPT );
     }
 
     @Nonnull
     @Override
     public List<Charset> getAccepCharset()
     {
-        return getQualityCharsets( this.request.getHttpFields(), ACCEPT_CHARSET );
+        return HeaderUtil.getQualityCharsets( this.request.getHttpFields(), ACCEPT_CHARSET );
     }
 
     @Nonnull
     @Override
     public List<String> getAcceptEncoding()
     {
-        return getQualityStrings( this.request.getHttpFields(), ACCEPT_ENCODING );
+        return HeaderUtil.getQualityStrings( this.request.getHttpFields(), ACCEPT_ENCODING );
     }
 
     @Nonnull
     @Override
     public List<Locale> getAcceptLanguage()
     {
-        return getQualityLocales( this.request.getHttpFields(), ACCEPT_LANGUAGE );
+        return HeaderUtil.getQualityLocales( this.request.getHttpFields(), ACCEPT_LANGUAGE );
     }
 
     @Nullable
     @Override
     public String getAuthorization()
     {
-        return getString( this.request.getHttpFields(), AUTHORIZATION );
+        return HeaderUtil.getString( this.request.getHttpFields(), AUTHORIZATION );
     }
 
     @Nullable
     @Override
     public String getCacheControl()
     {
-        return getString( this.request.getHttpFields(), CACHE_CONTROL );
+        return HeaderUtil.getString( this.request.getHttpFields(), CACHE_CONTROL );
     }
 
     @Nullable
     @Override
     public String getConnection()
     {
-        return getString( this.request.getHttpFields(), CONNECTION );
+        return HeaderUtil.getString( this.request.getHttpFields(), CONNECTION );
     }
 
     @Nonnull
     @Override
     public Collection<String> getContentEncoding()
     {
-        return getStrings( this.request.getHttpFields(), CONTENT_ENCODING );
+        return HeaderUtil.getStrings( this.request.getHttpFields(), CONTENT_ENCODING );
     }
 
     @Nonnull
@@ -112,7 +111,7 @@ final class WebRequestHeadersImpl implements WebRequestHeaders
     @Override
     public URI getContentLocation()
     {
-        String value = getString( this.request.getHttpFields(), CONTENT_LOCATION );
+        String value = HeaderUtil.getString( this.request.getHttpFields(), CONTENT_LOCATION );
         return value == null ? null : URI.create( this.request.getUri().toString() ).resolve( value );
     }
 
@@ -120,14 +119,14 @@ final class WebRequestHeadersImpl implements WebRequestHeaders
     @Override
     public String getContentMd5()
     {
-        return getString( this.request.getHttpFields(), CONTENT_MD5 );
+        return HeaderUtil.getString( this.request.getHttpFields(), CONTENT_MD5 );
     }
 
     @Nullable
     @Override
     public String getContentRange()
     {
-        return getString( this.request.getHttpFields(), CONTENT_RANGE );
+        return HeaderUtil.getString( this.request.getHttpFields(), CONTENT_RANGE );
     }
 
     @Nullable
@@ -142,21 +141,21 @@ final class WebRequestHeadersImpl implements WebRequestHeaders
     @Override
     public DateTime getDate()
     {
-        return getDateTime( this.request.getHttpFields(), DATE );
+        return HeaderUtil.getDateTime( this.request.getHttpFields(), DATE );
     }
 
     @Nullable
     @Override
     public String getExpect()
     {
-        return getString( this.request.getHttpFields(), EXPECT );
+        return HeaderUtil.getString( this.request.getHttpFields(), EXPECT );
     }
 
     @Nullable
     @Override
     public String getFrom()
     {
-        return getString( this.request.getHttpFields(), FROM );
+        return HeaderUtil.getString( this.request.getHttpFields(), FROM );
     }
 
     @Nonnull
@@ -170,28 +169,28 @@ final class WebRequestHeadersImpl implements WebRequestHeaders
     @Override
     public Collection<String> getIfMatch()
     {
-        return getStrings( this.request.getHttpFields(), IF_MATCH );
+        return HeaderUtil.getStrings( this.request.getHttpFields(), IF_MATCH );
     }
 
     @Nullable
     @Override
     public DateTime getIfModifiedSince()
     {
-        return getDateTime( this.request.getHttpFields(), IF_MODIFIED_SINCE );
+        return HeaderUtil.getDateTime( this.request.getHttpFields(), IF_MODIFIED_SINCE );
     }
 
     @Nonnull
     @Override
     public Collection<String> getIfNoneMatch()
     {
-        return getStrings( this.request.getHttpFields(), IF_NONE_MATCH );
+        return HeaderUtil.getStrings( this.request.getHttpFields(), IF_NONE_MATCH );
     }
 
     @Nullable
     @Override
     public DateTime getIfRangeDate()
     {
-        String value = getString( this.request.getHttpFields(), IF_RANGE );
+        String value = HeaderUtil.getString( this.request.getHttpFields(), IF_RANGE );
         if( value == null )
         {
             return null;
@@ -217,7 +216,7 @@ final class WebRequestHeadersImpl implements WebRequestHeaders
         }
         else
         {
-            return getString( this.request.getHttpFields(), IF_RANGE );
+            return HeaderUtil.getString( this.request.getHttpFields(), IF_RANGE );
         }
     }
 
@@ -225,56 +224,56 @@ final class WebRequestHeadersImpl implements WebRequestHeaders
     @Override
     public DateTime getIfUnmodifiedSince()
     {
-        return getDateTime( this.request.getHttpFields(), IF_UNMODIFIED_SINCE );
+        return HeaderUtil.getDateTime( this.request.getHttpFields(), IF_UNMODIFIED_SINCE );
     }
 
     @Nullable
     @Override
     public String getPragma()
     {
-        return getString( this.request.getHttpFields(), PRAGMA );
+        return HeaderUtil.getString( this.request.getHttpFields(), PRAGMA );
     }
 
     @Nonnull
     @Override
     public Collection<String> getRange()
     {
-        return getStrings( this.request.getHttpFields(), RANGE );
+        return HeaderUtil.getStrings( this.request.getHttpFields(), RANGE );
     }
 
     @Nullable
     @Override
     public String getReferer()
     {
-        return getString( this.request.getHttpFields(), REFERER );
+        return HeaderUtil.getString( this.request.getHttpFields(), REFERER );
     }
 
     @Nullable
     @Override
     public String getTe()
     {
-        return getString( this.request.getHttpFields(), TE );
+        return HeaderUtil.getString( this.request.getHttpFields(), TE );
     }
 
     @Nullable
     @Override
     public String getVia()
     {
-        return getString( this.request.getHttpFields(), VIA );
+        return HeaderUtil.getString( this.request.getHttpFields(), VIA );
     }
 
     @Nullable
     @Override
     public String getUserAgent()
     {
-        return getString( this.request.getHttpFields(), USER_AGENT );
+        return HeaderUtil.getString( this.request.getHttpFields(), USER_AGENT );
     }
 
     @Nullable
     @Override
     public String getWarning()
     {
-        return getString( this.request.getHttpFields(), WARNING );
+        return HeaderUtil.getString( this.request.getHttpFields(), WARNING );
     }
 
     @Override
@@ -302,11 +301,11 @@ final class WebRequestHeadersImpl implements WebRequestHeaders
         {
             if( supportsQuality )
             {
-                return getQualityStrings( this.request.getHttpFields(), key );
+                return HeaderUtil.getQualityStrings( this.request.getHttpFields(), key );
             }
             else
             {
-                return getStrings( this.request.getHttpFields(), key );
+                return HeaderUtil.getStrings( this.request.getHttpFields(), key );
             }
         }
         else if( supportsQuality )

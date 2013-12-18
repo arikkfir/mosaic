@@ -1,19 +1,18 @@
-package org.mosaic.web.impl;
+package org.mosaic.web.handler.impl;
 
 import com.google.common.collect.Sets;
 import com.google.common.net.MediaType;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.B64Code;
 import org.joda.time.DateTime;
 import org.joda.time.Period;
+import org.mosaic.modules.Component;
 import org.mosaic.modules.Ranking;
 import org.mosaic.modules.Service;
 import org.mosaic.web.application.Application;
@@ -21,8 +20,7 @@ import org.mosaic.web.handler.RequestHandler;
 import org.mosaic.web.request.WebRequest;
 import org.mosaic.web.request.WebResponse;
 
-import static java.nio.file.Files.copy;
-import static java.nio.file.Files.isDirectory;
+import static java.nio.file.Files.*;
 import static org.mosaic.web.request.HttpStatus.*;
 
 /**
@@ -38,6 +36,10 @@ final class StaticResourcesRequestHandler implements RequestHandler
     private final MimeTypes mimeTypes = new MimeTypes();
 
     @Nonnull
+    @Component
+    private FreemarkerRenderer freemarkerRenderer;
+
+    @Nonnull
     @Override
     public Set<String> getHttpMethods()
     {
@@ -48,7 +50,14 @@ final class StaticResourcesRequestHandler implements RequestHandler
     public boolean canHandle( @Nonnull WebRequest request )
     {
         String path = request.getUri().getDecodedPath();
-        Application.ApplicationResources.Resource resource = request.getApplication().getResources().getResource( path );
+        Application.ApplicationResources resources = request.getApplication().getResources();
+
+        Application.ApplicationResources.Resource resource = resources.getResource( path + ".ftl" );
+        if( resource == null )
+        {
+            resource = resources.getResource( path );
+        }
+
         if( resource != null )
         {
             request.getAttributes().put( "resource", resource );
@@ -64,10 +73,16 @@ final class StaticResourcesRequestHandler implements RequestHandler
     @Override
     public Object handle( @Nonnull WebRequest request ) throws Throwable
     {
+        // TODO: support gzip
+
         Application.ApplicationResources.Resource resource = request.getAttributes().require( "resource", Application.ApplicationResources.Resource.class );
         if( isDirectory( resource.getPath() ) )
         {
             serveDirectory( request, resource );
+        }
+        else if( resource.getPath().toString().endsWith( ".ftl" ) )
+        {
+            serveDynamicFile( request, resource );
         }
         else
         {
@@ -84,19 +99,75 @@ final class StaticResourcesRequestHandler implements RequestHandler
         request.getResponse().disableCaching();
     }
 
+    private void serveDynamicFile( @Nonnull WebRequest request,
+                                   @Nonnull Application.ApplicationResources.Resource resource ) throws IOException
+    {
+        Path file = resource.getPath();
+        String filename = file.getFileName().toString();
+        filename = filename.substring( 0, filename.lastIndexOf( ".ftl" ) );
+
+        WebResponse response = request.getResponse();
+
+        response.disableCaching();
+
+        response.getHeaders().setLastModified( DateTime.now() );
+
+        response.getHeaders().setContentType( findContentType( filename ) );
+
+        if( request.getMethod().equalsIgnoreCase( "GET" ) )
+        {
+            Map<String, Object> context = new HashMap<>();
+            context.put( "request", request );
+            this.freemarkerRenderer.render( request.getApplication(),
+                                            context,
+                                            request.getUri().getDecodedPath(),
+                                            request.getHeaders().getContentLanguage(),
+                                            response.writer() );
+        }
+        else if( !request.getMethod().equalsIgnoreCase( "HEAD" ) )
+        {
+            response.setStatus( METHOD_NOT_ALLOWED );
+        }
+    }
+
     private void serveFile( @Nonnull WebRequest request, @Nonnull Application.ApplicationResources.Resource resource )
             throws IOException
     {
-        // TODO: support gzip
-
         Path file = resource.getPath();
         WebResponse response = request.getResponse();
 
-        applyCaching( resource, response );
-        applyContentType( file, response );
-        applyContentLength( file, response );
-        DateTime lastModified = applyLastModified( file, response );
-        String etag = applyETag( file, response );
+        // caching
+        Period cachePeriod = resource.getCachePeriod();
+        if( cachePeriod != null )
+        {
+            response.getHeaders().setCacheControl( "must-revalidate, private, max-age=" + cachePeriod.toStandardSeconds().getSeconds() );
+            response.getHeaders().setExpires( DateTime.now().withPeriodAdded( cachePeriod, 1 ) );
+        }
+        else
+        {
+            response.disableCaching();
+        }
+
+        // last modified
+        DateTime lastModified = findLastModified( file );
+        response.getHeaders().setLastModified( findLastModified( file ) );
+
+        // content length & type
+        response.getHeaders().setContentType( findContentType( file.getFileName().toString() ) );
+        Long contentLength;
+        try
+        {
+            contentLength = Files.size( file );
+            response.getHeaders().setContentLength( contentLength );
+        }
+        catch( IOException e )
+        {
+            contentLength = null;
+        }
+
+        // etag
+        String etag = findETag( file, lastModified, contentLength );
+        response.getHeaders().setETag( etag );
 
         if( request.getMethod().equalsIgnoreCase( "GET" ) )
         {
@@ -142,45 +213,19 @@ final class StaticResourcesRequestHandler implements RequestHandler
         }
     }
 
-    private void applyCaching( @Nonnull Application.ApplicationResources.Resource resource,
-                               @Nonnull WebResponse response )
+    @Nullable
+    private MediaType findContentType( @Nonnull String fileName )
     {
-        Period cachePeriod = resource.getCachePeriod();
-        if( cachePeriod != null )
-        {
-            response.getHeaders().setCacheControl( "must-revalidate, private, max-age=" + cachePeriod.toStandardSeconds().getSeconds() );
-            response.getHeaders().setExpires( DateTime.now().withPeriodAdded( cachePeriod, 1 ) );
-        }
-        else
-        {
-            response.disableCaching();
-        }
+        String mimeType = this.mimeTypes.getMimeByExtension( fileName );
+        return mimeType != null ? MediaType.parse( mimeType ) : null;
     }
 
     @Nullable
-    private MediaType applyContentType( @Nonnull Path file, @Nonnull WebResponse response )
-    {
-        String mimeType = this.mimeTypes.getMimeByExtension( file.getFileName().toString() );
-        if( mimeType != null )
-        {
-            MediaType mediaType = MediaType.parse( mimeType );
-            response.getHeaders().setContentType( mediaType );
-            return mediaType;
-        }
-        else
-        {
-            return null;
-        }
-    }
-
-    @Nullable
-    private Long applyContentLength( @Nonnull Path file, @Nonnull WebResponse response )
+    private DateTime findLastModified( @Nonnull Path file )
     {
         try
         {
-            long contentLength = Files.size( file );
-            response.getHeaders().setContentLength( contentLength );
-            return contentLength;
+            return new DateTime( getLastModifiedTime( file ).toMillis() ).withMillisOfSecond( 0 );
         }
         catch( IOException ignore )
         {
@@ -189,22 +234,7 @@ final class StaticResourcesRequestHandler implements RequestHandler
     }
 
     @Nullable
-    private DateTime applyLastModified( @Nonnull Path file, @Nonnull WebResponse response )
-    {
-        try
-        {
-            DateTime lastModified = new DateTime( Files.getLastModifiedTime( file ).toMillis() ).withMillisOfSecond( 0 );
-            response.getHeaders().setLastModified( lastModified );
-            return lastModified;
-        }
-        catch( IOException ignore )
-        {
-            return null;
-        }
-    }
-
-    @Nullable
-    private String applyETag( @Nonnull Path file, @Nonnull WebResponse response )
+    private String findETag( @Nonnull Path file, @Nullable DateTime lastModified, @Nullable Long contentLength )
     {
         try
         {
@@ -219,15 +249,11 @@ final class StaticResourcesRequestHandler implements RequestHandler
                 lhash = 31 * lhash + name.charAt( i );
             }
 
-            DateTime lastModified = response.getHeaders().getLastModified();
-            Long contentLength = response.getHeaders().getContentLength();
             B64Code.encode( ( lastModified == null ? -1 : lastModified.getMillis() ) ^ lhash, b );
             B64Code.encode( ( contentLength == null ? -1 : contentLength ) ^ lhash, b );
             b.append( '"' );
 
-            String etag = b.toString();
-            response.getHeaders().setETag( etag );
-            return etag;
+            return b.toString();
         }
         catch( Exception ignore )
         {

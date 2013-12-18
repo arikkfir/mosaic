@@ -1,9 +1,8 @@
-package org.mosaic.web.impl;
+package org.mosaic.web.handler.impl;
 
 import java.lang.annotation.Annotation;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -14,9 +13,7 @@ import org.mosaic.util.collections.MapEx;
 import org.mosaic.util.expression.Expression;
 import org.mosaic.util.expression.ExpressionParser;
 import org.mosaic.web.handler.Controller;
-import org.mosaic.web.handler.InterceptorChain;
 import org.mosaic.web.handler.RequestHandler;
-import org.mosaic.web.handler.TypedInterceptor;
 import org.mosaic.web.handler.spi.HttpMethodMarker;
 import org.mosaic.web.request.WebRequest;
 import org.slf4j.Logger;
@@ -25,15 +22,15 @@ import org.slf4j.LoggerFactory;
 /**
  * @author arik
  */
-@Adapter(InterceptorAdapter.class)
-final class TypedInterceptorAdapter extends InterceptorAdapter
+@Adapter(RequestHandler.class)
+final class ControllerAdapter implements RequestHandler
 {
-    private static final Logger LOG = LoggerFactory.getLogger( TypedInterceptorAdapter.class );
+    private static final Logger LOG = LoggerFactory.getLogger( ControllerAdapter.class );
 
-    private static final String PATH_PARAMS_ATTR_KEY = TypedInterceptorAdapter.class.getName() + ".pathParameters";
+    static final String PATH_PARAMS_ATTR_KEY = ControllerAdapter.class.getName() + ".pathParameters";
 
     @Nonnull
-    private final MethodEndpoint<TypedInterceptor> endpoint;
+    private final MethodEndpoint<Controller> endpoint;
 
     @Nonnull
     private final MethodEndpoint.Invoker invoker;
@@ -45,14 +42,14 @@ final class TypedInterceptorAdapter extends InterceptorAdapter
     private final Set<String> httpMethods;
 
     @Nonnull
-    private final Class<? extends Annotation> handlerType;
+    private final String uri;
 
     @Nonnull
     @Service
     private ExpressionParser expressionParser;
 
     @Service
-    TypedInterceptorAdapter( @Nonnull MethodEndpoint<TypedInterceptor> endpoint )
+    ControllerAdapter( @Nonnull MethodEndpoint<Controller> endpoint )
     {
         this.endpoint = endpoint;
 
@@ -66,6 +63,8 @@ final class TypedInterceptorAdapter extends InterceptorAdapter
             this.applicationExpression = this.expressionParser.parseExpression( appExpr, Boolean.class );
         }
 
+        this.uri = this.endpoint.getType().uri();
+
         Set<String> httpMethods = new HashSet<>();
         for( Annotation annotation : this.endpoint.getMethodHandle().getAnnotations() )
         {
@@ -76,50 +75,42 @@ final class TypedInterceptorAdapter extends InterceptorAdapter
         }
         this.httpMethods = httpMethods;
 
-        this.handlerType = this.endpoint.getType().value().asSubclass( Annotation.class );
-
         // TODO: add more parameter resolvers
         this.invoker = this.endpoint.createInvoker(
-                new SimpleParameterResolver( "request", WebRequest.class ),
-                new SimpleParameterResolver( "interceptorChain", InterceptorChain.class )
+                new SimpleParameterResolver( "request", WebRequest.class )
         );
     }
 
     @Nonnull
     @Override
-    Set<String> getHttpMethods()
+    public Set<String> getHttpMethods()
     {
         return this.httpMethods;
     }
 
-    boolean canHandle( @Nonnull WebRequest request, @Nonnull RequestHandler requestHandler )
+    @Override
+    public boolean canHandle( @Nonnull WebRequest request )
     {
         if( this.applicationExpression != null && !this.applicationExpression.createInvocation( request ).require() )
         {
             return false;
         }
 
-        MapEx<String, Object> attributes = request.getAttributes();
+        MapEx<String, String> pathParameters = request.getUri().getPathParameters( this.uri );
+        if( pathParameters == null )
+        {
+            return false;
+        }
 
-        if( this.handlerType.equals( Controller.class ) && requestHandler instanceof ControllerAdapter )
-        {
-            attributes.put( PATH_PARAMS_ATTR_KEY, attributes.require( ControllerAdapter.PATH_PARAMS_ATTR_KEY ) );
-            return true;
-        }
-        else
-        {
-            return this.handlerType.isInstance( requestHandler );
-        }
+        request.getAttributes().put( PATH_PARAMS_ATTR_KEY, pathParameters );
+        return true;
     }
 
     @Nullable
-    Object handle( @Nonnull WebRequest request, @Nonnull InterceptorChain interceptorChain ) throws Exception
+    @Override
+    public Object handle( @Nonnull WebRequest request ) throws Exception
     {
-        LOG.debug( "Invoking typed interceptor '{}'", this.endpoint );
-
-        Map<String, Object> context = new HashMap<>();
-        context.put( "request", request );
-        context.put( "interceptorChain", interceptorChain );
-        return this.invoker.resolve( context ).invoke();
+        LOG.debug( "Invoking method endpoint '{}'", this.endpoint );
+        return this.invoker.resolve( Collections.<String, Object>singletonMap( "request", request ) ).invoke();
     }
 }

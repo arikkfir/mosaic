@@ -1,4 +1,4 @@
-package org.mosaic.web.impl;
+package org.mosaic.web.handler.impl;
 
 import java.util.Collections;
 import java.util.LinkedList;
@@ -13,7 +13,7 @@ import org.mosaic.web.request.WebRequest;
  * @author arik
  */
 @Component
-final class RequestHandlerManager
+final class RequestHandlersManagerImpl
 {
     @Nonnull
     @Service

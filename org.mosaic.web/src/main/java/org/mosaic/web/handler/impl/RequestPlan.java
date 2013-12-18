@@ -1,4 +1,4 @@
-package org.mosaic.web.impl;
+package org.mosaic.web.handler.impl;
 
 import com.google.common.net.MediaType;
 import java.io.IOException;
@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author arik
  */
-final class RequestPlan
+final class RequestPlan implements Runnable
 {
     private static final Logger LOG = LoggerFactory.getLogger( RequestPlan.class );
 
@@ -40,7 +40,7 @@ final class RequestPlan
 
     @Nonnull
     @Component
-    private RequestHandlerManager requestHandlerManager;
+    private RequestHandlersManagerImpl requestHandlersManager;
 
     @Nonnull
     @Component
@@ -53,7 +53,8 @@ final class RequestPlan
         this.interceptors = findInterceptors().iterator();
     }
 
-    void execute()
+    @Override
+    public void run()
     {
         // execute interceptors and handler
         Object result;
@@ -91,7 +92,7 @@ final class RequestPlan
     private RequestHandler findRequestHandler()
     {
         String method = this.request.getMethod();
-        for( RequestHandler handler : this.requestHandlerManager.findRequestHandlers( this.request ) )
+        for( RequestHandler handler : this.requestHandlersManager.findRequestHandlers( this.request ) )
         {
             if( handler.getHttpMethods().contains( method ) )
             {
@@ -106,7 +107,7 @@ final class RequestPlan
     {
         String method = this.request.getMethod();
 
-        List<InterceptorAdapter> interceptors = this.requestHandlerManager.findInterceptors( this.request, this.requestHandler );
+        List<InterceptorAdapter> interceptors = this.requestHandlersManager.findInterceptors( this.request, this.requestHandler );
         Iterator<InterceptorAdapter> iterator = interceptors.iterator();
         while( iterator.hasNext() )
         {

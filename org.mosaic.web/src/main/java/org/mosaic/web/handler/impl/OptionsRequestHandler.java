@@ -1,4 +1,4 @@
-package org.mosaic.web.impl;
+package org.mosaic.web.handler.impl;
 
 import com.google.common.collect.Sets;
 import java.util.HashSet;
@@ -24,7 +24,7 @@ final class OptionsRequestHandler implements RequestHandler
 
     @Nonnull
     @Component
-    private RequestHandlerManager requestHandlerManager;
+    private RequestHandlersManagerImpl requestHandlersManager;
 
     @Nonnull
     @Override
@@ -43,7 +43,7 @@ final class OptionsRequestHandler implements RequestHandler
     @Override
     public Object handle( @Nonnull WebRequest request ) throws Throwable
     {
-        List<RequestHandler> handlers = this.requestHandlerManager.findRequestHandlers( request );
+        List<RequestHandler> handlers = this.requestHandlersManager.findRequestHandlers( request );
 
         Set<String> httpMethods = Sets.newHashSet( "OPTIONS" );
         for( RequestHandler handler : handlers )
