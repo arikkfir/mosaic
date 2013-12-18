@@ -39,6 +39,10 @@ final class InitBootBundlesTask extends InitTask
         bootBundleNames.add( "log4j-over-slf4j" );
         bootBundleNames.add( "joda-time" );
         bootBundleNames.add( "classmate" );
+        bootBundleNames.add( "jackson-core" );
+        bootBundleNames.add( "jackson-annotations" );
+        bootBundleNames.add( "jackson-databind" );
+        bootBundleNames.add( "jackson-dataformat-csv" );
         bootBundleNames.add( "jboss-logging" );
         bootBundleNames.add( "validation-api" );
         bootBundleNames.add( "hibernate-validator" );
