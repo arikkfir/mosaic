@@ -9,7 +9,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.server.Request;
 import org.mosaic.modules.Component;
 import org.mosaic.modules.Module;
 import org.mosaic.modules.Service;
@@ -52,7 +51,7 @@ final class RequestDispatcher extends HttpServlet
             return;
         }
 
-        WebRequest request = this.webRequestFactory.createRequest( application, ( Request ) req );
+        WebRequest request = this.webRequestFactory.createRequest( application, req );
         Runnable plan = this.requestPlanFactory.createRequestPlanExecutor( request );
         plan.run();
     }
