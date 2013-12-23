@@ -22,6 +22,9 @@ final class SecurityConstraintImpl implements Application.ApplicationSecurity.Se
     private final Set<String> paths;
 
     @Nonnull
+    private final String authenticationMethod;
+
+    @Nonnull
     private final Expression<Boolean> expression;
 
     @Nonnull
@@ -37,8 +40,17 @@ final class SecurityConstraintImpl implements Application.ApplicationSecurity.Se
         }
         this.paths = Collections.unmodifiableSet( paths );
 
+        this.authenticationMethod = constraintElt.requireAttribute( "method" );
+
         String expression = PROPERTY_PLACEHOLDER_RESOLVER.resolve( constraintElt.requireAttribute( "expression" ) );
         this.expression = this.expressionParser.parseExpression( expression, Boolean.class );
+    }
+
+    @Nonnull
+    @Override
+    public String getAuthenticationMethod()
+    {
+        return this.authenticationMethod;
     }
 
     @Nonnull

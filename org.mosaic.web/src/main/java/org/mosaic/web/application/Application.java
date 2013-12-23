@@ -58,6 +58,9 @@ public interface Application
             Set<String> getPaths();
 
             @Nonnull
+            String getAuthenticationMethod();
+
+            @Nonnull
             Expression<Boolean> getExpression();
         }
     }

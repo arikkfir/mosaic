@@ -50,6 +50,7 @@
                         <xsd:element name="path" type="xsd:string" minOccurs="1" maxOccurs="unbounded"/>
                     </xsd:sequence>
                     <xsd:attribute name="expression" type="xsd:string" use="required"/>
+                    <xsd:attribute name="method" type="xsd:string" use="required"/>
                 </xsd:complexType>
             </xsd:element>
         </xsd:sequence>
