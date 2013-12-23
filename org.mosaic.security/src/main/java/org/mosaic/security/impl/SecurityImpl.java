@@ -48,6 +48,13 @@ final class SecurityImpl implements Security
         return this.subjectHolder.get();
     }
 
+    @Nonnull
+    @Override
+    public Subject getAnonymousSubject()
+    {
+        return this.anonymous;
+    }
+
     private class SubjectImpl extends AbstractSubject
     {
         @Nonnull

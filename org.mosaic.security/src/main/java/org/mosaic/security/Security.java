@@ -15,4 +15,7 @@ public interface Security
 
     @Nonnull
     Subject getSubject();
+
+    @Nonnull
+    Subject getAnonymousSubject();
 }
