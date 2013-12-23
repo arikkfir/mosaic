@@ -8,8 +8,6 @@ import javax.annotation.Nullable;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.server.Request;
-import org.mosaic.modules.Service;
-import org.mosaic.security.Security;
 import org.mosaic.util.collections.ConcurrentHashMapEx;
 import org.mosaic.util.collections.MapEx;
 import org.mosaic.web.application.Application;
@@ -51,12 +49,11 @@ final class WebRequestImpl implements WebRequest
     @Nonnull
     private final MapEx<String, Object> attributes = new ConcurrentHashMapEx<>( 20 );
 
-    @Nonnull
-    private final WebResponse response;
+    @Nullable
+    private final Application.ApplicationSecurity.SecurityConstraint securityConstraint;
 
     @Nonnull
-    @Service
-    private Security security;
+    private final WebResponse response;
 
     WebRequestImpl( @Nonnull Application application, @Nonnull Request request )
     {
@@ -77,10 +74,8 @@ final class WebRequestImpl implements WebRequest
         this.uri = new WebRequestUriImpl( this.request );
         this.device = new WebDeviceImpl();
         this.headers = new WebRequestHeadersImpl( this.request );
+        this.securityConstraint = this.application.getSecurity().getConstraintForPath( this.uri.getDecodedPath() );
         this.response = new WebResponseImpl( this.request );
-
-        // TODO: authenticate
-
     }
 
     @Nonnull
@@ -202,6 +197,13 @@ final class WebRequestImpl implements WebRequest
         {
             throw new CreateSessionException( "Mosaic session attribute contained a value that does not implement WebSession: " + webSession );
         }
+    }
+
+    @Nullable
+    @Override
+    public Application.ApplicationSecurity.SecurityConstraint getSecurityConstraint()
+    {
+        return this.securityConstraint;
     }
 
     @Nonnull

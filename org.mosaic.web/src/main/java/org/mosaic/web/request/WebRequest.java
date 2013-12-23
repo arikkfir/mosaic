@@ -40,10 +40,13 @@ public interface WebRequest
     MapEx<String, Object> getAttributes();
 
     @Nullable
-    Object getSession();
+    WebSession getSession();
 
     @Nonnull
     WebSession getOrCreateSession();
+
+    @Nullable
+    Application.ApplicationSecurity.SecurityConstraint getSecurityConstraint();
 
     @Nonnull
     WebResponse getResponse();
