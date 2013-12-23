@@ -21,10 +21,10 @@ import org.osgi.framework.ServiceRegistration;
 /**
  * @author arik
  */
-final class ComponentMethodEndpointLifecycle extends Lifecycle implements MethodEndpoint, ServiceCapabilityProvider
+final class ComponentMethodEndpoint extends Lifecycle implements MethodEndpoint, ServiceCapabilityProvider
 {
     @Nonnull
-    private final ComponentDescriptorImpl<?> componentDescriptor;
+    private final Component component;
 
     @Nonnull
     private final Method method;
@@ -38,11 +38,11 @@ final class ComponentMethodEndpointLifecycle extends Lifecycle implements Method
     @Nullable
     private ServiceRegistration<MethodEndpoint> registration;
 
-    ComponentMethodEndpointLifecycle( @Nonnull ComponentDescriptorImpl<?> componentDescriptor,
-                                      @Nonnull Method method,
-                                      @Nonnull Annotation annotation )
+    ComponentMethodEndpoint( @Nonnull Component component,
+                             @Nonnull Method method,
+                             @Nonnull Annotation annotation )
     {
-        this.componentDescriptor = componentDescriptor;
+        this.component = component;
         this.method = method;
         this.method.setAccessible( true );
 
@@ -59,8 +59,8 @@ final class ComponentMethodEndpointLifecycle extends Lifecycle implements Method
             }
             catch( Throwable e )
             {
-                String msg = "error adding attribute '" + name + "' from annotation '" + this.annotation.annotationType().getName() + "'";
-                throw new ComponentDefinitionException( msg, e, this.componentDescriptor.getComponentType(), this.componentDescriptor.getModule() );
+                String msg = "error adding attribute '" + name + "' from annotation '" + this.annotation.annotationType().getName() + "' in " + this;
+                throw new ComponentDefinitionException( msg, e, this.component.getType(), this.component.getModule() );
             }
         }
 
@@ -71,7 +71,7 @@ final class ComponentMethodEndpointLifecycle extends Lifecycle implements Method
     @Override
     public final String toString()
     {
-        return "ComponentMethodEndpoint[" + this.method.getName() + " in " + this.componentDescriptor + "]";
+        return "ComponentMethodEndpoint[" + this.method.getName() + " in " + this.component + "]";
     }
 
     @Nonnull
@@ -134,7 +134,7 @@ final class ComponentMethodEndpointLifecycle extends Lifecycle implements Method
     {
         try
         {
-            return this.method.invoke( this.componentDescriptor.getInstance(), args );
+            return this.method.invoke( this.component.getInstance(), args );
         }
         catch( InvocationTargetException e )
         {
@@ -145,7 +145,7 @@ final class ComponentMethodEndpointLifecycle extends Lifecycle implements Method
     @Override
     protected synchronized void onAfterActivate()
     {
-        BundleContext bundleContext = this.componentDescriptor.getModule().getBundle().getBundleContext();
+        BundleContext bundleContext = this.component.getModule().getBundle().getBundleContext();
         if( bundleContext != null )
         {
             this.registration = bundleContext.registerService( MethodEndpoint.class, this, this.properties );
@@ -220,7 +220,15 @@ final class ComponentMethodEndpointLifecycle extends Lifecycle implements Method
             @Override
             public Object invoke() throws Exception
             {
-                return this.targetInvocation.invoke( ComponentMethodEndpointLifecycle.this.componentDescriptor.getInstance() );
+                Object instance = ComponentMethodEndpoint.this.component.getInstance();
+                if( instance != null )
+                {
+                    return this.targetInvocation.invoke( instance );
+                }
+                else
+                {
+                    throw new IllegalStateException( "method endpoint instance is not available" );
+                }
             }
         }
     }
@@ -254,7 +262,7 @@ final class ComponentMethodEndpointLifecycle extends Lifecycle implements Method
         @Override
         public Module getProvider()
         {
-            return ComponentMethodEndpointLifecycle.this.componentDescriptor.getModule();
+            return ComponentMethodEndpoint.this.component.getModule();
         }
 
         @Nonnull

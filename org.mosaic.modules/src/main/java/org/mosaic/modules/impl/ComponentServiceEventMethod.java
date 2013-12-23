@@ -23,19 +23,19 @@ import org.osgi.util.tracker.ServiceTrackerCustomizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.mosaic.modules.impl.ComponentDescriptorImpl.getServiceAndFilterFromType;
+import static org.mosaic.modules.impl.Activator.getServiceAndFilterFromType;
 
 /**
  * @author arik
  */
 @SuppressWarnings("unchecked")
-final class ComponentServiceEventMethodLifecycle extends Lifecycle
+final class ComponentServiceEventMethod extends Lifecycle
         implements ServiceTrackerCustomizer, ModuleWiring.ServiceRequirement
 {
-    private static final Logger LOG = LoggerFactory.getLogger( ComponentServiceEventMethodLifecycle.class );
+    private static final Logger LOG = LoggerFactory.getLogger( ComponentServiceEventMethod.class );
 
     @Nonnull
-    private final ComponentDescriptorImpl<?> componentDescriptor;
+    private final Component component;
 
     @Nonnull
     private final Method method;
@@ -56,115 +56,75 @@ final class ComponentServiceEventMethodLifecycle extends Lifecycle
     @Nonnull
     private final Map<Long, ServiceReferenceImpl> references = new ConcurrentHashMap<>();
 
-    ComponentServiceEventMethodLifecycle( @Nonnull ComponentDescriptorImpl<?> componentDescriptor,
-                                          @Nonnull Method method )
+    ComponentServiceEventMethod( @Nonnull Component component, @Nonnull Method method )
     {
-        this.componentDescriptor = componentDescriptor;
+        this.component = component;
         this.method = method;
         this.method.setAccessible( true );
 
-        Type[] parameterTypes = this.method.getGenericParameterTypes();
-        if( parameterTypes.length != 1 )
-        {
-            String msg = "@OnService[Added/Removed] method '" + this.method.getName() + "' of component " + this.method.getDeclaringClass().getName() + " must have exactly 1 parameter";
-            throw new ComponentDefinitionException( msg, componentDescriptor.getComponentType(), componentDescriptor.getModule() );
-        }
-
-        java.lang.reflect.Type serviceRefType = parameterTypes[ 0 ];
-        if( !( serviceRefType instanceof ParameterizedType ) )
-        {
-            String msg = "@OnService[Added/Removed] method '" + this.method.getName() + "' of component " + this.method.getDeclaringClass().getName() + " does not specify type for ServiceReference";
-            throw new ComponentDefinitionException( msg, componentDescriptor.getComponentType(), componentDescriptor.getModule() );
-        }
-
-        ParameterizedType parameterizedServiceRefType = ( ParameterizedType ) serviceRefType;
-        if( !( parameterizedServiceRefType.getRawType() instanceof Class<?> ) )
-        {
-            String msg = "@OnService[Added/Removed] method '" + this.method.getName() + "' of component " + this.method.getDeclaringClass().getName() + " specifies non-concrete service reference parameter - must be 'ServiceReference<...>'";
-            throw new ComponentDefinitionException( msg, componentDescriptor.getComponentType(), componentDescriptor.getModule() );
-        }
-
-        Class<?> serviceRefClassType = ( Class<?> ) parameterizedServiceRefType.getRawType();
-        if( !serviceRefClassType.isAssignableFrom( ServiceReference.class ) )
-        {
-            String msg = "@OnService[Added/Removed] method '" + this.method.getName() + "' of component " + this.method.getDeclaringClass().getName() + " does not receive 'ServiceReference<...>'";
-            throw new ComponentDefinitionException( msg, componentDescriptor.getComponentType(), componentDescriptor.getModule() );
-        }
-
-        java.lang.reflect.Type[] serviceRefTypeArguments = parameterizedServiceRefType.getActualTypeArguments();
-        if( serviceRefTypeArguments.length == 0 )
-        {
-            String msg = "@OnService[Added/Removed] method '" + this.method.getName() + "' of component " + this.method.getDeclaringClass().getName() + " does not specify type for ServiceReference";
-            throw new ComponentDefinitionException( msg, componentDescriptor.getComponentType(), componentDescriptor.getModule() );
-        }
-
-        Pair<Class<?>, FilterBuilder> pair = getServiceAndFilterFromType( componentDescriptor.getModule(), componentDescriptor.getComponentType(), serviceRefTypeArguments[ 0 ] );
+        Pair<Class<?>, FilterBuilder> pair = getServiceAndFilterFromType( this.component.getModule(), this.component.getType(), getServiceType() );
         this.serviceType = pair.getKey();
-        FilterBuilder filterBuilder = pair.getRight();
 
+        // check if are to invoke this method when services become available
         OnServiceAdded onServiceAddedAnn = this.method.getAnnotation( OnServiceAdded.class );
-        if( onServiceAddedAnn != null )
+        this.invokeOnAdd = onServiceAddedAnn != null;
+        if( this.invokeOnAdd )
         {
-            this.invokeOnAdd = true;
             for( OnServiceAdded.P property : onServiceAddedAnn.properties() )
             {
-                filterBuilder.addEquals( property.key(), property.value() );
+                pair.getRight().addEquals( property.key(), property.value() );
             }
         }
-        else
-        {
-            this.invokeOnAdd = false;
-        }
 
+        // check if are to invoke this method when services become UNavailable
         OnServiceRemoved onServiceRemovedAnn = this.method.getAnnotation( OnServiceRemoved.class );
-        if( onServiceRemovedAnn != null )
+        this.invokeOnRemove = onServiceRemovedAnn != null;
+        if( this.invokeOnRemove )
         {
-            this.invokeOnRemove = true;
             for( OnServiceRemoved.P property : onServiceRemovedAnn.properties() )
             {
-                filterBuilder.addEquals( property.key(), property.value() );
+                pair.getRight().addEquals( property.key(), property.value() );
             }
         }
-        else
-        {
-            this.invokeOnRemove = false;
-        }
-        this.filter = filterBuilder.toString();
 
+        // ensure method does not have both @OnServiceAdded and @OnServiceRemoved
         if( this.invokeOnAdd && this.invokeOnRemove )
         {
-            String msg = "@OnService[Added/Removed] method '" + this.method.getName() + "' of component " + this.method.getDeclaringClass().getName() + " specifies both @OnServiceAdded and @OnServiceRemoved";
-            throw new ComponentDefinitionException( msg, componentDescriptor.getComponentType(), componentDescriptor.getModule() );
+            String msg = "@OnService[Added/Removed] method " + this + " specifies both @OnServiceAdded and @OnServiceRemoved";
+            throw new ComponentDefinitionException( msg, this.component.getType(), this.component.getModule() );
         }
 
+        // create our service tracker
+        this.filter = pair.getRight().toString();
         try
         {
-            BundleContext bundleContext = componentDescriptor.getModule().getBundle().getBundleContext();
+            BundleContext bundleContext = this.component.getModule().getBundle().getBundleContext();
             if( bundleContext == null )
             {
-                throw new IllegalStateException( "no bundle context for module " + componentDescriptor.getModule() );
+                throw new IllegalStateException( "no bundle context for module " + this.component.getModule() );
             }
-            Filter filter = FrameworkUtil.createFilter( this.filter );
+
+            Filter filter = FrameworkUtil.createFilter( pair.getRight().toString() );
             this.serviceTracker = new ServiceTracker( bundleContext, filter, this );
         }
         catch( InvalidSyntaxException e )
         {
-            String msg = "@OnService[Added/Removed] method '" + this.method.getName() + "' of component " + this.method.getDeclaringClass().getName() + " defines illegal filter: " + this.filter;
-            throw new ComponentDefinitionException( msg, componentDescriptor.getComponentType(), componentDescriptor.getModule() );
+            String msg = "@OnService[Added/Removed] method " + this + " defines illegal filter: " + this.filter;
+            throw new ComponentDefinitionException( msg, this.component.getType(), this.component.getModule() );
         }
     }
 
     @Override
     public final String toString()
     {
-        return "ComponentServiceEventMethod[" + this.method.getName() + " in " + this.componentDescriptor + "]";
+        return "ComponentServiceEventMethod[" + this.method.getName() + " in " + this.component + "]";
     }
 
     @Nonnull
     @Override
     public Module getConsumer()
     {
-        return this.componentDescriptor.getModule();
+        return this.component.getModule();
     }
 
     @Nonnull
@@ -204,10 +164,10 @@ final class ComponentServiceEventMethodLifecycle extends Lifecycle
     @Override
     public Object addingService( @Nonnull org.osgi.framework.ServiceReference reference )
     {
-        BundleContext bundleContext = this.componentDescriptor.getModule().getBundle().getBundleContext();
+        BundleContext bundleContext = this.component.getModule().getBundle().getBundleContext();
         if( bundleContext == null )
         {
-            throw new IllegalStateException( "no bundle context for module " + componentDescriptor.getModule() );
+            throw new IllegalStateException( "no bundle context for module " + this.component.getModule() );
         }
 
         Object service = bundleContext.getService( reference );
@@ -219,8 +179,7 @@ final class ComponentServiceEventMethodLifecycle extends Lifecycle
             {
                 try
                 {
-                    ComponentSingletonLifecycle singletonLifecycle = this.componentDescriptor.requireChild( ComponentSingletonLifecycle.class );
-                    this.method.invoke( singletonLifecycle.getInstance(), mosaicReference );
+                    this.method.invoke( this.component.getInstance(), mosaicReference );
                 }
                 catch( Throwable e )
                 {
@@ -252,8 +211,7 @@ final class ComponentServiceEventMethodLifecycle extends Lifecycle
             {
                 try
                 {
-                    ComponentSingletonLifecycle singletonLifecycle = this.componentDescriptor.requireChild( ComponentSingletonLifecycle.class );
-                    this.method.invoke( singletonLifecycle.getInstance(), mosaicReference );
+                    this.method.invoke( this.component.getInstance(), mosaicReference );
                 }
                 catch( Throwable e )
                 {
@@ -273,6 +231,46 @@ final class ComponentServiceEventMethodLifecycle extends Lifecycle
     protected synchronized void onBeforeDeactivate()
     {
         this.serviceTracker.close();
+    }
+
+    @Nonnull
+    private Type getServiceType()
+    {
+        Type[] parameterTypes = this.method.getGenericParameterTypes();
+        if( parameterTypes.length != 1 )
+        {
+            String msg = "@OnService[Added/Removed] method " + this + " must have exactly 1 parameter";
+            throw new ComponentDefinitionException( msg, this.component.getType(), this.component.getModule() );
+        }
+
+        Type serviceRefType = parameterTypes[ 0 ];
+        if( !( serviceRefType instanceof ParameterizedType ) )
+        {
+            String msg = "@OnService[Added/Removed] method " + this + " does not specify type for ServiceReference";
+            throw new ComponentDefinitionException( msg, this.component.getType(), this.component.getModule() );
+        }
+
+        ParameterizedType parameterizedServiceRefType = ( ParameterizedType ) serviceRefType;
+        if( !( parameterizedServiceRefType.getRawType() instanceof Class<?> ) )
+        {
+            String msg = "@OnService[Added/Removed] method " + this + " specifies non-concrete service reference parameter - must be 'ServiceReference<...>'";
+            throw new ComponentDefinitionException( msg, this.component.getType(), this.component.getModule() );
+        }
+
+        Class<?> serviceRefClassType = ( Class<?> ) parameterizedServiceRefType.getRawType();
+        if( !serviceRefClassType.isAssignableFrom( ServiceReference.class ) )
+        {
+            String msg = "@OnService[Added/Removed] method " + this + " does not receive 'ServiceReference<...>'";
+            throw new ComponentDefinitionException( msg, this.component.getType(), this.component.getModule() );
+        }
+
+        Type[] serviceRefTypeArguments = parameterizedServiceRefType.getActualTypeArguments();
+        if( serviceRefTypeArguments.length == 0 )
+        {
+            String msg = "@OnService[Added/Removed] method " + this + " does not specify type for ServiceReference";
+            throw new ComponentDefinitionException( msg, this.component.getType(), this.component.getModule() );
+        }
+        return serviceRefTypeArguments[ 0 ];
     }
 
     private class ServiceReferenceImpl implements ServiceReference
@@ -299,7 +297,7 @@ final class ComponentServiceEventMethodLifecycle extends Lifecycle
         @Override
         public Class getType()
         {
-            return ComponentServiceEventMethodLifecycle.this.serviceType;
+            return ComponentServiceEventMethod.this.serviceType;
         }
 
         @Nullable
@@ -341,7 +339,7 @@ final class ComponentServiceEventMethodLifecycle extends Lifecycle
             }
             else
             {
-                String typeName = ComponentServiceEventMethodLifecycle.this.serviceType.getName();
+                String typeName = ComponentServiceEventMethod.this.serviceType.getName();
                 throw new IllegalStateException( "service of type '" + typeName + "' is not available" );
             }
         }

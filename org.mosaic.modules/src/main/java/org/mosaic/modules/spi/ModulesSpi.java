@@ -3,8 +3,8 @@ package org.mosaic.modules.spi;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.modules.ComponentCreateException;
-import org.mosaic.modules.ComponentDescriptor;
 import org.mosaic.modules.Module;
+import org.mosaic.modules.TypeDescriptor;
 import org.mosaic.modules.impl.Activator;
 
 /**
@@ -16,7 +16,7 @@ public final class ModulesSpi
     private static final MethodInterceptorManager methodInterceptorManager = new MethodInterceptorManager();
 
     @Nullable
-    public static Object getValueForField( long moduleId, @Nonnull Class<?> componentType, @Nonnull String fieldName )
+    public static Object getValueForField( long moduleId, @Nonnull Class<?> type, @Nonnull String fieldName )
     {
         Module module = Activator.getModuleManager().getModule( moduleId );
         if( module == null )
@@ -24,14 +24,14 @@ public final class ModulesSpi
             throw new IllegalArgumentException( "no module with id " + moduleId + " found" );
         }
 
-        ComponentDescriptor<?> componentDescriptor = module.getModuleComponents().getComponentDescriptor( componentType );
-        if( componentDescriptor == null )
+        TypeDescriptor typeDescriptor = module.getModuleTypes().getTypeDescriptor( type );
+        if( typeDescriptor == null )
         {
-            throw new ComponentCreateException( "could not find component of type '" + componentType.getName() + "'", componentType, module );
+            throw new ComponentCreateException( "could not find descriptor for type '" + type.getName() + "' in module " + module, type, module );
         }
         else
         {
-            return componentDescriptor.getValueForField( fieldName );
+            return typeDescriptor.getValueForField( fieldName );
         }
     }
 

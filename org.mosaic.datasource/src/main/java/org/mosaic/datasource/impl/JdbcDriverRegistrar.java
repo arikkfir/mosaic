@@ -49,7 +49,7 @@ final class JdbcDriverRegistrar
                 className = className.substring( 1, className.length() - ".class".length() );
                 try
                 {
-                    Class<?> candidate = event.getModule().getModuleComponents().loadClass( className );
+                    Class<?> candidate = event.getModule().getModuleTypes().loadClass( className );
                     if( Driver.class.isAssignableFrom( candidate ) )
                     {
                         this.drivers.put( event.getModule().getId(),

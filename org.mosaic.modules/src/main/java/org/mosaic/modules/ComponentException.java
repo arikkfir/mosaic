@@ -1,5 +1,6 @@
 package org.mosaic.modules;
 
+import java.lang.reflect.Type;
 import javax.annotation.Nonnull;
 
 /**
@@ -8,9 +9,9 @@ import javax.annotation.Nonnull;
 public class ComponentException extends ModuleException
 {
     @Nonnull
-    private final Class<?> type;
+    private final Type type;
 
-    public ComponentException( @Nonnull String message, @Nonnull Class<?> type, @Nonnull Module module )
+    public ComponentException( @Nonnull String message, @Nonnull Type type, @Nonnull Module module )
     {
         super( message, module );
         this.type = type;
@@ -18,7 +19,7 @@ public class ComponentException extends ModuleException
 
     public ComponentException( @Nonnull String message,
                                @Nonnull Throwable cause,
-                               @Nonnull Class<?> type,
+                               @Nonnull Type type,
                                @Nonnull Module module )
     {
         super( message, cause, module );
@@ -26,7 +27,7 @@ public class ComponentException extends ModuleException
     }
 
     public ComponentException( @Nonnull Throwable cause,
-                               @Nonnull Class<?> type,
+                               @Nonnull Type type,
                                @Nonnull Module module )
     {
         super( cause, module );
@@ -34,7 +35,7 @@ public class ComponentException extends ModuleException
     }
 
     @Nonnull
-    public final Class<?> getType()
+    public final Type getType()
     {
         return this.type;
     }

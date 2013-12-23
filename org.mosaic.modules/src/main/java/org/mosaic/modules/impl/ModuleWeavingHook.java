@@ -1,23 +1,22 @@
 package org.mosaic.modules.impl;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.lang.annotation.Annotation;
-import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.*;
 import javassist.*;
 import javassist.bytecode.AccessFlag;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.modules.Component;
 import org.mosaic.modules.Service;
-import org.mosaic.modules.spi.MethodAlreadyRegisteredException;
 import org.mosaic.modules.spi.MethodCache;
 import org.mosaic.modules.spi.MethodInterceptor;
 import org.mosaic.modules.spi.ModulesSpi;
+import org.mosaic.util.pair.Pair;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.hooks.weaving.WeavingException;
@@ -25,7 +24,8 @@ import org.osgi.framework.hooks.weaving.WeavingHook;
 import org.osgi.framework.hooks.weaving.WovenClass;
 
 import static java.lang.String.format;
-import static java.nio.file.Files.*;
+import static java.nio.file.Files.readAllBytes;
+import static java.nio.file.Files.write;
 import static javassist.Modifier.*;
 import static javassist.bytecode.AccessFlag.BRIDGE;
 import static javassist.bytecode.AccessFlag.SYNTHETIC;
@@ -35,13 +35,36 @@ import static javassist.bytecode.AccessFlag.SYNTHETIC;
  */
 final class ModuleWeavingHook implements WeavingHook
 {
+    static class InterceptedMethodInfo
+    {
+        final long id;
+
+        @Nonnull
+        final String methodName;
+
+        @Nonnull
+        final String[] paramterTypeNames;
+
+        private InterceptedMethodInfo( long id, @Nonnull String methodName, @Nonnull String[] paramterTypeNames )
+        {
+            this.id = id;
+            this.methodName = methodName;
+            this.paramterTypeNames = paramterTypeNames;
+        }
+    }
+
     private final long bundleId;
 
     @Nonnull
     private final Path weavingCacheDir;
 
+    @Nonnull
+    private final BytecodeCache bytecodeCache;
+
     ModuleWeavingHook( @Nonnull BundleContext bundleContext )
     {
+        this.bytecodeCache = new BytecodeCache( bundleContext );
+
         this.bundleId = bundleContext.getBundle().getBundleId();
 
         String workDirLocation = bundleContext.getProperty( "mosaic.home.work" );
@@ -63,96 +86,39 @@ final class ModuleWeavingHook implements WeavingHook
             return;
         }
 
-        String bundleLocation = bundle.getLocation();
-        if( bundleLocation.startsWith( "file:" ) )
-        {
-            bundleLocation = bundleLocation.substring( "file:".length() );
-        }
+        ensureImported( wovenClass, ModulesSpi.class.getPackage().getName() );
 
-        Path bundleFile = Paths.get( bundleLocation );
-        long bundleFileModTime;
+        BytecodeCache.WovenBytecode byteCode;
         try
         {
-            bundleFileModTime = getLastModifiedTime( bundleFile ).toMillis();
+            byteCode = this.bytecodeCache.getByteCode( bundle, wovenClass.getClassName() );
         }
         catch( IOException e )
         {
-            throw new WeavingException( "could not read modification time for bundle " + bundle.getSymbolicName() + "[" + bundleId + "] at '" + bundleFile + "' while weaving class '" + wovenClass.getClassName() + "': " + e.getMessage(), e );
+            String msg = String.format(
+                    "could not load cached bytecode for class '%s' in bundle '%s-%s[%d]'",
+                    wovenClass.getClassName(), bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId()
+            );
+            throw new WeavingException( msg, e );
         }
 
-        ensureImported( wovenClass, ModulesSpi.class.getPackage().getName() );
-        synchronized( this )
+        if( byteCode != null )
         {
-            Path nextIdFile = this.weavingCacheDir.resolve( "id" );
-            if( notExists( nextIdFile ) )
+            for( Map.Entry<Long, Pair<String, String[]>> entry : byteCode.methodNamesAndParameters.entrySet() )
             {
-                try
-                {
-                    deletePath( this.weavingCacheDir );
-                    createDirectories( this.weavingCacheDir );
-                }
-                catch( IOException e )
-                {
-                    throw new WeavingException( "could not clean cache dir (due to missing next-id file)", e );
-                }
-
-                try
-                {
-                    Files.write( nextIdFile, "0".getBytes(), StandardOpenOption.CREATE, StandardOpenOption.WRITE );
-                }
-                catch( IOException e )
-                {
-                    throw new WeavingException( "cannot create next-id file", e );
-                }
+                MethodCache.getInstance().registerMethod( entry.getKey(),
+                                                          bundle.getBundleId(),
+                                                          wovenClass.getClassName(),
+                                                          entry.getValue().getLeft(),
+                                                          entry.getValue().getRight() );
             }
-        }
-
-        Path bundleCacheDir = this.weavingCacheDir.resolve( bundle.getSymbolicName() + "-" + bundle.getVersion() + "/" + bundleFileModTime );
-        Path bytesCacheFile = bundleCacheDir.resolve( wovenClass.getClassName() + ".class.bytes" );
-        if( exists( bytesCacheFile ) )
-        {
             try
             {
-                byte[] readBytes = readAllBytes( bytesCacheFile );
-                if( readBytes.length > 0 )
-                {
-                    DataInputStream dataInputStream = new DataInputStream( new ByteArrayInputStream( readBytes ) );
-                    int methodCount = dataInputStream.readInt();
-                    for( int i = 0; i < methodCount; i++ )
-                    {
-                        long id = dataInputStream.readLong();
-                        String methodName = dataInputStream.readUTF();
-
-                        int parameterCount = dataInputStream.readInt();
-                        String[] parameterNames = new String[ parameterCount ];
-                        for( int j = 0; j < parameterCount; j++ )
-                        {
-                            parameterNames[ j ] = dataInputStream.readUTF();
-                        }
-
-                        MethodCache.getInstance().registerMethod( id,
-                                                                  bundle.getBundleId(),
-                                                                  wovenClass.getClassName(),
-                                                                  methodName,
-                                                                  parameterNames );
-                    }
-
-                    int bytecodeLength = dataInputStream.readInt();
-                    byte[] bytecode = new byte[ bytecodeLength ];
-                    if( dataInputStream.read( bytecode ) != bytecodeLength )
-                    {
-                        throw new WeavingException( "illegal format of bytecode cache at '" + bytesCacheFile + "'" );
-                    }
-                    wovenClass.setBytes( loadConcreteClass( wovenClass, bytecode ).toBytecode() );
-                }
-            }
-            catch( MethodAlreadyRegisteredException e )
-            {
-                throw new WeavingException( "could not register all weaved methods for '" + wovenClass.getClassName() + "'", e );
+                wovenClass.setBytes( loadConcreteClass( wovenClass, byteCode.bytes ).toBytecode() );
             }
             catch( Throwable e )
             {
-                throw new WeavingException( "could not read cached bytecode for class '" + wovenClass.getClassName() + "': " + e.getMessage(), e );
+                throw new WeavingException( "could not read or compile cached bytecode for class '" + wovenClass.getClassName() + "': " + e.getMessage(), e );
             }
         }
         else
@@ -179,29 +145,14 @@ final class ModuleWeavingHook implements WeavingHook
 
                     try
                     {
-                        createDirectories( bytesCacheFile.getParent() );
-                        try( OutputStream outputStream = Files.newOutputStream( bytesCacheFile ) )
-                        {
-                            DataOutputStream dataOutputStream = new DataOutputStream( outputStream );
-                            dataOutputStream.writeInt( interceptedMethodInfos.size() );
-                            for( InterceptedMethodInfo interceptedMethodInfo : interceptedMethodInfos )
-                            {
-                                dataOutputStream.writeLong( interceptedMethodInfo.id );
-                                dataOutputStream.writeUTF( interceptedMethodInfo.methodName );
-                                dataOutputStream.writeInt( interceptedMethodInfo.paramterTypeNames.length );
-                                for( String paramterTypeName : interceptedMethodInfo.paramterTypeNames )
-                                {
-                                    dataOutputStream.writeUTF( paramterTypeName );
-                                }
-                            }
-                            dataOutputStream.writeInt( bytes.length );
-                            dataOutputStream.write( bytes );
-                            dataOutputStream.flush();
-                        }
+                        this.bytecodeCache.storeBytecode( bundle,
+                                                          wovenClass.getClassName(),
+                                                          bytes,
+                                                          interceptedMethodInfos );
                     }
                     catch( Throwable e )
                     {
-                        throw new WeavingException( "could not write cached bytecode for class '" + wovenClass.getClassName() + "' into file '" + bytesCacheFile + "': " + e.getMessage(), e );
+                        throw new WeavingException( "could not write cached bytecode for class '" + wovenClass.getClassName() + "': " + e.getMessage(), e );
                     }
                 }
             }
@@ -422,7 +373,7 @@ final class ModuleWeavingHook implements WeavingHook
             classPool.appendClassPath( new LoaderClassPath( wovenClass.getBundleWiring().getClassLoader() ) );
 
             CtClass ctClass = classPool.makeClass( new ByteArrayInputStream( wovenClass.getBytes() ) );
-            if( ctClass.isArray() || ctClass.isPrimitive() || ctClass.isAnnotation() || ctClass.isEnum() || ctClass.isInterface() )
+            if( ctClass.isArray() || ctClass.isAnnotation() || ctClass.isEnum() || ctClass.isInterface() )
             {
                 return null;
             }
@@ -537,59 +488,6 @@ final class ModuleWeavingHook implements WeavingHook
             {
                 wovenClass.getDynamicImports().add( packageName );
             }
-        }
-    }
-
-    private void deletePath( @Nonnull Path path ) throws IOException
-    {
-        if( Files.isDirectory( path ) )
-        {
-            Files.walkFileTree( path, new SimpleFileVisitor<Path>()
-            {
-                @Nonnull
-                @Override
-                public FileVisitResult visitFile( @Nonnull Path file, @Nonnull BasicFileAttributes attrs )
-                        throws IOException
-                {
-                    Files.delete( file );
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Nonnull
-                @Override
-                public FileVisitResult postVisitDirectory( @Nonnull Path dir, @Nullable IOException exc )
-                        throws IOException
-                {
-                    if( exc != null )
-                    {
-                        throw exc;
-                    }
-                    Files.delete( dir );
-                    return FileVisitResult.CONTINUE;
-                }
-            } );
-        }
-        else if( exists( path ) )
-        {
-            Files.delete( path );
-        }
-    }
-
-    private class InterceptedMethodInfo
-    {
-        private final long id;
-
-        @Nonnull
-        private final String methodName;
-
-        @Nonnull
-        private final String[] paramterTypeNames;
-
-        private InterceptedMethodInfo( long id, @Nonnull String methodName, @Nonnull String[] paramterTypeNames )
-        {
-            this.id = id;
-            this.methodName = methodName;
-            this.paramterTypeNames = paramterTypeNames;
         }
     }
 }

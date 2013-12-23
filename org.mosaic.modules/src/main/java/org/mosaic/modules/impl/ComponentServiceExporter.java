@@ -10,17 +10,22 @@ import org.mosaic.util.collections.MapEx;
 import org.osgi.framework.*;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.unmodifiableMap;
 
 /**
  * @author arik
  */
-@SuppressWarnings("unchecked")
-final class ComponentServiceExporterLifecycle extends Lifecycle implements ServiceCapabilityProvider
+@SuppressWarnings( "unchecked" )
+final class ComponentServiceExporter extends Lifecycle implements ServiceCapabilityProvider
 {
+    private static final Logger LOG = LoggerFactory.getLogger( ComponentServiceExporter.class );
+
     @Nonnull
-    private final ComponentDescriptorImpl<?> componentDescriptor;
+    private final Component component;
 
     @Nonnull
     private final Class<?>[] serviceTypes;
@@ -29,52 +34,19 @@ final class ComponentServiceExporterLifecycle extends Lifecycle implements Servi
     private final Map<String, Object> serviceProperties;
 
     @Nullable
-    private List<ServiceRegistration<?>> serviceRegistrations;
+    private Collection<ServiceRegistration<?>> serviceRegistrations;
 
-    ComponentServiceExporterLifecycle( @Nonnull ComponentDescriptorImpl<?> componentDescriptor )
+    ComponentServiceExporter( @Nonnull Component component )
     {
-        this.componentDescriptor = componentDescriptor;
-
-        Service serviceAnn = this.componentDescriptor.getComponentType().getAnnotation( Service.class );
-
-        List<Class<?>> interfaces = new LinkedList<>();
-
-        // add interfaces declared in @Service annotation to the service types list
-        interfaces.addAll( asList( serviceAnn.value() ) );
-
-        // if none were declared in the annotation, add all interfaces implemented by the component
-        if( interfaces.isEmpty() )
-        {
-            interfaces.addAll( asList( componentDescriptor.getComponentType().getInterfaces() ) );
-        }
-
-        // if no interfaces are implemented by the component and no interfaces declared in the annotation, fail
-        if( interfaces.isEmpty() )
-        {
-            String msg = "@Service component must declare service interface (via 'implements' clause or in the @Service annotation)";
-            throw new ComponentDefinitionException( msg,
-                                                    this.componentDescriptor.getComponentType(),
-                                                    this.componentDescriptor.getModule() );
-        }
-        this.serviceTypes = interfaces.toArray( new Class[ interfaces.size() ] );
-
-        this.serviceProperties = new LinkedHashMap<>();
-        for( Service.P property : serviceAnn.properties() )
-        {
-            this.serviceProperties.put( property.key(), property.value() );
-        }
-
-        Ranking rankingAnn = this.componentDescriptor.getComponentType().getAnnotation( Ranking.class );
-        if( rankingAnn != null )
-        {
-            this.serviceProperties.put( Constants.SERVICE_RANKING, rankingAnn.value() );
-        }
+        this.component = component;
+        this.serviceTypes = getServiceInterfaces();
+        this.serviceProperties = getServiceProperties();
     }
 
     @Override
     public final String toString()
     {
-        return "ComponentServiceExporter[" + this.componentDescriptor + " as " + asList( this.serviceTypes ) + "]";
+        return "ComponentServiceExporter[" + this.component + " as " + asList( this.serviceTypes ) + "]";
     }
 
     @Nonnull
@@ -95,29 +67,34 @@ final class ComponentServiceExporterLifecycle extends Lifecycle implements Servi
     @Override
     protected synchronized void onAfterActivate()
     {
+        Object instance = this.component.getInstance();
+        if( instance == null )
+        {
+            LOG.warn( "Could not export {} - instance not created yet", this );
+            return;
+        }
+
         Dictionary<String, Object> properties = new Hashtable<>();
         for( Map.Entry<String, Object> entry : this.serviceProperties.entrySet() )
         {
             properties.put( entry.getKey(), entry.getValue() );
         }
 
-        ComponentSingletonLifecycle singletonLifecycle = this.componentDescriptor.requireChild( ComponentSingletonLifecycle.class );
-        Object instance = singletonLifecycle.getInstance();
         if( instance instanceof ServicePropertiesProvider )
         {
             ( ( ServicePropertiesProvider ) instance ).addProperties( properties );
         }
 
+        BundleContext bundleContext = this.component.getModule().getBundle().getBundleContext();
+        if( bundleContext == null )
+        {
+            throw new IllegalStateException( "no bundle context for module " + this.component.getModule() );
+        }
+
         this.serviceRegistrations = new LinkedList<>();
         for( Class serviceType : this.serviceTypes )
         {
-            BundleContext bundleContext = this.componentDescriptor.getModule().getBundle().getBundleContext();
-            if( bundleContext == null )
-            {
-                throw new IllegalStateException( "no bundle context for module " + componentDescriptor.getModule() );
-            }
-            ServiceRegistration<?> registration = bundleContext.registerService( serviceType, instance, properties );
-            this.serviceRegistrations.add( registration );
+            this.serviceRegistrations.add( bundleContext.registerService( serviceType, instance, properties ) );
         }
     }
 
@@ -138,6 +115,50 @@ final class ComponentServiceExporterLifecycle extends Lifecycle implements Servi
             }
             this.serviceRegistrations = null;
         }
+    }
+
+    @Nonnull
+    private Class<?>[] getServiceInterfaces()
+    {
+        Class<?> type = this.component.getType();
+
+        List<Class<?>> interfaces = new LinkedList<>();
+
+        // add interfaces declared in @Service annotation to the service types list
+        interfaces.addAll( asList( this.component.getType().getAnnotation( Service.class ).value() ) );
+
+        // if none were declared in the annotation, add all interfaces implemented by the component
+        if( interfaces.isEmpty() )
+        {
+            interfaces.addAll( asList( type.getInterfaces() ) );
+        }
+
+        // if no interfaces are implemented by the component and no interfaces declared in the annotation, fail
+        if( interfaces.isEmpty() )
+        {
+            String msg = "@Service component must declare service interface (via 'implements' clause or in the @Service annotation)";
+            throw new ComponentDefinitionException( msg, type, this.component.getModule() );
+        }
+
+        return interfaces.toArray( new Class[ interfaces.size() ] );
+    }
+
+    @Nonnull
+    private Map<String, Object> getServiceProperties()
+    {
+        Map<String, Object> properties = new LinkedHashMap<>();
+        for( Service.P property : this.component.getType().getAnnotation( Service.class ).properties() )
+        {
+            properties.put( property.key(), property.value() );
+        }
+
+        Ranking rankingAnn = this.component.getType().getAnnotation( Ranking.class );
+        if( rankingAnn != null )
+        {
+            properties.put( Constants.SERVICE_RANKING, rankingAnn.value() );
+        }
+
+        return unmodifiableMap( properties );
     }
 
     private class ServiceCapabilityImpl implements ModuleWiring.ServiceCapability
@@ -169,7 +190,7 @@ final class ComponentServiceExporterLifecycle extends Lifecycle implements Servi
         @Override
         public Module getProvider()
         {
-            return ComponentServiceExporterLifecycle.this.componentDescriptor.getModule();
+            return ComponentServiceExporter.this.component.getModule();
         }
 
         @Nonnull
@@ -180,7 +201,7 @@ final class ComponentServiceExporterLifecycle extends Lifecycle implements Servi
             if( reference != null )
             {
                 String[] objectClass = ( String[] ) reference.getProperty( Constants.OBJECTCLASS );
-                ModuleImpl module = ComponentServiceExporterLifecycle.this.componentDescriptor.getModule();
+                ModuleImpl module = ComponentServiceExporter.this.component.getModule();
                 try
                 {
                     return module.getModuleResources().loadClass( objectClass[ 0 ] );

@@ -8,20 +8,22 @@ import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.modules.*;
-import org.mosaic.modules.ServiceReference;
 import org.mosaic.util.collections.HashMapEx;
 import org.mosaic.util.collections.MapEx;
 import org.mosaic.util.osgi.FilterBuilder;
 import org.mosaic.util.pair.Pair;
-import org.osgi.framework.*;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.Constants;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * @author arik
  */
 @SuppressWarnings("unchecked")
-final class ComponentFieldServiceReferenceLifecycle extends ComponentField implements ServiceReference,
-                                                                                      ModuleWiring.ServiceRequirement
+final class TypeDescriptorFieldServiceReference extends TypeDescriptorField
+        implements ServiceReference, ModuleWiring.ServiceRequirement
 {
     @Nonnull
     private final Class serviceType;
@@ -32,34 +34,34 @@ final class ComponentFieldServiceReferenceLifecycle extends ComponentField imple
     @Nonnull
     private final ServiceTracker serviceTracker;
 
-    ComponentFieldServiceReferenceLifecycle( @Nonnull ComponentDescriptorImpl<?> componentDescriptor,
-                                             @Nonnull Field field )
+    TypeDescriptorFieldServiceReference( @Nonnull TypeDescriptor typeDescriptor,
+                                         @Nonnull Field field )
     {
-        super( componentDescriptor, field );
+        super( typeDescriptor, field );
 
         Service serviceAnn = field.getAnnotation( Service.class );
         if( serviceAnn.value().length > 0 )
         {
-            String msg = "field '" + field.getName() + "' of component " + componentDescriptor + " defines the 'value' attribute on its @Service annotation (it should not)";
-            throw new ComponentDefinitionException( msg, componentDescriptor.getComponentType(), componentDescriptor.getModule() );
+            String msg = "field '" + field.getName() + "' of component " + this.typeDescriptor + " defines the 'value' attribute on its @Service annotation (it should not)";
+            throw new ComponentDefinitionException( msg, this.typeDescriptor.getType(), this.typeDescriptor.getModule() );
         }
 
         java.lang.reflect.Type serviceRefType = field.getGenericType();
         if( !( serviceRefType instanceof ParameterizedType ) )
         {
-            String msg = "field '" + field.getName() + "' of component " + componentDescriptor + " does not specify type for ServiceReference";
-            throw new ComponentDefinitionException( msg, componentDescriptor.getComponentType(), componentDescriptor.getModule() );
+            String msg = "field '" + field.getName() + "' of component " + this.typeDescriptor + " does not specify type for ServiceReference";
+            throw new ComponentDefinitionException( msg, this.typeDescriptor.getType(), this.typeDescriptor.getModule() );
         }
 
         ParameterizedType parameterizedServiceRefType = ( ParameterizedType ) serviceRefType;
         java.lang.reflect.Type[] serviceRefTypeArguments = parameterizedServiceRefType.getActualTypeArguments();
         if( serviceRefTypeArguments.length == 0 )
         {
-            String msg = "field '" + field.getName() + "' of component " + componentDescriptor + " does not specify type for ServiceReference";
-            throw new ComponentDefinitionException( msg, componentDescriptor.getComponentType(), componentDescriptor.getModule() );
+            String msg = "field '" + field.getName() + "' of component " + this.typeDescriptor + " does not specify type for ServiceReference";
+            throw new ComponentDefinitionException( msg, this.typeDescriptor.getType(), this.typeDescriptor.getModule() );
         }
 
-        Pair<Class<?>, FilterBuilder> pair = ComponentDescriptorImpl.getServiceAndFilterFromType( componentDescriptor.getModule(), componentDescriptor.getComponentType(), serviceRefTypeArguments[ 0 ] );
+        Pair<Class<?>, FilterBuilder> pair = Activator.getServiceAndFilterFromType( this.typeDescriptor.getModule(), this.typeDescriptor.getType(), serviceRefTypeArguments[ 0 ] );
         this.serviceType = pair.getKey();
 
         FilterBuilder filterBuilder = pair.getRight();
@@ -71,18 +73,17 @@ final class ComponentFieldServiceReferenceLifecycle extends ComponentField imple
 
         try
         {
-            BundleContext bundleContext = componentDescriptor.getModule().getBundle().getBundleContext();
+            BundleContext bundleContext = this.typeDescriptor.getModule().getBundle().getBundleContext();
             if( bundleContext == null )
             {
-                throw new IllegalStateException( "no bundle context for module " + componentDescriptor.getModule() );
+                throw new IllegalStateException( "no bundle context for module " + this.typeDescriptor.getModule() );
             }
-            Filter filter = FrameworkUtil.createFilter( this.filter );
-            this.serviceTracker = new ServiceTracker( bundleContext, filter, null );
+            this.serviceTracker = new ServiceTracker( bundleContext, FrameworkUtil.createFilter( this.filter ), null );
         }
         catch( InvalidSyntaxException e )
         {
-            String msg = "field '" + field.getName() + "' of component " + componentDescriptor + " defines illegal filter: " + this.filter;
-            throw new ComponentDefinitionException( msg, componentDescriptor.getComponentType(), componentDescriptor.getModule() );
+            String msg = "field '" + field.getName() + "' of component " + this.typeDescriptor + " defines illegal filter: " + this.filter;
+            throw new ComponentDefinitionException( msg, this.typeDescriptor.getType(), this.typeDescriptor.getModule() );
         }
     }
 
@@ -160,7 +161,7 @@ final class ComponentFieldServiceReferenceLifecycle extends ComponentField imple
     @Override
     public Module getConsumer()
     {
-        return this.componentDescriptor.getModule();
+        return this.typeDescriptor.getModule();
     }
 
     @Nullable
@@ -181,9 +182,9 @@ final class ComponentFieldServiceReferenceLifecycle extends ComponentField imple
 
     @Nullable
     @Override
-    protected String toStringInternal()
+    public String toString()
     {
-        return "@Service '" + super.toStringInternal() + "'";
+        return "TypeDescriptorFieldServiceReference[" + super.toString() + "]";
     }
 
     @Override

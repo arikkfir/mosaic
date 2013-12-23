@@ -15,10 +15,10 @@ import org.osgi.framework.ServiceRegistration;
  * @author arik
  */
 @SuppressWarnings("unchecked")
-final class ComponentServiceTemplateExporterLifecycle extends Lifecycle implements ServiceTemplate
+final class TypeDescriptorServiceTemplateExporter extends Lifecycle implements ServiceTemplate
 {
     @Nonnull
-    private final ComponentDescriptorImpl<?> componentDescriptor;
+    private final TypeDescriptor typeDescriptor;
 
     @Nonnull
     private final Annotation type;
@@ -29,13 +29,12 @@ final class ComponentServiceTemplateExporterLifecycle extends Lifecycle implemen
     @Nullable
     private Integer ranking;
 
-    ComponentServiceTemplateExporterLifecycle( @Nonnull ComponentDescriptorImpl<?> componentDescriptor,
-                                               @Nonnull Annotation type )
+    TypeDescriptorServiceTemplateExporter( @Nonnull TypeDescriptor typeDescriptor, @Nonnull Annotation type )
     {
-        this.componentDescriptor = componentDescriptor;
+        this.typeDescriptor = typeDescriptor;
         this.type = type;
 
-        Ranking rankingAnn = this.componentDescriptor.getComponentType().getAnnotation( Ranking.class );
+        Ranking rankingAnn = this.typeDescriptor.getType().getAnnotation( Ranking.class );
         if( rankingAnn != null )
         {
             this.ranking = rankingAnn.value();
@@ -45,14 +44,14 @@ final class ComponentServiceTemplateExporterLifecycle extends Lifecycle implemen
     @Override
     public final String toString()
     {
-        return "ComponentServiceTemplateExporter[" + this.componentDescriptor.getComponentType().getName() + "]";
+        return "TypeDescriptorServiceTemplateExporter[@" + this.type.annotationType().getSimpleName() + "]";
     }
 
     @Nonnull
     @Override
     public Class<?> getTemplate()
     {
-        return this.componentDescriptor.getComponentType();
+        return this.typeDescriptor.getType();
     }
 
     @Nonnull
@@ -65,10 +64,10 @@ final class ComponentServiceTemplateExporterLifecycle extends Lifecycle implemen
     @Override
     protected synchronized void onAfterActivate()
     {
-        BundleContext bundleContext = this.componentDescriptor.getModule().getBundle().getBundleContext();
+        BundleContext bundleContext = this.typeDescriptor.getModule().getBundle().getBundleContext();
         if( bundleContext == null )
         {
-            throw new IllegalStateException( "no bundle context for module " + componentDescriptor.getModule() );
+            throw new IllegalStateException( "no bundle context for module " + typeDescriptor.getModule() );
         }
 
         Dictionary<String, Object> dict = new Hashtable<>();

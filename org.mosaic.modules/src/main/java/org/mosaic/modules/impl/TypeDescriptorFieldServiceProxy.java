@@ -7,12 +7,14 @@ import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.modules.*;
-import org.mosaic.modules.ServiceReference;
 import org.mosaic.util.collections.HashMapEx;
 import org.mosaic.util.collections.MapEx;
 import org.mosaic.util.osgi.FilterBuilder;
 import org.mosaic.util.pair.Pair;
-import org.osgi.framework.*;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.Constants;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.util.tracker.ServiceTracker;
 import org.osgi.util.tracker.ServiceTrackerCustomizer;
@@ -21,9 +23,8 @@ import org.osgi.util.tracker.ServiceTrackerCustomizer;
  * @author arik
  */
 @SuppressWarnings("unchecked")
-final class ComponentFieldServiceProxyLifecycle extends ComponentField implements InvocationHandler,
-                                                                                  ServiceTrackerCustomizer,
-                                                                                  ModuleWiring.ServiceRequirement
+final class TypeDescriptorFieldServiceProxy extends TypeDescriptorField
+        implements InvocationHandler, ServiceTrackerCustomizer, ModuleWiring.ServiceRequirement
 {
     @Nonnull
     private final Class<?> serviceType;
@@ -38,23 +39,20 @@ final class ComponentFieldServiceProxyLifecycle extends ComponentField implement
     private final ServiceTracker serviceTracker;
 
     @Nullable
-    private org.osgi.framework.ServiceReference<?> serviceReference;
-
-    @Nullable
     private Object service;
 
-    ComponentFieldServiceProxyLifecycle( @Nonnull ComponentDescriptorImpl<?> componentDescriptor, @Nonnull Field field )
+    TypeDescriptorFieldServiceProxy( @Nonnull TypeDescriptor typeDescriptor, @Nonnull Field field )
     {
-        super( componentDescriptor, field );
+        super( typeDescriptor, field );
 
         Service serviceAnn = field.getAnnotation( Service.class );
         if( serviceAnn.value().length > 0 )
         {
-            String msg = "field '" + field.getName() + "' of component " + componentDescriptor + " defines the 'value' attribute on its @Service annotation (it should not)";
-            throw new ComponentDefinitionException( msg, componentDescriptor.getComponentType(), componentDescriptor.getModule() );
+            String msg = "field '" + field.getName() + "' of component " + this.typeDescriptor + " defines the 'value' attribute on its @Service annotation (it should not)";
+            throw new ComponentDefinitionException( msg, this.typeDescriptor.getType(), this.typeDescriptor.getModule() );
         }
 
-        Pair<Class<?>, FilterBuilder> pair = ComponentDescriptorImpl.getServiceAndFilterFromType( this.componentDescriptor.getModule(), componentDescriptor.getComponentType(), field.getGenericType() );
+        Pair<Class<?>, FilterBuilder> pair = Activator.getServiceAndFilterFromType( this.typeDescriptor.getModule(), typeDescriptor.getType(), field.getGenericType() );
         this.serviceType = pair.getKey();
 
         FilterBuilder filterBuilder = pair.getRight();
@@ -64,27 +62,26 @@ final class ComponentFieldServiceProxyLifecycle extends ComponentField implement
         }
         this.filter = filterBuilder.toString();
 
-        BundleWiring bundleWiring = componentDescriptor.getModule().getBundle().adapt( BundleWiring.class );
+        BundleWiring bundleWiring = typeDescriptor.getModule().getBundle().adapt( BundleWiring.class );
         if( bundleWiring == null )
         {
-            throw new IllegalStateException( "module " + componentDescriptor.getModule() + " has no bundle wiring" );
+            throw new IllegalStateException( "module " + typeDescriptor.getModule() + " has no bundle wiring" );
         }
         this.proxy = Proxy.newProxyInstance( bundleWiring.getClassLoader(), new Class[] { field.getType() }, this );
 
         try
         {
-            BundleContext bundleContext = componentDescriptor.getModule().getBundle().getBundleContext();
+            BundleContext bundleContext = typeDescriptor.getModule().getBundle().getBundleContext();
             if( bundleContext == null )
             {
-                throw new IllegalStateException( "no bundle context for module " + componentDescriptor.getModule() );
+                throw new IllegalStateException( "no bundle context for module " + typeDescriptor.getModule() );
             }
-            Filter filter = FrameworkUtil.createFilter( this.filter );
-            this.serviceTracker = new ServiceTracker( bundleContext, filter, this );
+            this.serviceTracker = new ServiceTracker( bundleContext, FrameworkUtil.createFilter( this.filter ), this );
         }
         catch( InvalidSyntaxException e )
         {
-            String msg = "field '" + field.getName() + "' of component " + componentDescriptor + " defines illegal filter: " + this.filter;
-            throw new ComponentDefinitionException( msg, componentDescriptor.getComponentType(), componentDescriptor.getModule() );
+            String msg = "field '" + field.getName() + "' of component " + typeDescriptor + " defines illegal filter: " + this.filter;
+            throw new ComponentDefinitionException( msg, typeDescriptor.getType(), typeDescriptor.getModule() );
         }
     }
 
@@ -92,7 +89,7 @@ final class ComponentFieldServiceProxyLifecycle extends ComponentField implement
     @Override
     public Module getConsumer()
     {
-        return this.componentDescriptor.getModule();
+        return this.typeDescriptor.getModule();
     }
 
     @Nonnull
@@ -161,20 +158,19 @@ final class ComponentFieldServiceProxyLifecycle extends ComponentField implement
         Object service = this.service;
         if( service == null )
         {
-            BundleContext bundleContext = this.componentDescriptor.getModule().getBundle().getBundleContext();
+            BundleContext bundleContext = this.typeDescriptor.getModule().getBundle().getBundleContext();
             if( bundleContext == null )
             {
-                throw new IllegalStateException( "no bundle context for module " + this.componentDescriptor.getModule() );
+                throw new IllegalStateException( "no bundle context for module " + this.typeDescriptor.getModule() );
             }
 
             service = bundleContext.getService( reference );
             if( service != null )
             {
-                this.serviceReference = reference;
                 this.service = service;
                 try
                 {
-                    this.componentDescriptor.getModule().activate();
+                    this.typeDescriptor.getModule().activate();
                 }
                 catch( Exception ignore )
                 {
@@ -202,23 +198,21 @@ final class ComponentFieldServiceProxyLifecycle extends ComponentField implement
                 Object newService = this.serviceTracker.getService( newReference );
                 if( newService != null )
                 {
-                    this.serviceReference = newReference;
                     this.service = newService;
                     return;
                 }
             }
 
-            this.serviceReference = null;
             this.service = null;
-            this.componentDescriptor.getModule().deactivate();
+            this.typeDescriptor.getModule().deactivate();
         }
     }
 
     @Nullable
     @Override
-    protected String toStringInternal()
+    public String toString()
     {
-        return "@Service '" + super.toStringInternal() + "'";
+        return "TypeDescriptorFieldServiceProxy[" + super.toString() + "]";
     }
 
     @Override
@@ -242,7 +236,6 @@ final class ComponentFieldServiceProxyLifecycle extends ComponentField implement
     @Override
     protected synchronized void onAfterDeactivate()
     {
-        this.serviceReference = null;
         this.service = null;
     }
 
@@ -273,7 +266,7 @@ final class ComponentFieldServiceProxyLifecycle extends ComponentField implement
         @Override
         public Class getType()
         {
-            return ComponentFieldServiceProxyLifecycle.this.serviceType;
+            return TypeDescriptorFieldServiceProxy.this.serviceType;
         }
 
         @Nullable
@@ -301,7 +294,7 @@ final class ComponentFieldServiceProxyLifecycle extends ComponentField implement
         @Override
         public Object get()
         {
-            return ComponentFieldServiceProxyLifecycle.this.serviceTracker.getService( this.reference );
+            return TypeDescriptorFieldServiceProxy.this.serviceTracker.getService( this.reference );
         }
 
         @Nonnull
@@ -315,7 +308,7 @@ final class ComponentFieldServiceProxyLifecycle extends ComponentField implement
             }
             else
             {
-                String typeName = ComponentFieldServiceProxyLifecycle.this.serviceType.getName();
+                String typeName = TypeDescriptorFieldServiceProxy.this.serviceType.getName();
                 throw new IllegalStateException( "service of type '" + typeName + "' is not available" );
             }
         }

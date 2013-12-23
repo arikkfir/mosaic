@@ -37,7 +37,7 @@ public interface Module
     ModuleResources getModuleResources();
 
     @Nonnull
-    ModuleComponents getModuleComponents();
+    ModuleTypes getModuleTypes();
 
     @Nonnull
     ModuleWiring getModuleWiring();

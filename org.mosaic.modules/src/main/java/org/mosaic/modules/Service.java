@@ -8,8 +8,9 @@ import java.lang.annotation.Target;
 /**
  * @author arik
  */
-@Retention( RetentionPolicy.RUNTIME )
-@Target( { ElementType.TYPE, ElementType.FIELD, ElementType.CONSTRUCTOR } )
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ ElementType.TYPE, ElementType.FIELD, ElementType.CONSTRUCTOR })
+@Component
 public @interface Service
 {
     Class<?>[] value() default { };

@@ -17,17 +17,19 @@ import org.osgi.framework.ServiceRegistration;
 import org.osgi.util.tracker.ServiceTracker;
 import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
-import static org.mosaic.modules.impl.ComponentDescriptorImpl.getServiceAndFilterFromType;
+import static java.util.Arrays.asList;
+import static java.util.Collections.unmodifiableMap;
+import static org.mosaic.modules.impl.Activator.getServiceAndFilterFromType;
 
 /**
  * @author arik
  */
-@SuppressWarnings("unchecked")
-final class ComponentServiceAdapterLifecycle extends Lifecycle
+@SuppressWarnings( "unchecked" )
+final class TypeDescriptorServiceAdapter extends Lifecycle
         implements ServiceTrackerCustomizer, ModuleWiring.ServiceRequirement, ServiceCapabilityProvider
 {
     @Nonnull
-    private final ComponentDescriptorImpl<?> componentDescriptor;
+    private final TypeDescriptor typeDescriptor;
 
     @Nonnull
     private final Class<?> adaptedType;
@@ -50,95 +52,43 @@ final class ComponentServiceAdapterLifecycle extends Lifecycle
     @Nonnull
     private final Map<Long, Collection<ServiceRegistration<?>>> serviceAdaptations = new ConcurrentHashMap<>( 100 );
 
-    ComponentServiceAdapterLifecycle( @Nonnull ComponentDescriptorImpl<?> componentDescriptor )
+    TypeDescriptorServiceAdapter( @Nonnull TypeDescriptor typeDescriptor )
     {
-        this.componentDescriptor = componentDescriptor;
+        this.typeDescriptor = typeDescriptor;
+        this.serviceTypes = getServiceInterfaces();
+        this.serviceProperties = getServiceProperties();
 
-        Adapter adapterAnn = this.componentDescriptor.getComponentType().getAnnotation( Adapter.class );
-        this.serviceTypes = adapterAnn.value();
-        this.serviceProperties = new LinkedHashMap<>();
-
-        Ranking rankingAnn = this.componentDescriptor.getComponentType().getAnnotation( Ranking.class );
-        if( rankingAnn != null )
-        {
-            this.serviceProperties.put( Constants.SERVICE_RANKING, rankingAnn.value() );
-        }
-
-        for( Adapter.P property : adapterAnn.properties() )
-        {
-            this.serviceProperties.put( property.key(), property.value() );
-        }
-
-        FilterBuilder filterBuilder = null;
-        Class<?> adaptedType = null;
-        for( Constructor<?> ctor : this.componentDescriptor.getComponentType().getDeclaredConstructors() )
-        {
-            Service serviceAnn = ctor.getAnnotation( Service.class );
-            if( serviceAnn != null && ctor.getParameterTypes().length == 1 )
-            {
-                Pair<Class<?>, FilterBuilder> pair = getServiceAndFilterFromType( this.componentDescriptor.getModule(),
-                                                                                  this.componentDescriptor.getComponentType(),
-                                                                                  ctor.getGenericParameterTypes()[ 0 ] );
-
-                adaptedType = pair.getKey();
-
-                filterBuilder = pair.getRight();
-                for( Service.P property : serviceAnn.properties() )
-                {
-                    filterBuilder.addEquals( property.key(), property.value() );
-                }
-                break;
-            }
-        }
-        if( filterBuilder == null )
-        {
-            throw new ComponentDefinitionException( "@Adapter has no one-argument constructor",
-                                                    this.componentDescriptor.getComponentType(),
-                                                    this.componentDescriptor.getModule() );
-        }
-        this.adaptedType = adaptedType;
-        this.filter = filterBuilder.toString();
-
+        Pair<Constructor<?>, FilterBuilder> ctor = getServiceConstructor();
+        this.adapterConstructor = ctor.getKey();
+        this.adaptedType = this.adapterConstructor.getParameterTypes()[ 0 ];
+        this.filter = ctor.getValue().toString();
         try
         {
-            BundleContext bundleContext = this.componentDescriptor.getModule().getBundle().getBundleContext();
+            BundleContext bundleContext = this.typeDescriptor.getModule().getBundle().getBundleContext();
             if( bundleContext == null )
             {
-                throw new IllegalStateException( "no bundle context for module " + componentDescriptor.getModule() );
+                throw new IllegalStateException( "no bundle context for module " + typeDescriptor.getModule() );
             }
-            Filter filter = FrameworkUtil.createFilter( this.filter );
-            this.serviceTracker = new ServiceTracker( bundleContext, filter, this );
+            this.serviceTracker = new ServiceTracker( bundleContext, FrameworkUtil.createFilter( this.filter ), this );
         }
         catch( InvalidSyntaxException e )
         {
-            String msg = "@Adapter '" + this + "' of component " + componentDescriptor + " defines illegal filter: " + this.filter;
-            throw new ComponentDefinitionException( msg, this.componentDescriptor.getComponentType(), this.componentDescriptor.getModule() );
-        }
-
-        try
-        {
-            this.adapterConstructor = this.componentDescriptor.getComponentType().getDeclaredConstructor( new Class[] {
-                    adaptedType
-            } );
-            this.adapterConstructor.setAccessible( true );
-        }
-        catch( Exception e )
-        {
-            throw new ComponentCreateException( e, this.componentDescriptor.getComponentType(), this.componentDescriptor.getModule() );
+            String msg = "@Adapter '" + this + "' of component " + typeDescriptor + " defines illegal filter: " + this.filter;
+            throw new ComponentDefinitionException( msg, this.typeDescriptor.getType(), this.typeDescriptor.getModule() );
         }
     }
 
     @Override
     public final String toString()
     {
-        return "ComponentServiceAdapter[" + this.componentDescriptor + "]";
+        return "TypeDescriptorServiceAdapter[" + this.adaptedType.getSimpleName() + " as " + asList( this.serviceTypes ) + "]";
     }
 
     @Nonnull
     @Override
     public Module getConsumer()
     {
-        return this.componentDescriptor.getModule();
+        return this.typeDescriptor.getModule();
     }
 
     @Nonnull
@@ -193,10 +143,10 @@ final class ComponentServiceAdapterLifecycle extends Lifecycle
     @Override
     public Object addingService( @Nonnull ServiceReference reference )
     {
-        BundleContext bundleContext = this.componentDescriptor.getModule().getBundle().getBundleContext();
+        BundleContext bundleContext = this.typeDescriptor.getModule().getBundle().getBundleContext();
         if( bundleContext == null )
         {
-            throw new IllegalStateException( "no bundle context for module " + componentDescriptor.getModule() );
+            throw new IllegalStateException( "no bundle context for module " + typeDescriptor.getModule() );
         }
         Object service = bundleContext.getService( reference );
         if( service == null )
@@ -211,7 +161,7 @@ final class ComponentServiceAdapterLifecycle extends Lifecycle
         }
         catch( Throwable e )
         {
-            throw new ComponentCreateException( e, this.componentDescriptor.getComponentType(), this.componentDescriptor.getModule() );
+            throw new ComponentCreateException( e, this.typeDescriptor.getType(), this.typeDescriptor.getModule() );
         }
 
         Dictionary<String, Object> properties = new Hashtable<>();
@@ -293,6 +243,77 @@ final class ComponentServiceAdapterLifecycle extends Lifecycle
         }
     }
 
+    @Nonnull
+    private Class<?>[] getServiceInterfaces()
+    {
+        Class<?> type = this.typeDescriptor.getType();
+
+        List<Class<?>> interfaces = new LinkedList<>();
+
+        // add interfaces declared in @Service annotation to the service types list
+        interfaces.addAll( asList( this.typeDescriptor.getType().getAnnotation( Adapter.class ).value() ) );
+
+        // if none were declared in the annotation, add all interfaces implemented by the component
+        if( interfaces.isEmpty() )
+        {
+            interfaces.addAll( asList( type.getInterfaces() ) );
+        }
+
+        // if no interfaces are implemented by the component and no interfaces declared in the annotation, fail
+        if( interfaces.isEmpty() )
+        {
+            String msg = "@Adapter component must declare service interface (via 'implements' clause or in the @Adapter annotation)";
+            throw new ComponentDefinitionException( msg, type, this.typeDescriptor.getModule() );
+        }
+
+        return interfaces.toArray( new Class[ interfaces.size() ] );
+    }
+
+    @Nonnull
+    private Map<String, Object> getServiceProperties()
+    {
+        Map<String, Object> properties = new LinkedHashMap<>();
+        for( Adapter.P property : this.typeDescriptor.getType().getAnnotation( Adapter.class ).properties() )
+        {
+            properties.put( property.key(), property.value() );
+        }
+
+        Ranking rankingAnn = this.typeDescriptor.getType().getAnnotation( Ranking.class );
+        if( rankingAnn != null )
+        {
+            properties.put( Constants.SERVICE_RANKING, rankingAnn.value() );
+        }
+
+        return unmodifiableMap( properties );
+    }
+
+    @Nonnull
+    private Pair<Constructor<?>, FilterBuilder> getServiceConstructor()
+    {
+        for( Constructor<?> ctor : this.typeDescriptor.getType().getDeclaredConstructors() )
+        {
+            Service serviceAnn = ctor.getAnnotation( Service.class );
+            if( serviceAnn != null && ctor.getParameterTypes().length == 1 )
+            {
+                Pair<Class<?>, FilterBuilder> pair = getServiceAndFilterFromType( this.typeDescriptor.getModule(),
+                                                                                  this.typeDescriptor.getType(),
+                                                                                  ctor.getGenericParameterTypes()[ 0 ] );
+
+                FilterBuilder filterBuilder = pair.getRight();
+                for( Service.P property : serviceAnn.properties() )
+                {
+                    filterBuilder.addEquals( property.key(), property.value() );
+                }
+
+                ctor.setAccessible( true );
+                return Pair.<Constructor<?>, FilterBuilder>of( ctor, filterBuilder );
+            }
+        }
+        throw new ComponentDefinitionException( "@Adapter has no one-argument constructor annotated with @Adapter",
+                                                this.typeDescriptor.getType(),
+                                                this.typeDescriptor.getModule() );
+    }
+
     private class ServiceReferenceImpl implements org.mosaic.modules.ServiceReference
     {
         @Nonnull
@@ -313,7 +334,7 @@ final class ComponentServiceAdapterLifecycle extends Lifecycle
         @Override
         public Class getType()
         {
-            return ComponentServiceAdapterLifecycle.this.adaptedType;
+            return TypeDescriptorServiceAdapter.this.adaptedType;
         }
 
         @Nullable
@@ -341,7 +362,7 @@ final class ComponentServiceAdapterLifecycle extends Lifecycle
         @Override
         public Object get()
         {
-            return ComponentServiceAdapterLifecycle.this.serviceTracker.getService( this.reference );
+            return TypeDescriptorServiceAdapter.this.serviceTracker.getService( this.reference );
         }
 
         @Nonnull
@@ -355,7 +376,7 @@ final class ComponentServiceAdapterLifecycle extends Lifecycle
             }
             else
             {
-                String typeName = ComponentServiceAdapterLifecycle.this.adaptedType.getName();
+                String typeName = TypeDescriptorServiceAdapter.this.adaptedType.getName();
                 throw new IllegalStateException( "service of type '" + typeName + "' is not available" );
             }
         }
@@ -390,7 +411,7 @@ final class ComponentServiceAdapterLifecycle extends Lifecycle
         @Override
         public Module getProvider()
         {
-            return ComponentServiceAdapterLifecycle.this.componentDescriptor.getModule();
+            return TypeDescriptorServiceAdapter.this.typeDescriptor.getModule();
         }
 
         @Nonnull
@@ -401,7 +422,7 @@ final class ComponentServiceAdapterLifecycle extends Lifecycle
             if( reference != null )
             {
                 String[] objectClass = ( String[] ) reference.getProperty( Constants.OBJECTCLASS );
-                ModuleImpl module = ComponentServiceAdapterLifecycle.this.componentDescriptor.getModule();
+                ModuleImpl module = TypeDescriptorServiceAdapter.this.typeDescriptor.getModule();
                 try
                 {
                     return module.getModuleResources().loadClass( objectClass[ 0 ] );

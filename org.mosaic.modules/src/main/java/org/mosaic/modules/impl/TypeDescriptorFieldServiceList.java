@@ -6,12 +6,14 @@ import java.util.*;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.modules.*;
-import org.mosaic.modules.ServiceReference;
 import org.mosaic.util.collections.HashMapEx;
 import org.mosaic.util.collections.MapEx;
 import org.mosaic.util.osgi.FilterBuilder;
 import org.mosaic.util.pair.Pair;
-import org.osgi.framework.*;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.Constants;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.util.tracker.ServiceTracker;
 import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
@@ -19,9 +21,8 @@ import org.osgi.util.tracker.ServiceTrackerCustomizer;
  * @author arik
  */
 @SuppressWarnings("unchecked")
-final class ComponentFieldServiceListLifecycle extends ComponentField implements ServiceTrackerCustomizer,
-                                                                                 List,
-                                                                                 ModuleWiring.ServiceRequirement
+final class TypeDescriptorFieldServiceList extends TypeDescriptorField
+        implements ServiceTrackerCustomizer, List, ModuleWiring.ServiceRequirement
 {
     @Nonnull
     private final Class<?> requiredServiceType;
@@ -35,33 +36,33 @@ final class ComponentFieldServiceListLifecycle extends ComponentField implements
     @Nullable
     private List services;
 
-    ComponentFieldServiceListLifecycle( @Nonnull ComponentDescriptorImpl<?> componentDescriptor, @Nonnull Field field )
+    TypeDescriptorFieldServiceList( @Nonnull TypeDescriptor typeDescriptor, @Nonnull Field field )
     {
-        super( componentDescriptor, field );
+        super( typeDescriptor, field );
 
         Service serviceAnn = field.getAnnotation( Service.class );
         if( serviceAnn.value().length > 0 )
         {
-            String msg = "field '" + field.getName() + "' of component " + componentDescriptor + " defines the 'value' attribute on its @Service annotation (it should not)";
-            throw new ComponentDefinitionException( msg, componentDescriptor.getComponentType(), componentDescriptor.getModule() );
+            String msg = "field '" + field.getName() + "' of component " + typeDescriptor + " defines the 'value' attribute on its @Service annotation (it should not)";
+            throw new ComponentDefinitionException( msg, typeDescriptor.getType(), typeDescriptor.getModule() );
         }
 
         java.lang.reflect.Type listType = field.getGenericType();
         if( !( listType instanceof ParameterizedType ) )
         {
-            String msg = "field '" + field.getName() + "' of component " + componentDescriptor + " does not specify type for List";
-            throw new ComponentDefinitionException( msg, componentDescriptor.getComponentType(), componentDescriptor.getModule() );
+            String msg = "field '" + field.getName() + "' of component " + typeDescriptor + " does not specify type for List";
+            throw new ComponentDefinitionException( msg, typeDescriptor.getType(), typeDescriptor.getModule() );
         }
 
         ParameterizedType parameterizedListType = ( ParameterizedType ) listType;
         java.lang.reflect.Type[] listTypeArguments = parameterizedListType.getActualTypeArguments();
         if( listTypeArguments.length == 0 )
         {
-            String msg = "field '" + field.getName() + "' of component " + componentDescriptor + " does not specify type for List";
-            throw new ComponentDefinitionException( msg, componentDescriptor.getComponentType(), componentDescriptor.getModule() );
+            String msg = "field '" + field.getName() + "' of component " + typeDescriptor + " does not specify type for List";
+            throw new ComponentDefinitionException( msg, typeDescriptor.getType(), typeDescriptor.getModule() );
         }
 
-        Pair<Class<?>, FilterBuilder> pair = ComponentDescriptorImpl.getServiceAndFilterFromType( componentDescriptor.getModule(), componentDescriptor.getComponentType(), listTypeArguments[ 0 ] );
+        Pair<Class<?>, FilterBuilder> pair = Activator.getServiceAndFilterFromType( typeDescriptor.getModule(), typeDescriptor.getType(), listTypeArguments[ 0 ] );
         this.requiredServiceType = pair.getKey();
 
         FilterBuilder filterBuilder = pair.getRight();
@@ -73,28 +74,27 @@ final class ComponentFieldServiceListLifecycle extends ComponentField implements
 
         try
         {
-            BundleContext bundleContext = componentDescriptor.getModule().getBundle().getBundleContext();
+            BundleContext bundleContext = typeDescriptor.getModule().getBundle().getBundleContext();
             if( bundleContext == null )
             {
-                throw new IllegalStateException( "no bundle context for module " + componentDescriptor.getModule() );
+                throw new IllegalStateException( "no bundle context for module " + typeDescriptor.getModule() );
             }
-            Filter filter = FrameworkUtil.createFilter( this.requiredFilter );
-            this.serviceTracker = new ServiceTracker( bundleContext, filter, this );
+            this.serviceTracker = new ServiceTracker( bundleContext, FrameworkUtil.createFilter( this.requiredFilter ), this );
         }
         catch( InvalidSyntaxException e )
         {
-            String msg = "field '" + field.getName() + "' of component " + componentDescriptor + " defines illegal filter: " + this.requiredFilter;
-            throw new ComponentDefinitionException( msg, componentDescriptor.getComponentType(), componentDescriptor.getModule() );
+            String msg = "field '" + field.getName() + "' of component " + typeDescriptor + " defines illegal filter: " + this.requiredFilter;
+            throw new ComponentDefinitionException( msg, typeDescriptor.getType(), typeDescriptor.getModule() );
         }
     }
 
     @Override
     public Object addingService( @Nonnull org.osgi.framework.ServiceReference reference )
     {
-        BundleContext bundleContext = this.componentDescriptor.getModule().getBundle().getBundleContext();
+        BundleContext bundleContext = this.typeDescriptor.getModule().getBundle().getBundleContext();
         if( bundleContext == null )
         {
-            throw new IllegalStateException( "no bundle context for module " + this.componentDescriptor.getModule() );
+            throw new IllegalStateException( "no bundle context for module " + this.typeDescriptor.getModule() );
         }
         Object service = bundleContext.getService( reference );
         this.services = null;
@@ -263,7 +263,7 @@ final class ComponentFieldServiceListLifecycle extends ComponentField implements
     @Override
     public Module getConsumer()
     {
-        return this.componentDescriptor.getModule();
+        return this.typeDescriptor.getModule();
     }
 
     @Nonnull
@@ -302,9 +302,9 @@ final class ComponentFieldServiceListLifecycle extends ComponentField implements
 
     @Nullable
     @Override
-    protected String toStringInternal()
+    public String toString()
     {
-        return "@Service '" + super.toStringInternal() + "'";
+        return "TypeDescriptorFieldServiceList[" + super.toString() + "]";
     }
 
     @Nonnull
@@ -364,7 +364,7 @@ final class ComponentFieldServiceListLifecycle extends ComponentField implements
         @Override
         public Class getType()
         {
-            return ComponentFieldServiceListLifecycle.this.requiredServiceType;
+            return TypeDescriptorFieldServiceList.this.requiredServiceType;
         }
 
         @Nullable
@@ -392,7 +392,7 @@ final class ComponentFieldServiceListLifecycle extends ComponentField implements
         @Override
         public Object get()
         {
-            return ComponentFieldServiceListLifecycle.this.serviceTracker.getService( this.reference );
+            return TypeDescriptorFieldServiceList.this.serviceTracker.getService( this.reference );
         }
 
         @Nonnull
@@ -406,7 +406,7 @@ final class ComponentFieldServiceListLifecycle extends ComponentField implements
             }
             else
             {
-                String typeName = ComponentFieldServiceListLifecycle.this.requiredServiceType.getName();
+                String typeName = TypeDescriptorFieldServiceList.this.requiredServiceType.getName();
                 throw new IllegalStateException( "service of type '" + typeName + "' is not available" );
             }
         }

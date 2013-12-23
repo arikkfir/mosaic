@@ -1,5 +1,6 @@
 package org.mosaic.modules;
 
+import java.lang.reflect.Type;
 import javax.annotation.Nonnull;
 
 /**
@@ -8,24 +9,24 @@ import javax.annotation.Nonnull;
 public class ComponentDefinitionException extends ComponentException
 {
     public ComponentDefinitionException( @Nonnull String message,
-                                         @Nonnull Class<?> type,
+                                         @Nonnull Type type,
                                          @Nonnull Module module )
     {
-        super( "bad component definition for type '" + type.getName() + "': " + message, type, module );
+        super( "bad component definition for type '" + type + "': " + message, type, module );
     }
 
     public ComponentDefinitionException( @Nonnull String message,
                                          @Nonnull Throwable cause,
-                                         @Nonnull Class<?> type,
+                                         @Nonnull Type type,
                                          @Nonnull Module module )
     {
-        super( "bad component definition for type '" + type.getName() + "': " + message, cause, type, module );
+        super( "bad component definition for type '" + type + "': " + message, cause, type, module );
     }
 
     public ComponentDefinitionException( @Nonnull Throwable cause,
-                                         @Nonnull Class<?> type,
+                                         @Nonnull Type type,
                                          @Nonnull Module module )
     {
-        super( "bad component definition for type '" + type.getName() + "'", cause, type, module );
+        super( "bad component definition for type '" + type + "'", cause, type, module );
     }
 }

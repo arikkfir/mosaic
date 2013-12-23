@@ -6,11 +6,8 @@ import javax.annotation.Nullable;
 /**
  * @author arik
  */
-public interface ComponentDescriptor<Type>
+public interface TypeDescriptor
 {
     @Nullable
     Object getValueForField( @Nonnull String fieldName );
-
-    @Nonnull
-    Type getInstance();
 }

@@ -1,5 +1,6 @@
 package org.mosaic.modules;
 
+import java.lang.reflect.Type;
 import javax.annotation.Nonnull;
 
 /**
@@ -8,24 +9,24 @@ import javax.annotation.Nonnull;
 public class ComponentCreateException extends ComponentException
 {
     public ComponentCreateException( @Nonnull String message,
-                                     @Nonnull Class<?> type,
+                                     @Nonnull Type type,
                                      @Nonnull Module module )
     {
-        super( "could not create component of type '" + type.getName() + "': " + message, type, module );
+        super( "could not create component of type '" + type + "': " + message, type, module );
     }
 
     public ComponentCreateException( @Nonnull String message,
                                      @Nonnull Throwable cause,
-                                     @Nonnull Class<?> type,
+                                     @Nonnull Type type,
                                      @Nonnull Module module )
     {
-        super( "could not create component of type '" + type.getName() + "': " + message, cause, type, module );
+        super( "could not create component of type '" + type + "': " + message, cause, type, module );
     }
 
     public ComponentCreateException( @Nonnull Throwable cause,
-                                     @Nonnull Class<?> type,
+                                     @Nonnull Type type,
                                      @Nonnull Module module )
     {
-        super( "could not create component of type '" + type.getName() + "'", cause, type, module );
+        super( "could not create component of type '" + type + "'", cause, type, module );
     }
 }

@@ -67,7 +67,7 @@ final class ModuleImpl extends Lifecycle implements Module
         this.internal = internal;
 
         addChild( new ModuleResourcesImpl( this ) );
-        addChild( new ModuleComponentsImpl( this ) );
+        addChild( new ModuleTypesImpl( this ) );
         addChild( new ModuleWiringImpl( this ) );
     }
 
@@ -161,9 +161,9 @@ final class ModuleImpl extends Lifecycle implements Module
 
     @Nonnull
     @Override
-    public ModuleComponentsImpl getModuleComponents()
+    public ModuleTypesImpl getModuleTypes()
     {
-        return requireChild( ModuleComponentsImpl.class );
+        return requireChild( ModuleTypesImpl.class );
     }
 
     @Nonnull
@@ -219,7 +219,7 @@ final class ModuleImpl extends Lifecycle implements Module
 
     boolean isInternal()
     {
-        return internal;
+        return this.internal;
     }
 
     @Override

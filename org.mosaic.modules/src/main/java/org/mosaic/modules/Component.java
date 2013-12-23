@@ -8,8 +8,8 @@ import java.lang.annotation.Target;
 /**
  * @author arik
  */
-@Retention( RetentionPolicy.RUNTIME )
-@Target( { ElementType.TYPE, ElementType.FIELD } )
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ ElementType.FIELD, ElementType.TYPE, ElementType.ANNOTATION_TYPE })
 public @interface Component
 {
 }
