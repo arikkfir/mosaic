@@ -11,6 +11,7 @@ import org.mosaic.modules.Adapter;
 import org.mosaic.modules.MethodEndpoint;
 import org.mosaic.modules.Service;
 import org.mosaic.security.AccessDeniedException;
+import org.mosaic.security.AuthorizationException;
 import org.mosaic.security.Security;
 import org.mosaic.util.collections.MapEx;
 import org.mosaic.util.expression.Expression;
@@ -128,6 +129,12 @@ final class ControllerAdapter implements RequestHandler
         try
         {
             return this.invoker.resolve( Collections.<String, Object>singletonMap( "request", request ) ).invoke();
+        }
+        catch( AuthorizationException e )
+        {
+            // user is authenticated but lacks authorization to a resource - no need for sending a challange, just deny
+            request.getResponse().setStatus( HttpStatus.FORBIDDEN );
+            return null;
         }
         catch( AccessDeniedException e )
         {
