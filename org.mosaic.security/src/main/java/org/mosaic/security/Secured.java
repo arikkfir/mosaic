@@ -8,9 +8,11 @@ import java.lang.annotation.Target;
 /**
  * @author arik
  */
-@Retention( RetentionPolicy.RUNTIME )
-@Target( ElementType.METHOD )
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
 public @interface Secured
 {
     String value() default "subject.authenticated";
+
+    String authMethod() default "";
 }

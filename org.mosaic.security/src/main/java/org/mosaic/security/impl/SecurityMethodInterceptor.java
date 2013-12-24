@@ -36,6 +36,7 @@ final class SecurityMethodInterceptor implements MethodInterceptor
                     securedAnn.value().trim().isEmpty() ? "subject.authenticated" : securedAnn.value().trim(),
                     Boolean.class,
                     method.getDeclaringClass() ) );
+            context.put( "authMethod", securedAnn.authMethod() );
             return true;
         }
         else
@@ -49,15 +50,18 @@ final class SecurityMethodInterceptor implements MethodInterceptor
     public BeforeInvocationDecision beforeInvocation( @Nonnull BeforeMethodInvocation invocation )
             throws Throwable
     {
+        MapEx<String, Object> context = invocation.getInterceptorContext();
+
         @SuppressWarnings( "unchecked" )
-        Expression<Boolean> expr = invocation.getInterceptorContext().require( "expression", Expression.class );
+        Expression<Boolean> expr = context.require( "expression", Expression.class );
         if( expr.createInvocation( this.security.getSubject() ).require() )
         {
             return invocation.continueInvocation();
         }
         else
         {
-            throw new AccessDeniedException( "Access denied for '" + invocation.getMethod().getName() + "'" );
+            String authMethod = context.require( "authMethod", String.class );
+            throw new AccessDeniedException( "Access denied for '" + invocation.getMethod().getName() + "'", authMethod );
         }
     }
 
