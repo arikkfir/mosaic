@@ -476,7 +476,7 @@ final class MethodInterceptorManager
         @Override
         public Object getReturnValue()
         {
-            return null;
+            return this.context.returnValue;
         }
     }
 
