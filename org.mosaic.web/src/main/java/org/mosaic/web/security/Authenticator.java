@@ -1,6 +1,5 @@
 package org.mosaic.web.security;
 
-import java.util.List;
 import javax.annotation.Nonnull;
 import org.mosaic.modules.Service;
 import org.mosaic.security.Security;
@@ -54,7 +53,7 @@ public interface Authenticator
     }
 
     @Nonnull
-    List<String> getAuthenticationMethods();
+    String getAuthenticationMethod();
 
     @Nonnull
     AuthenticationAction authenticate( @Nonnull WebRequest request );

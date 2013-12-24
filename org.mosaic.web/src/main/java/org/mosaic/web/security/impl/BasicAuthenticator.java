@@ -1,7 +1,6 @@
 package org.mosaic.web.security.impl;
 
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import javax.annotation.Nonnull;
 import org.eclipse.jetty.util.B64Code;
 import org.mosaic.modules.Service;
@@ -12,8 +11,6 @@ import org.mosaic.security.support.UsernamePasswordAuthToken;
 import org.mosaic.web.request.HttpStatus;
 import org.mosaic.web.request.WebRequest;
 import org.mosaic.web.security.Authenticator;
-
-import static java.util.Arrays.asList;
 
 /**
  * @author arik
@@ -27,9 +24,9 @@ final class BasicAuthenticator implements Authenticator
 
     @Nonnull
     @Override
-    public List<String> getAuthenticationMethods()
+    public String getAuthenticationMethod()
     {
-        return asList( "basic" );
+        return "basic";
     }
 
     @Nonnull
