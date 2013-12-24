@@ -82,7 +82,28 @@ final class BytecodeCache
         ensureNextIdFileExists();
 
         Path bytesCacheFile = findClassBytecodeCacheFile( bundle, className );
-        return exists( bytesCacheFile ) ? new WovenBytecode( bytesCacheFile ) : null;
+        if( exists( bytesCacheFile ) )
+        {
+            try
+            {
+                return new WovenBytecode( bytesCacheFile );
+            }
+            catch( IOException e )
+            {
+                try
+                {
+                    deleteIfExists( bytesCacheFile );
+                }
+                catch( IOException ignore )
+                {
+                }
+                throw e;
+            }
+        }
+        else
+        {
+            return null;
+        }
     }
 
     void storeBytecode( @Nonnull Bundle bundle,
