@@ -1,9 +1,7 @@
 package org.mosaic.web.handler.impl;
 
 import freemarker.cache.TemplateLoader;
-import freemarker.template.Configuration;
-import freemarker.template.Template;
-import freemarker.template.Version;
+import freemarker.template.*;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -28,18 +26,11 @@ final class FreemarkerRenderer
                  @Nonnull Map<String, Object> context,
                  @Nonnull String path,
                  @Nonnull Locale locale,
-                 @Nonnull Writer writer )
+                 @Nonnull Writer writer ) throws IOException, TemplateException
     {
-        Configuration cfg = getConfigurationForApplication( application );
-        try
-        {
-            Template template = cfg.getTemplate( path, locale );
-            template.process( context, writer );
-        }
-        catch( Throwable e )
-        {
-            e.printStackTrace();
-        }
+        Configuration configuration = getConfigurationForApplication( application );
+        Template template = configuration.getTemplate( path, locale );
+        template.process( context, writer );
     }
 
     @Nonnull
@@ -58,6 +49,7 @@ final class FreemarkerRenderer
                     cfg.setDefaultEncoding( "UTF-8" );
                     cfg.setIncompatibleImprovements( new Version( 2, 3, 20 ) );
                     cfg.setTemplateLoader( new ApplicationTemplateLoader( application ) );
+                    cfg.setTemplateExceptionHandler( TemplateExceptionHandler.RETHROW_HANDLER );
                 }
             }
         }

@@ -2,6 +2,7 @@ package org.mosaic.web.handler.impl;
 
 import com.google.common.collect.Sets;
 import com.google.common.net.MediaType;
+import freemarker.template.TemplateException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -105,7 +106,8 @@ final class StaticResourcesRequestHandler implements RequestHandler
     }
 
     private void serveDynamicFile( @Nonnull WebRequest request,
-                                   @Nonnull Application.ApplicationResources.Resource resource ) throws IOException
+                                   @Nonnull Application.ApplicationResources.Resource resource )
+            throws IOException, TemplateException
     {
         Path file = resource.getPath();
         String filename = file.getFileName().toString();
