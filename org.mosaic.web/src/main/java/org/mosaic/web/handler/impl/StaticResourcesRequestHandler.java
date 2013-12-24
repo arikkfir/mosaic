@@ -15,6 +15,7 @@ import org.joda.time.Period;
 import org.mosaic.modules.Component;
 import org.mosaic.modules.Ranking;
 import org.mosaic.modules.Service;
+import org.mosaic.security.Security;
 import org.mosaic.web.application.Application;
 import org.mosaic.web.handler.RequestHandler;
 import org.mosaic.web.request.WebRequest;
@@ -38,6 +39,10 @@ final class StaticResourcesRequestHandler implements RequestHandler
     @Nonnull
     @Component
     private FreemarkerRenderer freemarkerRenderer;
+
+    @Nonnull
+    @Service
+    private Security security;
 
     @Nonnull
     @Override
@@ -118,6 +123,8 @@ final class StaticResourcesRequestHandler implements RequestHandler
         {
             Map<String, Object> context = new HashMap<>();
             context.put( "request", request );
+            context.put( "subject", this.security.getSubject() );
+            context.put( "user", this.security.getSubject() );
             this.freemarkerRenderer.render( request.getApplication(),
                                             context,
                                             request.getUri().getDecodedPath(),
