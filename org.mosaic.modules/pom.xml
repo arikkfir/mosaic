@@ -29,7 +29,7 @@
                             !com.sun.jdi*,
                             !com.touchgraph*,
                             !org.jgraph*,
-                            *;resolution:=mandatory
+                            *
                         </Import-Package>
                     </instructions>
                 </configuration>
@@ -41,6 +41,7 @@
         <dependency>
             <groupId>biz.aQute.bnd</groupId>
             <artifactId>bndlib</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>

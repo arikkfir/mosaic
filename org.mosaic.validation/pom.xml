@@ -29,7 +29,7 @@
                             !org.aspectj.bridge*,
                             !org.aspectj.weaver*,
                             !org.springframework*,
-                            *;resolution:=mandatory
+                            *
                         </Import-Package>
                     </instructions>
                 </configuration>
@@ -41,10 +41,12 @@
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.util</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.modules</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
@@ -53,14 +55,17 @@
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.event</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>javax.validation</groupId>
             <artifactId>validation-api</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-validator</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
@@ -70,6 +75,7 @@
         <dependency>
             <groupId>biz.aQute.bnd</groupId>
             <artifactId>bndlib</artifactId>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 

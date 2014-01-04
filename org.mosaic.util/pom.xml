@@ -33,7 +33,7 @@
                             !org.aspectj*,
                             !org.jgraph*,
                             !org.springframework*,
-                            *;resolution:=mandatory
+                            *
                         </Import-Package>
                     </instructions>
                 </configuration>
@@ -49,6 +49,7 @@
         <dependency>
             <groupId>biz.aQute.bnd</groupId>
             <artifactId>bndlib</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>

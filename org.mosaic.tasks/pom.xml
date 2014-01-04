@@ -17,6 +17,7 @@
         <dependency>
             <groupId>biz.aQute.bnd</groupId>
             <artifactId>bndlib</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
@@ -31,10 +32,12 @@
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.jsr305</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.util</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
@@ -43,6 +46,7 @@
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.config</artifactId>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 

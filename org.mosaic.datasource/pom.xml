@@ -30,7 +30,7 @@
                         <Import-Package>
                             !com.mchange*,
                             !com.sun.jna*,
-                            *;resolution:=mandatory
+                            *
                         </Import-Package>
                     </instructions>
                 </configuration>
@@ -42,6 +42,7 @@
         <dependency>
             <groupId>biz.aQute.bnd</groupId>
             <artifactId>bndlib</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
@@ -64,14 +65,17 @@
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.modules</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.pathwatchers</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.event</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.mchange</groupId>

@@ -30,7 +30,7 @@
                             !com.jcraft.jzlib*,
                             !org.apache.tomcat*,
                             !org.bouncycastle*,
-                            *;resolution:=mandatory
+                            *
                         </Import-Package>
                     </instructions>
                 </configuration>
@@ -47,26 +47,32 @@
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.modules</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.util</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.jsr305</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.config</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.console</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.security</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>jline</groupId>

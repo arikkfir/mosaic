@@ -47,6 +47,7 @@
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.pathwatchers</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
