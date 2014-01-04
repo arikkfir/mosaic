@@ -143,10 +143,6 @@ final class Headers
                             headerExtractors.put( headerName, COMMA_SEPARATED_VALUE_EXTRACTOR );
                             break;
 
-                        case HttpHeaders.COOKIE:
-                            // TODO: create semi-colon separated extractor
-                            break;
-
                         default:
                             headerExtractors.put( headerName, SINGLE_VALUE_EXTRACTOR );
                     }
