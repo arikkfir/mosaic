@@ -3,45 +3,41 @@ package org.mosaic.web.handler.impl;
 import com.google.common.net.MediaType;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.modules.Component;
 import org.mosaic.modules.Service;
-import org.mosaic.security.AccessDeniedException;
-import org.mosaic.security.AuthorizationException;
 import org.mosaic.security.Security;
 import org.mosaic.security.Subject;
-import org.mosaic.web.application.Application;
+import org.mosaic.util.expression.Expression;
 import org.mosaic.web.handler.InterceptorChain;
 import org.mosaic.web.handler.RequestHandler;
 import org.mosaic.web.handler.SecuredRequestHandler;
+import org.mosaic.web.http.HttpStatus;
 import org.mosaic.web.marshall.MessageMarshaller;
 import org.mosaic.web.marshall.UnmarshallableContentException;
 import org.mosaic.web.marshall.impl.MarshallerManager;
-import org.mosaic.web.request.HttpStatus;
-import org.mosaic.web.request.WebRequest;
-import org.mosaic.web.request.WebResponse;
+import org.mosaic.web.request.WebInvocation;
+import org.mosaic.web.security.Authentication;
 import org.mosaic.web.security.Authenticator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.mosaic.web.security.Challanger;
+import org.mosaic.web.security.SecurityConstraint;
 
-import static org.mosaic.web.security.Authenticator.AuthenticationResult.AUTHENTICATED;
-import static org.mosaic.web.security.Authenticator.AuthenticationResult.AUTHENTICATION_FAILED;
+import static org.mosaic.web.security.AuthenticationResult.AUTHENTICATED;
 
 /**
  * @author arik
  */
-final class RequestPlan implements Runnable
+public final class RequestPlan implements Runnable
 {
-    private static final Logger LOG = LoggerFactory.getLogger( RequestPlan.class );
-
     @Nonnull
     private final InterceptorChain interceptorChain = new InterceptorChainImpl();
 
     @Nonnull
-    private final WebRequest request;
+    private final WebInvocation request;
 
     @Nonnull
     private final Iterator<InterceptorAdapter> interceptors;
@@ -63,9 +59,13 @@ final class RequestPlan implements Runnable
 
     @Nonnull
     @Service
+    private List<Challanger> challangers;
+
+    @Nonnull
+    @Service
     private Security security;
 
-    RequestPlan( @Nonnull WebRequest request )
+    public RequestPlan( @Nonnull WebInvocation request )
     {
         this.request = request;
         this.requestHandler = findRequestHandler();
@@ -75,162 +75,94 @@ final class RequestPlan implements Runnable
     @Override
     public void run()
     {
-        String authMethod = null;
-
-        // first let request handler choose authentication method
-        if( this.requestHandler instanceof SecuredRequestHandler )
+        SecurityConstraint securityConstraint = new MergedSecurityConstraint();
+        Subject subject = authenticate( securityConstraint );
+        if( authorize( securityConstraint, subject ) )
         {
-            authMethod = ( ( SecuredRequestHandler ) this.requestHandler ).getAuthenticationMethod( this.request );
-        }
-
-        // if handler does not declare auth method, check if request maps to a security constraint (which gives auth method)
-        if( authMethod == null )
-        {
-            Application.ApplicationSecurity.SecurityConstraint securityConstraint = this.request.getSecurityConstraint();
-            if( securityConstraint != null )
+            subject.login();
+            try
             {
-                authMethod = securityConstraint.getAuthenticationMethod();
-            }
-        }
-
-        // different strategy based on whether handler is secured or not:
-        if( authMethod == null )
-        {
-            //
-            // resource is not protected
-            // attempt all authenticators - if one succeeds, use its subject
-            // if one fails - use it to send challange and fail request
-            // otherwise (eg. no auth info sent) ignore and invoke handler anyway
-            //
-            Subject subject = this.security.getAnonymousSubject();
-            for( Authenticator authenticator : this.authenticators )
-            {
-                Authenticator.AuthenticationAction action = authenticator.authenticate( this.request );
-                if( action.getResult() == AUTHENTICATED )
+                // execute interceptors and handler
+                try
                 {
-                    subject = action.getSubject();
-                    authMethod = authenticator.getAuthenticationMethod();
-                    break;
-                }
-                else if( action.getResult() == AUTHENTICATION_FAILED )
-                {
-                    authenticator.challange( this.request );
-                    return;
-                }
-            }
-            executeWithSubject( subject, authMethod );
-        }
-        else
-        {
-            //
-            // attempt to find appropriate authenticator for this resource
-            // if found, use it for authentication:
-            //      if successful, use its authenticated subject
-            //      otherwise, have authenticator send a challange to client and DONT process request
-            //
-            for( Authenticator authenticator : this.authenticators )
-            {
-                if( authenticator.getAuthenticationMethod().equalsIgnoreCase( authMethod ) )
-                {
-                    Authenticator.AuthenticationAction action = authenticator.authenticate( this.request );
-                    if( action.getResult() == AUTHENTICATED )
+                    Object result = this.interceptorChain.proceed();
+                    if( result != null )
                     {
-                        executeWithSubject( action.getSubject(), authMethod );
+                        List<MediaType> accept = this.request.getHttpRequest().getAccept();
+                        try
+                        {
+                            this.marshallerManager.marshall( new WebRequestSink( result ), accept );
+                        }
+                        catch( UnmarshallableContentException e )
+                        {
+                            this.request.getHttpResponse().setStatus( HttpStatus.NOT_ACCEPTABLE, "Unable to generate " + accept );
+                            this.request.disableCaching();
+                        }
                     }
-                    else
-                    {
-                        authenticator.challange( this.request );
-                    }
-                    return;
+                }
+                catch( Throwable throwable )
+                {
+                    handleError( throwable );
                 }
             }
-
-            // no authenticator succeeded - fail
-            this.request.getResponse().setStatus( HttpStatus.FORBIDDEN );
-            this.request.dumpToWarnLog( LOG, "Unknown authentication method '{}'", authMethod );
+            finally
+            {
+                subject.logout();
+            }
         }
     }
 
-    private void executeWithSubject( @Nonnull Subject subject, @Nullable String authMethod )
+    @Nonnull
+    private Subject authenticate( @Nonnull SecurityConstraint securityConstraint )
     {
-        subject.login();
-        try
+        Collection<String> authenticationMethods = securityConstraint.getAuthenticationMethods();
+        if( authenticationMethods != null )
         {
-            // execute interceptors and handler
-            try
+            for( String authMethod : authenticationMethods )
             {
-                Object result = this.interceptorChain.proceed();
-
-                // marshall result
-                if( result != null )
+                Authenticator authenticator = findAuthenticator( authMethod );
+                if( authenticator != null )
                 {
-                    LOG.debug( "Marshalling result '{}'", result );
-                    try
+                    Authentication authentication = authenticator.authenticate( this.request );
+                    if( authentication.getResult() == AUTHENTICATED )
                     {
-                        this.marshallerManager.marshall( new WebRequestSink( result ), this.request.getHeaders().getAccept() );
-                    }
-                    catch( UnmarshallableContentException e )
-                    {
-                        this.request.getResponse().setStatus( HttpStatus.NOT_ACCEPTABLE );
-                        this.request.getResponse().disableCaching();
-                    }
-                    catch( Throwable throwable )
-                    {
-                        handleError( throwable );
+                        return authentication.getSubject();
                     }
                 }
-            }
-            catch( AuthorizationException e )
-            {
-                // user is authenticated but lacks authorization to a resource - no need for sending a challange, just deny
-                this.request.getResponse().setStatus( HttpStatus.FORBIDDEN );
-            }
-            catch( AccessDeniedException e )
-            {
-                // if user already authenticated, no use in re-authenticating - just deny access as well
-                if( subject.isAuthenticated() )
-                {
-                    this.request.getResponse().setStatus( HttpStatus.FORBIDDEN );
-                    return;
-                }
-
-                // if no auth method, just deny access
-                if( authMethod == null )
-                {
-                    // if no security constraint, we don't know HOW users should authenticate, so just deny access
-                    this.request.getResponse().setStatus( HttpStatus.FORBIDDEN );
-                    return;
-                }
-
-                // we have auth method - find appropriate authenticator and use it to send a challange to the client
-                for( Authenticator authenticator : this.authenticators )
-                {
-                    if( authenticator.getAuthenticationMethod().equalsIgnoreCase( authMethod ) )
-                    {
-                        authenticator.challange( this.request );
-                        return;
-                    }
-                }
-
-                // if we got here - no authenticator matched; fail request and log
-                request.getResponse().setStatus( HttpStatus.INTERNAL_SERVER_ERROR );
-                request.dumpToWarnLog( LOG, "Could not find '{}' authenticator", authMethod, e );
-            }
-            catch( Throwable throwable )
-            {
-                handleError( throwable );
             }
         }
-        finally
+        return this.security.getAnonymousSubject();
+    }
+
+    private boolean authorize( @Nonnull SecurityConstraint securityConstraint, @Nonnull Subject subject )
+    {
+        Expression<Boolean> expression = securityConstraint.getExpression();
+        if( expression != null )
         {
-            subject.logout();
+            if( !expression.createInvocation( subject ).require() )
+            {
+                String authMethod = securityConstraint.getChallangeMethod();
+                Challanger challanger = authMethod != null ? findChallanger( authMethod ) : null;
+                if( challanger == null || subject.isAuthenticated() )
+                {
+                    // no point in challanging already-authenticated user, when no challange auth method is defined
+                    this.request.getHttpResponse().setStatus( HttpStatus.FORBIDDEN, "Access denied" );
+                }
+                else
+                {
+                    // no authenticated user, and we have the challange auth method - send the challange
+                    challanger.challange( this.request );
+                }
+                return false;
+            }
         }
+        return true;
     }
 
     @Nonnull
     private RequestHandler findRequestHandler()
     {
-        String method = this.request.getMethod();
+        String method = this.request.getHttpRequest().getMethod();
         for( RequestHandler handler : this.requestHandlersManager.findRequestHandlers( this.request ) )
         {
             if( handler.getHttpMethods().contains( method ) )
@@ -244,7 +176,7 @@ final class RequestPlan implements Runnable
     @Nonnull
     private List<InterceptorAdapter> findInterceptors()
     {
-        String method = this.request.getMethod();
+        String method = this.request.getHttpRequest().getMethod();
 
         List<InterceptorAdapter> interceptors = this.requestHandlersManager.findInterceptors( this.request, this.requestHandler );
         Iterator<InterceptorAdapter> iterator = interceptors.iterator();
@@ -259,13 +191,38 @@ final class RequestPlan implements Runnable
         return interceptors;
     }
 
-    private void handleError( Throwable throwable )
+    @Nullable
+    private Authenticator findAuthenticator( @Nonnull String authenticationMethod )
+    {
+        for( Authenticator authenticator : this.authenticators )
+        {
+            if( authenticator.getAuthenticationMethod().equalsIgnoreCase( authenticationMethod ) )
+            {
+                return authenticator;
+            }
+        }
+        return null;
+    }
+
+    @Nullable
+    private Challanger findChallanger( @Nonnull String authenticationMethod )
+    {
+        for( Challanger challanger : this.challangers )
+        {
+            if( challanger.getAuthenticationMethod().equalsIgnoreCase( authenticationMethod ) )
+            {
+                return challanger;
+            }
+        }
+        return null;
+    }
+
+    private void handleError( @Nonnull Throwable throwable )
     {
         // TODO: add application-specific error handling, maybe error page, @ErrorHandler(s), etc
-        WebResponse response = this.request.getResponse();
-        response.setStatus( HttpStatus.INTERNAL_SERVER_ERROR );
-        response.disableCaching();
-        this.request.dumpToErrorLog( LOG, "Request handling failed: {}", throwable.getMessage(), throwable );
+        this.request.getHttpResponse().setStatus( HttpStatus.INTERNAL_SERVER_ERROR, "Internal error" );
+        this.request.disableCaching();
+        this.request.getHttpLogger().error( "Request handling failed: {}", throwable.getMessage(), throwable );
     }
 
     private class InterceptorChainImpl implements InterceptorChain
@@ -299,13 +256,13 @@ final class RequestPlan implements Runnable
         @Override
         public MediaType getContentType()
         {
-            return RequestPlan.this.request.getResponse().getHeaders().getContentType();
+            return RequestPlan.this.request.getHttpResponse().getContentType();
         }
 
         @Override
         public void setContentType( @Nullable MediaType mediaType )
         {
-            RequestPlan.this.request.getResponse().getHeaders().setContentType( mediaType );
+            RequestPlan.this.request.getHttpResponse().setContentType( mediaType );
         }
 
         @Nonnull
@@ -319,7 +276,76 @@ final class RequestPlan implements Runnable
         @Override
         public OutputStream getOutputStream() throws IOException
         {
-            return RequestPlan.this.request.getResponse().stream();
+            return RequestPlan.this.request.getHttpResponse().getOutputStream();
+        }
+    }
+
+    private class MergedSecurityConstraint implements SecurityConstraint
+    {
+        @Nullable
+        private final SecurityConstraint handlerSecurityConstraint;
+
+        @Nullable
+        private final SecurityConstraint requestSecurityConstraint;
+
+        private MergedSecurityConstraint()
+        {
+            if( RequestPlan.this.requestHandler instanceof SecuredRequestHandler )
+            {
+                SecuredRequestHandler securedRequestHandler = ( SecuredRequestHandler ) RequestPlan.this.requestHandler;
+                this.handlerSecurityConstraint = securedRequestHandler.getSecurityConstraint( RequestPlan.this.request );
+            }
+            else
+            {
+                this.handlerSecurityConstraint = null;
+            }
+
+            this.requestSecurityConstraint = RequestPlan.this.request.getSecurityConstraint();
+        }
+
+        @Nullable
+        @Override
+        public Collection<String> getAuthenticationMethods()
+        {
+            if( this.handlerSecurityConstraint != null )
+            {
+                Collection<String> authenticationMethods = this.handlerSecurityConstraint.getAuthenticationMethods();
+                if( authenticationMethods != null )
+                {
+                    return authenticationMethods;
+                }
+            }
+            return this.requestSecurityConstraint != null ? this.requestSecurityConstraint.getAuthenticationMethods() : null;
+        }
+
+        @Nullable
+        @Override
+        public Expression<Boolean> getExpression()
+        {
+            if( this.handlerSecurityConstraint != null )
+            {
+                Expression<Boolean> expression = this.handlerSecurityConstraint.getExpression();
+                if( expression != null )
+                {
+                    return expression;
+                }
+            }
+            return this.requestSecurityConstraint != null ? this.requestSecurityConstraint.getExpression() : null;
+        }
+
+        @Nullable
+        @Override
+        public String getChallangeMethod()
+        {
+            if( this.handlerSecurityConstraint != null )
+            {
+                String challangeMethod = this.handlerSecurityConstraint.getChallangeMethod();
+                if( challangeMethod != null )
+                {
+                    return challangeMethod;
+                }
+            }
+            return this.requestSecurityConstraint != null ? this.requestSecurityConstraint.getChallangeMethod() : null;
         }
     }
 }

@@ -7,7 +7,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.joda.time.Period;
 import org.mosaic.util.collections.MapEx;
-import org.mosaic.util.expression.Expression;
+import org.mosaic.web.security.SecurityConstraint;
 
 /**
  * @author arik
@@ -48,21 +48,6 @@ public interface Application
 
         @Nullable
         SecurityConstraint getConstraintForPath( @Nonnull String path );
-
-        @Nonnull
-        Collection<? extends SecurityConstraint> getConstraints();
-
-        interface SecurityConstraint
-        {
-            @Nonnull
-            Set<String> getPaths();
-
-            @Nonnull
-            String getAuthenticationMethod();
-
-            @Nonnull
-            Expression<Boolean> getExpression();
-        }
     }
 
     interface ApplicationResources
@@ -72,18 +57,5 @@ public interface Application
 
         @Nullable
         Resource getResource( @Nonnull String path );
-
-        interface Resource
-        {
-            @Nonnull
-            Path getPath();
-
-            boolean isCompressionEnabled();
-
-            boolean isBrowsingEnabled();
-
-            @Nullable
-            Period getCachePeriod();
-        }
     }
 }

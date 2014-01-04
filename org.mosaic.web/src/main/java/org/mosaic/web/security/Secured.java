@@ -1,4 +1,4 @@
-package org.mosaic.security;
+package org.mosaic.web.security;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -14,5 +14,7 @@ public @interface Secured
 {
     String value() default "subject.authenticated";
 
-    String authMethod() default "";
+    String[] authMethods() default "";
+
+    String challangeMethod() default "";
 }

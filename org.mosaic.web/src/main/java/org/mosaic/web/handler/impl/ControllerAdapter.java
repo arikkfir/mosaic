@@ -1,15 +1,12 @@
 package org.mosaic.web.handler.impl;
 
 import java.lang.annotation.Annotation;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.modules.Adapter;
 import org.mosaic.modules.MethodEndpoint;
 import org.mosaic.modules.Service;
-import org.mosaic.security.Secured;
 import org.mosaic.util.collections.MapEx;
 import org.mosaic.util.expression.Expression;
 import org.mosaic.util.expression.ExpressionParser;
@@ -17,14 +14,18 @@ import org.mosaic.web.handler.Controller;
 import org.mosaic.web.handler.RequestHandler;
 import org.mosaic.web.handler.SecuredRequestHandler;
 import org.mosaic.web.handler.spi.HttpMethodMarker;
-import org.mosaic.web.request.WebRequest;
+import org.mosaic.web.request.WebInvocation;
+import org.mosaic.web.security.Secured;
+import org.mosaic.web.security.SecurityConstraint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.util.Arrays.asList;
 
 /**
  * @author arik
  */
-@Adapter( RequestHandler.class )
+@Adapter(RequestHandler.class)
 final class ControllerAdapter implements SecuredRequestHandler
 {
     private static final Logger LOG = LoggerFactory.getLogger( ControllerAdapter.class );
@@ -47,7 +48,7 @@ final class ControllerAdapter implements SecuredRequestHandler
     private final String uri;
 
     @Nullable
-    private final String authenticationMethod;
+    private final ControllerSecurityConstraint securityConstraint;
 
     @Nonnull
     @Service
@@ -81,26 +82,19 @@ final class ControllerAdapter implements SecuredRequestHandler
         this.httpMethods = httpMethods;
 
         Secured securedAnn = this.endpoint.getMethodHandle().getAnnotation( Secured.class );
-        if( securedAnn != null && !securedAnn.authMethod().isEmpty() )
-        {
-            this.authenticationMethod = securedAnn.authMethod();
-        }
-        else
-        {
-            this.authenticationMethod = null;
-        }
+        this.securityConstraint = securedAnn != null ? new ControllerSecurityConstraint( securedAnn ) : null;
 
         // TODO: add more parameter resolvers
         this.invoker = this.endpoint.createInvoker(
-                new SimpleParameterResolver( "request", WebRequest.class )
+                new SimpleParameterResolver( "request", WebInvocation.class )
         );
     }
 
     @Nullable
     @Override
-    public String getAuthenticationMethod( @Nonnull WebRequest request )
+    public SecurityConstraint getSecurityConstraint( @Nonnull WebInvocation request )
     {
-        return this.authenticationMethod;
+        return this.securityConstraint;
     }
 
     @Nonnull
@@ -111,14 +105,14 @@ final class ControllerAdapter implements SecuredRequestHandler
     }
 
     @Override
-    public boolean canHandle( @Nonnull WebRequest request )
+    public boolean canHandle( @Nonnull WebInvocation request )
     {
         if( this.applicationExpression != null && !this.applicationExpression.createInvocation( request ).require() )
         {
             return false;
         }
 
-        MapEx<String, String> pathParameters = request.getUri().getPathParameters( this.uri );
+        MapEx<String, String> pathParameters = request.getHttpRequest().getUri().getPathParameters( this.uri );
         if( pathParameters == null )
         {
             return false;
@@ -130,9 +124,49 @@ final class ControllerAdapter implements SecuredRequestHandler
 
     @Nullable
     @Override
-    public Object handle( @Nonnull WebRequest request ) throws Exception
+    public Object handle( @Nonnull WebInvocation request ) throws Exception
     {
         LOG.debug( "Invoking method endpoint '{}'", this.endpoint );
         return this.invoker.resolve( Collections.<String, Object>singletonMap( "request", request ) ).invoke();
+    }
+
+    private class ControllerSecurityConstraint implements SecurityConstraint
+    {
+        @Nullable
+        private final List<String> authenticationMethods;
+
+        @Nullable
+        private final String challangeMethod;
+
+        @Nullable
+        private final Expression<Boolean> authExpression;
+
+        public ControllerSecurityConstraint( @Nonnull Secured secured )
+        {
+            this.authenticationMethods = secured.authMethods().length > 0 ? asList( secured.authMethods() ) : null;
+            this.challangeMethod = !secured.challangeMethod().isEmpty() ? secured.challangeMethod() : null;
+            this.authExpression = !secured.value().isEmpty() ? expressionParser.parseExpression( secured.value(), Boolean.class ) : null;
+        }
+
+        @Nullable
+        @Override
+        public Collection<String> getAuthenticationMethods()
+        {
+            return this.authenticationMethods;
+        }
+
+        @Nullable
+        @Override
+        public Expression<Boolean> getExpression()
+        {
+            return this.authExpression;
+        }
+
+        @Nullable
+        @Override
+        public String getChallangeMethod()
+        {
+            return this.challangeMethod;
+        }
     }
 }

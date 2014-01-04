@@ -2,7 +2,8 @@ package org.mosaic.web.handler;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.mosaic.web.request.WebRequest;
+import org.mosaic.web.request.WebInvocation;
+import org.mosaic.web.security.SecurityConstraint;
 
 /**
  * @author arik
@@ -10,5 +11,5 @@ import org.mosaic.web.request.WebRequest;
 public interface SecuredRequestHandler extends RequestHandler
 {
     @Nullable
-    String getAuthenticationMethod( @Nonnull WebRequest request );
+    SecurityConstraint getSecurityConstraint( @Nonnull WebInvocation request );
 }

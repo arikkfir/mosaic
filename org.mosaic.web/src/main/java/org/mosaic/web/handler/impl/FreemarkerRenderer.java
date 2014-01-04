@@ -13,6 +13,7 @@ import java.util.Map;
 import javax.annotation.Nonnull;
 import org.mosaic.modules.Component;
 import org.mosaic.web.application.Application;
+import org.mosaic.web.application.Resource;
 
 /**
  * @author arik
@@ -75,7 +76,7 @@ final class FreemarkerRenderer
         @Override
         public long getLastModified( Object templateSource )
         {
-            Path file = ( ( Application.ApplicationResources.Resource ) templateSource ).getPath();
+            Path file = ( ( Resource ) templateSource ).getPath();
             try
             {
                 return Files.getLastModifiedTime( file ).toMillis();
@@ -89,7 +90,7 @@ final class FreemarkerRenderer
         @Override
         public Reader getReader( Object templateSource, String encoding ) throws IOException
         {
-            Path file = ( ( Application.ApplicationResources.Resource ) templateSource ).getPath();
+            Path file = ( ( Resource ) templateSource ).getPath();
             return Files.newBufferedReader( file, Charset.forName( "UTF-8" ) );
         }
 

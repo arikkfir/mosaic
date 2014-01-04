@@ -6,11 +6,10 @@ import org.mosaic.web.request.WebInvocation;
 /**
  * @author arik
  */
-public interface Authenticator
+public interface Challanger
 {
     @Nonnull
     String getAuthenticationMethod();
 
-    @Nonnull
-    Authentication authenticate( @Nonnull WebInvocation request );
+    void challange( @Nonnull WebInvocation request );
 }

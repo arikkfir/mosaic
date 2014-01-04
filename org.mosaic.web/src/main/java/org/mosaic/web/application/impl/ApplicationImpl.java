@@ -25,6 +25,8 @@ import org.mosaic.util.resource.PathWatcher;
 import org.mosaic.util.resource.PathWatcherContext;
 import org.mosaic.util.xml.XmlElement;
 import org.mosaic.web.application.Application;
+import org.mosaic.web.application.Resource;
+import org.mosaic.web.security.SecurityConstraint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -276,22 +278,12 @@ final class ApplicationImpl implements Application, Application.ApplicationSecur
         PathMatcher pathMatcher = new AntPathMatcher();
         for( SecurityConstraintImpl constraint : this.securityConstraints )
         {
-            for( String constraintPath : constraint.getPaths() )
+            if( pathMatcher.matches( constraint.getPath(), path ) )
             {
-                if( pathMatcher.matches( constraintPath, path ) )
-                {
-                    return constraint;
-                }
+                return constraint;
             }
         }
         return null;
-    }
-
-    @Nonnull
-    @Override
-    public Collection<? extends SecurityConstraint> getConstraints()
-    {
-        return this.securityConstraints;
     }
 
     @Nonnull

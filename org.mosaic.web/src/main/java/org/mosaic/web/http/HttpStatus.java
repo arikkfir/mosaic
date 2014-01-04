@@ -1,4 +1,4 @@
-package org.mosaic.web.request;
+package org.mosaic.web.http;
 
 import javax.annotation.Nonnull;
 

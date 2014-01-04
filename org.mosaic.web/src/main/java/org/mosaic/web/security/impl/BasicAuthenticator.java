@@ -8,15 +8,18 @@ import org.mosaic.security.AuthenticationException;
 import org.mosaic.security.Security;
 import org.mosaic.security.Subject;
 import org.mosaic.security.support.UsernamePasswordAuthToken;
-import org.mosaic.web.request.HttpStatus;
-import org.mosaic.web.request.WebRequest;
+import org.mosaic.web.http.HttpStatus;
+import org.mosaic.web.request.WebInvocation;
+import org.mosaic.web.security.Authentication;
+import org.mosaic.web.security.AuthenticationResult;
 import org.mosaic.web.security.Authenticator;
+import org.mosaic.web.security.Challanger;
 
 /**
  * @author arik
  */
-@Service
-final class BasicAuthenticator implements Authenticator
+@Service(properties = @Service.P(key = "type", value = "basic"))
+final class BasicAuthenticator implements Authenticator, Challanger
 {
     @Nonnull
     @Service
@@ -30,24 +33,24 @@ final class BasicAuthenticator implements Authenticator
     }
 
     @Nonnull
-    public AuthenticationAction authenticate( @Nonnull WebRequest request )
+    public Authentication authenticate( @Nonnull WebInvocation request )
     {
-        String credentials = request.getHeaders().getAuthorization();
+        String credentials = request.getHttpRequest().getAuthorization();
         if( credentials == null )
         {
-            return new AuthenticationAction( AuthenticationResult.NO_CREDENTIALS );
+            return new Authentication( AuthenticationResult.NO_CREDENTIALS );
         }
 
         int space = credentials.indexOf( ' ' );
         if( space <= 0 || space == credentials.length() - 1 )
         {
-            return new AuthenticationAction( AuthenticationResult.INVALID_CREDENTIALS );
+            return new Authentication( AuthenticationResult.INVALID_CREDENTIALS );
         }
 
         String method = credentials.substring( 0, space );
         if( !"basic".equalsIgnoreCase( method ) )
         {
-            return new AuthenticationAction( AuthenticationResult.NO_CREDENTIALS );
+            return new Authentication( AuthenticationResult.NO_CREDENTIALS );
         }
 
         credentials = credentials.substring( space + 1 );
@@ -55,7 +58,7 @@ final class BasicAuthenticator implements Authenticator
         int i = credentials.indexOf( ':' );
         if( i <= 0 )
         {
-            return new AuthenticationAction( AuthenticationResult.INVALID_CREDENTIALS );
+            return new Authentication( AuthenticationResult.INVALID_CREDENTIALS );
         }
 
         try
@@ -65,19 +68,19 @@ final class BasicAuthenticator implements Authenticator
                     request.getApplication().getSecurity().getPermissionPolicyName(),
                     new UsernamePasswordAuthToken( credentials.substring( 0, i ), credentials.substring( i + 1 ) )
             );
-            return new AuthenticationAction( subject, AuthenticationResult.AUTHENTICATED );
+            return new Authentication( subject, AuthenticationResult.AUTHENTICATED );
         }
         catch( AuthenticationException e )
         {
-            return new AuthenticationAction( AuthenticationResult.AUTHENTICATION_FAILED );
+            return new Authentication( AuthenticationResult.AUTHENTICATION_FAILED );
         }
     }
 
     @Override
-    public void challange( @Nonnull WebRequest request )
+    public void challange( @Nonnull WebInvocation request )
     {
         String realmName = request.getApplication().getSecurity().getRealmName();
-        request.getResponse().getHeaders().setWwwAuthenticate( "basic realm=\"" + realmName + "\"" );
-        request.getResponse().setStatus( HttpStatus.UNAUTHORIZED );
+        request.getHttpResponse().setWwwAuthenticate( "basic realm=\"" + realmName + "\"" );
+        request.getHttpResponse().setStatus( HttpStatus.UNAUTHORIZED, "Access denied" );
     }
 }

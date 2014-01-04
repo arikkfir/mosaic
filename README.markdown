@@ -28,3 +28,6 @@ web
 * implement security
     * add digest protocol support
     * add client certificate support
+* implement request.unmarshallBody( type )
+* implement form authentication
+* duplication of @Secured - both in ControllerAdapter.getSecurityConstraint and SecurityMethodInterceptor

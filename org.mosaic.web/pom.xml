@@ -48,10 +48,12 @@
         <dependency>
             <groupId>biz.aQute.bnd</groupId>
             <artifactId>bndlib</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.config</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
@@ -60,6 +62,7 @@
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.pathwatchers</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
@@ -85,29 +88,33 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <optional>true</optional>
         </dependency>
 
         <!-- fasterxml -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-csv</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-guava</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-joda</artifactId>
+            <optional>true</optional>
         </dependency>
 
         <!-- freemarker -->
@@ -115,6 +122,7 @@
             <groupId>org.freemarker</groupId>
             <artifactId>freemarker</artifactId>
             <version>[2.3.20]</version>
+            <optional>true</optional>
         </dependency>
 
         <!-- jetty -->

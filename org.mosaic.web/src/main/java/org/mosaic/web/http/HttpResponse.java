@@ -1,10 +1,13 @@
-package org.mosaic.web.request;
+package org.mosaic.web.http;
 
 import com.google.common.net.MediaType;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.Writer;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.joda.time.DateTime;
@@ -12,17 +15,22 @@ import org.joda.time.DateTime;
 /**
  * @author arik
  */
-public interface WebResponseHeaders
+public interface HttpResponse
 {
     @Nullable
-    List<String> getAllow();
+    HttpStatus getStatus();
 
-    void setAllow( @Nullable List<String> value );
+    void setStatus( @Nonnull HttpStatus status, @Nullable String text );
 
     @Nonnull
     List<String> getAcceptRanges();
 
     void setAcceptRanges( @Nullable List<String> values );
+
+    @Nullable
+    List<String> getAllow();
+
+    void setAllow( @Nullable List<String> value );
 
     @Nullable
     String getCacheControl();
@@ -40,9 +48,9 @@ public interface WebResponseHeaders
     void setContentEncoding( @Nullable List<String> value );
 
     @Nullable
-    Locale getContentLanguage();
+    List<Locale> getContentLanguage();
 
-    void setContentLanguage( @Nullable Locale value );
+    void setContentLanguage( @Nullable List<Locale> value );
 
     @Nullable
     Long getContentLength();
@@ -70,11 +78,6 @@ public interface WebResponseHeaders
     void setContentType( @Nullable MediaType value );
 
     @Nullable
-    DateTime getExpires();
-
-    void setExpires( @Nullable DateTime value );
-
-    @Nullable
     DateTime getDate();
 
     void setDate( @Nullable DateTime value );
@@ -85,14 +88,19 @@ public interface WebResponseHeaders
     void setETag( @Nullable String value );
 
     @Nullable
-    String getLocation();
+    DateTime getExpires();
 
-    void setLocation( @Nullable String value ) throws IOException;
+    void setExpires( @Nullable DateTime value );
 
     @Nullable
     DateTime getLastModified();
 
     void setLastModified( @Nullable DateTime value );
+
+    @Nullable
+    String getLocation();
+
+    void setLocation( @Nullable String value ) throws IOException;
 
     @Nullable
     String getPragma();
@@ -115,6 +123,11 @@ public interface WebResponseHeaders
     void setVary( @Nullable List<String> value );
 
     @Nullable
+    String getVia();
+
+    void setVia( @Nullable String value );
+
+    @Nullable
     String getWarning();
 
     void setWarning( @Nullable String value );
@@ -124,21 +137,31 @@ public interface WebResponseHeaders
 
     void setWwwAuthenticate( @Nullable String value );
 
-    void addHeader( @Nonnull String name, @Nonnull String value );
+    int getHeadersCount();
 
-    void addHeader( @Nonnull String name, @Nonnull DateTime value );
+    @Nonnull
+    Set<String> getHeaderNames();
 
-    void addHeader( @Nonnull String name, @Nonnull Integer value );
+    boolean containsHeader( @Nonnull String key );
 
-    void addHeader( @Nonnull String name, @Nonnull Long value );
+    boolean containsHeader( @Nonnull String key, @Nonnull String value );
 
-    void setHeader( @Nonnull String name, @Nonnull String value );
+    @Nonnull
+    List<String> getHeader( @Nonnull String key );
 
-    void setHeader( @Nonnull String name, @Nonnull DateTime value );
+    void setHeader( @Nonnull String key, @Nonnull String... values );
 
-    void setHeader( @Nonnull String name, @Nonnull Integer value );
+    void setHeader( @Nonnull String key, @Nonnull List<String> values );
 
-    void setHeader( @Nonnull String name, @Nonnull Long value );
+    @Nonnull
+    OutputStream getOutputStream() throws IOException;
 
-    void removeHeader( @Nonnull String name );
+    @Nonnull
+    Writer getWriter() throws IOException;
+
+    <T> void marshall( @Nonnull T value );
+
+    boolean isCommitted();
+
+    void reset();
 }

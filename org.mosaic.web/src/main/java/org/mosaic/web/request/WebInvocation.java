@@ -1,36 +1,49 @@
 package org.mosaic.web.request;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.Writer;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.joda.time.Period;
+import org.mosaic.util.collections.MapEx;
+import org.mosaic.web.application.Application;
+import org.mosaic.web.http.HttpRequest;
+import org.mosaic.web.http.HttpResponse;
+import org.mosaic.web.http.support.HttpLogger;
+import org.mosaic.web.security.SecurityConstraint;
 
 /**
  * @author arik
  */
-public interface WebResponse
+public interface WebInvocation
 {
     @Nonnull
-    WebResponseHeaders getHeaders();
+    HttpRequest getHttpRequest();
 
-    boolean isCommitted();
+    @Nonnull
+    HttpResponse getHttpResponse();
+
+    @Nonnull
+    HttpLogger getHttpLogger();
+
+    @Nonnull
+    Application getApplication();
+
+    @Nonnull
+    UserAgent getUserAgent();
+
+    @Nonnull
+    MapEx<String, Object> getAttributes();
 
     @Nullable
-    HttpStatus getStatus();
+    SecurityConstraint getSecurityConstraint();
 
-    void setStatus( @Nonnull HttpStatus status );
-
-    void setStatus( @Nonnull HttpStatus status, @Nullable String text );
-
-    void reset();
+    @Nullable
+    WebSession getSession();
 
     @Nonnull
-    OutputStream stream() throws IOException;
+    WebSession getOrCreateSession();
 
-    @Nonnull
-    Writer writer() throws IOException;
+    @Nullable
+    WebCookie getCookie( String name );
 
     void addCookie( @Nonnull String name, @Nonnull Object value );
 

@@ -46,11 +46,10 @@
             <xsd:element name="permission-policy" minOccurs="1" maxOccurs="1" type="xsd:string"/>
             <xsd:element name="constraint" minOccurs="0" maxOccurs="unbounded">
                 <xsd:complexType>
-                    <xsd:sequence>
-                        <xsd:element name="path" type="xsd:string" minOccurs="1" maxOccurs="unbounded"/>
-                    </xsd:sequence>
-                    <xsd:attribute name="expression" type="xsd:string" use="required"/>
-                    <xsd:attribute name="method" type="xsd:string" use="required"/>
+                    <xsd:attribute name="path" type="xsd:string" use="required"/>
+                    <xsd:attribute name="auth" type="xsd:string" use="required"/>
+                    <xsd:attribute name="challange" type="xsd:string" use="optional"/>
+                    <xsd:attribute name="expression" type="xsd:string" use="optional"/>
                 </xsd:complexType>
             </xsd:element>
         </xsd:sequence>

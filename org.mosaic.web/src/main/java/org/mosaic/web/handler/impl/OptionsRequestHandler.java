@@ -11,7 +11,7 @@ import org.mosaic.modules.Component;
 import org.mosaic.modules.Ranking;
 import org.mosaic.modules.Service;
 import org.mosaic.web.handler.RequestHandler;
-import org.mosaic.web.request.WebRequest;
+import org.mosaic.web.request.WebInvocation;
 
 /**
  * @author arik
@@ -34,14 +34,14 @@ final class OptionsRequestHandler implements RequestHandler
     }
 
     @Override
-    public boolean canHandle( @Nonnull WebRequest request )
+    public boolean canHandle( @Nonnull WebInvocation request )
     {
         return true;
     }
 
     @Nullable
     @Override
-    public Object handle( @Nonnull WebRequest request ) throws Throwable
+    public Object handle( @Nonnull WebInvocation request ) throws Throwable
     {
         List<RequestHandler> handlers = this.requestHandlersManager.findRequestHandlers( request );
 
@@ -50,7 +50,7 @@ final class OptionsRequestHandler implements RequestHandler
         {
             httpMethods.addAll( handler.getHttpMethods() );
         }
-        request.getResponse().getHeaders().setAllow( new LinkedList<>( httpMethods ) );
+        request.getHttpResponse().setAllow( new LinkedList<>( httpMethods ) );
         return null;
     }
 }

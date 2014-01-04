@@ -13,6 +13,7 @@
 
     <virtual-hosts>
         <virtual-host>localhost</virtual-host>
+        <virtual-host>mng.arik.home.local</virtual-host>
     </virtual-hosts>
 
     <max-session-age>1 hour, 30 minutes</max-session-age>
@@ -20,11 +21,13 @@
     <security>
         <realm>localUsers</realm>
         <permission-policy>management</permission-policy>
-        <!--
-                <constraint expression="subject.authenticated">
-                    <path>/**</path>
-                </constraint>
-        -->
+
+        <!-- protect API endpoints, -->
+        <constraint path="/api/**" auth="basic" challange="basic" expression="subject.authenticated"/>
+
+        <!-- as a last resort, always check the session for a subject, and use it, even for unprotected resources -->
+        <constraint path="/**" auth="session" challange="form"/>
+
     </security>
 
     <resources>

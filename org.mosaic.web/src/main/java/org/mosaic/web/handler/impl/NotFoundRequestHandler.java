@@ -8,9 +8,8 @@ import org.mosaic.modules.Component;
 import org.mosaic.modules.Ranking;
 import org.mosaic.modules.Service;
 import org.mosaic.web.handler.RequestHandler;
-import org.mosaic.web.request.HttpStatus;
-import org.mosaic.web.request.WebRequest;
-import org.mosaic.web.request.WebResponse;
+import org.mosaic.web.http.HttpStatus;
+import org.mosaic.web.request.WebInvocation;
 
 /**
  * @author arik
@@ -33,19 +32,18 @@ final class NotFoundRequestHandler implements RequestHandler
     }
 
     @Override
-    public boolean canHandle( @Nonnull WebRequest request )
+    public boolean canHandle( @Nonnull WebInvocation request )
     {
         return true;
     }
 
     @Nullable
     @Override
-    public Object handle( @Nonnull WebRequest request ) throws Throwable
+    public Object handle( @Nonnull WebInvocation request ) throws Throwable
     {
         // TODO: add application-specific not-found handling, maybe error page, etc
-        WebResponse response = request.getResponse();
-        response.setStatus( HttpStatus.NOT_FOUND );
-        response.disableCaching();
+        request.getHttpResponse().setStatus( HttpStatus.NOT_FOUND, "Not found" );
+        request.disableCaching();
         return null;
     }
 }

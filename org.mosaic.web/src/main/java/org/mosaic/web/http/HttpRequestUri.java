@@ -1,6 +1,5 @@
-package org.mosaic.web.request;
+package org.mosaic.web.http;
 
-import com.google.common.collect.Multimap;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.util.collections.MapEx;
@@ -8,7 +7,7 @@ import org.mosaic.util.collections.MapEx;
 /**
  * @author arik
  */
-public interface WebRequestUri
+public interface HttpRequestUri
 {
     @Nonnull
     String getScheme();
@@ -26,9 +25,6 @@ public interface WebRequestUri
 
     @Nullable
     MapEx<String, String> getPathParameters( @Nonnull String pathTemplate );
-
-    @Nonnull
-    Multimap<String, String> getDecodedQueryParameters();
 
     @Nonnull
     String getEncodedQueryString();

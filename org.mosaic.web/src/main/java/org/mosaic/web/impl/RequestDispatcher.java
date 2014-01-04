@@ -9,13 +9,14 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.Request;
 import org.mosaic.modules.Component;
 import org.mosaic.modules.Module;
 import org.mosaic.modules.Service;
 import org.mosaic.web.application.Application;
-import org.mosaic.web.handler.spi.RequestPlanFactory;
-import org.mosaic.web.request.WebRequest;
-import org.mosaic.web.request.spi.WebRequestFactory;
+import org.mosaic.web.handler.impl.RequestPlan;
+import org.mosaic.web.request.WebInvocation;
+import org.mosaic.web.request.impl.WebInvocationImpl;
 
 /**
  * @author arik
@@ -31,14 +32,6 @@ final class RequestDispatcher extends HttpServlet
     @Service
     private List<Application> applications;
 
-    @Nonnull
-    @Component
-    private RequestPlanFactory requestPlanFactory;
-
-    @Nonnull
-    @Component
-    private WebRequestFactory webRequestFactory;
-
     @Override
     protected void service( HttpServletRequest req, HttpServletResponse resp ) throws ServletException, IOException
     {
@@ -51,8 +44,8 @@ final class RequestDispatcher extends HttpServlet
             return;
         }
 
-        WebRequest request = this.webRequestFactory.createRequest( application, req );
-        Runnable plan = this.requestPlanFactory.createRequestPlanExecutor( request );
+        WebInvocation request = new WebInvocationImpl( ( Request ) req, application );
+        Runnable plan = new RequestPlan( request );
         plan.run();
     }
 

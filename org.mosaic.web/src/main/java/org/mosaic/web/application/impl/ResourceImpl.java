@@ -7,7 +7,7 @@ import java.util.Properties;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.joda.time.Period;
-import org.mosaic.web.application.Application;
+import org.mosaic.web.application.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,7 +16,7 @@ import static java.nio.file.Files.*;
 /**
  * @author arik
  */
-final class ResourceImpl implements Application.ApplicationResources.Resource
+final class ResourceImpl implements Resource
 {
     private static final Logger LOG = LoggerFactory.getLogger( ResourceImpl.class );
 

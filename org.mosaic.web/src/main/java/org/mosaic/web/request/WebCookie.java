@@ -7,7 +7,7 @@ import org.joda.time.Period;
 /**
  * @author arik
  */
-public interface WebRequestCookie
+public interface WebCookie
 {
     @Nonnull
     String getName();

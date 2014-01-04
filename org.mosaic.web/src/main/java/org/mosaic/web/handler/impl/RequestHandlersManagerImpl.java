@@ -7,7 +7,7 @@ import javax.annotation.Nonnull;
 import org.mosaic.modules.Component;
 import org.mosaic.modules.Service;
 import org.mosaic.web.handler.RequestHandler;
-import org.mosaic.web.request.WebRequest;
+import org.mosaic.web.request.WebInvocation;
 
 /**
  * @author arik
@@ -24,7 +24,7 @@ final class RequestHandlersManagerImpl
     private List<InterceptorAdapter> interceptors;
 
     @Nonnull
-    List<RequestHandler> findRequestHandlers( @Nonnull WebRequest request )
+    List<RequestHandler> findRequestHandlers( @Nonnull WebInvocation request )
     {
         List<RequestHandler> handlers = null;
         for( RequestHandler requestHandler : this.requestHandlers )
@@ -42,7 +42,7 @@ final class RequestHandlersManagerImpl
     }
 
     @Nonnull
-    List<InterceptorAdapter> findInterceptors( @Nonnull WebRequest request, @Nonnull RequestHandler requestHandler )
+    List<InterceptorAdapter> findInterceptors( @Nonnull WebInvocation request, @Nonnull RequestHandler requestHandler )
     {
         List<InterceptorAdapter> interceptors = null;
         for( InterceptorAdapter interceptor : this.interceptors )

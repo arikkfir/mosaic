@@ -24,6 +24,8 @@
         </div>
 
         <div class="collapse navbar-collapse" id="top-navbar-collapse-1">
+
+        <#if subject.authenticated>
             <ul class="nav navbar-nav navbar-right">
                 <li class="dropdown">
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-cog"></span></a>
@@ -36,11 +38,24 @@
                     </ul>
                 </li>
             </ul>
+
             <form class="navbar-form navbar-right" role="search" action="/search">
                 <div class="form-group">
                     <input type="text" class="form-control" name="q" placeholder="Search">
                 </div>
             </form>
+        <#else>
+            <form class="navbar-form navbar-right" role="login" action="/login" method="post">
+                <div class="form-group">
+                    <input type="text" class="form-control" name="username" placeholder="Username">
+                </div>
+                <div class="form-group">
+                    <input type="password" class="form-control" name="password" placeholder="Password">
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+            </form>
+        </#if>
+
         </div>
     </nav>
 

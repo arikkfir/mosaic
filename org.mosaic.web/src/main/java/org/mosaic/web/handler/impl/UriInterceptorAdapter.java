@@ -17,7 +17,7 @@ import org.mosaic.web.handler.InterceptorChain;
 import org.mosaic.web.handler.RequestHandler;
 import org.mosaic.web.handler.UriInterceptor;
 import org.mosaic.web.handler.spi.HttpMethodMarker;
-import org.mosaic.web.request.WebRequest;
+import org.mosaic.web.request.WebInvocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +79,7 @@ final class UriInterceptorAdapter extends InterceptorAdapter
 
         // TODO: add more parameter resolvers
         this.invoker = this.endpoint.createInvoker(
-                new SimpleParameterResolver( "request", WebRequest.class ),
+                new SimpleParameterResolver( "request", WebInvocation.class ),
                 new SimpleParameterResolver( "interceptorChain", InterceptorChain.class )
         );
     }
@@ -91,14 +91,14 @@ final class UriInterceptorAdapter extends InterceptorAdapter
         return this.httpMethods;
     }
 
-    boolean canHandle( @Nonnull WebRequest request, @Nonnull RequestHandler requestHandler )
+    boolean canHandle( @Nonnull WebInvocation request, @Nonnull RequestHandler requestHandler )
     {
         if( this.applicationExpression != null && !this.applicationExpression.createInvocation( request ).require() )
         {
             return false;
         }
 
-        MapEx<String, String> pathParameters = request.getUri().getPathParameters( this.uri );
+        MapEx<String, String> pathParameters = request.getHttpRequest().getUri().getPathParameters( this.uri );
         if( pathParameters == null )
         {
             return false;
@@ -109,7 +109,7 @@ final class UriInterceptorAdapter extends InterceptorAdapter
     }
 
     @Nullable
-    Object handle( @Nonnull WebRequest request, @Nonnull InterceptorChain interceptorChain ) throws Exception
+    Object handle( @Nonnull WebInvocation request, @Nonnull InterceptorChain interceptorChain ) throws Exception
     {
         LOG.debug( "Invoking URI interceptor '{}'", this.endpoint );
 

@@ -18,12 +18,14 @@ import org.mosaic.modules.Ranking;
 import org.mosaic.modules.Service;
 import org.mosaic.security.Security;
 import org.mosaic.web.application.Application;
+import org.mosaic.web.application.Resource;
 import org.mosaic.web.handler.RequestHandler;
-import org.mosaic.web.request.WebRequest;
-import org.mosaic.web.request.WebResponse;
+import org.mosaic.web.request.WebInvocation;
 
+import static com.google.common.base.Objects.firstNonNull;
 import static java.nio.file.Files.*;
-import static org.mosaic.web.request.HttpStatus.*;
+import static java.util.Locale.ENGLISH;
+import static org.mosaic.web.http.HttpStatus.*;
 
 /**
  * @author arik
@@ -53,12 +55,12 @@ final class StaticResourcesRequestHandler implements RequestHandler
     }
 
     @Override
-    public boolean canHandle( @Nonnull WebRequest request )
+    public boolean canHandle( @Nonnull WebInvocation request )
     {
-        String path = request.getUri().getDecodedPath();
+        String path = request.getHttpRequest().getUri().getDecodedPath();
         Application.ApplicationResources resources = request.getApplication().getResources();
 
-        Application.ApplicationResources.Resource resource = resources.getResource( path + ".ftl" );
+        Resource resource = resources.getResource( path + ".ftl" );
         if( resource == null )
         {
             resource = resources.getResource( path );
@@ -77,11 +79,11 @@ final class StaticResourcesRequestHandler implements RequestHandler
 
     @Nullable
     @Override
-    public Object handle( @Nonnull WebRequest request ) throws Throwable
+    public Object handle( @Nonnull WebInvocation request ) throws Throwable
     {
         // TODO: support gzip
 
-        Application.ApplicationResources.Resource resource = request.getAttributes().require( "resource", Application.ApplicationResources.Resource.class );
+        Resource resource = request.getAttributes().require( "resource", Resource.class );
         if( isDirectory( resource.getPath() ) )
         {
             serveDirectory( request, resource );
@@ -97,31 +99,29 @@ final class StaticResourcesRequestHandler implements RequestHandler
         return null;
     }
 
-    private void serveDirectory( @Nonnull WebRequest request,
-                                 @Nonnull Application.ApplicationResources.Resource resource )
+    private void serveDirectory( @Nonnull WebInvocation request,
+                                 @Nonnull Resource resource )
     {
         // TODO: handle directory listing (if enabled)
-        request.getResponse().setStatus( NOT_IMPLEMENTED );
-        request.getResponse().disableCaching();
+        request.getHttpResponse().setStatus( NOT_IMPLEMENTED, "Not implemented" );
+        request.disableCaching();
     }
 
-    private void serveDynamicFile( @Nonnull WebRequest request,
-                                   @Nonnull Application.ApplicationResources.Resource resource )
-            throws IOException, TemplateException
+    private void serveDynamicFile( @Nonnull WebInvocation request,
+                                   @Nonnull Resource resource )
+    throws IOException, TemplateException
     {
         Path file = resource.getPath();
         String filename = file.getFileName().toString();
         filename = filename.substring( 0, filename.lastIndexOf( ".ftl" ) );
 
-        WebResponse response = request.getResponse();
+        request.disableCaching();
 
-        response.disableCaching();
+        request.getHttpResponse().setLastModified( DateTime.now() );
 
-        response.getHeaders().setLastModified( DateTime.now() );
+        request.getHttpResponse().setContentType( findContentType( filename ) );
 
-        response.getHeaders().setContentType( findContentType( filename ) );
-
-        if( request.getMethod().equalsIgnoreCase( "GET" ) )
+        if( request.getHttpRequest().getMethod().equalsIgnoreCase( "GET" ) )
         {
             Map<String, Object> context = new HashMap<>();
             context.put( "request", request );
@@ -129,45 +129,45 @@ final class StaticResourcesRequestHandler implements RequestHandler
             context.put( "user", this.security.getSubject() );
             this.freemarkerRenderer.render( request.getApplication(),
                                             context,
-                                            request.getUri().getDecodedPath(),
-                                            request.getHeaders().getContentLanguage(),
-                                            response.writer() );
+                                            request.getHttpRequest().getUri().getDecodedPath(),
+                                            firstNonNull( request.getHttpRequest().getContentLanguage(), ENGLISH ),
+                                            request.getHttpResponse().getWriter() );
         }
-        else if( !request.getMethod().equalsIgnoreCase( "HEAD" ) )
+        else if( !request.getHttpRequest().getMethod().equalsIgnoreCase( "HEAD" ) )
         {
-            response.setStatus( METHOD_NOT_ALLOWED );
+            request.getHttpResponse().setStatus( METHOD_NOT_ALLOWED, "Method not allowed" );
+            request.getHttpResponse().setAllow( Arrays.asList( "GET", "HEAD" ) );
         }
     }
 
-    private void serveFile( @Nonnull WebRequest request, @Nonnull Application.ApplicationResources.Resource resource )
-            throws IOException
+    private void serveFile( @Nonnull WebInvocation request, @Nonnull Resource resource )
+    throws IOException
     {
         Path file = resource.getPath();
-        WebResponse response = request.getResponse();
 
         // caching
         Period cachePeriod = resource.getCachePeriod();
         if( cachePeriod != null )
         {
-            response.getHeaders().setCacheControl( "must-revalidate, private, max-age=" + cachePeriod.toStandardSeconds().getSeconds() );
-            response.getHeaders().setExpires( DateTime.now().withPeriodAdded( cachePeriod, 1 ) );
+            request.getHttpResponse().setCacheControl( "must-revalidate, private, max-age=" + cachePeriod.toStandardSeconds().getSeconds() );
+            request.getHttpResponse().setExpires( DateTime.now().withPeriodAdded( cachePeriod, 1 ) );
         }
         else
         {
-            response.disableCaching();
+            request.disableCaching();
         }
 
         // last modified
         DateTime lastModified = findLastModified( file );
-        response.getHeaders().setLastModified( findLastModified( file ) );
+        request.getHttpResponse().setLastModified( findLastModified( file ) );
 
         // content length & type
-        response.getHeaders().setContentType( findContentType( file.getFileName().toString() ) );
+        request.getHttpResponse().setContentType( findContentType( file.getFileName().toString() ) );
         Long contentLength;
         try
         {
             contentLength = Files.size( file );
-            response.getHeaders().setContentLength( contentLength );
+            request.getHttpResponse().setContentLength( contentLength );
         }
         catch( IOException e )
         {
@@ -176,49 +176,50 @@ final class StaticResourcesRequestHandler implements RequestHandler
 
         // etag
         String etag = findETag( file, lastModified, contentLength );
-        response.getHeaders().setETag( etag );
+        request.getHttpResponse().setETag( etag );
 
-        if( request.getMethod().equalsIgnoreCase( "GET" ) )
+        if( request.getHttpRequest().getMethod().equalsIgnoreCase( "GET" ) )
         {
-            Collection<String> ifMatch = request.getHeaders().getIfMatch();
+            Collection<String> ifMatch = request.getHttpRequest().getIfMatch();
             if( !ifMatch.isEmpty() )
             {
                 if( !ifMatch.contains( "*" ) && !ifMatch.contains( etag ) )
                 {
-                    response.setStatus( PRECONDITION_FAILED );
+                    request.getHttpResponse().setStatus( PRECONDITION_FAILED, "" );
                     return;
                 }
             }
 
-            Collection<String> ifNoneMatch = request.getHeaders().getIfNoneMatch();
+            Collection<String> ifNoneMatch = request.getHttpRequest().getIfNoneMatch();
             if( !ifNoneMatch.isEmpty() && etag != null )
             {
                 if( ifNoneMatch.contains( "*" ) || ifNoneMatch.contains( etag ) )
                 {
-                    response.setStatus( NOT_MODIFIED );
+                    request.getHttpResponse().setStatus( NOT_MODIFIED, "Unmodified" );
                     return;
                 }
             }
 
-            DateTime ifModifiedSince = request.getHeaders().getIfModifiedSince();
+            DateTime ifModifiedSince = request.getHttpRequest().getIfModifiedSince();
             if( ifModifiedSince != null && lastModified != null && ( ifModifiedSince.equals( lastModified ) || ifModifiedSince.isAfter( lastModified ) ) )
             {
                 // TODO: according to RFC-2616 14.26, "If-Modified-Since" can override "If-None-Match", we need to support that
-                response.setStatus( NOT_MODIFIED );
+                request.getHttpResponse().setStatus( NOT_MODIFIED, "Unmodified" );
                 return;
             }
 
-            DateTime ifUnmodifiedSince = request.getHeaders().getIfUnmodifiedSince();
+            DateTime ifUnmodifiedSince = request.getHttpRequest().getIfUnmodifiedSince();
             if( ifUnmodifiedSince != null && lastModified != null && ( ifUnmodifiedSince.equals( lastModified ) || ifUnmodifiedSince.isBefore( lastModified ) ) )
             {
-                response.setStatus( PRECONDITION_FAILED );
+                request.getHttpResponse().setStatus( PRECONDITION_FAILED, "" );
                 return;
             }
-            copy( file, response.stream() );
+            copy( file, request.getHttpResponse().getOutputStream() );
         }
-        else if( !request.getMethod().equalsIgnoreCase( "HEAD" ) )
+        else if( !request.getHttpRequest().getMethod().equalsIgnoreCase( "HEAD" ) )
         {
-            response.setStatus( METHOD_NOT_ALLOWED );
+            request.getHttpResponse().setStatus( METHOD_NOT_ALLOWED, "Method not allowed" );
+            request.getHttpResponse().setAllow( Arrays.asList( "GET", "HEAD" ) );
         }
     }
 
