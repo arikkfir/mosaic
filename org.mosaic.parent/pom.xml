@@ -43,6 +43,7 @@
                             <!-- specify location of source code for bundle resource watching -->
                             <Bundle-Resources>${project.basedir}/src/main/resources</Bundle-Resources>
                         </instructions>
+                        <inferOptionalPackagesFromDependencies>false</inferOptionalPackagesFromDependencies>
                     </configuration>
                 </plugin>
                 <plugin>
