@@ -14,16 +14,6 @@ import static org.mosaic.launcher.SystemError.bootstrapError;
  */
 public final class MosaicConfigurationBuilder
 {
-    private static Path guessHome()
-    {
-        String mosaicHome = System.getProperty( "mosaic.home" );
-        if( mosaicHome == null || mosaicHome.trim().isEmpty() )
-        {
-            throw new IllegalStateException( "Could not find system property 'mosaic.home'" );
-        }
-        return Paths.get( mosaicHome );
-    }
-
     @Nonnull
     private final String version;
 
@@ -52,7 +42,7 @@ public final class MosaicConfigurationBuilder
 
     public MosaicConfigurationBuilder()
     {
-        this( guessHome() );
+        this( Paths.get( System.getProperty( "mosaic.home", System.getProperty( "user.dir" ) ) ) );
     }
 
     public MosaicConfigurationBuilder( @Nonnull Path home )

@@ -1,7 +1,5 @@
 package org.mosaic.launcher;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,24 +27,6 @@ public final class Main
         } );
 
         // start mosaic
-        new Mosaic( new MosaicConfigurationBuilder( findMosaicHome( args ) ).build() ).start();
-    }
-
-    private static Path findMosaicHome( @Nonnull String[] args )
-    {
-        String mosaicHome = null;
-        if( args.length != 0 )
-        {
-            mosaicHome = args[ 0 ];
-        }
-        if( mosaicHome == null )
-        {
-            mosaicHome = System.getProperty( "mosaic.home" );
-        }
-        if( mosaicHome == null )
-        {
-            mosaicHome = System.getProperty( "user.dir" );
-        }
-        return Paths.get( mosaicHome );
+        new Mosaic( new MosaicConfigurationBuilder().build() ).start();
     }
 }
