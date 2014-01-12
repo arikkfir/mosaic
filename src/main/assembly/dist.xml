@@ -16,11 +16,6 @@
                 <include>org.slf4j:jcl-over-slf4j</include>
                 <include>org.slf4j:log4j-over-slf4j</include>
                 <include>joda-time:joda-time</include>
-                <include>com.fasterxml:classmate</include>
-                <include>com.fasterxml.jackson.core:jackson-core</include>
-                <include>com.fasterxml.jackson.core:jackson-annotations</include>
-                <include>com.fasterxml.jackson.core:jackson-databind</include>
-                <include>com.fasterxml.jackson.dataformat:jackson-dataformat-csv</include>
                 <include>org.jboss.logging:jboss-logging</include>
                 <include>javax.validation:validation-api</include>
                 <include>org.hibernate:hibernate-validator</include>
@@ -28,6 +23,18 @@
                 <include>org.glassfish.web:javax.el</include>
             </includes>
             <outputDirectory>boot</outputDirectory>
+            <useStrictFiltering>true</useStrictFiltering>
+            <useTransitiveDependencies>true</useTransitiveDependencies>
+        </dependencySet>
+        <dependencySet>
+            <includes>
+                <include>com.fasterxml:classmate</include>
+                <include>com.fasterxml.jackson.core:jackson-core</include>
+                <include>com.fasterxml.jackson.core:jackson-annotations</include>
+                <include>com.fasterxml.jackson.core:jackson-databind</include>
+                <include>com.fasterxml.jackson.dataformat:jackson-dataformat-csv</include>
+            </includes>
+            <outputDirectory>lib</outputDirectory>
             <useStrictFiltering>true</useStrictFiltering>
             <useTransitiveDependencies>true</useTransitiveDependencies>
         </dependencySet>
@@ -47,6 +54,7 @@
         <moduleSet>
             <includes>
                 <include>org.mosaic:org.mosaic.modules</include>
+                <include>org.mosaic:org.mosaic.server</include>
                 <include>org.mosaic:org.mosaic.util</include>
             </includes>
             <binaries>

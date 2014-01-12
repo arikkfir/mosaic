@@ -110,6 +110,7 @@
         <module>org.mosaic.parent</module>
         <module>org.mosaic.pathwatchers</module>
         <module>org.mosaic.security</module>
+        <module>org.mosaic.server</module>
         <module>org.mosaic.tasks</module>
         <module>org.mosaic.util</module>
         <module>org.mosaic.validation</module>

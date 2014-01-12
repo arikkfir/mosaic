@@ -1,4 +1,4 @@
-package org.mosaic.modules;
+package org.mosaic.server;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

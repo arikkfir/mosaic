@@ -347,6 +347,11 @@
             </dependency>
             <dependency>
                 <groupId>org.mosaic</groupId>
+                <artifactId>org.mosaic.server</artifactId>
+                <version>[${project.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mosaic</groupId>
                 <artifactId>org.mosaic.util</artifactId>
                 <version>[${project.version}]</version>
             </dependency>
