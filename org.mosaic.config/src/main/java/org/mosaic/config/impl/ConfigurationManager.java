@@ -18,6 +18,7 @@ import org.joda.time.DateTime;
 import org.mosaic.config.Configurable;
 import org.mosaic.modules.*;
 import org.mosaic.pathwatchers.PathWatcher;
+import org.mosaic.server.Server;
 import org.mosaic.util.collections.EmptyMapEx;
 import org.mosaic.util.collections.HashMapEx;
 import org.mosaic.util.collections.MapEx;
@@ -44,9 +45,9 @@ final class ConfigurationManager
     {
     };
 
-    @Component
+    @Service
     @Nonnull
-    private Module module;
+    private Server server;
 
     @Nonnull
     private Map<Long, ConfigurableAdapter> configurationAdapters = new ConcurrentHashMap<>();
@@ -62,7 +63,7 @@ final class ConfigurationManager
         }
 
         final ConfigurableAdapter adapter = new ConfigurableAdapter( endpoint );
-        walkFileTree( this.module.getContext().getServerEtcHome(), new SimpleFileVisitor<Path>()
+        walkFileTree( this.server.getEtcPath(), new SimpleFileVisitor<Path>()
         {
             @Nonnull
             @Override

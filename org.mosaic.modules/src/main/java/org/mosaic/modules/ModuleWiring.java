@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.mosaic.server.Version;
 import org.mosaic.util.collections.MapEx;
 
 /**

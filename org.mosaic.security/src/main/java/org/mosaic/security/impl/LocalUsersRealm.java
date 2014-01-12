@@ -9,11 +9,12 @@ import java.util.Collections;
 import java.util.Properties;
 import javax.annotation.Nonnull;
 import org.mosaic.modules.Component;
-import org.mosaic.modules.Module;
+import org.mosaic.modules.Service;
 import org.mosaic.security.*;
 import org.mosaic.security.support.PublicKeyAuthenticationToken;
 import org.mosaic.security.support.UsernameNoneAuthToken;
 import org.mosaic.security.support.UsernamePasswordAuthToken;
+import org.mosaic.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,11 +28,11 @@ final class LocalUsersRealm
 {
     private static final Logger LOG = LoggerFactory.getLogger( LocalUsersRealm.class );
 
-    @Component
+    @Service
     @Nonnull
-    private Module module;
+    private Server server;
 
-    @Realm( "localUsers" )
+    @Realm("localUsers")
     public AuthenticationResult authenticateLocalUser( @Nonnull AuthenticationToken authenticationToken )
     {
         if( authenticationToken instanceof UsernamePasswordAuthToken )
@@ -135,6 +136,6 @@ final class LocalUsersRealm
     @Nonnull
     private Path getLocalSecurityHome()
     {
-        return this.module.getContext().getServerEtcHome().resolve( "security" ).resolve( "local" );
+        return this.server.getEtcPath().resolve( "security" ).resolve( "local" );
     }
 }

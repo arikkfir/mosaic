@@ -11,8 +11,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Request;
 import org.mosaic.modules.Component;
-import org.mosaic.modules.Module;
 import org.mosaic.modules.Service;
+import org.mosaic.server.Server;
 import org.mosaic.web.application.Application;
 import org.mosaic.web.handler.impl.RequestPlan;
 import org.mosaic.web.request.WebInvocation;
@@ -25,8 +25,8 @@ import org.mosaic.web.request.impl.WebInvocationImpl;
 final class RequestDispatcher extends HttpServlet
 {
     @Nonnull
-    @Component
-    private Module module;
+    @Service
+    private Server server;
 
     @Nonnull
     @Service
@@ -35,7 +35,7 @@ final class RequestDispatcher extends HttpServlet
     @Override
     protected void service( HttpServletRequest req, HttpServletResponse resp ) throws ServletException, IOException
     {
-        resp.setHeader( HttpHeaders.SERVER, "Mosaic Web Server/" + this.module.getContext().getServerVersion() );
+        resp.setHeader( HttpHeaders.SERVER, "Mosaic Web Server/" + this.server.getVersion() );
 
         Application application = findApplication( req );
         if( application == null )

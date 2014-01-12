@@ -8,9 +8,9 @@ import java.util.Objects;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.mosaic.util.properties.PropertyPlaceholderResolver;
 import org.mosaic.util.resource.PathEvent;
 import org.mosaic.util.resource.PathWatcher;
-import org.mosaic.util.properties.PropertyPlaceholderResolver;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -39,8 +39,8 @@ public final class PathWatcherManagerActivator implements BundleActivator
     @Override
     public void start( @Nonnull final BundleContext bundleContext ) throws Exception
     {
-        this.pathWatcherManager = new PathWatcherManager( Paths.get( bundleContext.getProperty( "mosaic.home" ) ) );
-        this.pathWatcherManager.open();
+        this.pathWatcherManager = new PathWatcherManager();
+        this.pathWatcherManager.open( bundleContext );
         this.pathWatchersTracker = new ServiceTracker<>( bundleContext, PathWatcher.class, new PathWatcherServiceTrackerCustomizer( bundleContext ) );
         this.pathWatchersTracker.open();
     }

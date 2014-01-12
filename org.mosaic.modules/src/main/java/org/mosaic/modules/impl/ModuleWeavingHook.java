@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
 import javassist.*;
@@ -63,18 +62,9 @@ final class ModuleWeavingHook implements WeavingHook
 
     ModuleWeavingHook( @Nonnull BundleContext bundleContext )
     {
-        this.bytecodeCache = new BytecodeCache( bundleContext );
-
+        this.bytecodeCache = new BytecodeCache();
         this.bundleId = bundleContext.getBundle().getBundleId();
-
-        String workDirLocation = bundleContext.getProperty( "mosaic.home.work" );
-        if( workDirLocation == null )
-        {
-            throw new IllegalStateException( "could not discover Mosaic work directory from bundle property 'mosaic.home.work'" );
-        }
-
-        Path workDir = Paths.get( workDirLocation );
-        this.weavingCacheDir = workDir.resolve( "weaving" );
+        this.weavingCacheDir = Activator.server().getWorkPath().resolve( "weaving" );
     }
 
     @Override

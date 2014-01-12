@@ -1,7 +1,5 @@
 package org.mosaic.modules.impl;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -9,9 +7,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.modules.Module;
-import org.mosaic.modules.ModuleContext;
 import org.mosaic.modules.ModuleManager;
-import org.mosaic.modules.Version;
+import org.mosaic.server.Version;
 import org.osgi.framework.*;
 
 import static org.osgi.framework.BundleEvent.*;
@@ -19,33 +16,10 @@ import static org.osgi.framework.BundleEvent.*;
 /**
  * @author arik
  */
-final class ModuleManagerImpl implements ModuleManager, ModuleContext
+final class ModuleManagerImpl implements ModuleManager
 {
     @Nonnull
     private final Map<Long, ModuleImpl> modules = new ConcurrentHashMap<>( 100 );
-
-    @Nullable
-    private Version serverVersion;
-
-    private boolean developmentMode;
-
-    @Nullable
-    private Path serverHome;
-
-    @Nullable
-    private Path serverAppsHome;
-
-    @Nullable
-    private Path serverEtcHome;
-
-    @Nullable
-    private Path serverLibHome;
-
-    @Nullable
-    private Path serverLogsHome;
-
-    @Nullable
-    private Path serverWorkHome;
 
     @Nullable
     @Override
@@ -115,100 +89,8 @@ final class ModuleManagerImpl implements ModuleManager, ModuleContext
         }
     }
 
-    @Nonnull
-    @Override
-    public Version getServerVersion()
-    {
-        if( this.serverVersion == null )
-        {
-            throw new IllegalStateException( "not initialized" );
-        }
-        return this.serverVersion;
-    }
-
-    @Override
-    public boolean isDevelopmentMode()
-    {
-        return this.developmentMode;
-    }
-
-    @Nonnull
-    @Override
-    public Path getServerHome()
-    {
-        if( this.serverHome == null )
-        {
-            throw new IllegalStateException( "not initialized" );
-        }
-        return this.serverHome;
-    }
-
-    @Nonnull
-    @Override
-    public Path getServerAppsHome()
-    {
-        if( this.serverAppsHome == null )
-        {
-            throw new IllegalStateException( "not initialized" );
-        }
-        return this.serverAppsHome;
-    }
-
-    @Nonnull
-    @Override
-    public Path getServerEtcHome()
-    {
-        if( this.serverEtcHome == null )
-        {
-            throw new IllegalStateException( "not initialized" );
-        }
-        return this.serverEtcHome;
-    }
-
-    @Nonnull
-    @Override
-    public Path getServerLibHome()
-    {
-        if( this.serverLibHome == null )
-        {
-            throw new IllegalStateException( "not initialized" );
-        }
-        return this.serverLibHome;
-    }
-
-    @Nonnull
-    @Override
-    public Path getServerLogsHome()
-    {
-        if( this.serverLogsHome == null )
-        {
-            throw new IllegalStateException( "not initialized" );
-        }
-        return this.serverLogsHome;
-    }
-
-    @Nonnull
-    @Override
-    public Path getServerWorkHome()
-    {
-        if( this.serverWorkHome == null )
-        {
-            throw new IllegalStateException( "not initialized" );
-        }
-        return this.serverWorkHome;
-    }
-
     void open( @Nonnull BundleContext bundleContext )
     {
-        this.serverVersion = new Version( bundleContext.getProperty( "mosaic.version" ) );
-        this.developmentMode = Boolean.parseBoolean( bundleContext.getProperty( "mosaic.devMode" ) );
-        this.serverHome = Paths.get( bundleContext.getProperty( "mosaic.home" ) );
-        this.serverAppsHome = Paths.get( bundleContext.getProperty( "mosaic.home.apps" ) );
-        this.serverEtcHome = Paths.get( bundleContext.getProperty( "mosaic.home.etc" ) );
-        this.serverLibHome = Paths.get( bundleContext.getProperty( "mosaic.home.lib" ) );
-        this.serverLogsHome = Paths.get( bundleContext.getProperty( "mosaic.home.logs" ) );
-        this.serverWorkHome = Paths.get( bundleContext.getProperty( "mosaic.home.work" ) );
-
         for( Bundle bundle : bundleContext.getBundles() )
         {
             switch( bundle.getState() )

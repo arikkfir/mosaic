@@ -14,9 +14,14 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.joda.time.DateTime;
+import org.mosaic.server.Server;
 import org.mosaic.util.collections.HashMapEx;
 import org.mosaic.util.collections.MapEx;
 import org.mosaic.util.resource.*;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
+import org.osgi.util.tracker.ServiceTracker;
+import org.osgi.util.tracker.ServiceTrackerCustomizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,19 +43,37 @@ final class PathWatcherManager
     @Nonnull
     private final Map<PathWatcher, WatcherAdapter> adapters = new HashMap<>();
 
-    @Nonnull
-    private final Path defaultRoot;
+    @Nullable
+    private ServiceTracker<Server, Path> defaultRootTracker;
 
     @Nullable
     private ScheduledExecutorService executorService;
 
-    PathWatcherManager( @Nonnull Path defaultRoot )
+    public synchronized void open( @Nonnull final BundleContext bundleContext )
     {
-        this.defaultRoot = defaultRoot;
-    }
+        this.defaultRootTracker = new ServiceTracker<>( bundleContext, Server.class, new ServiceTrackerCustomizer<Server, Path>()
+        {
+            @Override
+            public Path addingService( @Nonnull ServiceReference<Server> reference )
+            {
+                Server server = bundleContext.getService( reference );
+                return server != null ? server.getHome() : null;
+            }
 
-    public synchronized void open()
-    {
+            @Override
+            public void modifiedService( @Nonnull ServiceReference<Server> reference, @Nonnull Path service )
+            {
+                // no-op
+            }
+
+            @Override
+            public void removedService( @Nonnull ServiceReference<Server> reference, @Nonnull Path service )
+            {
+                // no-op
+            }
+        } );
+        this.defaultRootTracker.open();
+
         this.executorService = Executors.newSingleThreadScheduledExecutor(
                 new ThreadFactoryBuilder()
                         .setDaemon( true )
@@ -79,6 +102,13 @@ final class PathWatcherManager
             this.executorService.shutdown();
             this.executorService = null;
         }
+
+        ServiceTracker<Server, Path> tracker = this.defaultRootTracker;
+        if( tracker != null )
+        {
+            tracker.close();
+        }
+        this.defaultRootTracker = null;
     }
 
     public synchronized void addPathWatcher( @Nonnull Path location,
@@ -284,7 +314,22 @@ final class PathWatcherManager
         {
             if( !location.isAbsolute() )
             {
-                location = PathWatcherManager.this.defaultRoot.resolve( location );
+                if( defaultRootTracker != null )
+                {
+                    Path defaultRoot = defaultRootTracker.getService();
+                    if( defaultRoot != null )
+                    {
+                        location = defaultRoot.resolve( location );
+                    }
+                    else
+                    {
+                        throw new IllegalStateException( "could not find server home!" );
+                    }
+                }
+                else
+                {
+                    throw new IllegalStateException( "could not find server home!" );
+                }
             }
             this.location = location;
             this.pattern = pattern;

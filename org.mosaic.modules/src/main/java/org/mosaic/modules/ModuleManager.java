@@ -3,6 +3,7 @@ package org.mosaic.modules;
 import java.util.Collection;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.mosaic.server.Version;
 
 /**
  * @author arik

@@ -18,12 +18,11 @@ import static java.lang.reflect.Modifier.isStatic;
 /**
  * @author arik
  */
-@SuppressWarnings( "unchecked" )
+@SuppressWarnings("unchecked")
 final class TypeDescriptor extends Lifecycle implements org.mosaic.modules.TypeDescriptor
 {
     private static final Set<Class<?>> MODULE_TYPES = Sets.newHashSet( Module.class,
                                                                        ModuleTypes.class,
-                                                                       ModuleContext.class,
                                                                        ModuleResources.class,
                                                                        ModuleWiring.class );
 

@@ -15,8 +15,9 @@ import org.apache.sshd.server.auth.UserAuthPublicKey;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.mosaic.config.Configurable;
 import org.mosaic.modules.Component;
-import org.mosaic.modules.Module;
+import org.mosaic.modules.Service;
 import org.mosaic.security.Subject;
+import org.mosaic.server.Server;
 import org.mosaic.util.collections.MapEx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,11 +35,11 @@ final class SshServer
     @Nullable
     private org.apache.sshd.SshServer sshServer;
 
-    @Component
     @Nonnull
-    private Module module;
+    @Service
+    private Server server;
 
-    @Configurable( "shell" )
+    @Configurable("shell")
     void configure( @Nonnull final MapEx<String, String> cfg )
     {
         LOG.info( "SSH server configured - {}", this.sshServer != null ? "restarting" : "starting" );
@@ -81,7 +82,7 @@ final class SshServer
             stopSshServer( sshServer );
         }
 
-        Path etcDir = SshServer.this.module.getContext().getServerEtcHome();
+        Path etcDir = SshServer.this.server.getEtcPath();
         Path hostKeyFile = etcDir.resolve( "ssh" ).resolve( "host.key" );
 
         // create and start the SSH daemon server

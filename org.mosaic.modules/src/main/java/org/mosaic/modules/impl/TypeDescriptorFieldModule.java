@@ -3,7 +3,10 @@ package org.mosaic.modules.impl;
 import java.lang.reflect.Field;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.mosaic.modules.*;
+import org.mosaic.modules.Module;
+import org.mosaic.modules.ModuleResources;
+import org.mosaic.modules.ModuleTypes;
+import org.mosaic.modules.ModuleWiring;
 
 /**
  * @author arik
@@ -33,10 +36,6 @@ final class TypeDescriptorFieldModule extends TypeDescriptorField
         else if( this.field.getType().isAssignableFrom( ModuleTypes.class ) )
         {
             return this.typeDescriptor.getModule().getModuleTypes();
-        }
-        else if( this.field.getType().isAssignableFrom( ModuleContext.class ) )
-        {
-            return this.typeDescriptor.getModule().getContext();
         }
         else if( this.field.getType().isAssignableFrom( ModuleResources.class ) )
         {

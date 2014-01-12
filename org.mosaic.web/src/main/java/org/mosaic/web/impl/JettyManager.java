@@ -61,9 +61,9 @@ final class JettyManager
     @Nullable
     private Server server;
 
-    @Component
     @Nonnull
-    private Module module;
+    @Service
+    private org.mosaic.server.Server mosaicServer;
 
     @Nonnull
     @Component
@@ -72,7 +72,7 @@ final class JettyManager
     @Nullable
     private ContextHandlerCollection contextHandlerCollection;
 
-    @Configurable("web")
+    @Configurable( "web" )
     void configure( @Nonnull final MapEx<String, String> cfg )
     {
         LOG.info( "Web server configured - {}", this.server != null ? "restarting" : "starting" );
@@ -133,7 +133,7 @@ final class JettyManager
             ServletContextHandler contextHandler = new ServletContextHandler( ServletContextHandler.SESSIONS );
             contextHandler.setAllowNullPathInfo( false );
             contextHandler.setAttribute( Application.class.getName(), application );
-            contextHandler.setAttribute( "javax.servlet.context.tempdir", this.module.getContext().getServerWorkHome().resolve( "web" ).resolve( application.getId() ).resolve( "temp" ).toFile() );
+            contextHandler.setAttribute( "javax.servlet.context.tempdir", this.mosaicServer.getWorkPath().resolve( "web" ).resolve( application.getId() ).resolve( "temp" ).toFile() );
             contextHandler.setCompactPath( true );
             contextHandler.setDisplayName( application.getName() );
             contextHandler.setErrorHandler( new NoErrorPageErrorHandler() );

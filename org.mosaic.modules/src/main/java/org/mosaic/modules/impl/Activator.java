@@ -9,6 +9,7 @@ import org.mosaic.modules.ComponentDefinitionException;
 import org.mosaic.modules.MethodEndpoint;
 import org.mosaic.modules.ModuleManager;
 import org.mosaic.modules.ServiceTemplate;
+import org.mosaic.server.Server;
 import org.mosaic.util.osgi.FilterBuilder;
 import org.mosaic.util.pair.Pair;
 import org.mosaic.util.resource.PathEvent;
@@ -17,6 +18,7 @@ import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.hooks.weaving.WeavingHook;
+import org.osgi.util.tracker.ServiceTracker;
 
 import static org.mosaic.util.resource.PathEvent.*;
 
@@ -27,6 +29,9 @@ public final class Activator implements BundleActivator
 {
     @Nullable
     private static ModuleManagerImpl moduleManager;
+
+    @Nullable
+    private static ServiceTracker<Server, Server> serverTracker;
 
     @Nonnull
     public static ModuleManager getModuleManager()
@@ -39,6 +44,26 @@ public final class Activator implements BundleActivator
         else
         {
             return moduleManager;
+        }
+    }
+
+    @Nonnull
+    static Server server()
+    {
+        ServiceTracker<Server, Server> tracker = Activator.serverTracker;
+        if( tracker == null )
+        {
+            throw new IllegalStateException( "server tracker is not open" );
+        }
+
+        Server server = tracker.getService();
+        if( server == null )
+        {
+            throw new IllegalStateException( "server service is not available" );
+        }
+        else
+        {
+            return server;
         }
     }
 
@@ -99,6 +124,10 @@ public final class Activator implements BundleActivator
     @Override
     public void start( @Nonnull final BundleContext context ) throws Exception
     {
+        ServiceTracker<Server, Server> tracker = new ServiceTracker<>( context, Server.class, null );
+        tracker.open();
+        Activator.serverTracker = tracker;
+
         this.weavingHookServiceRegistration = context.registerService( WeavingHook.class, new ModuleWeavingHook( context ), null );
 
         moduleManager = new ModuleManagerImpl();
@@ -166,5 +195,12 @@ public final class Activator implements BundleActivator
             }
             this.moduleManagerServiceRegistration = null;
         }
+
+        ServiceTracker<Server, Server> tracker = Activator.serverTracker;
+        if( tracker != null )
+        {
+            tracker.close();
+        }
+        Activator.serverTracker = null;
     }
 }

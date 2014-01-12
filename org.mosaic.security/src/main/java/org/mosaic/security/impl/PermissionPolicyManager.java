@@ -14,12 +14,12 @@ import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import org.mosaic.modules.Component;
-import org.mosaic.modules.Module;
 import org.mosaic.modules.Service;
 import org.mosaic.pathwatchers.PathWatcher;
 import org.mosaic.security.AuthorizationException;
 import org.mosaic.security.Permission;
 import org.mosaic.security.Subject;
+import org.mosaic.server.Server;
 import org.mosaic.util.expression.ExpressionParser;
 import org.mosaic.util.xml.StrictErrorHandler;
 import org.mosaic.util.xml.XmlDocument;
@@ -46,8 +46,8 @@ final class PermissionPolicyManager
     private final Map<String, PermissionPolicyImpl> permissionPolicies = new ConcurrentHashMap<>();
 
     @Nonnull
-    @Component
-    private Module module;
+    @Service
+    private Server server;
 
     @Nonnull
     @Service
@@ -59,7 +59,7 @@ final class PermissionPolicyManager
 
     PermissionPolicyManager() throws IOException, SAXException
     {
-        Path schemaFile = this.module.getContext().getServerHome().resolve( "schemas/permission-policy-1.0.0.xsd" );
+        Path schemaFile = this.server.getHome().resolve( "schemas/permission-policy-1.0.0.xsd" );
         if( Files.notExists( schemaFile ) )
         {
             throw new IllegalStateException( "could not find permission policy schema at '" + schemaFile + "'" );
@@ -90,7 +90,7 @@ final class PermissionPolicyManager
         }
     }
 
-    @PathWatcher( value = "${mosaic.home.etc}/security/permission-policies/**/*.xml", events = { CREATED, MODIFIED } )
+    @PathWatcher(value = "${mosaic.home.etc}/security/permission-policies/**/*.xml", events = { CREATED, MODIFIED })
     void addPermissionPolicy( @Nonnull Path file ) throws IOException, SAXException, ParserConfigurationException
     {
         String fileName = file.getFileName().toString();
@@ -132,7 +132,7 @@ final class PermissionPolicyManager
         }
     }
 
-    @PathWatcher( value = "${mosaic.home.etc}/security/permission-policies/**/*.xml", events = DELETED )
+    @PathWatcher(value = "${mosaic.home.etc}/security/permission-policies/**/*.xml", events = DELETED)
     void removePermissionPolicy( @Nonnull Path file )
     {
         String fileName = file.getFileName().toString();

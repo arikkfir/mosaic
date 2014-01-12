@@ -3,6 +3,7 @@ package org.mosaic.modules;
 import java.nio.file.Path;
 import javax.annotation.Nonnull;
 import org.joda.time.DateTime;
+import org.mosaic.server.Version;
 import org.mosaic.util.collections.MapEx;
 
 /**
@@ -10,9 +11,6 @@ import org.mosaic.util.collections.MapEx;
  */
 public interface Module
 {
-    @Nonnull
-    ModuleContext getContext();
-
     long getId();
 
     @Nonnull

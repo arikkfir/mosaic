@@ -11,8 +11,8 @@ import org.apache.sshd.server.Environment;
 import org.mosaic.console.Console;
 import org.mosaic.console.spi.CommandCanceledException;
 import org.mosaic.console.spi.QuitSessionException;
-import org.mosaic.modules.Component;
-import org.mosaic.modules.Module;
+import org.mosaic.modules.Service;
+import org.mosaic.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,9 +32,9 @@ final class SessionCommand extends AbstractSshdCommand
         }
     }
 
-    @Component
     @Nonnull
-    private Module module;
+    @Service
+    private Server server;
 
     @Nullable
     private FileHistory history;
@@ -47,7 +47,7 @@ final class SessionCommand extends AbstractSshdCommand
     protected ConsoleReader createConsoleReader( @Nonnull Environment env ) throws IOException
     {
         // create history
-        Path etcDir = this.module.getContext().getServerEtcHome();
+        Path etcDir = this.server.getEtcPath();
         Path historyDir = etcDir.resolve( "ssh" ).resolve( "history" );
         this.history = new FileHistory( historyDir.resolve( getSession().getUsername() ).toFile() );
 

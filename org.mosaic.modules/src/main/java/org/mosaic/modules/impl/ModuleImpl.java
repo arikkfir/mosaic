@@ -8,6 +8,7 @@ import java.util.Hashtable;
 import javax.annotation.Nonnull;
 import org.joda.time.DateTime;
 import org.mosaic.modules.*;
+import org.mosaic.server.Version;
 import org.mosaic.util.collections.LinkedHashMapEx;
 import org.mosaic.util.collections.MapEx;
 import org.osgi.framework.Bundle;
@@ -69,13 +70,6 @@ final class ModuleImpl extends Lifecycle implements Module
         addChild( new ModuleResourcesImpl( this ) );
         addChild( new ModuleTypesImpl( this ) );
         addChild( new ModuleWiringImpl( this ) );
-    }
-
-    @Nonnull
-    @Override
-    public ModuleContext getContext()
-    {
-        return this.moduleManager;
     }
 
     @Override
