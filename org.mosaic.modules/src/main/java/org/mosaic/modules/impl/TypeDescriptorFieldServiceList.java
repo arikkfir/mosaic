@@ -1,15 +1,19 @@
 package org.mosaic.modules.impl;
 
+import com.google.common.base.Optional;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.util.*;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.mosaic.modules.*;
+import org.apache.commons.lang3.tuple.Pair;
+import org.mosaic.modules.ComponentDefinitionException;
+import org.mosaic.modules.Module;
+import org.mosaic.modules.Service;
+import org.mosaic.modules.ServiceReference;
 import org.mosaic.util.collections.HashMapEx;
 import org.mosaic.util.collections.MapEx;
 import org.mosaic.util.osgi.FilterBuilder;
-import org.mosaic.util.pair.Pair;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkUtil;
@@ -22,7 +26,7 @@ import org.osgi.util.tracker.ServiceTrackerCustomizer;
  */
 @SuppressWarnings("unchecked")
 final class TypeDescriptorFieldServiceList extends TypeDescriptorField
-        implements ServiceTrackerCustomizer, List, ModuleWiring.ServiceRequirement
+        implements ServiceTrackerCustomizer, List, Module.ServiceRequirement
 {
     @Nonnull
     private final Class<?> requiredServiceType;
@@ -371,7 +375,7 @@ final class TypeDescriptorFieldServiceList extends TypeDescriptorField
         @Override
         public Module getProvider()
         {
-            return Activator.getModuleManager().getModule( this.reference.getBundle().getBundleId() );
+            return Activator.getModuleManager().getModule( this.reference.getBundle().getBundleId() ).orNull();
         }
 
         @Nonnull
@@ -388,27 +392,11 @@ final class TypeDescriptorFieldServiceList extends TypeDescriptorField
             return properties;
         }
 
-        @Nullable
-        @Override
-        public Object get()
-        {
-            return TypeDescriptorFieldServiceList.this.serviceTracker.getService( this.reference );
-        }
-
         @Nonnull
         @Override
-        public Object require()
+        public Optional<?> service()
         {
-            Object service = get();
-            if( service != null )
-            {
-                return service;
-            }
-            else
-            {
-                String typeName = TypeDescriptorFieldServiceList.this.requiredServiceType.getName();
-                throw new IllegalStateException( "service of type '" + typeName + "' is not available" );
-            }
+            return Optional.fromNullable( TypeDescriptorFieldServiceList.this.serviceTracker.getService( this.reference ) );
         }
     }
 }

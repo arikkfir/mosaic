@@ -5,7 +5,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import javax.annotation.Nonnull;
 import org.mosaic.server.Server;
-import org.mosaic.server.Version;
+import org.mosaic.util.version.Version;
 import org.osgi.framework.BundleContext;
 
 /**
@@ -20,9 +20,6 @@ final class ServerImpl implements Server
 
     @Nonnull
     private final Path home;
-
-    @Nonnull
-    private final Path boot;
 
     @Nonnull
     private final Path apps;
@@ -44,7 +41,6 @@ final class ServerImpl implements Server
         this.version = new Version( bundleContext.getProperty( "mosaic.version" ) );
         this.developmentMode = Boolean.parseBoolean( bundleContext.getProperty( "mosaic.devMode" ) );
         this.home = Paths.get( bundleContext.getProperty( "mosaic.home" ) );
-        this.boot = Paths.get( bundleContext.getProperty( "mosaic.home.boot" ) );
         this.apps = Paths.get( bundleContext.getProperty( "mosaic.home.apps" ) );
         this.etc = Paths.get( bundleContext.getProperty( "mosaic.home.etc" ) );
         this.lib = Paths.get( bundleContext.getProperty( "mosaic.home.lib" ) );
@@ -70,13 +66,6 @@ final class ServerImpl implements Server
     public Path getHome()
     {
         return this.home;
-    }
-
-    @Nonnull
-    @Override
-    public Path getBootPath()
-    {
-        return this.boot;
     }
 
     @Nonnull

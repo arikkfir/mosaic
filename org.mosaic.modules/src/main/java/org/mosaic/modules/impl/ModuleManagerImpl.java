@@ -1,15 +1,17 @@
 package org.mosaic.modules.impl;
 
+import com.google.common.base.Optional;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import org.mosaic.modules.Module;
 import org.mosaic.modules.ModuleManager;
-import org.mosaic.server.Version;
+import org.mosaic.util.version.Version;
 import org.osgi.framework.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.osgi.framework.BundleEvent.*;
 
@@ -18,102 +20,94 @@ import static org.osgi.framework.BundleEvent.*;
  */
 final class ModuleManagerImpl implements ModuleManager
 {
+    private static final Logger LOG = LoggerFactory.getLogger( ModuleManagerImpl.class );
+
     @Nonnull
     private final Map<Long, ModuleImpl> modules = new ConcurrentHashMap<>( 100 );
 
-    @Nullable
+    @Nonnull
     @Override
-    public ModuleImpl getModule( long id )
+    public Optional<ModuleImpl> getModule( long id )
     {
-        return this.modules.get( id );
+        return Optional.fromNullable( this.modules.get( id ) );
     }
 
-    @Nullable
+    @Nonnull
     @Override
-    public ModuleImpl getModule( @Nonnull String name )
-    {
-        for( ModuleImpl module : this.modules.values() )
-        {
-            if( name.equals( module.getName() ) )
-            {
-                return module;
-            }
-        }
-        return null;
-    }
-
-    @Nullable
-    @Override
-    public ModuleImpl getModule( @Nonnull String name, @Nonnull Version version )
+    public Optional<ModuleImpl> getModule( @Nonnull String name, @Nonnull Version version )
     {
         for( ModuleImpl module : this.modules.values() )
         {
             if( name.equals( module.getName() ) && version.equals( module.getVersion() ) )
             {
-                return module;
+                return Optional.of( module );
             }
         }
-        return null;
+        return Optional.absent();
     }
 
     @Nonnull
     @Override
-    public Collection<? extends Module> getModules()
+    public Collection<ModuleImpl> getModules()
     {
         return Collections.unmodifiableCollection( this.modules.values() );
     }
 
-    @Nullable
+    @Nonnull
     @Override
-    public ModuleImpl getModuleFor( @Nonnull Object target )
+    public Optional<ModuleImpl> getModuleFor( @Nonnull Object source )
     {
-        if( target instanceof Long )
+        if( source instanceof Long )
         {
-            return getModule( ( Long ) target );
+            return getModule( ( Long ) source );
         }
-        else if( target instanceof Bundle )
+        else if( source instanceof Bundle )
         {
-            return getModule( ( ( Bundle ) target ).getBundleId() );
+            return getModule( ( ( Bundle ) source ).getBundleId() );
         }
-        else if( target instanceof BundleContext )
+        else if( source instanceof BundleContext )
         {
-            return getModule( ( ( BundleContext ) target ).getBundle().getBundleId() );
+            return getModule( ( ( BundleContext ) source ).getBundle().getBundleId() );
         }
-        else if( target instanceof Module )
+        else if( source instanceof Module )
         {
-            return ( ModuleImpl ) target;
+            return Optional.of( ( ModuleImpl ) source );
         }
         else
         {
-            return null;
+            return Optional.absent();
         }
     }
 
-    void open( @Nonnull BundleContext bundleContext )
+    void open( @Nonnull BundleContext bundleContext ) throws BundleException
     {
+        // synchronize our modules with existing OSGi state
         for( Bundle bundle : bundleContext.getBundles() )
         {
-            switch( bundle.getState() )
+            if( bundle.getBundleId() > 0 )
             {
-                case Bundle.INSTALLED:
-                    handleBundleEvent( new BundleEvent( BundleEvent.INSTALLED, bundle, bundleContext.getBundle() ) );
-                    break;
-                case Bundle.RESOLVED:
-                case Bundle.STOPPING:
-                    handleBundleEvent( new BundleEvent( BundleEvent.INSTALLED, bundle, bundleContext.getBundle() ) );
-                    handleBundleEvent( new BundleEvent( BundleEvent.RESOLVED, bundle, bundleContext.getBundle() ) );
-                    break;
-                case Bundle.STARTING:
-                    handleBundleEvent( new BundleEvent( BundleEvent.INSTALLED, bundle, bundleContext.getBundle() ) );
-                    handleBundleEvent( new BundleEvent( BundleEvent.RESOLVED, bundle, bundleContext.getBundle() ) );
-                    handleBundleEvent( new BundleEvent( BundleEvent.STARTING, bundle, bundleContext.getBundle() ) );
-                    break;
-                case Bundle.ACTIVE:
-                    handleBundleEvent( new BundleEvent( BundleEvent.INSTALLED, bundle, bundleContext.getBundle() ) );
-                    handleBundleEvent( new BundleEvent( BundleEvent.RESOLVED, bundle, bundleContext.getBundle() ) );
-                    handleBundleEvent( new BundleEvent( BundleEvent.STARTING, bundle, bundleContext.getBundle() ) );
-                    handleBundleEvent( new BundleEvent( BundleEvent.STARTED, bundle, bundleContext.getBundle() ) );
-                    break;
+                switch( bundle.getState() )
+                {
+                    case Bundle.INSTALLED:
+                        handleBundleEvent( new BundleEvent( BundleEvent.INSTALLED, bundle, bundleContext.getBundle() ) );
+                        break;
+                    case Bundle.RESOLVED:
+                    case Bundle.STOPPING:
+                        handleBundleEvent( new BundleEvent( BundleEvent.INSTALLED, bundle, bundleContext.getBundle() ) );
+                        handleBundleEvent( new BundleEvent( BundleEvent.RESOLVED, bundle, bundleContext.getBundle() ) );
+                        break;
+                    case Bundle.STARTING:
+                        handleBundleEvent( new BundleEvent( BundleEvent.INSTALLED, bundle, bundleContext.getBundle() ) );
+                        handleBundleEvent( new BundleEvent( BundleEvent.RESOLVED, bundle, bundleContext.getBundle() ) );
+                        handleBundleEvent( new BundleEvent( BundleEvent.STARTING, bundle, bundleContext.getBundle() ) );
+                        break;
+                    case Bundle.ACTIVE:
+                        handleBundleEvent( new BundleEvent( BundleEvent.INSTALLED, bundle, bundleContext.getBundle() ) );
+                        handleBundleEvent( new BundleEvent( BundleEvent.RESOLVED, bundle, bundleContext.getBundle() ) );
+                        handleBundleEvent( new BundleEvent( BundleEvent.STARTING, bundle, bundleContext.getBundle() ) );
+                        handleBundleEvent( new BundleEvent( BundleEvent.STARTED, bundle, bundleContext.getBundle() ) );
+                        break;
+                }
             }
         }
 
@@ -126,6 +120,23 @@ final class ModuleManagerImpl implements ModuleManager
                 handleBundleEvent( event );
             }
         } );
+
+        // start all bundles
+        for( Bundle bundle : bundleContext.getBundles() )
+        {
+            if( bundle.getState() == Bundle.INSTALLED || bundle.getState() == Bundle.RESOLVED )
+            {
+                try
+                {
+                    bundle.start();
+                }
+                catch( BundleException e )
+                {
+                    LOG.error( "Could not start {}@{}[{}]: {}",
+                               bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId(), e.getMessage(), e );
+                }
+            }
+        }
     }
 
     void close( @Nonnull BundleContext bundleContext )
@@ -148,49 +159,49 @@ final class ModuleManagerImpl implements ModuleManager
     private synchronized void handleBundleEvent( @Nonnull BundleEvent bundleEvent )
     {
         Bundle bundle = bundleEvent.getBundle();
-        ModuleImpl module = getModule( bundle.getBundleId() );
-        if( module == null )
+        Optional<ModuleImpl> module = getModule( bundle.getBundleId() );
+        if( !module.isPresent() )
         {
-            module = new ModuleImpl( this, bundle, bundle.getBundleId() <= bundleEvent.getOrigin().getBundleId() );
-            this.modules.put( bundle.getBundleId(), module );
+            module = Optional.of( new ModuleImpl( this, bundle ) );
+            this.modules.put( bundle.getBundleId(), module.get() );
         }
 
         switch( bundleEvent.getType() )
         {
             case INSTALLED:
-                module.onBundleInstalled();
+                module.get().onBundleInstalled();
                 break;
 
             case RESOLVED:
-                module.onBundleResolved();
+                module.get().onBundleResolved();
                 break;
 
             case STARTING:
-                module.onBundleStarting();
+                module.get().onBundleStarting();
                 break;
 
             case STARTED:
-                module.onBundleStarted();
+                module.get().onBundleStarted();
                 break;
 
             case STOPPING:
-                module.onBundleStopping();
+                module.get().onBundleStopping();
                 break;
 
             case STOPPED:
-                module.onBundleStopped();
+                module.get().onBundleStopped();
                 break;
 
             case UPDATED:
-                module.onBundleUpdated();
+                module.get().onBundleUpdated();
                 break;
 
             case UNRESOLVED:
-                module.onBundleUnresolved();
+                module.get().onBundleUnresolved();
                 break;
 
             case UNINSTALLED:
-                module.onBundleUninstalled();
+                module.get().onBundleUninstalled();
                 break;
         }
     }

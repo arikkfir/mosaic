@@ -34,9 +34,7 @@ class TypeDescriptorFieldComponent extends TypeDescriptorField
     {
         // TODO: we can cache @Component(s) list, it won't change
 
-        ModuleTypesImpl moduleTypes = this.typeDescriptor.getModule().getModuleTypes();
-        List<TypeDescriptor> typeDescriptors = moduleTypes.getTypeDescriptors( getFieldType() );
-
+        List<TypeDescriptor> typeDescriptors = typeDescriptor.getModule().getTypeDescriptors( getFieldType() );
         List<Object> components = null;
         for( TypeDescriptor typeDescriptor : typeDescriptors )
         {

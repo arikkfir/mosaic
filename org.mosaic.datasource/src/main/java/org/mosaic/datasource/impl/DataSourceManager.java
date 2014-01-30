@@ -11,13 +11,13 @@ import javax.annotation.Nonnull;
 import javax.annotation.PreDestroy;
 import org.mosaic.modules.Component;
 import org.mosaic.modules.Module;
-import org.mosaic.pathwatchers.PathWatcher;
+import org.mosaic.pathwatchers.OnPathCreated;
+import org.mosaic.pathwatchers.OnPathDeleted;
+import org.mosaic.pathwatchers.OnPathModified;
 import org.mosaic.util.collections.HashMapEx;
 import org.mosaic.util.collections.MapEx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.mosaic.util.resource.PathEvent.*;
 
 /**
  * @author arik
@@ -40,7 +40,8 @@ final class DataSourceManager
     @Component
     private Module module;
 
-    @PathWatcher(value = DATASOURCE_FILES, events = { CREATED, MODIFIED })
+    @OnPathCreated( DATASOURCE_FILES )
+    @OnPathModified(DATASOURCE_FILES)
     synchronized void addDataSource( @Nonnull Path file )
     {
         MapEx<String, String> cfg = new HashMapEx<>( 20 );
@@ -71,7 +72,7 @@ final class DataSourceManager
         dataSource.configure( cfg );
     }
 
-    @PathWatcher(value = DATASOURCE_FILES, events = DELETED)
+    @OnPathDeleted(DATASOURCE_FILES)
     synchronized void removeDataSource( @Nonnull Path file )
     {
         String fileName = file.getFileName().toString();

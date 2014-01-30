@@ -21,13 +21,26 @@
                 <configuration>
                     <instructions>
                         <Embed-Dependency>
-                            org.springframework.core
+                            org.springframework.core,
+                            jboss-logging,
+                            validation-api,
+                            hibernate-validator
                         </Embed-Dependency>
+                        <_exportcontents>
+                            !*impl*,
+                            !*internal*,
+                            javax.validation*,
+                            org.hibernate*,
+                            org.mosaic.validation*
+                        </_exportcontents>
                         <Import-Package>
+                            !javax.persistence*,
                             !joptsimple*,
                             !org.apache.tools.ant*,
                             !org.aspectj.bridge*,
                             !org.aspectj.weaver*,
+                            !org.jboss*,
+                            !org.jsoup*,
                             !org.springframework*,
                             *
                         </Import-Package>
@@ -40,42 +53,42 @@
     <dependencies>
         <dependency>
             <groupId>org.mosaic</groupId>
-            <artifactId>org.mosaic.util</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.mosaic</groupId>
-            <artifactId>org.mosaic.modules</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.jsr305</artifactId>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.event</artifactId>
-            <optional>true</optional>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mosaic</groupId>
+            <artifactId>org.mosaic.modules</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mosaic.utils</groupId>
+            <artifactId>org.mosaic.utils.collections</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>javax.validation</groupId>
             <artifactId>validation-api</artifactId>
-            <optional>true</optional>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-validator</artifactId>
-            <optional>true</optional>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>org.springframework.core</artifactId>
-            <optional>true</optional>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>biz.aQute.bnd</groupId>
             <artifactId>bndlib</artifactId>
-            <optional>true</optional>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 

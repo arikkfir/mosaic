@@ -1,5 +1,6 @@
 package org.mosaic.datasource.impl;
 
+import com.google.common.base.Optional;
 import com.mchange.v2.c3p0.C3P0ProxyConnection;
 import java.sql.Connection;
 import javax.annotation.Nonnull;
@@ -116,12 +117,12 @@ public class TransactionManagerImpl implements TransactionManager
                     return;
                 }
 
-                Connection connection = this.attributes.get( ConfigurableDataSource.TX_CONNECTION_KEY, Connection.class );
-                if( connection != null )
+                Optional<Connection> conHolder = this.attributes.find( ConfigurableDataSource.TX_CONNECTION_KEY, Connection.class );
+                if( conHolder.isPresent() )
                 {
                     try
                     {
-                        connection.commit();
+                        conHolder.get().commit();
                     }
                     catch( Exception e )
                     {
@@ -144,16 +145,16 @@ public class TransactionManagerImpl implements TransactionManager
         {
             if( this.parent == null )
             {
-                Connection connection = this.attributes.get( ConfigurableDataSource.TX_CONNECTION_KEY, Connection.class );
-                if( connection != null )
+                Optional<Connection> conHolder = this.attributes.find( ConfigurableDataSource.TX_CONNECTION_KEY, Connection.class );
+                if( conHolder.isPresent() )
                 {
                     try
                     {
-                        connection.rollback();
+                        conHolder.get().rollback();
                     }
                     catch( Exception e )
                     {
-                        killConnection( connection );
+                        killConnection( conHolder.get() );
                         throw new TransactionRollbackException( "could not rollback '" + this.name + "', connection possibly killed. Message was: " + e.getMessage(), e );
                     }
                 }
@@ -165,16 +166,16 @@ public class TransactionManagerImpl implements TransactionManager
         {
             if( this.parent == null )
             {
-                Connection connection = this.attributes.get( ConfigurableDataSource.TX_CONNECTION_KEY, Connection.class );
-                if( connection != null )
+                Optional<Connection> conHolder = this.attributes.find( ConfigurableDataSource.TX_CONNECTION_KEY, Connection.class );
+                if( conHolder.isPresent() )
                 {
                     try
                     {
-                        connection.close();
+                        conHolder.get().close();
                     }
                     catch( Exception e )
                     {
-                        killConnection( connection );
+                        killConnection( conHolder.get() );
                         LOG.error( "Could not close transaction '{}', connection possibly killed. Message was: {}", e.getMessage(), e );
                     }
                 }

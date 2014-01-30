@@ -2,7 +2,8 @@ package org.mosaic.datasource.impl;
 
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
-import java.net.URL;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -39,17 +40,17 @@ final class JdbcDriverRegistrar
     }
 
     @EventListener
-    synchronized void handleModuleEvent( @Nonnull ModuleEvent event )
+    synchronized void handleModuleEvent( @Nonnull ModuleEvent event ) throws IOException
     {
         if( event.getEventType() == ModuleEventType.ACTIVATED )
         {
-            for( URL url : event.getModule().getModuleResources().findResources( "**/*.class" ) )
+            for( Path url : event.getModule().findResources( "**/*.class" ) )
             {
-                String className = url.getPath().replace( "/", "." );
+                String className = url.toString().replace( "/", "." );
                 className = className.substring( 1, className.length() - ".class".length() );
                 try
                 {
-                    Class<?> candidate = event.getModule().getModuleTypes().loadClass( className );
+                    Class<?> candidate = event.getModule().getClassLoader().loadClass( className );
                     if( Driver.class.isAssignableFrom( candidate ) )
                     {
                         this.drivers.put( event.getModule().getId(),

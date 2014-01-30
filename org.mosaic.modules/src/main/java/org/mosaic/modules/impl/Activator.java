@@ -1,26 +1,25 @@
 package org.mosaic.modules.impl;
 
+import com.google.common.base.Optional;
 import java.lang.reflect.ParameterizedType;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.apache.commons.lang3.tuple.Pair;
 import org.mosaic.modules.ComponentDefinitionException;
 import org.mosaic.modules.MethodEndpoint;
 import org.mosaic.modules.ModuleManager;
 import org.mosaic.modules.ServiceTemplate;
-import org.mosaic.server.Server;
+import org.mosaic.util.osgi.BundleUtils;
 import org.mosaic.util.osgi.FilterBuilder;
-import org.mosaic.util.pair.Pair;
-import org.mosaic.util.resource.PathEvent;
 import org.mosaic.util.resource.PathWatcher;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.hooks.weaving.WeavingHook;
-import org.osgi.util.tracker.ServiceTracker;
-
-import static org.mosaic.util.resource.PathEvent.*;
 
 /**
  * @author arik
@@ -29,9 +28,6 @@ public final class Activator implements BundleActivator
 {
     @Nullable
     private static ModuleManagerImpl moduleManager;
-
-    @Nullable
-    private static ServiceTracker<Server, Server> serverTracker;
 
     @Nonnull
     public static ModuleManager getModuleManager()
@@ -48,23 +44,15 @@ public final class Activator implements BundleActivator
     }
 
     @Nonnull
-    static Server server()
+    static Path getWorkPath()
     {
-        ServiceTracker<Server, Server> tracker = Activator.serverTracker;
-        if( tracker == null )
+        Optional<BundleContext> bcHolder = BundleUtils.bundleContext( Activator.class );
+        String workPath = bcHolder.get().getProperty( "mosaic.home.work" );
+        if( workPath == null )
         {
-            throw new IllegalStateException( "server tracker is not open" );
+            throw new IllegalStateException( "bundle property 'mosaic.home.work' is missing" );
         }
-
-        Server server = tracker.getService();
-        if( server == null )
-        {
-            throw new IllegalStateException( "server service is not available" );
-        }
-        else
-        {
-            return server;
-        }
+        return Paths.get( workPath );
     }
 
     @Nonnull
@@ -124,10 +112,6 @@ public final class Activator implements BundleActivator
     @Override
     public void start( @Nonnull final BundleContext context ) throws Exception
     {
-        ServiceTracker<Server, Server> tracker = new ServiceTracker<>( context, Server.class, null );
-        tracker.open();
-        Activator.serverTracker = tracker;
-
         this.weavingHookServiceRegistration = context.registerService( WeavingHook.class, new ModuleWeavingHook( context ), null );
 
         moduleManager = new ModuleManagerImpl();
@@ -141,7 +125,6 @@ public final class Activator implements BundleActivator
             {
                 Dictionary<String, Object> dict = new Hashtable<>();
                 dict.put( "location", "${mosaic.home.lib}" );
-                dict.put( "events", new PathEvent[] { CREATED, MODIFIED, DELETED, NOT_MODIFIED, SCAN_FINISHED } );
                 Activator.this.libWatcherServiceRegistration = context.registerService( PathWatcher.class, new ServerLibWatcher(), dict );
             }
         }, "ModulesStarter" ).start();
@@ -195,12 +178,5 @@ public final class Activator implements BundleActivator
             }
             this.moduleManagerServiceRegistration = null;
         }
-
-        ServiceTracker<Server, Server> tracker = Activator.serverTracker;
-        if( tracker != null )
-        {
-            tracker.close();
-        }
-        Activator.serverTracker = null;
     }
 }

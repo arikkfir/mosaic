@@ -1,14 +1,12 @@
 package org.mosaic.modules.impl;
 
-import com.google.common.reflect.TypeToken;
 import java.lang.reflect.Field;
 import java.util.LinkedList;
 import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.modules.ComponentDefinitionException;
-
-import static org.mosaic.util.reflection.TypeTokens.LIST_GET_GENERIC_TYPE;
+import org.mosaic.util.reflection.TypeTokens;
 
 /**
  * @author arik
@@ -21,7 +19,7 @@ class TypeDescriptorFieldComponentList extends TypeDescriptorField
     TypeDescriptorFieldComponentList( @Nonnull TypeDescriptor typeDescriptor, @Nonnull Field field )
     {
         super( typeDescriptor, field );
-        this.listItemType = TypeToken.of( this.field.getGenericType() ).resolveType( LIST_GET_GENERIC_TYPE ).getRawType();
+        this.listItemType = TypeTokens.ofList( this.field.getGenericType() ).getRawType();
     }
 
     @Nullable
@@ -43,8 +41,7 @@ class TypeDescriptorFieldComponentList extends TypeDescriptorField
     {
         // TODO: we can cache @Component(s) list, it won't change
 
-        ModuleTypesImpl moduleTypes = this.typeDescriptor.getModule().getModuleTypes();
-        List<TypeDescriptor> typeDescriptors = moduleTypes.getTypeDescriptors( this.listItemType );
+        List<TypeDescriptor> typeDescriptors = this.typeDescriptor.getModule().getTypeDescriptors( this.listItemType );
 
         List<Object> components = null;
         for( TypeDescriptor typeDescriptor : typeDescriptors )

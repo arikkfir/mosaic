@@ -1,5 +1,6 @@
 package org.mosaic.modules.impl;
 
+import com.google.common.collect.Sets;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
@@ -10,12 +11,12 @@ import javassist.*;
 import javassist.bytecode.AccessFlag;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.apache.commons.lang3.tuple.Pair;
 import org.mosaic.modules.Component;
 import org.mosaic.modules.Service;
 import org.mosaic.modules.spi.MethodCache;
 import org.mosaic.modules.spi.MethodInterceptor;
 import org.mosaic.modules.spi.ModulesSpi;
-import org.mosaic.util.pair.Pair;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.hooks.weaving.WeavingException;
@@ -34,6 +35,21 @@ import static javassist.bytecode.AccessFlag.SYNTHETIC;
  */
 final class ModuleWeavingHook implements WeavingHook
 {
+    @Nonnull
+    private static final Set<String> EXCLUDED_BUNDLES = Collections.unmodifiableSet( Sets.newHashSet(
+            "com.google.guava",
+            "org.apache.commons.lang3",
+            "org.mosaic.utils.base",
+            "org.mosaic.utils.collections",
+            "org.mosaic.utils.conversion",
+            "org.mosaic.utils.expression",
+            "org.mosaic.utils.method",
+            "org.mosaic.utils.osgi",
+            "org.mosaic.utils.reflection",
+            "org.mosaic.utils.resource",
+            "org.mosaic.utils.xml"
+    ) );
+
     static class InterceptedMethodInfo
     {
         final long id;
@@ -64,14 +80,14 @@ final class ModuleWeavingHook implements WeavingHook
     {
         this.bytecodeCache = new BytecodeCache();
         this.bundleId = bundleContext.getBundle().getBundleId();
-        this.weavingCacheDir = Activator.server().getWorkPath().resolve( "weaving" );
+        this.weavingCacheDir = Activator.getWorkPath().resolve( "weaving" );
     }
 
     @Override
     public void weave( @Nonnull WovenClass wovenClass )
     {
         Bundle bundle = wovenClass.getBundleWiring().getBundle();
-        if( bundle.getBundleId() <= this.bundleId )
+        if( bundle.getBundleId() == this.bundleId || EXCLUDED_BUNDLES.contains( bundle.getSymbolicName().toLowerCase() ) )
         {
             return;
         }
@@ -262,6 +278,10 @@ final class ModuleWeavingHook implements WeavingHook
                 }
             }
             return interceptedMethodInfos == null ? Collections.<InterceptedMethodInfo>emptyList() : interceptedMethodInfos;
+        }
+        catch( NotFoundException e )
+        {
+            return Collections.emptyList();
         }
         catch( Throwable e )
         {

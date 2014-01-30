@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.mosaic.util.pair.Pair;
-import org.mosaic.util.text.CharStream;
+import org.apache.commons.lang3.tuple.Pair;
+import org.mosaic.util.io.CharStream;
 
 /**
  * @author arik
@@ -127,11 +127,11 @@ final class ParsedCommandLine
                     {
                         if( c == '"' || c == '\'' )
                         {
-                            this.options.add( Pair.<String, String>of( optionName, stream.readUntil( c ) ) );
+                            this.options.add( Pair.of( optionName, stream.readUntil( c ) ) );
                         }
                         else
                         {
-                            this.options.add( Pair.<String, String>of( optionName, c + stream.readUntil( ' ' ) ) );
+                            this.options.add( Pair.of( optionName, c + stream.readUntil( ' ' ) ) );
                         }
                     }
 

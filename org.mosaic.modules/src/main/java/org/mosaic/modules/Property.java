@@ -1,7 +1,7 @@
 package org.mosaic.modules;
 
 import javax.annotation.Nonnull;
-import org.mosaic.util.pair.Pair;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * @author arik
@@ -14,8 +14,33 @@ public final class Property extends Pair<String, Object>
         return new Property( name, value );
     }
 
-    private Property( @Nonnull String left, @Nonnull Object right )
+    @Nonnull
+    private final String name;
+
+    @Nonnull
+    private final Object value;
+
+    private Property( @Nonnull String name, @Nonnull Object value )
     {
-        super( left, right );
+        this.name = name;
+        this.value = value;
+    }
+
+    @Override
+    public String getLeft()
+    {
+        return this.name;
+    }
+
+    @Override
+    public Object getRight()
+    {
+        return this.value;
+    }
+
+    @Override
+    public Object setValue( Object value )
+    {
+        throw new UnsupportedOperationException();
     }
 }

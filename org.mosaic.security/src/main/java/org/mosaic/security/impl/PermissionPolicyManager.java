@@ -1,5 +1,6 @@
 package org.mosaic.security.impl;
 
+import com.google.common.base.Optional;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -15,12 +16,16 @@ import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import org.mosaic.modules.Component;
 import org.mosaic.modules.Service;
-import org.mosaic.pathwatchers.PathWatcher;
+import org.mosaic.pathwatchers.OnPathCreated;
+import org.mosaic.pathwatchers.OnPathDeleted;
+import org.mosaic.pathwatchers.OnPathModified;
 import org.mosaic.security.AuthorizationException;
 import org.mosaic.security.Permission;
 import org.mosaic.security.Subject;
 import org.mosaic.server.Server;
+import org.mosaic.util.expression.Expression;
 import org.mosaic.util.expression.ExpressionParser;
+import org.mosaic.util.reflection.TypeTokens;
 import org.mosaic.util.xml.StrictErrorHandler;
 import org.mosaic.util.xml.XmlDocument;
 import org.mosaic.util.xml.XmlElement;
@@ -29,8 +34,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
-import static org.mosaic.util.resource.PathEvent.*;
-
 /**
  * @author arik
  */
@@ -38,6 +41,8 @@ import static org.mosaic.util.resource.PathEvent.*;
 final class PermissionPolicyManager
 {
     private static final Logger LOG = LoggerFactory.getLogger( PermissionPolicyManager.class );
+
+    private static final String PRM_POLS_PATH = "${mosaic.home.etc}/security/permission-policies/**/*.xml";
 
     @Nonnull
     private final Schema permissionPolicySchema;
@@ -90,7 +95,8 @@ final class PermissionPolicyManager
         }
     }
 
-    @PathWatcher(value = "${mosaic.home.etc}/security/permission-policies/**/*.xml", events = { CREATED, MODIFIED })
+    @OnPathCreated( PRM_POLS_PATH )
+    @OnPathModified( PRM_POLS_PATH )
     void addPermissionPolicy( @Nonnull Path file ) throws IOException, SAXException, ParserConfigurationException
     {
         String fileName = file.getFileName().toString();
@@ -100,23 +106,24 @@ final class PermissionPolicyManager
 
         PermissionPolicyImpl policy = new PermissionPolicyImpl();
 
-        XmlElement rolesElement = doc.getRoot().getFirstChildElement( "roles" );
-        if( rolesElement != null )
+        Optional<XmlElement> rolesHolder = doc.getRoot().getFirstChildElement( "roles" );
+        if( rolesHolder.isPresent() )
         {
-            for( XmlElement roleElement : rolesElement.getChildElements( "role" ) )
+            for( XmlElement roleElement : rolesHolder.get().getChildElements( "role" ) )
             {
                 policy.addRole( new RoleImpl( roleElement ) );
             }
         }
 
-        XmlElement rulesElement = doc.getRoot().getFirstChildElement( "rules" );
-        if( rulesElement != null )
+        Optional<XmlElement> rulesHolder = doc.getRoot().getFirstChildElement( "rules" );
+        if( rulesHolder.isPresent() )
         {
-            for( XmlElement grantElement : rulesElement.getChildElements( "test-if" ) )
+            for( XmlElement grantElement : rulesHolder.get().getChildElements( "test-if" ) )
             {
-                String test = grantElement.requireAttribute( "user" );
-                Permission grant = Permission.get( grantElement.requireAttribute( "then-grant" ) );
-                policy.addGrant( new GrantRule( this.expressionParser.parseExpression( test, Boolean.class ), grant ) );
+                String test = grantElement.getAttribute( "user" ).get();
+                Permission grant = Permission.get( grantElement.getAttribute( "then-grant" ).get() );
+                Expression<Boolean> expr = this.expressionParser.parseExpression( test, TypeTokens.of( Boolean.class ) );
+                policy.addGrant( new GrantRule( expr, grant ) );
             }
         }
 
@@ -132,7 +139,7 @@ final class PermissionPolicyManager
         }
     }
 
-    @PathWatcher(value = "${mosaic.home.etc}/security/permission-policies/**/*.xml", events = DELETED)
+    @OnPathDeleted( PRM_POLS_PATH )
     void removePermissionPolicy( @Nonnull Path file )
     {
         String fileName = file.getFileName().toString();

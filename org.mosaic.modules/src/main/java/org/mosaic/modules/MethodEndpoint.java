@@ -4,8 +4,8 @@ import java.lang.annotation.Annotation;
 import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.mosaic.util.reflection.MethodHandle;
-import org.mosaic.util.reflection.ParameterResolver;
+import org.mosaic.util.method.MethodHandle;
+import org.mosaic.util.method.ParameterResolver;
 
 /**
  * @author arik

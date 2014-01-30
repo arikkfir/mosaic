@@ -17,10 +17,10 @@ import org.mosaic.dao.extract.ListResultSetExtractor;
 import org.mosaic.dao.extract.ResultSetExtractor;
 import org.mosaic.modules.Service;
 import org.mosaic.util.conversion.ConversionService;
-import org.mosaic.util.reflection.MethodHandle;
-import org.mosaic.util.reflection.MethodParameter;
+import org.mosaic.util.io.CharStream;
+import org.mosaic.util.method.MethodHandle;
+import org.mosaic.util.method.MethodParameter;
 import org.mosaic.util.reflection.TypeTokens;
-import org.mosaic.util.text.CharStream;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -54,7 +54,7 @@ final class QueryAction extends Action
             parametersByName.put( methodParameter.getName(), methodParameter );
         }
 
-        Query ann = getMethodHandle().requireAnnotation( Query.class );
+        Query ann = getMethodHandle().getAnnotation( Query.class ).get();
 
         // parse named parameters
         StringBuilder sql = new StringBuilder( ann.value().length() );
@@ -111,7 +111,7 @@ final class QueryAction extends Action
         Class<?> rawReturnType = returnType.getRawType();
         if( rawReturnType.equals( List.class ) )
         {
-            TypeToken<?> itemType = returnType.resolveType( TypeTokens.LIST_GET_GENERIC_TYPE );
+            TypeToken<?> itemType = TypeTokens.ofList( rawReturnType );
             if( resultSetExtractorParameter == null )
             {
                 this.resultSetExtractor = new ListResultSetExtractor<>( createResultSetExtractorFor( itemType ) );

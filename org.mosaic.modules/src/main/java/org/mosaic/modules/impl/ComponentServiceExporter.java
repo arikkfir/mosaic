@@ -19,7 +19,7 @@ import static java.util.Collections.unmodifiableMap;
 /**
  * @author arik
  */
-@SuppressWarnings( "unchecked" )
+@SuppressWarnings("unchecked")
 final class ComponentServiceExporter extends Lifecycle implements ServiceCapabilityProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger( ComponentServiceExporter.class );
@@ -51,9 +51,9 @@ final class ComponentServiceExporter extends Lifecycle implements ServiceCapabil
 
     @Nonnull
     @Override
-    public List<ModuleWiring.ServiceCapability> getServiceCapabilities()
+    public List<Module.ServiceCapability> getServiceCapabilities()
     {
-        List<ModuleWiring.ServiceCapability> capabilities = new LinkedList<>();
+        List<Module.ServiceCapability> capabilities = new LinkedList<>();
         if( this.serviceRegistrations != null )
         {
             for( ServiceRegistration<?> registration : this.serviceRegistrations )
@@ -161,7 +161,7 @@ final class ComponentServiceExporter extends Lifecycle implements ServiceCapabil
         return unmodifiableMap( properties );
     }
 
-    private class ServiceCapabilityImpl implements ModuleWiring.ServiceCapability
+    private class ServiceCapabilityImpl implements Module.ServiceCapability
     {
         @Nonnull
         private final ServiceRegistration registration;
@@ -204,7 +204,7 @@ final class ComponentServiceExporter extends Lifecycle implements ServiceCapabil
                 ModuleImpl module = ComponentServiceExporter.this.component.getModule();
                 try
                 {
-                    return module.getModuleResources().loadClass( objectClass[ 0 ] );
+                    return module.getClassLoader().loadClass( objectClass[ 0 ] );
                 }
                 catch( Throwable e )
                 {
@@ -244,7 +244,7 @@ final class ComponentServiceExporter extends Lifecycle implements ServiceCapabil
                     List<Module> consumers = new LinkedList<>();
                     for( Bundle bundle : usingBundles )
                     {
-                        consumers.add( Activator.getModuleManager().getModule( bundle.getBundleId() ) );
+                        consumers.add( Activator.getModuleManager().getModule( bundle.getBundleId() ).get() );
                     }
                     return consumers;
                 }

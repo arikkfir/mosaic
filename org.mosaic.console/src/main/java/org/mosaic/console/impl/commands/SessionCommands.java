@@ -36,7 +36,7 @@ final class SessionCommands
             @SuppressWarnings( "unchecked" )
             TablePrinter<CommandManager.CommandDescriptor> commands = new TablePrinter<>(
                     console,
-                    new SimpleColumn<CommandManager.CommandDescriptor>( "Names" )
+                    new SimpleColumn<CommandManager.CommandDescriptor>( "Names", 15 )
                     {
                         @Nullable
                         @Override

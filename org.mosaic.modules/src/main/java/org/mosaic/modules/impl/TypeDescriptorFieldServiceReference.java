@@ -1,5 +1,6 @@
 package org.mosaic.modules.impl;
 
+import com.google.common.base.Optional;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
@@ -7,11 +8,14 @@ import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.mosaic.modules.*;
+import org.apache.commons.lang3.tuple.Pair;
+import org.mosaic.modules.ComponentDefinitionException;
+import org.mosaic.modules.Module;
+import org.mosaic.modules.Service;
+import org.mosaic.modules.ServiceReference;
 import org.mosaic.util.collections.HashMapEx;
 import org.mosaic.util.collections.MapEx;
 import org.mosaic.util.osgi.FilterBuilder;
-import org.mosaic.util.pair.Pair;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkUtil;
@@ -21,9 +25,9 @@ import org.osgi.util.tracker.ServiceTracker;
 /**
  * @author arik
  */
-@SuppressWarnings("unchecked")
+@SuppressWarnings( "unchecked" )
 final class TypeDescriptorFieldServiceReference extends TypeDescriptorField
-        implements ServiceReference, ModuleWiring.ServiceRequirement
+        implements ServiceReference, Module.ServiceRequirement
 {
     @Nonnull
     private final Class serviceType;
@@ -117,7 +121,7 @@ final class TypeDescriptorFieldServiceReference extends TypeDescriptorField
     public Module getProvider()
     {
         org.osgi.framework.ServiceReference ref = this.serviceTracker.getServiceReference();
-        return ref != null ? Activator.getModuleManager().getModule( ref.getBundle().getBundleId() ) : null;
+        return ref != null ? Activator.getModuleManager().getModule( ref.getBundle().getBundleId() ).orNull() : null;
     }
 
     @Nonnull
@@ -135,26 +139,11 @@ final class TypeDescriptorFieldServiceReference extends TypeDescriptorField
         return properties;
     }
 
-    @Nullable
-    @Override
-    public Object get()
-    {
-        return this.serviceTracker.getService();
-    }
-
     @Nonnull
     @Override
-    public Object require()
+    public Optional<?> service()
     {
-        Object service = get();
-        if( service != null )
-        {
-            return service;
-        }
-        else
-        {
-            throw new IllegalStateException( "service of type '" + this.serviceType.getName() + "' is not available" );
-        }
+        return Optional.fromNullable( this.serviceTracker.getService() );
     }
 
     @Nonnull

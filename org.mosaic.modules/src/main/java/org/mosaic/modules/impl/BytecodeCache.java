@@ -11,7 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.mosaic.util.pair.Pair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.hooks.weaving.WeavingException;
 
@@ -65,7 +65,7 @@ final class BytecodeCache
 
     BytecodeCache()
     {
-        this.weavingCacheDir = Activator.server().getWorkPath().resolve( "weaving" );
+        this.weavingCacheDir = Activator.getWorkPath().resolve( "weaving" );
     }
 
     @Nullable

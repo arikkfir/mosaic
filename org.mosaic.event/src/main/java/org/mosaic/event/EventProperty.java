@@ -1,8 +1,7 @@
 package org.mosaic.event;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import org.mosaic.util.pair.Pair;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * @author arik
@@ -10,13 +9,38 @@ import org.mosaic.util.pair.Pair;
 public final class EventProperty extends Pair<String, Object>
 {
     @Nonnull
-    public static EventProperty eventProperty( @Nonnull String name, @Nullable Object value )
+    public static EventProperty eventProperty( @Nonnull String name, @Nonnull Object value )
     {
         return new EventProperty( name, value );
     }
 
-    private EventProperty( @Nonnull String left, @Nullable Object right )
+    @Nonnull
+    private final String name;
+
+    @Nonnull
+    private final Object value;
+
+    private EventProperty( @Nonnull String name, @Nonnull Object value )
     {
-        super( left, right );
+        this.name = name;
+        this.value = value;
+    }
+
+    @Override
+    public String getLeft()
+    {
+        return this.name;
+    }
+
+    @Override
+    public Object getRight()
+    {
+        return this.value;
+    }
+
+    @Override
+    public Object setValue( Object value )
+    {
+        throw new UnsupportedOperationException();
     }
 }

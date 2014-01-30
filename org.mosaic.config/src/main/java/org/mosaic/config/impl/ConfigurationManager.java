@@ -1,5 +1,6 @@
 package org.mosaic.config.impl;
 
+import com.google.common.base.Optional;
 import com.google.common.reflect.TypeToken;
 import java.io.IOException;
 import java.io.Reader;
@@ -17,19 +18,20 @@ import javax.annotation.Nullable;
 import org.joda.time.DateTime;
 import org.mosaic.config.Configurable;
 import org.mosaic.modules.*;
-import org.mosaic.pathwatchers.PathWatcher;
+import org.mosaic.pathwatchers.OnPathCreated;
+import org.mosaic.pathwatchers.OnPathDeleted;
+import org.mosaic.pathwatchers.OnPathModified;
 import org.mosaic.server.Server;
 import org.mosaic.util.collections.EmptyMapEx;
 import org.mosaic.util.collections.HashMapEx;
 import org.mosaic.util.collections.MapEx;
-import org.mosaic.util.reflection.MethodParameter;
-import org.mosaic.util.reflection.ParameterResolver;
+import org.mosaic.util.method.MethodParameter;
+import org.mosaic.util.method.ParameterResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.nio.file.Files.getLastModifiedTime;
 import static java.nio.file.Files.walkFileTree;
-import static org.mosaic.util.resource.PathEvent.*;
 
 /**
  * @author arik
@@ -56,13 +58,13 @@ final class ConfigurationManager
     synchronized void addConfigurableEndpoint( @Nonnull ServiceReference<MethodEndpoint<Configurable>> reference )
             throws IOException
     {
-        MethodEndpoint<Configurable> endpoint = reference.get();
-        if( endpoint == null )
+        Optional<MethodEndpoint<Configurable>> endpoint = reference.service();
+        if( !endpoint.isPresent() )
         {
             return;
         }
 
-        final ConfigurableAdapter adapter = new ConfigurableAdapter( endpoint );
+        final ConfigurableAdapter adapter = new ConfigurableAdapter( endpoint.get() );
         walkFileTree( this.server.getEtcPath(), new SimpleFileVisitor<Path>()
         {
             @Nonnull
@@ -88,7 +90,8 @@ final class ConfigurationManager
         this.configurationAdapters.remove( reference.getId() );
     }
 
-    @PathWatcher( value = CFGS_PATTERN, events = { CREATED, MODIFIED } )
+    @OnPathCreated( CFGS_PATTERN )
+    @OnPathModified(CFGS_PATTERN)
     void configurationAddedOrModified( @Nonnull Path file ) throws IOException
     {
         String fileName = file.getFileName().toString();
@@ -96,7 +99,7 @@ final class ConfigurationManager
         notify( fileName.substring( 0, fileName.lastIndexOf( '.' ) ), readConfiguration( file ), modificationTime );
     }
 
-    @PathWatcher( value = CFGS_PATTERN, events = DELETED )
+    @OnPathDeleted(CFGS_PATTERN)
     void configurationDeleted( @Nonnull Path file )
     {
         String fileName = file.getFileName().toString();
@@ -154,19 +157,19 @@ final class ConfigurationManager
             this.endpoint = endpoint;
             this.configurationName = this.endpoint.getType().value();
             this.invoker = this.endpoint.createInvoker(
-                    new ParameterResolver()
+                    new ParameterResolver<Object>()
                     {
                         @Nullable
                         @Override
-                        public Object resolve( @Nonnull MethodParameter parameter,
-                                               @Nonnull MapEx<String, Object> resolveContext )
+                        public Optional<Object> resolve( @Nonnull MethodParameter parameter,
+                                                         @Nonnull MapEx<String, Object> resolveContext )
                                 throws Exception
                         {
                             if( parameter.getType().isAssignableFrom( MAP_EX_TYPE_TOKEN ) )
                             {
-                                return resolveContext.require( "cfg" );
+                                return resolveContext.find( "cfg" );
                             }
-                            return SKIP;
+                            return Optional.absent();
                         }
                     }
             );

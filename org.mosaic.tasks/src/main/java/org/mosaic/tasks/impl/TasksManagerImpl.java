@@ -19,7 +19,7 @@ final class TasksManagerImpl
     @OnServiceAdded
     void addTask( @Nonnull ServiceReference<MethodEndpoint<Task>> reference )
     {
-        this.tasks.put( reference.getId(), new TaskAdapter( reference.require() ) );
+        this.tasks.put( reference.getId(), new TaskAdapter( reference.service().get() ) );
     }
 
     @OnServiceRemoved

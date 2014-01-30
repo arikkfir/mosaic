@@ -27,11 +27,6 @@ final class InitShutdownHookTask extends InitTask
     @Nullable
     private ServerSocket serverSocket;
 
-    InitShutdownHookTask( @Nonnull Mosaic mosaic )
-    {
-        super( mosaic );
-    }
-
     @Override
     public void start()
     {
@@ -92,7 +87,7 @@ final class InitShutdownHookTask extends InitTask
         {
             try
             {
-                getMosaic().stop();
+                Mosaic.stop();
             }
             catch( Exception e )
             {
@@ -141,11 +136,11 @@ final class InitShutdownHookTask extends InitTask
                             switch( instruction )
                             {
                                 case "SHUTDOWN":
-                                    getMosaic().stop();
+                                    Mosaic.stop();
                                     break;
                                 case "RESTART":
-                                    getMosaic().stop();
-                                    getMosaic().start();
+                                    Mosaic.stop();
+                                    Mosaic.start();
                                     break;
                             }
                         }

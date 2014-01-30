@@ -6,17 +6,18 @@ import java.lang.reflect.Method;
 import java.util.*;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.mosaic.modules.*;
+import org.mosaic.modules.ComponentDefinitionException;
+import org.mosaic.modules.MethodEndpoint;
+import org.mosaic.modules.Module;
+import org.mosaic.modules.Ranking;
 import org.mosaic.util.collections.EmptyMapEx;
 import org.mosaic.util.collections.HashMapEx;
 import org.mosaic.util.collections.MapEx;
-import org.mosaic.util.reflection.InvokableMethodHandle;
-import org.mosaic.util.reflection.MethodHandle;
-import org.mosaic.util.reflection.MethodHandleFactory;
-import org.mosaic.util.reflection.ParameterResolver;
+import org.mosaic.util.method.InvokableMethodHandle;
+import org.mosaic.util.method.MethodHandle;
+import org.mosaic.util.method.MethodHandleFactory;
+import org.mosaic.util.method.ParameterResolver;
 import org.osgi.framework.*;
-import org.osgi.framework.ServiceReference;
-import org.osgi.framework.ServiceRegistration;
 
 /**
  * @author arik
@@ -76,12 +77,12 @@ final class ComponentMethodEndpoint extends Lifecycle implements MethodEndpoint,
 
     @Nonnull
     @Override
-    public List<ModuleWiring.ServiceCapability> getServiceCapabilities()
+    public List<Module.ServiceCapability> getServiceCapabilities()
     {
         ServiceRegistration<MethodEndpoint> registration = this.registration;
         return registration == null
-               ? Collections.<ModuleWiring.ServiceCapability>emptyList()
-               : Arrays.<ModuleWiring.ServiceCapability>asList( new ServiceCapabilityImpl( registration ) );
+               ? Collections.<Module.ServiceCapability>emptyList()
+               : Arrays.<Module.ServiceCapability>asList( new ServiceCapabilityImpl( registration ) );
     }
 
     @Nonnull
@@ -233,7 +234,7 @@ final class ComponentMethodEndpoint extends Lifecycle implements MethodEndpoint,
         }
     }
 
-    private class ServiceCapabilityImpl implements ModuleWiring.ServiceCapability
+    private class ServiceCapabilityImpl implements Module.ServiceCapability
     {
         @Nonnull
         private final ServiceRegistration registration;
@@ -302,7 +303,7 @@ final class ComponentMethodEndpoint extends Lifecycle implements MethodEndpoint,
                     List<Module> consumers = new LinkedList<>();
                     for( Bundle bundle : usingBundles )
                     {
-                        consumers.add( Activator.getModuleManager().getModule( bundle.getBundleId() ) );
+                        consumers.add( Activator.getModuleManager().getModule( bundle.getBundleId() ).get() );
                     }
                     return consumers;
                 }

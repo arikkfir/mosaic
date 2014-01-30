@@ -9,16 +9,14 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.Nonnull;
-import org.joda.time.DateTime;
 import org.joda.time.Duration;
 import org.joda.time.format.PeriodFormatterBuilder;
 import org.mosaic.modules.Module;
 import org.mosaic.modules.ModuleState;
 import org.mosaic.util.collections.MapEx;
 import org.mosaic.util.properties.PropertyPlaceholderResolver;
-import org.mosaic.util.resource.PathEvent;
-import org.mosaic.util.resource.PathWatcher;
-import org.mosaic.util.resource.PathWatcherContext;
+import org.mosaic.util.reflection.TypeTokens;
+import org.mosaic.util.resource.support.PathWatcherAdapter;
 import org.osgi.framework.*;
 import org.osgi.framework.namespace.PackageNamespace;
 import org.osgi.framework.wiring.BundleWire;
@@ -29,12 +27,11 @@ import org.slf4j.LoggerFactory;
 
 import static java.nio.file.Files.*;
 import static org.mosaic.modules.impl.Activator.getModuleManager;
-import static org.mosaic.util.resource.PathEvent.*;
 
 /**
  * @author arik
  */
-final class ServerLibWatcher implements PathWatcher
+final class ServerLibWatcher extends PathWatcherAdapter
 {
     private static final Logger LOG = LoggerFactory.getLogger( ServerLibWatcher.class );
 
@@ -46,119 +43,125 @@ final class ServerLibWatcher implements PathWatcher
     private boolean firstScan = true;
 
     @Override
-    public synchronized void handle( @Nonnull PathWatcherContext context ) throws Exception
+    public void pathCreated( @Nonnull Path path, @Nonnull MapEx<String, Object> context )
     {
-        Path file = context.getFile();
-        String lcFilename = file.toString().toLowerCase();
-        switch( context.getEvent() )
+        String lcFilename = path.toString().toLowerCase();
+        if( lcFilename.endsWith( ".jar" ) )
         {
-            case CREATED:
-                if( lcFilename.endsWith( ".jar" ) )
-                {
-                    handleCreatedJar( context );
-                }
-                else if( lcFilename.endsWith( ".jars" ) )
-                {
-                    handleCreatedJarCollection( context );
-                }
-                break;
+            handleCreatedJar( path, context );
+        }
+        else if( lcFilename.endsWith( ".jars" ) )
+        {
+            handleCreatedJarCollection( path, context );
+        }
+    }
 
-            case MODIFIED:
-                if( lcFilename.endsWith( ".jar" ) )
-                {
-                    handleModifiedJar( context );
-                }
-                else if( lcFilename.endsWith( ".jars" ) )
-                {
-                    handleModifiedJarCollection( context );
-                }
-                break;
+    @Override
+    public void pathModified( @Nonnull Path path, @Nonnull MapEx<String, Object> context )
+    {
+        String lcFilename = path.toString().toLowerCase();
+        if( lcFilename.endsWith( ".jar" ) )
+        {
+            handleModifiedJar( path, context );
+        }
+        else if( lcFilename.endsWith( ".jars" ) )
+        {
+            handleModifiedJarCollection( path, context );
+        }
+    }
 
-            case DELETED:
-                if( lcFilename.endsWith( ".jar" ) )
-                {
-                    handleDeletedJar( context );
-                }
-                else if( lcFilename.endsWith( ".jars" ) )
-                {
-                    handleDeletedJarCollection( context );
-                }
-                break;
+    @Override
+    public void pathUnmodified( @Nonnull Path path, @Nonnull MapEx<String, Object> context )
+    {
+        String lcFilename = path.toString().toLowerCase();
+        if( lcFilename.endsWith( ".jars" ) )
+        {
+            checkJarCollectionForUpdates( path, context );
+        }
+    }
 
-            case NOT_MODIFIED:
-                if( lcFilename.endsWith( ".jars" ) )
-                {
-                    checkJarCollectionForUpdates( context );
-                }
-                break;
+    @Override
+    public void pathDeleted( @Nonnull Path path, @Nonnull MapEx<String, Object> context )
+    {
+        String lcFilename = path.toString().toLowerCase();
+        if( lcFilename.endsWith( ".jar" ) )
+        {
+            handleDeletedJar( path );
+        }
+        else if( lcFilename.endsWith( ".jars" ) )
+        {
+            handleDeletedJarCollection( path );
+        }
+    }
 
-            case SCAN_FINISHED:
-                Map<Long, String> startErrors = new HashMap<>();
-                for( Bundle bundle : getInstalledBundles( context ) )
+    @Override
+    public void scanCompleted( @Nonnull MapEx<String, Object> context )
+    {
+        Map<Long, String> startErrors = new HashMap<>();
+        for( Bundle bundle : getInstalledBundles( context ) )
+        {
+            try
+            {
+                bundle.start();
+            }
+            catch( BundleException e )
+            {
+                startErrors.put( bundle.getBundleId(), e.getMessage() );
+                if( e.getType() != BundleException.RESOLVE_ERROR )
                 {
-                    try
+                    LOG.error( "Could not start bundle '{}-{}[{}]': {}", bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId(), e.getMessage(), e );
+                }
+                else
+                {
+                    LOG.error( "Could not resolve bundle '{}-{}[{}]': {}", bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId(), e.getMessage() );
+                }
+            }
+        }
+
+        if( this.firstScan )
+        {
+            String startupDuration = "unknown";
+
+            Long launchTime = Long.getLong( "mosaic.launch.start" );
+            if( launchTime != null )
+            {
+                startupDuration = new PeriodFormatterBuilder()
+                        .appendMinutes()
+                        .appendSuffix( " minute", " minutes" )
+                        .appendSeparatorIfFieldsBefore( " and " )
+                        .appendSecondsWithOptionalMillis()
+                        .appendSuffix( " second", " seconds" )
+                        .printZeroRarelyLast()
+                        .toFormatter().print( new Duration( launchTime, System.currentTimeMillis() ).toPeriod() );
+            }
+
+            StringBuilder msg = new StringBuilder();
+
+            msg.append( "\n\n******************************************************************************\n\n" );
+            msg.append( "  Mosaic server STARTED! (in " ).append( startupDuration ).append( ")\n" );
+            for( Module module : getModuleManager().getModules() )
+            {
+                if( module.getId() > 0 && module.getState() != ModuleState.ACTIVE )
+                {
+                    ModuleImpl moduleImpl = ( ModuleImpl ) module;
+                    msg.append( "\n  Module " ).append( module ).append( " could not be activated:\n" );
+
+                    String startError = startErrors.get( module.getId() );
+                    if( startError != null )
                     {
-                        bundle.start();
+                        msg.append( "    -> " ).append( startError ).append( "\n" );
                     }
-                    catch( BundleException e )
+
+                    for( Lifecycle child : moduleImpl.getInactivatables() )
                     {
-                        startErrors.put( bundle.getBundleId(), e.getMessage() );
-                        if( e.getType() != BundleException.RESOLVE_ERROR )
-                        {
-                            LOG.error( "Could not start bundle '{}-{}[{}]': {}", bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId(), e.getMessage(), e );
-                        }
-                        else
-                        {
-                            LOG.error( "Could not resolve bundle '{}-{}[{}]': {}", bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId(), e.getMessage() );
-                        }
+                        msg.append( "    -> " ).append( child ).append( "\n" );
                     }
                 }
+            }
+            msg.append( "\n******************************************************************************\n\n" );
 
-                if( this.firstScan )
-                {
-                    String startupDuration = "unknown";
-
-                    Long launchTime = Long.getLong( "mosaic.launch.start" );
-                    if( launchTime != null )
-                    {
-                        startupDuration = new PeriodFormatterBuilder()
-                                .appendMinutes()
-                                .appendSuffix( " minute", " minutes" )
-                                .appendSeparatorIfFieldsBefore( " and " )
-                                .appendSecondsWithOptionalMillis()
-                                .appendSuffix( " second", " seconds" )
-                                .printZeroRarelyLast()
-                                .toFormatter().print( new Duration( launchTime, System.currentTimeMillis() ).toPeriod() );
-                    }
-
-                    StringBuilder msg = new StringBuilder();
-
-                    msg.append( "\n\n******************************************************************************\n\n" );
-                    msg.append( "  Mosaic server STARTED! (in " ).append( startupDuration ).append( ")\n" );
-                    for( Module module : getModuleManager().getModules() )
-                    {
-                        if( module.getState() != ModuleState.ACTIVE )
-                        {
-                            ModuleImpl moduleImpl = ( ModuleImpl ) module;
-                            msg.append( "\n  Module " ).append( module ).append( " could not be activated:\n" );
-
-                            String startError = startErrors.get( module.getId() );
-                            if( startError != null )
-                            {
-                                msg.append( "    -> " ).append( startError ).append( "\n" );
-                            }
-
-                            for( Lifecycle child : moduleImpl.getInactivatables() )
-                            {
-                                msg.append( "    -> " ).append( child ).append( "\n" );
-                            }
-                        }
-                    }
-                    msg.append( "\n******************************************************************************\n\n" );
-
-                    LOG.warn( msg.toString() );
-                    this.firstScan = false;
-                }
+            LOG.warn( msg.toString() );
+            this.firstScan = false;
         }
     }
 
@@ -187,35 +190,48 @@ final class ServerLibWatcher implements PathWatcher
     }
 
     @Nonnull
-    private List<Bundle> getInstalledBundles( @Nonnull PathWatcherContext context )
+    private List<Bundle> getInstalledBundles( @Nonnull MapEx<String, Object> context )
     {
         @SuppressWarnings("unchecked")
-        List<Bundle> installed = context.getAttributes().get( "installed", List.class );
+        List<Bundle> installed = context.find( "installed", TypeTokens.of( List.class ) ).orNull();
         if( installed == null )
         {
             installed = new LinkedList<>();
-            context.getAttributes().put( "installed", installed );
+            context.put( "installed", installed );
         }
         return installed;
     }
 
-    private void handleCreatedJar( @Nonnull PathWatcherContext context )
+    private void handleCreatedJar( @Nonnull Path path, @Nonnull MapEx<String, Object> context )
     {
         try
         {
-            String location = getLocationFromFile( context.getFile() );
-            getInstalledBundles( context ).add( getBundleContext().installBundle( location ) );
+            String location = getLocationFromFile( path );
+
+            BundleContext bundleContext = getBundleContext();
+            Bundle bundle = bundleContext.getBundle( location );
+            if( bundle == null )
+            {
+                bundle = bundleContext.installBundle( location );
+            }
+            getInstalledBundles( context ).add( bundle );
         }
         catch( Exception e )
         {
-            LOG.error( "Error installing module from '{}': {}", context.getFile(), e.getMessage(), e );
+            LOG.error( "Error installing module from '{}': {}", path, e.getMessage(), e );
         }
     }
 
-    private void handleModifiedJar( @Nonnull PathWatcherContext context )
+    private void handleModifiedJar( @Nonnull Path path, @Nonnull MapEx<String, Object> context )
     {
-        Bundle bundle = getBundleContext().getBundle( getLocationFromFile( context.getFile() ) );
-        if( bundle != null )
+        Bundle bundle = getBundleContext().getBundle( getLocationFromFile( path ) );
+        if( bundle == null )
+        {
+            // oh no! no such bundle.. must be a mistake :)
+            // simply delegate to our handleCreatedJar method
+            handleCreatedJar( path, context );
+        }
+        else
         {
             // remember if we need to start the bundle after the update is complete
             boolean started = bundle.getState() == Bundle.ACTIVE;
@@ -249,7 +265,7 @@ final class ServerLibWatcher implements PathWatcher
             }
             catch( Exception e )
             {
-                LOG.error( "Error stopping module at '{}' (stopping in order to update it): {}", context.getFile(), e.getMessage(), e );
+                LOG.error( "Error stopping module at '{}' (stopping in order to update it): {}", path, e.getMessage(), e );
                 return;
             }
 
@@ -260,7 +276,7 @@ final class ServerLibWatcher implements PathWatcher
             }
             catch( Exception e )
             {
-                LOG.error( "Error updating module at '{}': {}", context.getFile(), e.getMessage(), e );
+                LOG.error( "Error updating module at '{}': {}", path, e.getMessage(), e );
             }
 
             // refresh packages
@@ -285,7 +301,7 @@ final class ServerLibWatcher implements PathWatcher
                 }
                 catch( InterruptedException e )
                 {
-                    LOG.error( "Module update process of '{}' was interrupted", context.getFile() );
+                    LOG.error( "Module update process of '{}' was interrupted", path );
                     return;
                 }
             }
@@ -308,9 +324,9 @@ final class ServerLibWatcher implements PathWatcher
         }
     }
 
-    private void handleDeletedJar( @Nonnull PathWatcherContext context )
+    private void handleDeletedJar( @Nonnull Path path )
     {
-        Bundle bundle = getBundleContext().getBundle( getLocationFromFile( context.getFile() ) );
+        Bundle bundle = getBundleContext().getBundle( getLocationFromFile( path ) );
         if( bundle != null )
         {
             try
@@ -319,39 +335,39 @@ final class ServerLibWatcher implements PathWatcher
             }
             catch( Exception e )
             {
-                LOG.error( "Error uninstalling module from '{}': {}", context.getFile(), e.getMessage(), e );
+                LOG.error( "Error uninstalling module from '{}': {}", path, e.getMessage(), e );
             }
         }
     }
 
-    private void handleCreatedJarCollection( @Nonnull PathWatcherContext context )
+    private void handleCreatedJarCollection( @Nonnull Path path, @Nonnull MapEx<String, Object> context )
     {
-        JarCollection collection = new JarCollection( context.getFile() );
-        this.jarCollections.put( context.getFile(), collection );
+        JarCollection collection = new JarCollection( path );
+        this.jarCollections.put( path, collection );
         collection.refresh( context );
     }
 
-    private void handleModifiedJarCollection( @Nonnull PathWatcherContext context )
+    private void handleModifiedJarCollection( @Nonnull Path path, @Nonnull MapEx<String, Object> context )
     {
-        JarCollection collection = this.jarCollections.get( context.getFile() );
+        JarCollection collection = this.jarCollections.get( path );
         if( collection != null )
         {
             collection.refresh( context );
         }
     }
 
-    private void handleDeletedJarCollection( @Nonnull PathWatcherContext context )
+    private void handleDeletedJarCollection( @Nonnull Path path )
     {
-        JarCollection collection = this.jarCollections.remove( context.getFile() );
+        JarCollection collection = this.jarCollections.remove( path );
         if( collection != null )
         {
-            collection.remove( context );
+            collection.remove();
         }
     }
 
-    private void checkJarCollectionForUpdates( @Nonnull PathWatcherContext context )
+    private void checkJarCollectionForUpdates( @Nonnull Path path, @Nonnull MapEx<String, Object> context )
     {
-        JarCollection collection = this.jarCollections.get( context.getFile() );
+        JarCollection collection = this.jarCollections.get( path );
         if( collection != null )
         {
             collection.checkForUpdates( context );
@@ -371,7 +387,7 @@ final class ServerLibWatcher implements PathWatcher
             this.file = file;
         }
 
-        private void refresh( @Nonnull PathWatcherContext context )
+        private void refresh( @Nonnull MapEx<String, Object> context )
         {
             List<String> lines;
             try
@@ -407,11 +423,11 @@ final class ServerLibWatcher implements PathWatcher
             // find out which files in the old fileset were removed from the updated set - and uninstall their bundles
             for( Path path : Sets.difference( oldFileSet, newFileSet ) )
             {
-                handleDeletedJar( new PathWatcherContextWrapper( context, DELETED, path ) );
+                handleDeletedJar( path );
             }
         }
 
-        private void checkForUpdates( @Nonnull PathWatcherContext context )
+        private void checkForUpdates( @Nonnull MapEx<String, Object> context )
         {
             for( Path path : this.files )
             {
@@ -421,13 +437,13 @@ final class ServerLibWatcher implements PathWatcher
                     if( bundle != null )
                     {
                         // file was installed, but now has been removed, so uninstall its bundle
-                        handleDeletedJar( new PathWatcherContextWrapper( context, DELETED, path ) );
+                        handleDeletedJar( path );
                     }
                 }
                 else if( bundle == null )
                 {
                     // file has not been installed
-                    handleCreatedJar( new PathWatcherContextWrapper( context, CREATED, path ) );
+                    handleCreatedJar( path, context );
                 }
                 else
                 {
@@ -446,66 +462,18 @@ final class ServerLibWatcher implements PathWatcher
                     // has the file been modified since the last time we inspected it?
                     if( fileModificationTime > bundle.getLastModified() )
                     {
-                        handleModifiedJar( new PathWatcherContextWrapper( context, MODIFIED, path ) );
+                        handleModifiedJar( path, context );
                     }
                 }
             }
         }
 
-        private void remove( @Nonnull PathWatcherContext context )
+        private void remove()
         {
             for( Path path : this.files )
             {
-                handleDeletedJar( new PathWatcherContextWrapper( context, DELETED, path ) );
+                handleDeletedJar( path );
             }
-        }
-    }
-
-    private class PathWatcherContextWrapper implements PathWatcherContext
-    {
-        @Nonnull
-        private final PathWatcherContext target;
-
-        @Nonnull
-        private final PathEvent event;
-
-        @Nonnull
-        private final Path file;
-
-        private PathWatcherContextWrapper( @Nonnull PathWatcherContext target,
-                                           @Nonnull PathEvent event, @Nonnull Path file )
-        {
-            this.target = target;
-            this.event = event;
-            this.file = file;
-        }
-
-        @Nonnull
-        @Override
-        public DateTime getScanStart()
-        {
-            return this.target.getScanStart();
-        }
-
-        @Nonnull
-        @Override
-        public Path getFile()
-        {
-            return this.file;
-        }
-
-        @Nonnull
-        @Override
-        public PathEvent getEvent()
-        {
-            return this.event;
-        }
-
-        @Nonnull
-        @Override
-        public MapEx<String, Object> getAttributes()
-        {
-            return this.target.getAttributes();
         }
     }
 }

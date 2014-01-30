@@ -1,13 +1,14 @@
 package org.mosaic.tasks.impl;
 
+import com.google.common.base.Optional;
 import java.util.Collections;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.modules.MethodEndpoint;
 import org.mosaic.tasks.Task;
 import org.mosaic.util.collections.MapEx;
-import org.mosaic.util.reflection.MethodParameter;
-import org.mosaic.util.reflection.ParameterResolver;
+import org.mosaic.util.method.MethodParameter;
+import org.mosaic.util.method.ParameterResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,24 +29,25 @@ final class TaskAdapter
     {
         this.endpoint = endpoint;
         this.invoker = this.endpoint.createInvoker(
-                new ParameterResolver()
+                new ParameterResolver<Object>()
                 {
-                    @SuppressWarnings( "unchecked" )
+                    @SuppressWarnings("unchecked")
                     @Nullable
                     @Override
-                    public Object resolve( @Nonnull MethodParameter parameter,
-                                           @Nonnull MapEx<String, Object> resolveContext )
+                    public Optional<Object> resolve( @Nonnull MethodParameter parameter,
+                                                     @Nonnull MapEx<String, Object> resolveContext )
                             throws Exception
                     {
-                        MapEx properties = resolveContext.require( "properties", MapEx.class );
-                        if( properties.containsKey( parameter.getName() ) )
+                        Optional<MapEx> optional = resolveContext.find( "properties", MapEx.class );
+                        if( optional.isPresent() )
                         {
-                            return properties.get( parameter.getName(), ( Class ) parameter.getType().getRawType() );
+                            MapEx properties = optional.get();
+                            if( properties.containsKey( parameter.getName() ) )
+                            {
+                                return properties.find( parameter.getName(), parameter.getType() );
+                            }
                         }
-                        else
-                        {
-                            return SKIP;
-                        }
+                        return Optional.absent();
                     }
                 }
         );

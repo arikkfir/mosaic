@@ -3,8 +3,10 @@ package org.mosaic.launcher;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.util.*;
-import javax.annotation.Nonnull;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.StringTokenizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,7 +19,7 @@ final class Header
 {
     private static final Logger LOG = LoggerFactory.getLogger( Header.class );
 
-    public static void printHeader( @Nonnull Mosaic mosaic )
+    public static void printHeader()
     {
         // load logo
         List<String> logoLines;
@@ -56,7 +58,6 @@ final class Header
                 "-----------------------------------------------------------------",
                 "Home.....................{}",
                 "Apps.....................{}",
-                "Boot.....................{}",
                 "Configurations (etc).....{}",
                 "Bundles (lib)............{}",
                 "Logs.....................{}",
@@ -83,15 +84,14 @@ final class Header
         buffer.append( "\n****************************************************************************************************************\n" );
 
         LOG.warn( buffer.toString(),
-                  mosaic.getConfiguration().getVersion(),
-                  mosaic.getConfiguration().isDevMode() ? "ON" : "off",
-                  mosaic.getConfiguration().getHome(),
-                  mosaic.getConfiguration().getApps(),
-                  mosaic.getConfiguration().getBoot(),
-                  mosaic.getConfiguration().getEtc(),
-                  mosaic.getConfiguration().getLib(),
-                  mosaic.getConfiguration().getLogs(),
-                  mosaic.getConfiguration().getWork() );
+                  Mosaic.getVersion(),
+                  Mosaic.isDevMode() ? "ON" : "off",
+                  Mosaic.getHome(),
+                  Mosaic.getApps(),
+                  Mosaic.getEtc(),
+                  Mosaic.getLib(),
+                  Mosaic.getLogs(),
+                  Mosaic.getWork() );
     }
 
     private Header()

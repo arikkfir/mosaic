@@ -1,5 +1,6 @@
 package org.mosaic.security.impl;
 
+import com.google.common.base.Optional;
 import com.google.common.reflect.TypeToken;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -12,8 +13,8 @@ import org.mosaic.security.AuthenticationToken;
 import org.mosaic.security.Realm;
 import org.mosaic.util.collections.HashMapEx;
 import org.mosaic.util.collections.MapEx;
-import org.mosaic.util.reflection.MethodParameter;
-import org.mosaic.util.reflection.ParameterResolver;
+import org.mosaic.util.method.MethodParameter;
+import org.mosaic.util.method.ParameterResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,10 +47,10 @@ final class RealmManager
     @OnServiceAdded
     void addRealm( @Nonnull ServiceReference<MethodEndpoint<Realm>> reference )
     {
-        MethodEndpoint<Realm> endpoint = reference.get();
-        if( endpoint != null )
+        Optional<MethodEndpoint<Realm>> endpoint = reference.service();
+        if( endpoint.isPresent() )
         {
-            this.realms.put( reference.getId(), new RealmHandler( endpoint ) );
+            this.realms.put( reference.getId(), new RealmHandler( endpoint.get() ) );
         }
     }
 
@@ -81,21 +82,21 @@ final class RealmManager
             }
 
             this.invoker = this.endpoint.createInvoker(
-                    new ParameterResolver()
+                    new ParameterResolver<Object>()
                     {
                         @Nullable
                         @Override
-                        public Object resolve( @Nonnull MethodParameter parameter,
+                        public Optional<?> resolve( @Nonnull MethodParameter parameter,
                                                @Nonnull MapEx<String, Object> resolveContext )
                                 throws Exception
                         {
                             TypeToken<?> parameterType = parameter.getType();
                             if( AuthenticationToken.class.isAssignableFrom( parameterType.getRawType() ) )
                             {
-                                AuthenticationToken authToken = resolveContext.require( "token", AuthenticationToken.class );
+                                AuthenticationToken authToken = resolveContext.find( "token", AuthenticationToken.class ).get();
                                 if( parameterType.isAssignableFrom( authToken.getClass() ) )
                                 {
-                                    return authToken;
+                                    return Optional.of( authToken );
                                 }
                                 else
                                 {
@@ -104,7 +105,7 @@ final class RealmManager
                                     throw new IllegalArgumentException( "realm '" + realmName + "' does not authentication tokens of type '" + authTokenTypeName + "'" );
                                 }
                             }
-                            return SKIP;
+                            return Optional.absent();
                         }
                     }
             );

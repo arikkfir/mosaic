@@ -1,5 +1,6 @@
 package org.mosaic.modules.impl;
 
+import com.google.common.base.Optional;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -9,7 +10,8 @@ import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
 import org.mosaic.modules.*;
 import org.mosaic.modules.spi.MethodEndpointMarker;
-import org.mosaic.util.reflection.AnnotationFinder;
+
+import static org.mosaic.util.reflection.MethodAnnotations.getMetaAnnotationTarget;
 
 /**
  * @author arik
@@ -55,11 +57,10 @@ class Component extends Lifecycle
                     addChild( new ComponentServiceEventMethod( this, method ) );
                 }
 
-                AnnotationFinder annotationFinder = new AnnotationFinder( method );
-                Annotation methodEndpointType = annotationFinder.findAnnotationAnnotatedDeeplyBy( MethodEndpointMarker.class );
-                if( methodEndpointType != null )
+                Optional<Annotation> annHolder = getMetaAnnotationTarget( method, MethodEndpointMarker.class );
+                if( annHolder.isPresent() )
                 {
-                    addChild( new ComponentMethodEndpoint( this, method, methodEndpointType ) );
+                    addChild( new ComponentMethodEndpoint( this, method, annHolder.get() ) );
                 }
             }
             type = type.getSuperclass();

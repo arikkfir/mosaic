@@ -16,7 +16,7 @@ import org.mosaic.modules.Component;
 import org.mosaic.util.collections.EmptyMapEx;
 import org.mosaic.util.collections.HashMapEx;
 import org.mosaic.util.collections.MapEx;
-import org.mosaic.util.scheduling.CronExpression;
+import org.mosaic.util.cron.CronExpression;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

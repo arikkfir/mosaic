@@ -1,0 +1,84 @@
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.mosaic</groupId>
+        <artifactId>org.mosaic.parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../../org.mosaic.parent/pom.xml</relativePath>
+    </parent>
+
+    <groupId>org.mosaic.utils</groupId>
+    <artifactId>org.mosaic.utils.osgi</artifactId>
+    <name>Mosaic :: Utils :: OSGi</name>
+    <description>Mosaic OSGi utilities</description>
+    <packaging>bundle</packaging>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <configuration>
+                    <ignoreNonCompile>true</ignoreNonCompile>
+                    <usedDependencies>
+                        <usedDependency>ch.qos.logback:logback-classic</usedDependency>
+                    </usedDependencies>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <configuration>
+                    <instructions>
+                        <Boot-Bundle>true</Boot-Bundle>
+                        <Start-Level>1</Start-Level>
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.mosaic</groupId>
+            <artifactId>org.mosaic.jsr305</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.apache.felix.framework</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>biz.aQute.bnd</groupId>
+            <artifactId>bndlib</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <scm>
+        <connection>scm:git:ssh://git@git.arik.home.local:7999/mos/main.git/org.mosaic.utils/${project.artifactId}</connection>
+        <developerConnection>scm:git:ssh://git@git.arik.home.local:7999/mos/main.git/org.mosaic.utils/${project.artifactId}</developerConnection>
+        <url>http://git.arik.home.local/projects/MOS/repos/main/browse/org.mosaic.utils/${project.artifactId}</url>
+        <tag>HEAD</tag>
+    </scm>
+
+</project>

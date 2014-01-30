@@ -12,7 +12,7 @@ import org.mosaic.modules.Component;
 import org.mosaic.modules.Module;
 import org.mosaic.modules.Service;
 import org.mosaic.modules.ServiceReference;
-import org.mosaic.util.reflection.MethodHandle;
+import org.mosaic.util.method.MethodHandle;
 
 import static org.mosaic.modules.Property.property;
 
@@ -54,13 +54,13 @@ abstract class Action
         Transaction tx = this.transactionManager.startTransaction( this.transactionName, this.readOnly );
         try
         {
-            ServiceReference<DataSource> reference = this.module.getModuleWiring().findService( DataSource.class, property( "name", this.dataSourceName ) );
+            ServiceReference<DataSource> reference = this.module.findService( DataSource.class, property( "name", this.dataSourceName ) );
             if( reference == null )
             {
                 throw new DaoException( "data source '" + this.dataSourceName + "' not available" );
             }
 
-            try( Connection connection = reference.require().getConnection() )
+            try( Connection connection = reference.service().get().getConnection() )
             {
                 return invoke( connection, arguments );
             }

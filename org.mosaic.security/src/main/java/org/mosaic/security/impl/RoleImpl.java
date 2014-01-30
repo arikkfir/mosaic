@@ -22,14 +22,14 @@ public class RoleImpl
 
     public RoleImpl( @Nonnull XmlElement element )
     {
-        this.name = element.requireAttribute( "name" );
+        this.name = element.getAttribute( "name" ).get();
         for( XmlElement childRoleElement : element.getChildElements( "role" ) )
         {
             this.impliedRoles.add( new RoleImpl( childRoleElement ) );
         }
         for( XmlElement permissionElement : element.getChildElements( "permission" ) )
         {
-            this.permissions.add( Permission.get( permissionElement.requireAttribute( "name" ) ) );
+            this.permissions.add( Permission.get( permissionElement.getAttribute( "name" ).get() ) );
         }
     }
 

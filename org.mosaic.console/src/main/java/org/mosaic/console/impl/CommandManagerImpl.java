@@ -1,6 +1,7 @@
 package org.mosaic.console.impl;
 
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
 import com.google.common.reflect.TypeToken;
@@ -20,7 +21,7 @@ import org.mosaic.modules.*;
 import org.mosaic.util.collections.HashMapEx;
 import org.mosaic.util.collections.MapEx;
 import org.mosaic.util.conversion.ConversionService;
-import org.mosaic.util.reflection.MethodParameter;
+import org.mosaic.util.method.MethodParameter;
 
 import static com.google.common.base.Strings.repeat;
 import static com.google.common.collect.Collections2.filter;
@@ -49,7 +50,7 @@ public class CommandManagerImpl implements CommandManager
         @Override
         public boolean apply( @Nullable MethodParameter input )
         {
-            return input != null && input.hasAnnotation( this.annotationType );
+            return input != null && input.getAnnotation( this.annotationType ).isPresent();
         }
     }
 
@@ -80,10 +81,10 @@ public class CommandManagerImpl implements CommandManager
     @OnServiceAdded
     void addCommand( @Nonnull ServiceReference<MethodEndpoint<Command>> reference )
     {
-        MethodEndpoint<Command> endpoint = reference.get();
-        if( endpoint != null )
+        Optional<MethodEndpoint<Command>> endpoint = reference.service();
+        if( endpoint.isPresent() )
         {
-            this.commandAdapters.put( reference.getId(), new CommandAdapter( endpoint ) );
+            this.commandAdapters.put( reference.getId(), new CommandAdapter( endpoint.get() ) );
         }
     }
 
@@ -208,12 +209,12 @@ public class CommandManagerImpl implements CommandManager
 
         private CommandArgument( @Nonnull MethodParameter methodParameter )
         {
-            Command.Arg ann = methodParameter.requireAnnotation( Command.Arg.class );
+            Command.Arg ann = methodParameter.getAnnotation( Command.Arg.class ).get();
             this.name = ann.name().isEmpty() ? methodParameter.getName() : ann.name();
             this.synopsis = ann.synopsis();
             this.description = ann.description();
             this.type = methodParameter.getType();
-            this.required = methodParameter.hasAnnotation( Nonnull.class );
+            this.required = methodParameter.getAnnotation( Nonnull.class ).isPresent();
 
             List<MethodParameter> methodParameters = methodParameter.getMethod().getParameters();
             List<MethodParameter> argParams = new ArrayList<>( filter( methodParameters, new MethodParameterAnnotationPredicate( Command.Arg.class ) ) );
@@ -256,7 +257,7 @@ public class CommandManagerImpl implements CommandManager
         {
             this.methodParameter = methodParameter;
 
-            Command.Option ann = methodParameter.requireAnnotation( Command.Option.class );
+            Command.Option ann = methodParameter.getAnnotation( Command.Option.class ).get();
             String[] names = ann.names();
             if( names.length == 0 )
             {
@@ -455,11 +456,11 @@ public class CommandManagerImpl implements CommandManager
 
             for( MethodParameter methodParameter : this.endpoint.getMethodHandle().getParameters() )
             {
-                if( methodParameter.hasAnnotation( Command.Arg.class ) )
+                if( methodParameter.getAnnotation( Command.Arg.class ).isPresent() )
                 {
                     this.valuedParameters.add( new CommandArgument( methodParameter ) );
                 }
-                else if( methodParameter.hasAnnotation( Command.Option.class ) )
+                else if( methodParameter.getAnnotation( Command.Option.class ).isPresent() )
                 {
                     this.valuedParameters.add( new CommandOption( methodParameter ) );
                 }

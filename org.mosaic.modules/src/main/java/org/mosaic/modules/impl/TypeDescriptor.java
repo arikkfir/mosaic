@@ -1,8 +1,10 @@
 package org.mosaic.modules.impl;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.Sets;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -10,10 +12,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.modules.*;
-import org.mosaic.util.reflection.AnnotationFinder;
 
 import static java.lang.reflect.Modifier.isFinal;
 import static java.lang.reflect.Modifier.isStatic;
+import static org.mosaic.util.reflection.ClassAnnotations.getMetaAnnotation;
+import static org.mosaic.util.reflection.ClassAnnotations.getMetaAnnotationTarget;
 
 /**
  * @author arik
@@ -21,10 +24,7 @@ import static java.lang.reflect.Modifier.isStatic;
 @SuppressWarnings("unchecked")
 final class TypeDescriptor extends Lifecycle implements org.mosaic.modules.TypeDescriptor
 {
-    private static final Set<Class<?>> MODULE_TYPES = Sets.newHashSet( Module.class,
-                                                                       ModuleTypes.class,
-                                                                       ModuleResources.class,
-                                                                       ModuleWiring.class );
+    private static final Set<Class<?>> MODULE_TYPES = Sets.<Class<?>>newHashSet( Module.class );
 
     @Nonnull
     private final ModuleImpl module;
@@ -40,27 +40,36 @@ final class TypeDescriptor extends Lifecycle implements org.mosaic.modules.TypeD
         this.module = module;
         this.type = type;
 
-        AnnotationFinder annotationFinder = new AnnotationFinder( this.type );
-
         // is this is a @Component?
-        if( annotationFinder.findDeep( org.mosaic.modules.Component.class ) != null )
+        boolean isAbstract = Modifier.isAbstract( type.getModifiers() );
+        boolean isInterface = type.isInterface();
+        boolean isAnnotation = type.isAnnotation();
+        boolean isAnonymousClass = type.isAnonymousClass();
+        boolean isEnum = type.isEnum();
+        boolean isMemberClass = type.isMemberClass();
+        boolean isLocalClass = type.isLocalClass();
+        if( !isAbstract && !isInterface && !isAnnotation && !isAnonymousClass && !isEnum && !isMemberClass && !isLocalClass )
         {
-            addChild( new Component( this ) );
-        }
+            // is this a @Component?
+            if( getMetaAnnotation( type, org.mosaic.modules.Component.class ).isPresent() )
+            {
+                addChild( new Component( this ) );
+            }
 
-        // is this a @Adapter?
-        if( annotationFinder.findDeep( Adapter.class ) != null )
-        {
-            addChild( new TypeDescriptorServiceAdapter( this ) );
+            // is this a @Adapter?
+            if( getMetaAnnotation( type, Adapter.class ).isPresent() )
+            {
+                addChild( new TypeDescriptorServiceAdapter( this ) );
+            }
         }
 
         // is this a @Template?
         if( this.type.isInterface() )
         {
-            Annotation templateType = annotationFinder.findAnnotationAnnotatedDeeplyBy( Template.class );
-            if( templateType != null )
+            Optional<Annotation> templateType = getMetaAnnotationTarget( type, Template.class );
+            if( templateType.isPresent() )
             {
-                addChild( new TypeDescriptorServiceTemplateExporter( this, templateType ) );
+                addChild( new TypeDescriptorServiceTemplateExporter( this, templateType.get() ) );
             }
         }
 

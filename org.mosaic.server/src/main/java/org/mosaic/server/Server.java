@@ -2,6 +2,7 @@ package org.mosaic.server;
 
 import java.nio.file.Path;
 import javax.annotation.Nonnull;
+import org.mosaic.util.version.Version;
 
 /**
  * @author arik
@@ -15,9 +16,6 @@ public interface Server
 
     @Nonnull
     Path getHome();
-
-    @Nonnull
-    Path getBootPath();
 
     @Nonnull
     Path getAppsPath();

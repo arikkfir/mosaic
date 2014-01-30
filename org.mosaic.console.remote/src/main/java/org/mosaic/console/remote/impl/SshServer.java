@@ -61,14 +61,7 @@ final class SshServer
         if( sshServer != null )
         {
             LOG.info( "SSH server module is deactivating" );
-            new Thread( new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    stopSshServer( sshServer );
-                }
-            }, "StopSshServer" ).start();
+            stopSshServer( sshServer );
         }
     }
 
@@ -90,7 +83,7 @@ final class SshServer
         try
         {
             sshServer = org.apache.sshd.SshServer.setUpDefaultServer();
-            sshServer.setPort( cfg.get( "port", Integer.class, 7553 ) );
+            sshServer.setPort( cfg.find( "port", Integer.class ).or( 7553 ) );
             sshServer.setKeyPairProvider( new SimpleGeneratorHostKeyProvider( hostKeyFile.toString() ) );
             sshServer.setPasswordAuthenticator( new PasswordAuthenticatorImpl() );
             sshServer.setPublickeyAuthenticator( new PublickeyAuthenticatorImpl() );

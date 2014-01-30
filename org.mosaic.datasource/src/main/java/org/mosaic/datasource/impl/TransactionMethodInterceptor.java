@@ -1,5 +1,6 @@
 package org.mosaic.datasource.impl;
 
+import com.google.common.base.Optional;
 import java.lang.reflect.Method;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -9,7 +10,7 @@ import org.mosaic.modules.Component;
 import org.mosaic.modules.Service;
 import org.mosaic.modules.spi.MethodInterceptor;
 import org.mosaic.util.collections.MapEx;
-import org.mosaic.util.reflection.AnnotationFinder;
+import org.mosaic.util.reflection.MethodAnnotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,16 +29,15 @@ final class TransactionMethodInterceptor implements MethodInterceptor
     @Override
     public boolean interestedIn( @Nonnull Method method, @Nonnull MapEx<String, Object> context )
     {
-        AnnotationFinder annotationFinder = new AnnotationFinder( method );
-        ReadOnly readOnlyAnn = annotationFinder.findDeep( ReadOnly.class );
-        if( readOnlyAnn != null )
+        Optional<ReadOnly> roHolder = MethodAnnotations.getMetaAnnotation( method, ReadOnly.class );
+        if( roHolder.isPresent() )
         {
             context.put( "readOnly", true );
             return true;
         }
 
-        ReadWrite readWriteAnn = annotationFinder.findDeep( ReadWrite.class );
-        if( readWriteAnn != null )
+        Optional<ReadWrite> rwHolder = MethodAnnotations.getMetaAnnotation( method, ReadWrite.class );
+        if( rwHolder.isPresent() )
         {
             context.put( "readOnly", false );
             return true;
@@ -55,7 +55,7 @@ final class TransactionMethodInterceptor implements MethodInterceptor
                 "tx",
                 this.transactionManager.startTransaction(
                         invocation.getMethod().getName(),
-                        invocation.getInterceptorContext().require( "readOnly", boolean.class ) ) );
+                        invocation.getInterceptorContext().find( "readOnly", boolean.class ).get() ) );
 
         return invocation.continueInvocation();
     }

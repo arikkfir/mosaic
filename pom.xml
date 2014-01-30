@@ -16,63 +16,6 @@
     <profiles>
         <profile>
             <id>dist</id>
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.felix</groupId>
-                    <artifactId>org.apache.felix.log</artifactId>
-                    <scope>runtime</scope>
-                </dependency>
-                <dependency>
-                    <groupId>org.apache.felix</groupId>
-                    <artifactId>org.apache.felix.configadmin</artifactId>
-                    <scope>runtime</scope>
-                </dependency>
-                <dependency>
-                    <groupId>org.apache.felix</groupId>
-                    <artifactId>org.apache.felix.eventadmin</artifactId>
-                    <scope>runtime</scope>
-                </dependency>
-                <dependency>
-                    <groupId>com.google.guava</groupId>
-                    <artifactId>guava</artifactId>
-                    <scope>runtime</scope>
-                </dependency>
-                <dependency>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>jcl-over-slf4j</artifactId>
-                    <scope>runtime</scope>
-                </dependency>
-                <dependency>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>log4j-over-slf4j</artifactId>
-                    <scope>runtime</scope>
-                </dependency>
-                <dependency>
-                    <groupId>joda-time</groupId>
-                    <artifactId>joda-time</artifactId>
-                    <scope>runtime</scope>
-                </dependency>
-                <dependency>
-                    <groupId>javax.validation</groupId>
-                    <artifactId>validation-api</artifactId>
-                    <scope>runtime</scope>
-                </dependency>
-                <dependency>
-                    <groupId>org.hibernate</groupId>
-                    <artifactId>hibernate-validator</artifactId>
-                    <scope>runtime</scope>
-                </dependency>
-                <dependency>
-                    <groupId>javax.el</groupId>
-                    <artifactId>javax.el-api</artifactId>
-                    <scope>runtime</scope>
-                </dependency>
-                <dependency>
-                    <groupId>org.glassfish.web</groupId>
-                    <artifactId>javax.el</artifactId>
-                    <scope>runtime</scope>
-                </dependency>
-            </dependencies>
             <build>
                 <plugins>
                     <plugin>
@@ -105,16 +48,16 @@
         <module>org.mosaic.event</module>
         <module>org.mosaic.jsr305</module>
         <module>org.mosaic.launcher</module>
-        <module>org.mosaic.management</module>
+        <!--<module>org.mosaic.management</module>-->
         <module>org.mosaic.modules</module>
         <module>org.mosaic.parent</module>
         <module>org.mosaic.pathwatchers</module>
         <module>org.mosaic.security</module>
         <module>org.mosaic.server</module>
         <module>org.mosaic.tasks</module>
-        <module>org.mosaic.util</module>
+        <module>org.mosaic.utils</module>
         <module>org.mosaic.validation</module>
-        <module>org.mosaic.web</module>
+        <!--<module>org.mosaic.web</module>-->
     </modules>
 
     <scm>

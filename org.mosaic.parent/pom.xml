@@ -43,7 +43,6 @@
                             <!-- specify location of source code for bundle resource watching -->
                             <Bundle-Resources>${project.basedir}/src/main/resources</Bundle-Resources>
                         </instructions>
-                        <inferOptionalPackagesFromDependencies>false</inferOptionalPackagesFromDependencies>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -252,7 +251,9 @@
                             <failBuild>true</failBuild>
                             <failOnWarning>true</failOnWarning>
                             <ignoreDirect>false</ignoreDirect>
-                            <ignoreNonCompile>true</ignoreNonCompile>
+                            <!-- Uncomment to ignore non-compile deps
+                                <ignoreNonCompile>true</ignoreNonCompile>
+                            -->
                             <verbose>false</verbose>
                         </configuration>
                     </execution>
@@ -317,16 +318,6 @@
             </dependency>
             <dependency>
                 <groupId>org.mosaic</groupId>
-                <artifactId>org.mosaic.launcher</artifactId>
-                <version>[${project.version}]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mosaic</groupId>
-                <artifactId>org.mosaic.management</artifactId>
-                <version>[${project.version}]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mosaic</groupId>
                 <artifactId>org.mosaic.modules</artifactId>
                 <version>[${project.version}]</version>
             </dependency>
@@ -342,17 +333,57 @@
             </dependency>
             <dependency>
                 <groupId>org.mosaic</groupId>
-                <artifactId>org.mosaic.tasks</artifactId>
-                <version>[${project.version}]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mosaic</groupId>
                 <artifactId>org.mosaic.server</artifactId>
                 <version>[${project.version}]</version>
             </dependency>
             <dependency>
                 <groupId>org.mosaic</groupId>
-                <artifactId>org.mosaic.util</artifactId>
+                <artifactId>org.mosaic.tasks</artifactId>
+                <version>[${project.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mosaic.utils</groupId>
+                <artifactId>org.mosaic.utils.base</artifactId>
+                <version>[${project.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mosaic.utils</groupId>
+                <artifactId>org.mosaic.utils.collections</artifactId>
+                <version>[${project.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mosaic.utils</groupId>
+                <artifactId>org.mosaic.utils.conversion</artifactId>
+                <version>[${project.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mosaic.utils</groupId>
+                <artifactId>org.mosaic.utils.expression</artifactId>
+                <version>[${project.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mosaic.utils</groupId>
+                <artifactId>org.mosaic.utils.method</artifactId>
+                <version>[${project.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mosaic.utils</groupId>
+                <artifactId>org.mosaic.utils.osgi</artifactId>
+                <version>[${project.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mosaic.utils</groupId>
+                <artifactId>org.mosaic.utils.reflection</artifactId>
+                <version>[${project.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mosaic.utils</groupId>
+                <artifactId>org.mosaic.utils.resource</artifactId>
+                <version>[${project.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mosaic.utils</groupId>
+                <artifactId>org.mosaic.utils.xml</artifactId>
                 <version>[${project.version}]</version>
             </dependency>
             <dependency>
@@ -579,6 +610,11 @@
 
             <!-- utilities -->
             <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>[3.2.1,4)</version>
+            </dependency>
+            <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
                 <version>[15.0,16)</version>
@@ -602,6 +638,11 @@
                 <groupId>commons-codec</groupId>
                 <artifactId>commons-codec</artifactId>
                 <version>[1.7,2)</version>
+            </dependency>
+            <dependency>
+                <groupId>com.thoughtworks.paranamer</groupId>
+                <artifactId>paranamer</artifactId>
+                <version>[2.6,3)</version>
             </dependency>
 
             <!-- freemarker -->
@@ -747,6 +788,11 @@
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
                 <version>[4.11,5)</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hamcrest</groupId>
+                <artifactId>hamcrest-core</artifactId>
+                <version>[1,2)</version>
             </dependency>
 
         </dependencies>

@@ -35,7 +35,7 @@ abstract class AbstractSubject implements Subject
         this.authenticated = false;
         this.roles = Collections.emptySet();
         this.principals = new TypedCollectionImpl<>( Collections.<Principal>emptyList() );
-        this.credentials = new TypedCollectionImpl<>( Collections.<Object>emptyList() );
+        this.credentials = new TypedCollectionImpl<>( Collections.emptyList() );
     }
 
     protected AbstractSubject( @Nonnull AuthenticationResult result )

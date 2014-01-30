@@ -1,5 +1,6 @@
 package org.mosaic.event.impl;
 
+import com.google.common.base.Optional;
 import java.util.*;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -9,8 +10,8 @@ import org.mosaic.modules.MethodEndpoint;
 import org.mosaic.modules.Service;
 import org.mosaic.modules.ServicePropertiesProvider;
 import org.mosaic.util.collections.MapEx;
-import org.mosaic.util.reflection.MethodParameter;
-import org.mosaic.util.reflection.ParameterResolver;
+import org.mosaic.util.method.MethodParameter;
+import org.mosaic.util.method.ParameterResolver;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventConstants;
 import org.osgi.service.event.EventHandler;
@@ -88,14 +89,14 @@ public final class EventListenerAdapter implements EventHandler, ServiceProperti
         }
     }
 
-    private class EventParameterResolver implements ParameterResolver
+    private class EventParameterResolver implements ParameterResolver<Object>
     {
         @Nullable
         @Override
-        public Object resolve( @Nonnull MethodParameter parameter, @Nonnull MapEx<String, Object> resolveContext )
-                throws Exception
+        public Optional<Object> resolve( @Nonnull MethodParameter parameter,
+                                         @Nonnull MapEx<String, Object> resolveContext ) throws Exception
         {
-            return resolveContext.require( "event" );
+            return resolveContext.find( "event" );
         }
     }
 }

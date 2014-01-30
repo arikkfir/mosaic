@@ -9,8 +9,8 @@ import org.mosaic.dao.DaoException;
 import org.mosaic.dao.Query;
 import org.mosaic.datasource.TransactionManager;
 import org.mosaic.modules.Service;
-import org.mosaic.util.reflection.InvokableMethodHandle;
-import org.mosaic.util.reflection.MethodHandleFactory;
+import org.mosaic.util.method.InvokableMethodHandle;
+import org.mosaic.util.method.MethodHandleFactory;
 
 import static java.lang.String.format;
 

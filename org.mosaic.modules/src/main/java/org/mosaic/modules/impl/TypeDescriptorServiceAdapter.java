@@ -1,16 +1,17 @@
 package org.mosaic.modules.impl;
 
+import com.google.common.base.Optional;
 import java.lang.reflect.Constructor;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.apache.commons.lang3.tuple.Pair;
 import org.mosaic.modules.*;
 import org.mosaic.util.collections.EmptyMapEx;
 import org.mosaic.util.collections.HashMapEx;
 import org.mosaic.util.collections.MapEx;
 import org.mosaic.util.osgi.FilterBuilder;
-import org.mosaic.util.pair.Pair;
 import org.osgi.framework.*;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
@@ -24,9 +25,9 @@ import static org.mosaic.modules.impl.Activator.getServiceAndFilterFromType;
 /**
  * @author arik
  */
-@SuppressWarnings( "unchecked" )
+@SuppressWarnings("unchecked")
 final class TypeDescriptorServiceAdapter extends Lifecycle
-        implements ServiceTrackerCustomizer, ModuleWiring.ServiceRequirement, ServiceCapabilityProvider
+        implements ServiceTrackerCustomizer, Module.ServiceRequirement, ServiceCapabilityProvider
 {
     @Nonnull
     private final TypeDescriptor typeDescriptor;
@@ -127,9 +128,9 @@ final class TypeDescriptorServiceAdapter extends Lifecycle
 
     @Nonnull
     @Override
-    public List<ModuleWiring.ServiceCapability> getServiceCapabilities()
+    public List<Module.ServiceCapability> getServiceCapabilities()
     {
-        List<ModuleWiring.ServiceCapability> capabilities = new LinkedList<>();
+        List<Module.ServiceCapability> capabilities = new LinkedList<>();
         for( Collection<ServiceRegistration<?>> registrationsCollection : this.serviceAdaptations.values() )
         {
             for( ServiceRegistration<?> registration : registrationsCollection )
@@ -341,7 +342,7 @@ final class TypeDescriptorServiceAdapter extends Lifecycle
         @Override
         public Module getProvider()
         {
-            return Activator.getModuleManager().getModule( this.reference.getBundle().getBundleId() );
+            return Activator.getModuleManager().getModule( this.reference.getBundle().getBundleId() ).orNull();
         }
 
         @Nonnull
@@ -358,31 +359,15 @@ final class TypeDescriptorServiceAdapter extends Lifecycle
             return properties;
         }
 
-        @Nullable
-        @Override
-        public Object get()
-        {
-            return TypeDescriptorServiceAdapter.this.serviceTracker.getService( this.reference );
-        }
-
         @Nonnull
         @Override
-        public Object require()
+        public Optional<?> service()
         {
-            Object service = get();
-            if( service != null )
-            {
-                return service;
-            }
-            else
-            {
-                String typeName = TypeDescriptorServiceAdapter.this.adaptedType.getName();
-                throw new IllegalStateException( "service of type '" + typeName + "' is not available" );
-            }
+            return Optional.fromNullable( TypeDescriptorServiceAdapter.this.serviceTracker.getService( this.reference ) );
         }
     }
 
-    private class ServiceCapabilityImpl implements ModuleWiring.ServiceCapability
+    private class ServiceCapabilityImpl implements Module.ServiceCapability
     {
         @Nonnull
         private final ServiceRegistration registration;
@@ -425,7 +410,7 @@ final class TypeDescriptorServiceAdapter extends Lifecycle
                 ModuleImpl module = TypeDescriptorServiceAdapter.this.typeDescriptor.getModule();
                 try
                 {
-                    return module.getModuleResources().loadClass( objectClass[ 0 ] );
+                    return module.getClassLoader().loadClass( objectClass[ 0 ] );
                 }
                 catch( Throwable e )
                 {
@@ -465,7 +450,7 @@ final class TypeDescriptorServiceAdapter extends Lifecycle
                     List<Module> consumers = new LinkedList<>();
                     for( Bundle bundle : usingBundles )
                     {
-                        consumers.add( Activator.getModuleManager().getModule( bundle.getBundleId() ) );
+                        consumers.add( Activator.getModuleManager().getModule( bundle.getBundleId() ).get() );
                     }
                     return consumers;
                 }

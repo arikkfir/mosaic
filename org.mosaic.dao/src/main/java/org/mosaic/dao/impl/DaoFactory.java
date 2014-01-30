@@ -1,5 +1,6 @@
 package org.mosaic.dao.impl;
 
+import com.google.common.base.Optional;
 import java.lang.reflect.Proxy;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,15 +26,14 @@ final class DaoFactory
     @OnServiceAdded
     void onDaoTemplateAdded( @Nonnull ServiceReference<ServiceTemplate<Dao>> daoTemplateReference )
     {
-        ServiceTemplate<Dao> serviceTemplate = daoTemplateReference.get();
-        if( serviceTemplate != null )
+        Optional<ServiceTemplate<Dao>> tmplHolder = daoTemplateReference.service();
+        if( tmplHolder.isPresent() )
         {
-            Class daoType = serviceTemplate.getTemplate();
-
+            Class daoType = tmplHolder.get().getTemplate();
             Object dao = Proxy.newProxyInstance( daoType.getClassLoader(),
                                                  new Class[] { daoType },
-                                                 new DaoProxy( daoType, serviceTemplate.getType().value() ) );
-            ServiceRegistration registration = this.module.getModuleWiring().register( daoType, dao );
+                                                 new DaoProxy( daoType, tmplHolder.get().getType().value() ) );
+            ServiceRegistration registration = this.module.register( daoType, dao );
             this.registrations.put( daoTemplateReference.getId(), registration );
         }
     }

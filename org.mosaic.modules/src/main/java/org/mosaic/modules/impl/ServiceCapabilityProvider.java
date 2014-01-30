@@ -2,7 +2,7 @@ package org.mosaic.modules.impl;
 
 import java.util.List;
 import javax.annotation.Nonnull;
-import org.mosaic.modules.ModuleWiring;
+import org.mosaic.modules.Module;
 
 /**
  * @author arik
@@ -10,5 +10,5 @@ import org.mosaic.modules.ModuleWiring;
 public interface ServiceCapabilityProvider
 {
     @Nonnull
-    List<ModuleWiring.ServiceCapability> getServiceCapabilities();
+    List<Module.ServiceCapability> getServiceCapabilities();
 }

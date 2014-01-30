@@ -1,27 +1,24 @@
 package org.mosaic.modules;
 
+import com.google.common.base.Optional;
 import java.util.Collection;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import org.mosaic.server.Version;
+import org.mosaic.util.version.Version;
 
 /**
  * @author arik
  */
 public interface ModuleManager
 {
-    @Nullable
-    Module getModule( long id );
+    @Nonnull
+    Optional<? extends Module> getModule( long id );
 
-    @Nullable
-    Module getModule( @Nonnull String name );
-
-    @Nullable
-    Module getModule( @Nonnull String name, @Nonnull Version version );
+    @Nonnull
+    Optional<? extends Module> getModule( @Nonnull String name, @Nonnull Version version );
 
     @Nonnull
     Collection<? extends Module> getModules();
 
-    @Nullable
-    Module getModuleFor( @Nonnull Object target );
+    @Nonnull
+    Optional<? extends Module> getModuleFor( @Nonnull Object source );
 }

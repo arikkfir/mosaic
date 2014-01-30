@@ -1,5 +1,6 @@
 package org.mosaic.datasource.impl;
 
+import com.google.common.base.Optional;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import java.io.PrintWriter;
 import java.sql.Connection;
@@ -66,10 +67,10 @@ final class ConfigurableDataSource implements DataSource
             throw new IllegalStateException( "no active transaction" );
         }
 
-        Connection connection = transaction.getAttributes().get( TX_CONNECTION_KEY, Connection.class );
-        if( connection == null )
+        Optional<Connection> conHolder = transaction.getAttributes().find( TX_CONNECTION_KEY, Connection.class );
+        if( !conHolder.isPresent() )
         {
-            connection = dataSource.getConnection();
+            Connection connection = dataSource.getConnection();
             try
             {
                 connection.setAutoCommit( false );
@@ -91,9 +92,12 @@ final class ConfigurableDataSource implements DataSource
                 throw e;
             }
             transaction.getAttributes().put( TX_CONNECTION_KEY, connection );
+            return connection;
         }
-
-        return connection;
+        else
+        {
+            return conHolder.get();
+        }
     }
 
     @Nonnull
@@ -150,29 +154,29 @@ final class ConfigurableDataSource implements DataSource
         ComboPooledDataSource dataSource = new ComboPooledDataSource();
         dataSource.setDataSourceName( this.name );
         dataSource.setDescription( cfg.get( "description" ) );
-        dataSource.setJdbcUrl( cfg.require( "url" ) );
+        dataSource.setJdbcUrl( cfg.find( "url" ).get() );
         dataSource.setUser( cfg.get( "username" ) );
         dataSource.setPassword( cfg.get( "password" ) );
-        dataSource.setCheckoutTimeout( cfg.get( "checkoutTimeoutSeconds", Integer.class, 5 ) * 1000 );
-        dataSource.setAcquireIncrement( cfg.get( "acquireIncrement", Integer.class, 1 ) );
-        dataSource.setAcquireRetryAttempts( cfg.get( "acquireRetryAttempts", Integer.class, 30 ) );
-        dataSource.setAcquireRetryDelay( cfg.get( "acquireRetryDelaySeconds", Integer.class, 1 ) * 1000 );
-        dataSource.setAutoCommitOnClose( cfg.get( "autoCommitOnClose", Boolean.class, false ) );
-        dataSource.setIdleConnectionTestPeriod( cfg.get( "idleConnectionTestPeriod", Integer.class, 300 ) );
-        dataSource.setInitialPoolSize( cfg.get( "initialPoolSize", Integer.class, 1 ) );
-        dataSource.setMaxIdleTime( cfg.get( "maxIdleTimeSeconds", Integer.class, 300 ) );
-        dataSource.setMaxPoolSize( cfg.get( "maxPoolSize", Integer.class, 5 ) );
-        dataSource.setMaxStatements( cfg.get( "globalMaxStatements", Integer.class, 0 ) );
-        dataSource.setMaxStatementsPerConnection( cfg.get( "maxStatementsPerConnection", Integer.class, 100 ) );
-        dataSource.setMinPoolSize( cfg.get( "minPoolSize", Integer.class, 1 ) );
-        dataSource.setTestConnectionOnCheckout( cfg.get( "testConnectionOnCheckout", Boolean.class, false ) );
-        dataSource.setTestConnectionOnCheckin( cfg.get( "testConnectionOnCheckin", Boolean.class, false ) );
-        dataSource.setPreferredTestQuery( cfg.get( "testQuery" ) );
-        dataSource.setMaxIdleTimeExcessConnections( cfg.get( "maxIdleTimeExcessConnectionsSeconds", Integer.class, 300 ) );
-        dataSource.setMaxConnectionAge( cfg.get( "maxConnectionAge", Integer.class, 0 ) );
-        dataSource.setUnreturnedConnectionTimeout( cfg.get( "unreturnedConnectionTimeoutSeconds", Integer.class, 0 ) );
-        dataSource.setDebugUnreturnedConnectionStackTraces( cfg.get( "debugUnreturnedConnectionStackTraces", Boolean.class, false ) );
-        dataSource.setStatementCacheNumDeferredCloseThreads( cfg.get( "statementCacheNumDeferredCloseThreads", Integer.class, 0 ) );
+        dataSource.setCheckoutTimeout( cfg.find( "checkoutTimeoutSeconds", Integer.class ).or( 5 ) * 1000 );
+        dataSource.setAcquireIncrement( cfg.find( "acquireIncrement", Integer.class ).or( 1 ) );
+        dataSource.setAcquireRetryAttempts( cfg.find( "acquireRetryAttempts", Integer.class ).or( 30 ) );
+        dataSource.setAcquireRetryDelay( cfg.find( "acquireRetryDelaySeconds", Integer.class ).or( 1 ) * 1000 );
+        dataSource.setAutoCommitOnClose( cfg.find( "autoCommitOnClose", Boolean.class ).or( false ) );
+        dataSource.setIdleConnectionTestPeriod( cfg.find( "idleConnectionTestPeriod", Integer.class ).or( 300 ) );
+        dataSource.setInitialPoolSize( cfg.find( "initialPoolSize", Integer.class ).or( 1 ) );
+        dataSource.setMaxIdleTime( cfg.find( "maxIdleTimeSeconds", Integer.class ).or( 300 ) );
+        dataSource.setMaxPoolSize( cfg.find( "maxPoolSize", Integer.class ).or( 5 ) );
+        dataSource.setMaxStatements( cfg.find( "globalMaxStatements", Integer.class ).or( 0 ) );
+        dataSource.setMaxStatementsPerConnection( cfg.find( "maxStatementsPerConnection", Integer.class ).or( 100 ) );
+        dataSource.setMinPoolSize( cfg.find( "minPoolSize", Integer.class ).or( 1 ) );
+        dataSource.setTestConnectionOnCheckout( cfg.find( "testConnectionOnCheckout", Boolean.class ).or( false ) );
+        dataSource.setTestConnectionOnCheckin( cfg.find( "testConnectionOnCheckin", Boolean.class ).or( false ) );
+        dataSource.setPreferredTestQuery( cfg.find( "testQuery" ).orNull() );
+        dataSource.setMaxIdleTimeExcessConnections( cfg.find( "maxIdleTimeExcessConnectionsSeconds", Integer.class ).or( 300 ) );
+        dataSource.setMaxConnectionAge( cfg.find( "maxConnectionAge", Integer.class ).or( 0 ) );
+        dataSource.setUnreturnedConnectionTimeout( cfg.find( "unreturnedConnectionTimeoutSeconds", Integer.class ).or( 0 ) );
+        dataSource.setDebugUnreturnedConnectionStackTraces( cfg.find( "debugUnreturnedConnectionStackTraces", Boolean.class ).or( false ) );
+        dataSource.setStatementCacheNumDeferredCloseThreads( cfg.find( "statementCacheNumDeferredCloseThreads", Integer.class ).or( 0 ) );
 
         Properties properties = new Properties();
         for( Map.Entry<String, String> entry : cfg.entrySet() )
@@ -188,7 +192,7 @@ final class ConfigurableDataSource implements DataSource
         try( Connection connection = dataSource.getConnection() )
         {
             this.dataSource = dataSource;
-            this.registration = this.module.getModuleWiring().register( DataSource.class, this, Property.property( "name", this.name ) );
+            this.registration = this.module.register( DataSource.class, this, Property.property( "name", this.name ) );
         }
         catch( Exception e )
         {

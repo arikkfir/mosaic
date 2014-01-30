@@ -1,13 +1,25 @@
+# IDEA files
 .idea
+out
 *.iml
-atlassian-ide-plugin.xml
-pom.xml.releaseBackup
-release.properties
-target
 */*.iml
+atlassian-ide-plugin.xml
+
+# Maven temporary files
+pom.xml.releaseBackup
 */pom.xml.releaseBackup
+release.properties
+*/release.properties
+target
 */target
-run/boot
+
+# Run directory
 run/etc/ssh/history/*
+run/lib/lib/*
+run/lib/mosaic/*
 run/logs
 run/work
+
+# Temp files
+**/felix-cache
+**/abrt_checker*

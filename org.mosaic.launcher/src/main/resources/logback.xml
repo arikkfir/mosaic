@@ -51,4 +51,9 @@
     <logger name="org.mosaic.modules.Module.unresolved" level="WARN"/>
     <logger name="org.mosaic.modules.Module.uninstalled" level="INFO"/>
 
+    <!-- =========================================================================================================== -->
+    <!--  Include user-level logback configuration                                                                   -->
+    <!-- =========================================================================================================== -->
+    <include file="${mosaic.home.etc}/logback.xml"/>
+
 </configuration>

@@ -17,14 +17,17 @@
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.jsr305</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.modules</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.web</artifactId>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 

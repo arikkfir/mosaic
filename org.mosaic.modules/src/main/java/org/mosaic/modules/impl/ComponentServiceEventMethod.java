@@ -1,5 +1,6 @@
 package org.mosaic.modules.impl;
 
+import com.google.common.base.Optional;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -11,12 +12,12 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.apache.commons.lang3.tuple.Pair;
 import org.mosaic.modules.*;
 import org.mosaic.modules.ServiceReference;
 import org.mosaic.util.collections.HashMapEx;
 import org.mosaic.util.collections.MapEx;
 import org.mosaic.util.osgi.FilterBuilder;
-import org.mosaic.util.pair.Pair;
 import org.osgi.framework.*;
 import org.osgi.util.tracker.ServiceTracker;
 import org.osgi.util.tracker.ServiceTrackerCustomizer;
@@ -30,7 +31,7 @@ import static org.mosaic.modules.impl.Activator.getServiceAndFilterFromType;
  */
 @SuppressWarnings("unchecked")
 final class ComponentServiceEventMethod extends Lifecycle
-        implements ServiceTrackerCustomizer, ModuleWiring.ServiceRequirement
+        implements ServiceTrackerCustomizer, Module.ServiceRequirement
 {
     private static final Logger LOG = LoggerFactory.getLogger( ComponentServiceEventMethod.class );
 
@@ -304,7 +305,7 @@ final class ComponentServiceEventMethod extends Lifecycle
         @Override
         public Module getProvider()
         {
-            return Activator.getModuleManager().getModule( this.reference.getBundle().getBundleId() );
+            return Activator.getModuleManager().getModule( this.reference.getBundle().getBundleId() ).orNull();
         }
 
         @Nonnull
@@ -321,27 +322,11 @@ final class ComponentServiceEventMethod extends Lifecycle
             return properties;
         }
 
-        @Nullable
-        @Override
-        public Object get()
-        {
-            return this.service;
-        }
-
         @Nonnull
         @Override
-        public Object require()
+        public Optional<?> service()
         {
-            Object service = get();
-            if( service != null )
-            {
-                return service;
-            }
-            else
-            {
-                String typeName = ComponentServiceEventMethod.this.serviceType.getName();
-                throw new IllegalStateException( "service of type '" + typeName + "' is not available" );
-            }
+            return Optional.fromNullable( this.service );
         }
     }
 }

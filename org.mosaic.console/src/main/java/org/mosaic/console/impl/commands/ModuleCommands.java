@@ -1,7 +1,7 @@
 package org.mosaic.console.impl.commands;
 
 import java.io.IOException;
-import java.net.URL;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
 import javax.annotation.Nonnull;
@@ -11,7 +11,10 @@ import org.mosaic.console.Console;
 import org.mosaic.console.spi.CommandManager;
 import org.mosaic.console.util.table.SimpleColumn;
 import org.mosaic.console.util.table.TablePrinter;
-import org.mosaic.modules.*;
+import org.mosaic.modules.Component;
+import org.mosaic.modules.Module;
+import org.mosaic.modules.ModuleStartException;
+import org.mosaic.modules.ServiceReference;
 import org.mosaic.util.collections.MapEx;
 
 import static com.google.common.base.Strings.padStart;
@@ -27,24 +30,24 @@ final class ModuleCommands
     @Component
     private CommandManager commandManager;
 
-    @Command(synopsis = "list modules",
-             description = "This command will list modules, possibly filtered by a given filter.")
+    @Command( synopsis = "list modules",
+              description = "This command will list modules, possibly filtered by a given filter." )
     void list( @Nonnull
                Console console,
 
                @Nullable
-               @Command.Option(names = { "s", "sort" },
-                               defaultValue = "id",
-                               synopsis = "select how modules will be sorted, either 'id', 'name' or 'version'",
-                               description = "")
+               @Command.Option( names = { "s", "sort" },
+                                defaultValue = "id",
+                                synopsis = "select how modules will be sorted, either 'id', 'name' or 'version'",
+                                description = "" )
                String sort,
 
                @Nullable
-               @Command.Arg(synopsis = "module names filter",
-                            description = "A simple glob pattern to filter modules. Examples: 'mymodule*' or 'org.mycomp.*'.")
+               @Command.Arg( synopsis = "module names filter",
+                             description = "A simple glob pattern to filter modules. Examples: 'mymodule*' or 'org.mycomp.*'." )
                String filter ) throws IOException
     {
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         TablePrinter<Module> table = new TablePrinter<>(
                 console,
                 new SimpleColumn<Module>( "ID", 5 )
@@ -92,15 +95,15 @@ final class ModuleCommands
         table.endTable();
     }
 
-    @Command(synopsis = "start modules",
-             description = "This command will attempt to start the given module(s), if they have not already been started.")
+    @Command( synopsis = "start modules",
+              description = "This command will attempt to start the given module(s), if they have not already been started." )
     void start( @Nonnull
                 Console console,
 
                 @Nullable
-                @Command.Arg(synopsis = "module names filter",
-                             description = "The command will attempt to start all modules matching this filter." +
-                                           "The filter is a simple glob pattern - such as 'mymodule*' or 'org.mycomp.*'.")
+                @Command.Arg( synopsis = "module names filter",
+                              description = "The command will attempt to start all modules matching this filter." +
+                                            "The filter is a simple glob pattern - such as 'mymodule*' or 'org.mycomp.*'." )
                 String filter ) throws IOException
     {
         for( Module module : new ModuleMatcher().matchModules( null, filter ) )
@@ -116,15 +119,15 @@ final class ModuleCommands
         }
     }
 
-    @Command(synopsis = "stop modules",
-             description = "This command will stop the given module(s).")
+    @Command( synopsis = "stop modules",
+              description = "This command will stop the given module(s)." )
     void stop( @Nonnull
                Console console,
 
                @Nullable
-               @Command.Arg(synopsis = "module names filter",
-                            description = "The command will attempt to stop all modules matching this filter." +
-                                          "The filter is a simple glob pattern - such as 'mymodule*' or 'org.mycomp.*'.")
+               @Command.Arg( synopsis = "module names filter",
+                             description = "The command will attempt to stop all modules matching this filter." +
+                                           "The filter is a simple glob pattern - such as 'mymodule*' or 'org.mycomp.*'." )
                String filter ) throws IOException
     {
         for( Module module : new ModuleMatcher().matchModules( null, filter ) )
@@ -140,45 +143,45 @@ final class ModuleCommands
         }
     }
 
-    @Command(synopsis = "inspect modules",
-             description = "This command will inspect the given module(s).")
+    @Command( synopsis = "inspect modules",
+              description = "This command will inspect the given module(s)." )
     void inspect( @Nonnull
                   Console console,
 
-                  @Command.Option(names = { "a", "all" },
-                                  synopsis = "show headers, packages, services and contents",
-                                  description = "show all possible information on matching module(s)",
-                                  defaultValue = "false")
+                  @Command.Option( names = { "a", "all" },
+                                   synopsis = "show headers, packages, services and contents",
+                                   description = "show all possible information on matching module(s)",
+                                   defaultValue = "false" )
                   boolean showAll,
 
-                  @Command.Option(names = { "h", "headers" },
-                                  synopsis = "show headers",
-                                  description = "whether to show manifest headers (default is false)",
-                                  defaultValue = "false")
+                  @Command.Option( names = { "h", "headers" },
+                                   synopsis = "show headers",
+                                   description = "whether to show manifest headers (default is false)",
+                                   defaultValue = "false" )
                   boolean showHeaders,
 
-                  @Command.Option(names = { "p", "packages" },
-                                  synopsis = "show package requirements and capabilities",
-                                  description = "whether to show packages this module imports and exports (default is false)",
-                                  defaultValue = "false")
+                  @Command.Option( names = { "p", "packages" },
+                                   synopsis = "show package requirements and capabilities",
+                                   description = "whether to show packages this module imports and exports (default is false)",
+                                   defaultValue = "false" )
                   boolean showPackages,
 
-                  @Command.Option(names = { "s", "services" },
-                                  synopsis = "show services obtained and exported by this module",
-                                  description = "whether to show services this module imports and exports (default is false)",
-                                  defaultValue = "false")
+                  @Command.Option( names = { "s", "services" },
+                                   synopsis = "show services obtained and exported by this module",
+                                   description = "whether to show services this module imports and exports (default is false)",
+                                   defaultValue = "false" )
                   boolean showServices,
 
-                  @Command.Option(names = { "c", "contents" },
-                                  synopsis = "show module contents",
-                                  description = "whether to show module contents and files (default is false)",
-                                  defaultValue = "false")
+                  @Command.Option( names = { "c", "contents" },
+                                   synopsis = "show module contents",
+                                   description = "whether to show module contents and files (default is false)",
+                                   defaultValue = "false" )
                   boolean showContents,
 
                   @Nullable
-                  @Command.Arg(synopsis = "module names filter",
-                               description = "The command will inspect all modules matching this filter." +
-                                             "The filter is a simple glob pattern - such as 'mymodule*' or 'org.mycomp.*'.")
+                  @Command.Arg( synopsis = "module names filter",
+                                description = "The command will inspect all modules matching this filter." +
+                                              "The filter is a simple glob pattern - such as 'mymodule*' or 'org.mycomp.*'." )
                   String filter ) throws IOException
     {
         for( Module module : new ModuleMatcher().matchModules( null, filter ) )
@@ -223,7 +226,7 @@ final class ModuleCommands
         if( showPackages )
         {
             console.println().println( "PACKAGE REQUIREMENTS" );
-            for( ModuleWiring.PackageRequirement requirement : module.getModuleWiring().getPackageRequirements() )
+            for( Module.PackageRequirement requirement : module.getPackageRequirements() )
             {
                 console.println( "{}{} {} {}",
                                  repeat( " ", 8 ),
@@ -241,7 +244,7 @@ final class ModuleCommands
             }
 
             console.println().println( "EXPORTED PACKAGES" );
-            for( ModuleWiring.PackageCapability capability : module.getModuleWiring().getPackageCapabilities() )
+            for( Module.PackageCapability capability : module.getPackageCapabilities() )
             {
                 console.println( "{}{}-{}", repeat( " ", 8 ), capability.getPackageName(), capability.getVersion() );
                 Collection<Module> consumers = capability.getConsumers();
@@ -258,7 +261,7 @@ final class ModuleCommands
         if( showServices )
         {
             console.println().println( "SERVICE REQUIREMENTS" );
-            for( ModuleWiring.ServiceRequirement requirement : module.getModuleWiring().getServiceRequirements() )
+            for( Module.ServiceRequirement requirement : module.getServiceRequirements() )
             {
                 console.println( "{}{}", repeat( " ", 8 ), requirement.getType().getName() );
                 console.println( "{}Filter: {}", repeat( " ", 12 ), requirement.getFilter() );
@@ -269,7 +272,7 @@ final class ModuleCommands
             }
 
             console.println().println( "EXPORTED SERVICES" );
-            for( ModuleWiring.ServiceCapability serviceInfo : module.getModuleWiring().getServiceCapabilities() )
+            for( Module.ServiceCapability serviceInfo : module.getServiceCapabilities() )
             {
                 printServiceInfo( console, serviceInfo, true );
             }
@@ -278,15 +281,15 @@ final class ModuleCommands
         if( showContents )
         {
             console.println().println( "CONTENTS" );
-            for( URL resource : module.getModuleResources().findResources( "/**" ) )
+            for( Path resource : module.findResources( "/**" ) )
             {
-                console.println( "{}{}", repeat( " ", 8 ), resource.getPath() );
+                console.println( "{}{}", repeat( " ", 8 ), resource );
             }
         }
     }
 
     private void printServiceInfo( @Nonnull Console console,
-                                   @Nonnull ModuleWiring.ServiceCapability capability,
+                                   @Nonnull Module.ServiceCapability capability,
                                    boolean printConsumers ) throws IOException
     {
         console.println( "{}{}[{}]", repeat( " ", 8 ), capability.getType().getName(), capability.getId() );

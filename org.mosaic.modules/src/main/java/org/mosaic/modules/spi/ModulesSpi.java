@@ -18,13 +18,8 @@ public final class ModulesSpi
     @Nullable
     public static Object getValueForField( long moduleId, @Nonnull Class<?> type, @Nonnull String fieldName )
     {
-        Module module = Activator.getModuleManager().getModule( moduleId );
-        if( module == null )
-        {
-            throw new IllegalArgumentException( "no module with id " + moduleId + " found" );
-        }
-
-        TypeDescriptor typeDescriptor = module.getModuleTypes().getTypeDescriptor( type );
+        Module module = Activator.getModuleManager().getModule( moduleId ).get();
+        TypeDescriptor typeDescriptor = module.getTypeDescriptor( type );
         if( typeDescriptor == null )
         {
             throw new ComponentCreateException( "could not find descriptor for type '" + type.getName() + "' in module " + module, type, module );
