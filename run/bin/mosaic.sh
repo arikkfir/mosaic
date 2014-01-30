@@ -51,6 +51,12 @@ MOSAIC_HOME="$( cd -P "$( dirname "${SOURCE}" )" && cd .. && pwd )"
 [ -z "${MOSAIC_BACKGROUND}" ] && MOSAIC_BACKGROUND="yes"
 [ -z "${MOSAIC_LOG_OUTPUT}" ] && MOSAIC_LOG_OUTPUT="FILE"
 [ -z "${MOSAIC_JMX_PORT}" ] && MOSAIC_JMX_PORT="7080"
+[ -z "${MOSAIC_HOME_APPS}" ] && MOSAIC_HOME_APPS="${MOSAIC_HOME}/apps"
+[ -z "${MOSAIC_HOME_ETC}" ] && MOSAIC_HOME_ETC="${MOSAIC_HOME}/etc"
+[ -z "${MOSAIC_HOME_LIB}" ] && MOSAIC_HOME_LIB="${MOSAIC_HOME}/lib"
+[ -z "${MOSAIC_HOME_LOGS}" ] && MOSAIC_HOME_LOGS="${MOSAIC_HOME}/logs"
+[ -z "${MOSAIC_HOME_SCHEMAS}" ] && MOSAIC_HOME_SCHEMAS="${MOSAIC_HOME}/schemas"
+[ -z "${MOSAIC_HOME_WORK}" ] && MOSAIC_HOME_WORK="${MOSAIC_HOME}/work"
 
 
 ####################################################################################
@@ -88,12 +94,20 @@ start()
     #
     CMDLINE="                                                           \
         java                                                            \
+        -XX:-OmitStackTraceInFastThrow                                  \
+        -XX:+PrintCommandLineFlags                                      \
         -XX:-UseSplitVerifier                                           \
         -Dcom.sun.management.jmxremote.port=${MOSAIC_JMX_PORT}          \
         -Dcom.sun.management.jmxremote.authenticate=false               \
         ${MOSAIC_DEBUG_JAVA_OPTS}                                       \
         ${MOSAIC_JAVA_OPTS}                                             \
         -Dmosaic.home=${MOSAIC_HOME}                                    \
+        -Dmosaic.home.apps=${MOSAIC_HOME}                               \
+        -Dmosaic.home.etc=${MOSAIC_HOME_ETC}                            \
+        -Dmosaic.home.lib=${MOSAIC_HOME_LIB}                            \
+        -Dmosaic.home.logs=${MOSAIC_HOME_LOGS}                          \
+        -Dmosaic.home.schemas=${MOSAIC_HOME_SCHEMAS}                    \
+        -Dmosaic.home.work=${MOSAIC_HOME_WORK}                          \
         -Dnetworkaddress.cache.ttl=0                                    \
         -Dnetworkaddress.cache.negative.ttl=0                           \
         -Djava.net.preferIPv4Stack=true                                 \
