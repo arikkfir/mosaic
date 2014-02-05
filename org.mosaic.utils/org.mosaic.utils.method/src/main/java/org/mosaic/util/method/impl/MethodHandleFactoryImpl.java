@@ -15,6 +15,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.mosaic.util.collections.HashMapEx;
 import org.mosaic.util.collections.MapEx;
 import org.mosaic.util.method.*;
+import org.mosaic.util.reflection.ClassAnnotations;
 import org.mosaic.util.reflection.MethodAnnotations;
 import org.mosaic.util.reflection.MethodParameterNames;
 import org.mosaic.util.reflection.TypeTokens;
@@ -164,16 +165,14 @@ final class MethodHandleFactoryImpl implements MethodHandleFactory
         @Override
         public <MetaAnnType extends Annotation> Optional<MetaAnnType> getMetaAnnotation( @Nonnull Class<MetaAnnType> annotationType )
         {
-            // TODO arik: implement org.mosaic.util.method.impl.MethodHandleFactoryImpl.MethodParameterImpl.getMetaAnnotation([annotationType])
-            throw new UnsupportedOperationException();
+            return findMetaAnnotation( annotationType, new HashSet<Class<? extends Annotation>>() );
         }
 
         @Nonnull
         @Override
         public <MetaAnnType extends Annotation> Optional<Annotation> getMetaAnnotationTarget( @Nonnull Class<MetaAnnType> annotationType )
         {
-            // TODO arik: implement org.mosaic.util.method.impl.MethodHandleFactoryImpl.MethodParameterImpl.getMetaAnnotationTarget([annotationType])
-            throw new UnsupportedOperationException();
+            return findMetaAnnotationTarget( annotationType, new HashSet<Class<? extends Annotation>>() );
         }
 
         @Override
@@ -271,6 +270,90 @@ final class MethodHandleFactoryImpl implements MethodHandleFactory
         public String toString()
         {
             return this.desc;
+        }
+
+        @Nonnull
+        private <MetaAnnType extends Annotation> Optional<MetaAnnType> findMetaAnnotation(
+                @Nonnull Class<MetaAnnType> metaAnnType,
+                @Nonnull Set<Class<? extends Annotation>> annotations )
+        {
+            // first check if type is annotated with the meta annotation directly
+            Optional<MetaAnnType> metaAnn = getAnnotation( metaAnnType );
+            if( metaAnn.isPresent() )
+            {
+                return metaAnn;
+            }
+
+            // not annotated directly - check recursively type's annotations if one of them has meta-ann somewhere
+            for( Annotation annotation : this.annotations )
+            {
+                if( !annotations.contains( annotation.annotationType() ) )
+                {
+                    //
+                    // remember this annotation type so we won't scan it again
+                    // this is required because annotations can be cross-annotated, eg:
+                    //      @A
+                    //      public @interface B {}
+                    //
+                    //      @B
+                    //      public @interface A {}
+                    //
+                    annotations.add( annotation.annotationType() );
+
+                    // search this annotation
+                    Optional<MetaAnnType> result = ClassAnnotations.getMetaAnnotation( annotation.annotationType(), metaAnnType );
+                    if( result.isPresent() )
+                    {
+                        return result;
+                    }
+                }
+            }
+
+            // not found
+            return Optional.absent();
+        }
+
+        @Nonnull
+        private Optional<Annotation> findMetaAnnotationTarget(
+                @Nonnull Class<? extends Annotation> metaAnnType,
+                @Nonnull Set<Class<? extends Annotation>> annotations )
+        {
+            // check recursively method's annotations if one of them has meta-ann somewhere
+            for( Annotation annotation : this.annotations )
+            {
+                Class<? extends Annotation> annotationType = annotation.annotationType();
+
+                Annotation metaAnnotation = annotationType.getAnnotation( metaAnnType );
+                if( metaAnnotation != null )
+                {
+                    // this annotation is annotated with the meta-annotation, we've found the grail! return the
+                    // annotated annotation (NOT the actual meta annotation instance)
+                    return Optional.of( annotation );
+                }
+                else if( !annotations.contains( annotationType ) )
+                {
+                    //
+                    // remember this annotation type so we won't scan it again
+                    // this is required because annotations can be cross-annotated, eg:
+                    //      @A
+                    //      public @interface B {}
+                    //
+                    //      @B
+                    //      public @interface A {}
+                    //
+                    annotations.add( annotationType );
+
+                    // search this annotation
+                    Optional<Annotation> result = ClassAnnotations.getMetaAnnotationTarget( annotationType, metaAnnType );
+                    if( result.isPresent() )
+                    {
+                        return result;
+                    }
+                }
+            }
+
+            // not found
+            return Optional.absent();
         }
     }
 
@@ -472,7 +555,7 @@ final class MethodHandleFactoryImpl implements MethodHandleFactory
                     // did we find a value for this parameter?
                     if( holder == null )
                     {
-                        arguments[i] = null;
+                        arguments[ i ] = null;
                     }
                     else if( holder.isPresent() )
                     {
