@@ -183,6 +183,24 @@ final class ModuleImpl extends Lifecycle implements Module
 
     @Nonnull
     @Override
+    public Optional<Path> findResource( @Nonnull String glob ) throws IOException
+    {
+        try( DirectoryStream<Path> directoryStream = Files.newDirectoryStream( getPath(), glob ) )
+        {
+            Iterator<Path> iterator = directoryStream.iterator();
+            if( iterator.hasNext() )
+            {
+                return Optional.of( iterator.next() );
+            }
+            else
+            {
+                return Optional.absent();
+            }
+        }
+    }
+
+    @Nonnull
+    @Override
     public Collection<Path> findResources( @Nonnull String glob ) throws IOException
     {
         try( DirectoryStream<Path> directoryStream = Files.newDirectoryStream( getPath(), glob ) )
@@ -1185,7 +1203,13 @@ final class ModuleImpl extends Lifecycle implements Module
         @Override
         public void unregister()
         {
-            this.registration.unregister();
+            try
+            {
+                this.registration.unregister();
+            }
+            catch( Exception ignore )
+            {
+            }
         }
     }
 

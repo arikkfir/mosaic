@@ -1,5 +1,6 @@
 package org.mosaic.modules;
 
+import com.google.common.base.Optional;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -7,8 +8,8 @@ import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.joda.time.DateTime;
-import org.mosaic.util.version.Version;
 import org.mosaic.util.collections.MapEx;
+import org.mosaic.util.version.Version;
 
 /**
  * @author arik
@@ -37,6 +38,9 @@ public interface Module
 
     @Nonnull
     ModuleState getState();
+
+    @Nonnull
+    Optional<Path> findResource( @Nonnull String glob ) throws IOException;
 
     @Nonnull
     Collection<Path> findResources( @Nonnull String glob ) throws IOException;
