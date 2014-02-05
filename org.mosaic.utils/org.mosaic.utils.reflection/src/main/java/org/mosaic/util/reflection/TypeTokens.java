@@ -28,7 +28,13 @@ public class TypeTokens
                             }
                         } );
 
-    @SuppressWarnings( "unchecked" )
+    @Nonnull
+    public static final TypeToken<String> STRING = TypeTokens.of( String.class );
+
+    @Nonnull
+    public static final TypeToken<Boolean> BOOLEAN = TypeTokens.of( Boolean.class );
+
+    @SuppressWarnings("unchecked")
     @Nonnull
     public static <T> TypeToken<T> of( @Nonnull Class<T> type )
     {
