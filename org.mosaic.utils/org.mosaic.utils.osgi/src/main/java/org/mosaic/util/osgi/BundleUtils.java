@@ -1,7 +1,7 @@
 package org.mosaic.util.osgi;
 
-import com.google.common.base.Optional;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
@@ -21,22 +21,22 @@ public final class BundleUtils
      * @return OSGi bundle context
      * @throws java.lang.IllegalStateException if the given class was not loaded from an OSGi bundle, or if the bundle from which the given class was loaded from no longer has a bundle context
      */
-    @Nonnull
-    public static Optional<BundleContext> bundleContext( @Nonnull Class<?> type )
+    @Nullable
+    public static BundleContext bundleContext( @Nonnull Class<?> type )
     {
         Bundle bundle = FrameworkUtil.getBundle( type );
         if( bundle == null )
         {
-            return Optional.absent();
+            return null;
         }
 
         BundleContext bundleContext = bundle.getBundleContext();
         if( bundleContext == null )
         {
-            return Optional.absent();
+            return null;
         }
 
-        return Optional.of( bundleContext );
+        return bundleContext;
     }
 
     /**
