@@ -1,6 +1,5 @@
 package org.mosaic.modules.impl;
 
-import com.google.common.base.Optional;
 import java.lang.reflect.ParameterizedType;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -13,13 +12,14 @@ import org.mosaic.modules.ComponentDefinitionException;
 import org.mosaic.modules.MethodEndpoint;
 import org.mosaic.modules.ModuleManager;
 import org.mosaic.modules.ServiceTemplate;
-import org.mosaic.util.osgi.BundleUtils;
 import org.mosaic.util.osgi.FilterBuilder;
 import org.mosaic.util.resource.PathWatcher;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.hooks.weaving.WeavingHook;
+
+import static org.mosaic.util.osgi.BundleUtils.bundleContext;
 
 /**
  * @author arik
@@ -46,8 +46,13 @@ public final class Activator implements BundleActivator
     @Nonnull
     static Path getWorkPath()
     {
-        Optional<BundleContext> bcHolder = BundleUtils.bundleContext( Activator.class );
-        String workPath = bcHolder.get().getProperty( "mosaic.home.work" );
+        BundleContext bundleContext = bundleContext( Activator.class );
+        if( bundleContext == null )
+        {
+            throw new IllegalStateException( "could not find bundle context" );
+        }
+
+        String workPath = bundleContext.getProperty( "mosaic.home.work" );
         if( workPath == null )
         {
             throw new IllegalStateException( "bundle property 'mosaic.home.work' is missing" );

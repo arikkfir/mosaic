@@ -7,8 +7,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.mosaic.util.osgi.BundleUtils;
 import org.osgi.framework.*;
+
+import static org.mosaic.util.osgi.BundleUtils.bundleContext;
 
 /**
  * @author arik
@@ -130,7 +131,7 @@ public final class MethodCache
             this.argumentTypeNames = argumentTypeNames;
         }
 
-        @SuppressWarnings( "RedundantIfStatement" )
+        @SuppressWarnings("RedundantIfStatement")
         @Override
         public boolean equals( Object o )
         {
@@ -201,7 +202,13 @@ public final class MethodCache
                 ClassLoader classLoader;
                 try
                 {
-                    Bundle entryBundle = BundleUtils.bundleContext( getClass() ).get().getBundle( this.moduleId );
+                    BundleContext bundleContext = bundleContext( getClass() );
+                    if( bundleContext == null )
+                    {
+                        throw new IllegalStateException( "no bundle context" );
+                    }
+
+                    Bundle entryBundle = bundleContext.getBundle( this.moduleId );
                     declaringClass = entryBundle.loadClass( this.className );
                     classLoader = declaringClass.getClassLoader();
                 }

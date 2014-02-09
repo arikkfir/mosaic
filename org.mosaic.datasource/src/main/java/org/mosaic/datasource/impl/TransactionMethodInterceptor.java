@@ -1,6 +1,5 @@
 package org.mosaic.datasource.impl;
 
-import com.google.common.base.Optional;
 import java.lang.reflect.Method;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -29,15 +28,13 @@ final class TransactionMethodInterceptor implements MethodInterceptor
     @Override
     public boolean interestedIn( @Nonnull Method method, @Nonnull MapEx<String, Object> context )
     {
-        Optional<ReadOnly> roHolder = MethodAnnotations.getMetaAnnotation( method, ReadOnly.class );
-        if( roHolder.isPresent() )
+        if( MethodAnnotations.getMetaAnnotation( method, ReadOnly.class ) != null )
         {
             context.put( "readOnly", true );
             return true;
         }
 
-        Optional<ReadWrite> rwHolder = MethodAnnotations.getMetaAnnotation( method, ReadWrite.class );
-        if( rwHolder.isPresent() )
+        if( MethodAnnotations.getMetaAnnotation( method, ReadWrite.class ) != null )
         {
             context.put( "readOnly", false );
             return true;

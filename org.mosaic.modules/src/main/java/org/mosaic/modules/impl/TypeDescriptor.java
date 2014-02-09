@@ -1,6 +1,5 @@
 package org.mosaic.modules.impl;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.Sets;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -51,13 +50,13 @@ final class TypeDescriptor extends Lifecycle implements org.mosaic.modules.TypeD
         if( !isAbstract && !isInterface && !isAnnotation && !isAnonymousClass && !isEnum && !isMemberClass && !isLocalClass )
         {
             // is this a @Component?
-            if( getMetaAnnotation( type, org.mosaic.modules.Component.class ).isPresent() )
+            if( getMetaAnnotation( type, org.mosaic.modules.Component.class ) != null )
             {
                 addChild( new Component( this ) );
             }
 
             // is this a @Adapter?
-            if( getMetaAnnotation( type, Adapter.class ).isPresent() )
+            if( getMetaAnnotation( type, Adapter.class ) != null )
             {
                 addChild( new TypeDescriptorServiceAdapter( this ) );
             }
@@ -66,10 +65,10 @@ final class TypeDescriptor extends Lifecycle implements org.mosaic.modules.TypeD
         // is this a @Template?
         if( this.type.isInterface() )
         {
-            Optional<Annotation> templateType = getMetaAnnotationTarget( type, Template.class );
-            if( templateType.isPresent() )
+            Annotation templateType = getMetaAnnotationTarget( type, Template.class );
+            if( templateType != null )
             {
-                addChild( new TypeDescriptorServiceTemplateExporter( this, templateType.get() ) );
+                addChild( new TypeDescriptorServiceTemplateExporter( this, templateType ) );
             }
         }
 

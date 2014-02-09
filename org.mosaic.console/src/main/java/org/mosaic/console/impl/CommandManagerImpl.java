@@ -50,7 +50,7 @@ public class CommandManagerImpl implements CommandManager
         @Override
         public boolean apply( @Nullable MethodParameter input )
         {
-            return input != null && input.getAnnotation( this.annotationType ).isPresent();
+            return input != null && input.getAnnotation( this.annotationType ) != null;
         }
     }
 
@@ -209,12 +209,13 @@ public class CommandManagerImpl implements CommandManager
 
         private CommandArgument( @Nonnull MethodParameter methodParameter )
         {
-            Command.Arg ann = methodParameter.getAnnotation( Command.Arg.class ).get();
+            Command.Arg ann = methodParameter.getAnnotation( Command.Arg.class );
+            //noinspection ConstantConditions
             this.name = ann.name().isEmpty() ? methodParameter.getName() : ann.name();
             this.synopsis = ann.synopsis();
             this.description = ann.description();
             this.type = methodParameter.getType();
-            this.required = methodParameter.getAnnotation( Nonnull.class ).isPresent();
+            this.required = methodParameter.getAnnotation( Nonnull.class ) != null;
 
             List<MethodParameter> methodParameters = methodParameter.getMethod().getParameters();
             List<MethodParameter> argParams = new ArrayList<>( filter( methodParameters, new MethodParameterAnnotationPredicate( Command.Arg.class ) ) );
@@ -257,7 +258,8 @@ public class CommandManagerImpl implements CommandManager
         {
             this.methodParameter = methodParameter;
 
-            Command.Option ann = methodParameter.getAnnotation( Command.Option.class ).get();
+            Command.Option ann = methodParameter.getAnnotation( Command.Option.class );
+            //noinspection ConstantConditions
             String[] names = ann.names();
             if( names.length == 0 )
             {
@@ -456,11 +458,11 @@ public class CommandManagerImpl implements CommandManager
 
             for( MethodParameter methodParameter : this.endpoint.getMethodHandle().getParameters() )
             {
-                if( methodParameter.getAnnotation( Command.Arg.class ).isPresent() )
+                if( methodParameter.getAnnotation( Command.Arg.class ) != null )
                 {
                     this.valuedParameters.add( new CommandArgument( methodParameter ) );
                 }
-                else if( methodParameter.getAnnotation( Command.Option.class ).isPresent() )
+                else if( methodParameter.getAnnotation( Command.Option.class ) != null )
                 {
                     this.valuedParameters.add( new CommandOption( methodParameter ) );
                 }
@@ -518,7 +520,7 @@ public class CommandManagerImpl implements CommandManager
             }
             else
             {
-                @SuppressWarnings( "unchecked" )
+                @SuppressWarnings("unchecked")
                 TablePrinter<CommandArgument> argumentsTable =
                         new TablePrinter<>( console,
                                             8,
@@ -562,7 +564,7 @@ public class CommandManagerImpl implements CommandManager
             }
             else
             {
-                @SuppressWarnings( "unchecked" )
+                @SuppressWarnings("unchecked")
                 TablePrinter<CommandOption> optionsTable =
                         new TablePrinter<>( console,
                                             8,

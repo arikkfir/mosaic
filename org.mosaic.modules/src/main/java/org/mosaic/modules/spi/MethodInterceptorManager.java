@@ -9,7 +9,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.util.collections.HashMapEx;
 import org.mosaic.util.collections.MapEx;
-import org.mosaic.util.osgi.BundleUtils;
 import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
 import org.osgi.util.tracker.ServiceTrackerCustomizer;
@@ -17,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Arrays.copyOf;
+import static org.mosaic.util.osgi.BundleUtils.bundleContext;
 
 /**
  * @author arik
@@ -71,7 +71,7 @@ final class MethodInterceptorManager
 
     @Nonnull
     private final ServiceTracker<MethodInterceptor, MethodInterceptor> interceptorsTracker =
-            new ServiceTracker<>( BundleUtils.bundleContext( getClass() ).get(),
+            new ServiceTracker<>( bundleContext( getClass() ),
                                   MethodInterceptor.class,
                                   new ServiceTrackerCustomizer<MethodInterceptor, MethodInterceptor>()
                                   {
@@ -79,7 +79,8 @@ final class MethodInterceptorManager
                                       public MethodInterceptor addingService( @Nonnull ServiceReference<MethodInterceptor> reference )
                                       {
                                           MethodInterceptorManager.this.methodInterceptorsCache.invalidateAll();
-                                          return BundleUtils.bundleContext( getClass() ).get().getService( reference );
+                                          //noinspection ConstantConditions
+                                          return bundleContext( getClass() ).getService( reference );
                                       }
 
                                       @Override

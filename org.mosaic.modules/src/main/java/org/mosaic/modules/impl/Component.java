@@ -1,6 +1,5 @@
 package org.mosaic.modules.impl;
 
-import com.google.common.base.Optional;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -57,10 +56,10 @@ class Component extends Lifecycle
                     addChild( new ComponentServiceEventMethod( this, method ) );
                 }
 
-                Optional<Annotation> annHolder = getMetaAnnotationTarget( method, MethodEndpointMarker.class );
-                if( annHolder.isPresent() )
+                Annotation annotation = getMetaAnnotationTarget( method, MethodEndpointMarker.class );
+                if( annotation != null )
                 {
-                    addChild( new ComponentMethodEndpoint( this, method, annHolder.get() ) );
+                    addChild( new ComponentMethodEndpoint( this, method, annotation ) );
                 }
             }
             type = type.getSuperclass();

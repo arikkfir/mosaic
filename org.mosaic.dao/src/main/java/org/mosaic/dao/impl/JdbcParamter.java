@@ -1,6 +1,5 @@
 package org.mosaic.dao.impl;
 
-import com.google.common.base.Optional;
 import com.google.common.primitives.Primitives;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -29,10 +28,10 @@ final class JdbcParamter
     {
         this.jdbcParameterIndex = index;
 
-        Optional<JdbcType> jdbcTypeHolder = methodParameter.getAnnotation( JdbcType.class );
-        if( jdbcTypeHolder.isPresent() )
+        JdbcType jdbcTypeHolder = methodParameter.getAnnotation( JdbcType.class );
+        if( jdbcTypeHolder != null )
         {
-            this.jdbcType = jdbcTypeHolder.get().value();
+            this.jdbcType = jdbcTypeHolder.value();
         }
         else
         {
