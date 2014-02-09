@@ -24,6 +24,14 @@ public class GrantRule
 
     public boolean implies( @Nonnull Subject user, @Nonnull Permission permission )
     {
-        return this.permission.implies( permission ) && this.test.createInvocation( user ).invoke().get();
+        if( this.permission.implies( permission ) )
+        {
+            Boolean result = this.test.createInvocation( user ).invoke();
+            return result != null && result;
+        }
+        else
+        {
+            return false;
+        }
     }
 }
