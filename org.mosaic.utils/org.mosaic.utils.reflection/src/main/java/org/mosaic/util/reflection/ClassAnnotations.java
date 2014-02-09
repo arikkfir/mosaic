@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 
 import static java.util.Arrays.asList;
@@ -47,9 +48,9 @@ public final class ClassAnnotations
                             public Optional<? extends Annotation> load( @Nonnull Pair<Class<?>, Class<? extends Annotation>> key )
                                     throws Exception
                             {
-                                return findMetaAnnotation( key.getLeft(),
-                                                           key.getRight(),
-                                                           Sets.<Class<? extends Annotation>>newHashSet() );
+                                return Optional.fromNullable( findMetaAnnotation( key.getLeft(),
+                                                                                  key.getRight(),
+                                                                                  Sets.<Class<? extends Annotation>>newHashSet() ) );
                             }
                         } );
 
@@ -64,9 +65,9 @@ public final class ClassAnnotations
                             public Optional<Annotation> load( @Nonnull Pair<Class<?>, Class<? extends Annotation>> key )
                                     throws Exception
                             {
-                                return findMetaAnnotationTarget( key.getLeft(),
-                                                                 key.getRight(),
-                                                                 Sets.<Class<? extends Annotation>>newHashSet() );
+                                return Optional.fromNullable( findMetaAnnotationTarget( key.getLeft(),
+                                                                                        key.getRight(),
+                                                                                        Sets.<Class<? extends Annotation>>newHashSet() ) );
                             }
                         } );
 
@@ -91,22 +92,22 @@ public final class ClassAnnotations
         }
     }
 
-    @SuppressWarnings("unchecked")
-    @Nonnull
-    public static <MetaAnnType extends Annotation> Optional<MetaAnnType> getMetaAnnotation(
+    @SuppressWarnings( "unchecked" )
+    @Nullable
+    public static <MetaAnnType extends Annotation> MetaAnnType getMetaAnnotation(
             @Nonnull Class<?> type, @Nonnull Class<MetaAnnType> metaAnnType )
     {
         Pair<Class<?>, Class<? extends Annotation>> key = Pair.<Class<?>, Class<? extends Annotation>>of( type, metaAnnType );
         try
         {
-            return ( Optional<MetaAnnType> ) metaAnnotationCache.getUnchecked( key );
+            return ( MetaAnnType ) metaAnnotationCache.getUnchecked( key ).orNull();
         }
         catch( UncheckedExecutionException e )
         {
             Throwable cause = e.getCause();
             if( cause instanceof TypeNotPresentException )
             {
-                return Optional.absent();
+                return null;
             }
             else
             {
@@ -115,21 +116,21 @@ public final class ClassAnnotations
         }
     }
 
-    @Nonnull
-    public static Optional<Annotation> getMetaAnnotationTarget(
+    @Nullable
+    public static Annotation getMetaAnnotationTarget(
             @Nonnull Class<?> type, @Nonnull Class<? extends Annotation> metaAnnType )
     {
         try
         {
             Pair<Class<?>, Class<? extends Annotation>> key = Pair.<Class<?>, Class<? extends Annotation>>of( type, metaAnnType );
-            return metaAnnotationTargetCache.getUnchecked( key );
+            return metaAnnotationTargetCache.getUnchecked( key ).orNull();
         }
         catch( UncheckedExecutionException e )
         {
             Throwable cause = e.getCause();
             if( cause instanceof TypeNotPresentException )
             {
-                return Optional.absent();
+                return null;
             }
             else
             {
@@ -160,8 +161,8 @@ public final class ClassAnnotations
         return annotations;
     }
 
-    @Nonnull
-    static <MetaAnnType extends Annotation> Optional<MetaAnnType> findMetaAnnotation(
+    @Nullable
+    static <MetaAnnType extends Annotation> MetaAnnType findMetaAnnotation(
             @Nonnull Class<?> type,
             @Nonnull Class<MetaAnnType> metaAnnType,
             @Nonnull Set<Class<? extends Annotation>> annotations )
@@ -175,7 +176,7 @@ public final class ClassAnnotations
             MetaAnnType metaAnn = currentType.getAnnotation( metaAnnType );
             if( metaAnn != null )
             {
-                return Optional.of( metaAnn );
+                return metaAnn;
             }
 
             // not annotated directly - check recursively type's annotations if one of them has meta-ann somewhere
@@ -195,8 +196,8 @@ public final class ClassAnnotations
                     annotations.add( annotation.annotationType() );
 
                     // search this annotation
-                    Optional<MetaAnnType> result = findMetaAnnotation( annotation.annotationType(), metaAnnType, annotations );
-                    if( result.isPresent() )
+                    MetaAnnType result = findMetaAnnotation( annotation.annotationType(), metaAnnType, annotations );
+                    if( result != null )
                     {
                         return result;
                     }
@@ -205,11 +206,11 @@ public final class ClassAnnotations
         }
 
         // not found
-        return Optional.absent();
+        return null;
     }
 
-    @Nonnull
-    static Optional<Annotation> findMetaAnnotationTarget(
+    @Nullable
+    static Annotation findMetaAnnotationTarget(
             @Nonnull Class<?> type,
             @Nonnull Class<? extends Annotation> metaAnnType,
             @Nonnull Set<Class<? extends Annotation>> annotations )
@@ -227,7 +228,7 @@ public final class ClassAnnotations
                 {
                     // this annotation is annotated with the meta-annotation, we've found the grail! return the
                     // annotated annotation (NOT the actual meta annotation instance)
-                    return Optional.of( annotation );
+                    return annotation;
                 }
                 else if( !annotations.contains( annotationType ) )
                 {
@@ -243,8 +244,8 @@ public final class ClassAnnotations
                     annotations.add( annotationType );
 
                     // search this annotation
-                    Optional<Annotation> result = findMetaAnnotationTarget( annotationType, metaAnnType, annotations );
-                    if( result.isPresent() )
+                    Annotation result = findMetaAnnotationTarget( annotationType, metaAnnType, annotations );
+                    if( result != null )
                     {
                         return result;
                     }
@@ -253,7 +254,7 @@ public final class ClassAnnotations
         }
 
         // not found
-        return Optional.absent();
+        return null;
     }
 
     private ClassAnnotations()

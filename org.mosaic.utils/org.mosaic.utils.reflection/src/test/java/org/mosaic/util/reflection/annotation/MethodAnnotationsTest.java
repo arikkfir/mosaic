@@ -1,7 +1,6 @@
 package org.mosaic.util.reflection.annotation;
 
 import com.google.common.base.Function;
-import com.google.common.base.Optional;
 import com.google.common.collect.Collections2;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Retention;
@@ -57,45 +56,45 @@ public class MethodAnnotationsTest
     @Test
     public void testGetMetaAnnotation()
     {
-        Optional<C> coptional = MethodAnnotations.getMetaAnnotation( this.method, C.class );
-        assertTrue( coptional.isPresent() );
-        assertEquals( coptional.get().annotationType(), C.class );
+        C coptional = MethodAnnotations.getMetaAnnotation( this.method, C.class );
+        assertTrue( coptional != null );
+        assertEquals( coptional.annotationType(), C.class );
 
-        Optional<D> doptional = MethodAnnotations.getMetaAnnotation( this.method, D.class );
-        assertFalse( doptional.isPresent() );
+        D doptional = MethodAnnotations.getMetaAnnotation( this.method, D.class );
+        assertFalse( doptional != null );
     }
 
     @Test
     public void testGetMetaAnnotationTarget()
     {
-        Optional<Annotation> aoptional = MethodAnnotations.getMetaAnnotationTarget( this.method, C.class );
-        assertTrue( aoptional.isPresent() );
-        assertEquals( aoptional.get().annotationType(), A.class );
+        Annotation aoptional = MethodAnnotations.getMetaAnnotationTarget( this.method, C.class );
+        assertTrue( aoptional != null );
+        assertEquals( aoptional.annotationType(), A.class );
 
-        Optional<Annotation> doptional = MethodAnnotations.getMetaAnnotationTarget( this.method, D.class );
-        assertFalse( doptional.isPresent() );
+        Annotation doptional = MethodAnnotations.getMetaAnnotationTarget( this.method, D.class );
+        assertFalse( doptional != null );
     }
 
     @C
-    @Retention( RetentionPolicy.RUNTIME )
+    @Retention(RetentionPolicy.RUNTIME)
     public static @interface A
     {
     }
 
     @A
-    @Retention( RetentionPolicy.RUNTIME )
+    @Retention(RetentionPolicy.RUNTIME)
     public static @interface B
     {
     }
 
     @B
-    @Retention( RetentionPolicy.RUNTIME )
+    @Retention(RetentionPolicy.RUNTIME)
     public static @interface C
     {
     }
 
     @B
-    @Retention( RetentionPolicy.RUNTIME )
+    @Retention(RetentionPolicy.RUNTIME)
     public static @interface D
     {
     }

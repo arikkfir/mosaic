@@ -1,7 +1,6 @@
 package org.mosaic.util.reflection.annotation;
 
 import com.google.common.base.Function;
-import com.google.common.base.Optional;
 import com.google.common.collect.Collections2;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Retention;
@@ -49,23 +48,23 @@ public class ClassAnnotationsTest
     @Test
     public void testGetMetaAnnotation()
     {
-        Optional<C> coptional = ClassAnnotations.getMetaAnnotation( Annotated.class, C.class );
-        assertTrue( coptional.isPresent() );
-        assertEquals( coptional.get().annotationType(), C.class );
+        C coptional = ClassAnnotations.getMetaAnnotation( Annotated.class, C.class );
+        assertTrue( coptional != null );
+        assertEquals( coptional.annotationType(), C.class );
 
-        Optional<D> doptional = ClassAnnotations.getMetaAnnotation( Annotated.class, D.class );
-        assertFalse( doptional.isPresent() );
+        D doptional = ClassAnnotations.getMetaAnnotation( Annotated.class, D.class );
+        assertFalse( doptional != null );
     }
 
     @Test
     public void testGetMetaAnnotationTarget()
     {
-        Optional<Annotation> aoptional = ClassAnnotations.getMetaAnnotationTarget( Annotated.class, C.class );
-        assertTrue( aoptional.isPresent() );
-        assertEquals( aoptional.get().annotationType(), A.class );
+        Annotation aoptional = ClassAnnotations.getMetaAnnotationTarget( Annotated.class, C.class );
+        assertTrue( aoptional != null );
+        assertEquals( aoptional.annotationType(), A.class );
 
-        Optional<Annotation> doptional = ClassAnnotations.getMetaAnnotationTarget( Annotated.class, D.class );
-        assertFalse( doptional.isPresent() );
+        Annotation doptional = ClassAnnotations.getMetaAnnotationTarget( Annotated.class, D.class );
+        assertFalse( doptional != null );
     }
 
     @C
