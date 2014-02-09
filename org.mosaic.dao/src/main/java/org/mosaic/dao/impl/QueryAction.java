@@ -54,7 +54,11 @@ final class QueryAction extends Action
             parametersByName.put( methodParameter.getName(), methodParameter );
         }
 
-        Query ann = getMethodHandle().getAnnotation( Query.class ).get();
+        Query ann = getMethodHandle().getAnnotation( Query.class );
+        if( ann == null )
+        {
+            throw new IllegalArgumentException( "method " + methodHandle + " is not annotated by @Query" );
+        }
 
         // parse named parameters
         StringBuilder sql = new StringBuilder( ann.value().length() );
