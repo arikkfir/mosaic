@@ -1,6 +1,5 @@
 package org.mosaic.util.method;
 
-import com.google.common.base.Optional;
 import com.google.common.reflect.TypeToken;
 import java.lang.annotation.Annotation;
 import java.util.Collection;
@@ -27,14 +26,14 @@ public interface MethodParameter
     @Nonnull
     Collection<Annotation> getAnnotations();
 
-    @Nonnull
-    <AnnType extends Annotation> Optional<AnnType> getAnnotation( @Nonnull Class<AnnType> annotationType );
+    @Nullable
+    <AnnType extends Annotation> AnnType getAnnotation( @Nonnull Class<AnnType> annotationType );
 
-    @Nonnull
-    <MetaAnnType extends Annotation> Optional<MetaAnnType> getMetaAnnotation( @Nonnull Class<MetaAnnType> annotationType );
+    @Nullable
+    <MetaAnnType extends Annotation> MetaAnnType getMetaAnnotation( @Nonnull Class<MetaAnnType> annotationType );
 
-    @Nonnull
-    <MetaAnnType extends Annotation> Optional<Annotation> getMetaAnnotationTarget( @Nonnull Class<MetaAnnType> annotationType );
+    @Nullable
+    <MetaAnnType extends Annotation> Annotation getMetaAnnotationTarget( @Nonnull Class<MetaAnnType> annotationType );
 
     boolean isPrimitive();
 

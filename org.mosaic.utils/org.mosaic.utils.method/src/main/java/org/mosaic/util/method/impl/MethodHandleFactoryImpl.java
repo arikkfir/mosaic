@@ -147,30 +147,30 @@ final class MethodHandleFactoryImpl implements MethodHandleFactory
             return this.annotations;
         }
 
-        @Nonnull
+        @Nullable
         @Override
-        public <AnnType extends Annotation> Optional<AnnType> getAnnotation( @Nonnull Class<AnnType> annotationType )
+        public <AnnType extends Annotation> AnnType getAnnotation( @Nonnull Class<AnnType> annotationType )
         {
             for( Annotation annotation : this.annotations )
             {
                 if( annotation.annotationType().equals( annotationType ) )
                 {
-                    return Optional.of( annotationType.cast( annotation ) );
+                    return annotationType.cast( annotation );
                 }
             }
-            return Optional.absent();
+            return null;
         }
 
-        @Nonnull
+        @Nullable
         @Override
-        public <MetaAnnType extends Annotation> Optional<MetaAnnType> getMetaAnnotation( @Nonnull Class<MetaAnnType> annotationType )
+        public <MetaAnnType extends Annotation> MetaAnnType getMetaAnnotation( @Nonnull Class<MetaAnnType> annotationType )
         {
             return findMetaAnnotation( annotationType, new HashSet<Class<? extends Annotation>>() );
         }
 
-        @Nonnull
+        @Nullable
         @Override
-        public <MetaAnnType extends Annotation> Optional<Annotation> getMetaAnnotationTarget( @Nonnull Class<MetaAnnType> annotationType )
+        public <MetaAnnType extends Annotation> Annotation getMetaAnnotationTarget( @Nonnull Class<MetaAnnType> annotationType )
         {
             return findMetaAnnotationTarget( annotationType, new HashSet<Class<? extends Annotation>>() );
         }
@@ -272,14 +272,14 @@ final class MethodHandleFactoryImpl implements MethodHandleFactory
             return this.desc;
         }
 
-        @Nonnull
-        private <MetaAnnType extends Annotation> Optional<MetaAnnType> findMetaAnnotation(
+        @Nullable
+        private <MetaAnnType extends Annotation> MetaAnnType findMetaAnnotation(
                 @Nonnull Class<MetaAnnType> metaAnnType,
                 @Nonnull Set<Class<? extends Annotation>> annotations )
         {
             // first check if type is annotated with the meta annotation directly
-            Optional<MetaAnnType> metaAnn = getAnnotation( metaAnnType );
-            if( metaAnn.isPresent() )
+            MetaAnnType metaAnn = getAnnotation( metaAnnType );
+            if( metaAnn != null )
             {
                 return metaAnn;
             }
@@ -301,8 +301,8 @@ final class MethodHandleFactoryImpl implements MethodHandleFactory
                     annotations.add( annotation.annotationType() );
 
                     // search this annotation
-                    Optional<MetaAnnType> result = ClassAnnotations.getMetaAnnotation( annotation.annotationType(), metaAnnType );
-                    if( result.isPresent() )
+                    MetaAnnType result = ClassAnnotations.getMetaAnnotation( annotation.annotationType(), metaAnnType );
+                    if( result != null )
                     {
                         return result;
                     }
@@ -310,11 +310,11 @@ final class MethodHandleFactoryImpl implements MethodHandleFactory
             }
 
             // not found
-            return Optional.absent();
+            return null;
         }
 
-        @Nonnull
-        private Optional<Annotation> findMetaAnnotationTarget(
+        @Nullable
+        private Annotation findMetaAnnotationTarget(
                 @Nonnull Class<? extends Annotation> metaAnnType,
                 @Nonnull Set<Class<? extends Annotation>> annotations )
         {
@@ -328,7 +328,7 @@ final class MethodHandleFactoryImpl implements MethodHandleFactory
                 {
                     // this annotation is annotated with the meta-annotation, we've found the grail! return the
                     // annotated annotation (NOT the actual meta annotation instance)
-                    return Optional.of( annotation );
+                    return annotation;
                 }
                 else if( !annotations.contains( annotationType ) )
                 {
@@ -344,8 +344,8 @@ final class MethodHandleFactoryImpl implements MethodHandleFactory
                     annotations.add( annotationType );
 
                     // search this annotation
-                    Optional<Annotation> result = ClassAnnotations.getMetaAnnotationTarget( annotationType, metaAnnType );
-                    if( result.isPresent() )
+                    Annotation result = ClassAnnotations.getMetaAnnotationTarget( annotationType, metaAnnType );
+                    if( result != null )
                     {
                         return result;
                     }
@@ -353,7 +353,7 @@ final class MethodHandleFactoryImpl implements MethodHandleFactory
             }
 
             // not found
-            return Optional.absent();
+            return null;
         }
     }
 
@@ -428,30 +428,30 @@ final class MethodHandleFactoryImpl implements MethodHandleFactory
             return MethodAnnotations.getAnnotations( this.nativeMethod );
         }
 
-        @Nonnull
+        @Nullable
         @Override
-        public <AnnType extends Annotation> Optional<AnnType> getAnnotation( @Nonnull Class<AnnType> annotationType )
+        public <AnnType extends Annotation> AnnType getAnnotation( @Nonnull Class<AnnType> annotationType )
         {
             for( Annotation annotation : getAnnotations() )
             {
                 if( annotation.annotationType().equals( annotationType ) )
                 {
-                    return Optional.of( annotationType.cast( annotation ) );
+                    return annotationType.cast( annotation );
                 }
             }
-            return Optional.absent();
+            return null;
         }
 
-        @Nonnull
+        @Nullable
         @Override
-        public <MetaAnnType extends Annotation> Optional<MetaAnnType> getMetaAnnotation( @Nonnull Class<MetaAnnType> annotationType )
+        public <MetaAnnType extends Annotation> MetaAnnType getMetaAnnotation( @Nonnull Class<MetaAnnType> annotationType )
         {
             return MethodAnnotations.getMetaAnnotation( this.nativeMethod, annotationType );
         }
 
-        @Nonnull
+        @Nullable
         @Override
-        public <MetaAnnType extends Annotation> Optional<Annotation> getMetaAnnotationTarget( @Nonnull Class<MetaAnnType> annotationType )
+        public <MetaAnnType extends Annotation> Annotation getMetaAnnotationTarget( @Nonnull Class<MetaAnnType> annotationType )
         {
             return MethodAnnotations.getMetaAnnotationTarget( this.nativeMethod, annotationType );
         }
