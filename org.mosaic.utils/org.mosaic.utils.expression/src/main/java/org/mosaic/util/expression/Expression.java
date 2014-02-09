@@ -1,6 +1,5 @@
 package org.mosaic.util.expression;
 
-import com.google.common.base.Optional;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -17,7 +16,7 @@ public interface Expression<T>
         @Nonnull
         Invoker<T> setVariable( @Nonnull String name, @Nullable Object value );
 
-        @Nonnull
-        Optional<T> invoke();
+        @Nullable
+        T invoke();
     }
 }

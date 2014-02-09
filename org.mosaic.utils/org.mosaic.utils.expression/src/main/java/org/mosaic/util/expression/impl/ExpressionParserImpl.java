@@ -1,6 +1,5 @@
 package org.mosaic.util.expression.impl;
 
-import com.google.common.base.Optional;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -129,10 +128,10 @@ final class ExpressionParserImpl implements ExpressionParser
                 return this;
             }
 
-            @SuppressWarnings( "unchecked" )
-            @Nonnull
+            @SuppressWarnings("unchecked")
+            @Nullable
             @Override
-            public Optional<T> invoke()
+            public T invoke()
             {
                 try
                 {
@@ -146,11 +145,11 @@ final class ExpressionParserImpl implements ExpressionParser
                     Object result = ExpressionImpl.this.spelExpression.getValue( evaluationContext );
                     if( result == null )
                     {
-                        return Optional.absent();
+                        return null;
                     }
                     else if( expectedType.isAssignableFrom( result.getClass() ) )
                     {
-                        return Optional.of( ( T ) result );
+                        return ( T ) result;
                     }
                     else
                     {
