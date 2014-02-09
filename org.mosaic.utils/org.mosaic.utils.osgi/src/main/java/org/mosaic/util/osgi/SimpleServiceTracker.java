@@ -40,7 +40,8 @@ public class SimpleServiceTracker<Type>
      */
     public SimpleServiceTracker( @Nonnull Class<?> contextType, @Nonnull Class<Type> serviceType )
     {
-        this( bundleContext( contextType ).get(), serviceType );
+        //noinspection ConstantConditions
+        this( bundleContext( contextType ), serviceType );
     }
 
     /**

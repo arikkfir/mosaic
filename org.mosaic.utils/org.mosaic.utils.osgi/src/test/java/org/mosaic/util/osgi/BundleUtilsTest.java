@@ -16,8 +16,7 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 
 import static java.lang.management.ManagementFactory.getRuntimeMXBean;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.assertThat;
 import static org.mosaic.util.osgi.BundleUtils.bundleContext;
 
@@ -54,12 +53,12 @@ public class BundleUtilsTest
         guavaBundle.start();
 
         Class<?> mapsClass = guavaBundle.loadClass( "com.google.common.collect.Maps" );
-        assertThat( bundleContext( mapsClass ).isPresent(), is( true ) );
-        assertThat( bundleContext( mapsClass ).get(), equalTo( guavaBundle.getBundleContext() ) );
-        assertThat( bundleContext( getClass() ).isPresent(), is( false ) );
+        assertThat( bundleContext( mapsClass ), is( notNullValue() ) );
+        assertThat( bundleContext( mapsClass ), equalTo( guavaBundle.getBundleContext() ) );
+        assertThat( bundleContext( getClass() ), is( nullValue() ) );
 
         guavaBundle.stop();
-        assertThat( bundleContext( mapsClass ).isPresent(), is( false ) );
+        assertThat( bundleContext( mapsClass ), is( nullValue() ) );
     }
 
     @Nonnull
