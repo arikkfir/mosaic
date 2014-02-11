@@ -7,7 +7,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.joda.time.Period;
 import org.mosaic.util.collections.MapEx;
-import org.mosaic.web.security.SecurityConstraint;
+import org.mosaic.web.server.SecurityConstraint;
 
 /**
  * @author arik
@@ -33,29 +33,36 @@ public interface Application
     Period getMaxSessionAge();
 
     @Nonnull
-    ApplicationSecurity getSecurity();
+    String getRealmName();
 
     @Nonnull
-    ApplicationResources getResources();
+    String getPermissionPolicyName();
 
-    interface ApplicationSecurity
+    @Nullable
+    SecuredPath getConstraintForPath( @Nonnull String path );
+
+    @Nonnull
+    Collection<Path> getContentRoots();
+
+    @Nullable
+    ApplicationResource getResource( @Nonnull String path );
+
+    interface ApplicationResource
     {
         @Nonnull
-        String getRealmName();
+        Path getPath();
 
-        @Nonnull
-        String getPermissionPolicyName();
+        boolean isCompressionEnabled();
+
+        boolean isBrowsingEnabled();
 
         @Nullable
-        SecurityConstraint getConstraintForPath( @Nonnull String path );
+        Period getCachePeriod();
     }
 
-    interface ApplicationResources
+    interface SecuredPath extends SecurityConstraint
     {
         @Nonnull
-        Collection<Path> getContentRoots();
-
-        @Nullable
-        Resource getResource( @Nonnull String path );
+        String getPath();
     }
 }

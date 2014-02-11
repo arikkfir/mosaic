@@ -1,11 +1,11 @@
 package org.mosaic.web.application.impl;
 
+import com.google.common.base.Optional;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 import javax.xml.XMLConstants;
@@ -13,17 +13,25 @@ import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
+import org.joda.time.Period;
+import org.joda.time.format.PeriodFormatterBuilder;
 import org.mosaic.event.EventListener;
-import org.mosaic.modules.*;
-import org.mosaic.pathwatchers.PathWatcher;
+import org.mosaic.modules.Component;
+import org.mosaic.modules.ModuleEvent;
+import org.mosaic.modules.ModuleEventType;
+import org.mosaic.modules.Service;
+import org.mosaic.pathwatchers.OnPathCreated;
+import org.mosaic.pathwatchers.OnPathDeleted;
+import org.mosaic.pathwatchers.OnPathModified;
 import org.mosaic.server.Server;
 import org.mosaic.util.xml.StrictErrorHandler;
-import org.mosaic.util.xml.XmlDocument;
 import org.mosaic.util.xml.XmlElement;
 import org.mosaic.util.xml.XmlParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
-import static org.mosaic.util.resource.PathEvent.*;
+import static java.nio.file.Files.notExists;
 
 /**
  * @author arik
@@ -31,12 +39,60 @@ import static org.mosaic.util.resource.PathEvent.*;
 @Component
 final class ApplicationManager
 {
+    private static final Logger LOG = LoggerFactory.getLogger( ApplicationManager.class );
+
+    private static final String APPS_FILE_PATTERN = "${mosaic.home.apps}/**/*.xml";
 
     @Nonnull
-    private final Map<String, Set<XmlElement>> moduleApplicationFiles = new ConcurrentHashMap<>();
+    static Period parsePeriod( @Nonnull String period )
+    {
+        PeriodFormatterBuilder builder = new PeriodFormatterBuilder().printZeroNever();
+        if( period.contains( "year" ) )
+        {
+            builder.appendYears()
+                   .appendSuffix( " year", " years" )
+                   .appendSeparatorIfFieldsAfter( ", " );
+        }
+        if( period.contains( "month" ) )
+        {
+            builder.appendMonths()
+                   .appendSuffix( " month", " months" )
+                   .appendSeparatorIfFieldsAfter( ", " );
+        }
+        if( period.contains( "day" ) )
+        {
+            builder.appendDays()
+                   .appendSuffix( " day", " days" )
+                   .appendSeparatorIfFieldsAfter( ", " );
+        }
+        if( period.contains( "hour" ) )
+        {
+            builder.appendHours()
+                   .appendSuffix( " hour", " hours" )
+                   .appendSeparatorIfFieldsAfter( ", " );
+        }
+        if( period.contains( "minute" ) )
+        {
+            builder.appendMinutes()
+                   .appendSuffix( " minute", " minutes" )
+                   .appendSeparatorIfFieldsAfter( ", " );
+        }
+        if( period.contains( "second" ) )
+        {
+            builder.appendSeconds()
+                   .appendSuffix( " second", " seconds" );
+        }
+        return builder.printZeroRarelyLast().toFormatter().parsePeriod( period ).normalizedStandard();
+    }
 
     @Nonnull
-    private final Map<String, ApplicationImpl> applications = new ConcurrentHashMap<>();
+    private final Map<String, ApplicationHolder> applications = new ConcurrentHashMap<>();
+
+    @Nonnull
+    private final Schema applicationSchema;
+
+    @Nonnull
+    private final Schema applicationFragmentSchema;
 
     @Nonnull
     @Service
@@ -48,18 +104,31 @@ final class ApplicationManager
 
     ApplicationManager() throws IOException, SAXException
     {
-        Path schemaFile = this.server.getHome().resolve( "schemas/application-1.0.0.xsd" );
-        if( Files.notExists( schemaFile ) )
+
+        Path appSchemaFile = this.server.getHome().resolve( "schemas/application-1.0.0.xsd" );
+        if( notExists( appSchemaFile ) )
         {
-            throw new IllegalStateException( "could not find permission policy schema at '" + schemaFile + "'" );
+            throw new IllegalStateException( "could not find application schema at '" + appSchemaFile + "'" );
+        }
+
+        Path appFragmentSchemaFile = this.server.getHome().resolve( "schemas/application-fragment-1.0.0.xsd" );
+        if( notExists( appFragmentSchemaFile ) )
+        {
+            throw new IllegalStateException( "could not find application fragment schema at '" + appFragmentSchemaFile + "'" );
         }
 
         SchemaFactory schemaFactory = SchemaFactory.newInstance( XMLConstants.W3C_XML_SCHEMA_NS_URI );
         schemaFactory.setErrorHandler( StrictErrorHandler.INSTANCE );
-        try( InputStream stream100 = Files.newInputStream( schemaFile ) )
+        try( InputStream stream100 = Files.newInputStream( appSchemaFile ) )
         {
             this.applicationSchema = schemaFactory.newSchema( new Source[] {
                     new StreamSource( stream100, "http://www.mosaicserver.com/application-1.0.0" )
+            } );
+        }
+        try( InputStream stream100 = Files.newInputStream( appFragmentSchemaFile ) )
+        {
+            this.applicationFragmentSchema = schemaFactory.newSchema( new Source[] {
+                    new StreamSource( stream100, "http://www.mosaicserver.com/application-fragment-1.0.0" )
             } );
         }
     }
@@ -67,65 +136,94 @@ final class ApplicationManager
     @EventListener
     void onModuleActivationChanged( @Nonnull ModuleEvent event )
     {
-        // TODO arik: implement org.mosaic.web.application.impl.ApplicationManager.onModuleActivationChanged([event])
-        if( event.getEventType() == ModuleEventType.ACTIVATED )
+        ModuleEventType eventType = event.getEventType();
+        if( eventType == ModuleEventType.ACTIVATED || eventType == ModuleEventType.DEACTIVATING )
         {
-            Module module = event.getModule();
-            module.getModuleResources().findResources( "/META-INF/" );
-        }
-        else if( event.getEventType() == ModuleEventType.DEACTIVATING )
-        {
+            Optional<Path> resourceHolder;
+            try
+            {
+                resourceHolder = event.getModule().findResource( "/WEB-INF/application.xml" );
+            }
+            catch( IOException e )
+            {
+                LOG.error( "Could not inspect module '{}': {}", event.getModule(), e.getMessage(), e );
+                return;
+            }
 
+            if( resourceHolder.isPresent() )
+            {
+                Path file = resourceHolder.get();
+
+                XmlElement appElt;
+                try
+                {
+                    appElt = this.xmlParser.parse( file, this.applicationFragmentSchema ).getRoot();
+                }
+                catch( Throwable e )
+                {
+                    LOG.error( "Could not parse application fragment at '{}': {}", file, e.getMessage(), e );
+                    return;
+                }
+
+                Optional<String> idHolder = appElt.getAttribute( "id" );
+                if( idHolder.isPresent() )
+                {
+                    String id = idHolder.get();
+
+                    ApplicationHolder application = this.applications.get( id );
+                    if( eventType == ModuleEventType.ACTIVATED )
+                    {
+                        if( application == null )
+                        {
+                            application = new ApplicationHolder( id, this.applicationSchema, this.applicationFragmentSchema );
+                            this.applications.put( id, application );
+                        }
+                        application.addContributionFile( file );
+                    }
+                    else
+                    {
+                        if( application != null )
+                        {
+                            application.removeContributionFile( file );
+                        }
+                    }
+                }
+            }
         }
     }
 
-    @PathWatcher( value = "${mosaic.home.apps}/**/*.xml", events = { CREATED, MODIFIED } )
-    void onApplicationAddedOrModifiedInEtc( @Nonnull Path file ) throws Exception
+    @OnPathCreated(APPS_FILE_PATTERN)
+    @OnPathModified(APPS_FILE_PATTERN)
+    void onApplicationAddedOrModifiedInEtc( @Nonnull Path file )
     {
-        XmlDocument doc = this.xmlParser.parse( file, this.applicationSchema );
-        doc.addNamespace( "m", "http://www.mosaicserver.com/application-1.0.0" );
-
-        String id;
         String fileName = file.getFileName().toString();
-        if( fileName.endsWith( ".xml" ) )
-        {
-            id = fileName.substring( 0, fileName.length() - ".xml".length() );
-        }
-        else
-        {
-            id = fileName;
-        }
+        String id = fileName.substring( 0, fileName.length() - ".xml".length() );
 
-        ApplicationImpl application = this.applications.get( id );
+        ApplicationHolder application = this.applications.get( id );
         if( application == null )
         {
-            application = new ApplicationImpl( id, doc.getRoot() );
+            application = new ApplicationHolder( id, this.applicationSchema, this.applicationFragmentSchema );
             this.applications.put( id, application );
         }
-        else
-        {
-            application.parse( doc.getRoot() );
-        }
+        application.addApplicationFile( file );
     }
 
-    @PathWatcher( value = "${mosaic.home.apps}/**/*.xml", events = DELETED )
+    @OnPathDeleted(APPS_FILE_PATTERN)
     void onApplicationDeletedInEtc( @Nonnull Path file )
     {
-        String id;
         String fileName = file.getFileName().toString();
-        if( fileName.endsWith( ".xml" ) )
-        {
-            id = fileName.substring( 0, fileName.length() - ".xml".length() );
-        }
-        else
-        {
-            id = fileName;
-        }
+        String id = fileName.substring( 0, fileName.length() - ".xml".length() );
 
-        ApplicationImpl application = this.applications.remove( id );
+        ApplicationHolder application = this.applications.get( id );
         if( application != null )
         {
-            application.unregister();
+            try
+            {
+                application.removeApplicationFile( file );
+            }
+            catch( Throwable ignore )
+            {
+            }
         }
     }
 }

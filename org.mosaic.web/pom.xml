@@ -10,59 +10,42 @@
 
     <artifactId>org.mosaic.web</artifactId>
     <name>Mosaic :: Web</name>
-    <description>Mosaic web</description>
+    <description>
+        Mosaic Web module provides the core Mosaic web facilities and server.
+    </description>
     <packaging>bundle</packaging>
 
     <build>
         <plugins>
             <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
                 <configuration>
-                    <instructions>
-                        <Embed-Dependency>
-                            jackson-datatype-guava,jackson-datatype-joda,freemarker,jetty*,javax.servlet
-                        </Embed-Dependency>
-                        <Import-Package>
-                            !javax.servlet.jsp*,
-                            !org.apache.log,
-                            !org.apache.tools.ant*,
-                            !org.apache.xml*,
-                            !org.apache.xpath*,
-                            !org.dom4j*,
-                            !org.jaxen*,
-                            !org.jdom*,
-                            !org.mozilla.javascript*,
-                            !org.python*,
-                            !org.zeroturnaround*,
-                            *
-                        </Import-Package>
-                        <Module-Activator>org.mosaic.web.impl.Activator</Module-Activator>
-                    </instructions>
+                    <ignoreNonCompile>true</ignoreNonCompile>
+                    <usedDependencies>
+                        <usedDependency>org.eclipse.jetty:jetty-jmx</usedDependency>
+                    </usedDependencies>
                 </configuration>
             </plugin>
         </plugins>
     </build>
 
     <dependencies>
-        <dependency>
-            <groupId>org.mosaic</groupId>
-            <artifactId>org.mosaic.config</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.mosaic</groupId>
-            <artifactId>org.mosaic.event</artifactId>
-            <optional>true</optional>
-        </dependency>
+
+        <!-- mosaic -->
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.jsr305</artifactId>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
-            <artifactId>org.mosaic.pathwatchers</artifactId>
-            <optional>true</optional>
+            <artifactId>org.mosaic.config</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mosaic</groupId>
+            <artifactId>org.mosaic.event</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
@@ -70,57 +53,48 @@
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
+            <artifactId>org.mosaic.pathwatchers</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.security</artifactId>
         </dependency>
         <dependency>
             <groupId>org.mosaic</groupId>
-            <artifactId>org.mosaic.util</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
+            <artifactId>org.mosaic.server</artifactId>
         </dependency>
         <dependency>
-            <groupId>joda-time</groupId>
-            <artifactId>joda-time</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-        </dependency>
-
-        <!-- fasterxml -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
+            <groupId>org.mosaic.utils</groupId>
+            <artifactId>org.mosaic.utils.base</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
+            <groupId>org.mosaic.utils</groupId>
+            <artifactId>org.mosaic.utils.collections</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mosaic.utils</groupId>
+            <artifactId>org.mosaic.utils.expression</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mosaic.utils</groupId>
+            <artifactId>org.mosaic.utils.method</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-csv</artifactId>
+            <groupId>org.mosaic.utils</groupId>
+            <artifactId>org.mosaic.utils.reflection</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-guava</artifactId>
+            <groupId>org.mosaic.utils</groupId>
+            <artifactId>org.mosaic.utils.resource</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-joda</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
-        <!-- freemarker -->
-        <dependency>
-            <groupId>org.freemarker</groupId>
-            <artifactId>freemarker</artifactId>
+            <groupId>org.mosaic.utils</groupId>
+            <artifactId>org.mosaic.utils.xml</artifactId>
             <scope>provided</scope>
         </dependency>
 
@@ -168,17 +142,75 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- fasterxml -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-csv</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-guava</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-joda</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- freemarker -->
+        <dependency>
+            <groupId>org.freemarker</groupId>
+            <artifactId>freemarker</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- utilities -->
         <dependency>
             <groupId>biz.aQute.bnd</groupId>
             <artifactId>bndlib</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>joda-time</groupId>
+            <artifactId>joda-time</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+
     </dependencies>
 
     <scm>
-        <connection>scm:git:ssh://git@git.arik.home.local:7999/mos/main.git/${project.artifactId}</connection>
-        <developerConnection>scm:git:ssh://git@git.arik.home.local:7999/mos/main.git/${project.artifactId}</developerConnection>
-        <url>http://git.arik.home.local/projects/MOS/repos/main/browse/${project.artifactId}</url>
+        <connection>scm:git:ssh://git@github.com:arikkfir/mosaic.git/${project.artifactId}</connection>
+        <developerConnection>scm:git:ssh://git@github.com:arikkfir/mosaic.git/${project.artifactId}</developerConnection>
+        <url>https://github.com/arikkfir/mosaic/${project.artifactId}</url>
         <tag>HEAD</tag>
     </scm>
 
