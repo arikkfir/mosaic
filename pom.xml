@@ -10,7 +10,7 @@
 
     <artifactId>org.mosaic</artifactId>
     <name>Mosaic</name>
-    <description>Mosaic server</description>
+    <description>Mosaic</description>
     <packaging>pom</packaging>
 
     <profiles>
@@ -57,13 +57,13 @@
         <module>org.mosaic.tasks</module>
         <module>org.mosaic.utils</module>
         <module>org.mosaic.validation</module>
-        <!--<module>org.mosaic.web</module>-->
+        <module>org.mosaic.web</module>
     </modules>
 
     <scm>
-        <connection>scm:git:ssh://git@git.arik.home.local:7999/mos/main.git</connection>
-        <developerConnection>scm:git:ssh://git@git.arik.home.local:7999/mos/main.git</developerConnection>
-        <url>http://git.arik.home.local/projects/MOS/repos/main/browse</url>
+        <connection>scm:git:ssh://git@github.com:arikkfir/mosaic.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com:arikkfir/mosaic.git</developerConnection>
+        <url>https://github.com/arikkfir/mosaic</url>
         <tag>HEAD</tag>
     </scm>
 
