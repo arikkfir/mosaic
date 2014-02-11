@@ -34,7 +34,12 @@ public class TypeTokens
     @Nonnull
     public static final TypeToken<Boolean> BOOLEAN = TypeTokens.of( Boolean.class );
 
-    @SuppressWarnings("unchecked")
+    @Nonnull
+    public static final TypeToken<List<String>> STRING_LIST = new TypeToken<List<String>>()
+    {
+    };
+
+    @SuppressWarnings( "unchecked" )
     @Nonnull
     public static <T> TypeToken<T> of( @Nonnull Class<T> type )
     {
