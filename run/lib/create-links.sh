@@ -12,7 +12,7 @@ for s in 'base' 'collections' 'conversion' 'expression' 'method' 'osgi' 'reflect
 do
     ln -s ../../../org.mosaic.utils/org.mosaic.utils.${s}/target/org.mosaic.utils.${s}-${MOSAIC_VERSION}.jar org.mosaic.utils.${s}.jar
 done
-for s in 'config' 'console' 'console.remote' 'dao' 'datasource' 'event' 'modules' 'pathwatchers' 'security' 'server' 'tasks' 'validation'
+for s in 'config' 'console' 'console.remote' 'dao' 'datasource' 'event' 'modules' 'pathwatchers' 'security' 'server' 'tasks' 'validation' 'web'
 do
     ln -s ../../../org.mosaic.${s}/target/org.mosaic.${s}-${MOSAIC_VERSION}.jar org.mosaic.${s}.jar
 done
