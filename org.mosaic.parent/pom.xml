@@ -5,17 +5,24 @@
     <artifactId>org.mosaic.parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <name>Mosaic :: Parent</name>
+    <description>Parent POM for all Mosaic modules.</description>
     <packaging>pom</packaging>
     <organization>
         <name>Arik Kfir</name>
     </organization>
+
+    <!-- easier if everyone uses up-to-date version -->
     <prerequisites>
         <maven>3.1.0</maven>
     </prerequisites>
+
+    <!-- always, always, use UTF-8! -->
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
+
+    <!-- configure our plugins -->
     <build>
         <pluginManagement>
             <plugins>
@@ -277,7 +284,10 @@
             </plugin>
         </plugins>
     </build>
+
+    <!-- centralize versions of dependencies -->
     <dependencyManagement>
+
         <dependencies>
 
             <!-- mosaic modules management -->
@@ -392,7 +402,7 @@
                 <version>[${project.version}]</version>
             </dependency>
             <dependency>
-                <groupId>org.mosaic</groupId>
+                <groupId>org.mosaic.web</groupId>
                 <artifactId>org.mosaic.web</artifactId>
                 <version>[${project.version}]</version>
             </dependency>
@@ -617,7 +627,7 @@
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>[15.0,16)</version>
+                <version>[16.0,17)</version>
             </dependency>
             <dependency>
                 <groupId>joda-time</groupId>
@@ -797,6 +807,8 @@
 
         </dependencies>
     </dependencyManagement>
+
+    <!-- mosaic repository server -->
     <distributionManagement>
         <repository>
             <id>libs-release-local</id>
@@ -809,10 +821,12 @@
             <url>http://repo.arik.home.local/libs-snapshot-local</url>
         </snapshotRepository>
     </distributionManagement>
+
+    <!-- scm -->
     <scm>
-        <connection>scm:git:ssh://git@git.arik.home.local:7999/mos/main.git/${project.artifactId}</connection>
-        <developerConnection>scm:git:ssh://git@git.arik.home.local:7999/mos/main.git/${project.artifactId}</developerConnection>
-        <url>http://git.arik.home.local/projects/MOS/repos/main/browse/${project.artifactId}</url>
+        <connection>scm:git:ssh://git@github.com:arikkfir/mosaic.git/${project.artifactId}</connection>
+        <developerConnection>scm:git:ssh://git@github.com:arikkfir/mosaic.git/${project.artifactId}</developerConnection>
+        <url>https://github.com/arikkfir/mosaic/${project.artifactId}</url>
         <tag>HEAD</tag>
     </scm>
 
