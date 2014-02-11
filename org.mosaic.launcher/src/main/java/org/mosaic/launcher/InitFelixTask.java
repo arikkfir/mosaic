@@ -307,11 +307,11 @@ final class InitFelixTask extends InitTask
                     break;
 
                 case FrameworkEvent.ERROR:
-                    OSGI_FRWK_LOG.warn( "OSGi framework error for/from bundle '{}' has occurred:", bstr, throwable );
+                    OSGI_FRWK_LOG.error( "OSGi framework error for/from bundle '{}' has occurred:", bstr, throwable );
                     break;
 
                 case FrameworkEvent.STARTLEVEL_CHANGED:
-                    OSGI_FRWK_LOG.info( "OSGi framework start level has been changed to: {}", event.getBundle().adapt( FrameworkStartLevel.class ).getStartLevel() );
+                    OSGI_FRWK_LOG.warn( "OSGi framework start level has been changed to: {}", event.getBundle().adapt( FrameworkStartLevel.class ).getStartLevel() );
                     break;
             }
         }
