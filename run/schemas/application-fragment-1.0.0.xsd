@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<xsd:schema xmlns:m="http://www.mosaicserver.com/application-fragment-1.0.0"
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            targetNamespace="http://www.mosaicserver.com/application-fragment-1.0.0"
+            elementFormDefault="qualified"
+            attributeFormDefault="unqualified"
+            version="1">
+
+    <xsd:element name="application" type="m:applicationType"/>
+
+    <xsd:complexType name="applicationType">
+        <xsd:sequence>
+            <xsd:element name="name" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+            <xsd:element name="context" type="m:contextType" minOccurs="1" maxOccurs="1"/>
+            <xsd:element name="max-session-age" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+            <xsd:element name="security" type="m:securityType" minOccurs="1" maxOccurs="1"/>
+        </xsd:sequence>
+        <xsd:attribute name="id" type="xsd:string" use="required"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="contextType">
+        <xsd:sequence>
+            <xsd:element name="parameter" type="m:contextParameterType" minOccurs="0" maxOccurs="unbounded"/>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="contextParameterType" mixed="true">
+        <xsd:simpleContent>
+            <xsd:extension base="xsd:string">
+                <xsd:attribute name="name" type="xsd:string" use="required"/>
+            </xsd:extension>
+        </xsd:simpleContent>
+    </xsd:complexType>
+
+    <xsd:complexType name="securityType">
+        <xsd:sequence>
+            <xsd:element name="constraint" minOccurs="0" maxOccurs="unbounded">
+                <xsd:complexType>
+                    <xsd:attribute name="path" type="xsd:string" use="required"/>
+                    <xsd:attribute name="auth" type="xsd:string" use="required"/>
+                    <xsd:attribute name="challange" type="xsd:string" use="optional"/>
+                    <xsd:attribute name="expression" type="xsd:string" use="optional"/>
+                </xsd:complexType>
+            </xsd:element>
+        </xsd:sequence>
+    </xsd:complexType>
+
+</xsd:schema>
