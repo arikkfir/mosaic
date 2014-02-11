@@ -13,7 +13,8 @@ STUFF TO DO
 general
 ---
 
-* use [Paranamer](https://github.com/paul-hammant/paranamer) instead of Spring's ParameterNameDiscoverer
+v use [Paranamer](https://github.com/paul-hammant/paranamer) instead of Spring's ParameterNameDiscoverer
+* fix project assembly
 
 lifecycle
 ---
