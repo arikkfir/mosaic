@@ -16,6 +16,8 @@
 
     <build>
         <plugins>
+
+            <!-- declare logback as a used dependency (by unit testing) for the dep-plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
@@ -26,6 +28,8 @@
                     </usedDependencies>
                 </configuration>
             </plugin>
+
+            <!-- configure plugin -->
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
@@ -40,23 +44,30 @@
     </build>
 
     <dependencies>
+
+        <!-- mosaic -->
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.jsr305</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.felix</groupId>
-            <artifactId>org.apache.felix.framework</artifactId>
-        </dependency>
+
+        <!-- utilities -->
         <dependency>
             <groupId>biz.aQute.bnd</groupId>
             <artifactId>bndlib</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.apache.felix.framework</artifactId>
+        </dependency>
+
+        <!-- testing -->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
@@ -72,12 +83,13 @@
             <artifactId>hamcrest-core</artifactId>
             <scope>test</scope>
         </dependency>
+
     </dependencies>
 
     <scm>
-        <connection>scm:git:ssh://git@git.arik.home.local:7999/mos/main.git/org.mosaic.utils/${project.artifactId}</connection>
-        <developerConnection>scm:git:ssh://git@git.arik.home.local:7999/mos/main.git/org.mosaic.utils/${project.artifactId}</developerConnection>
-        <url>http://git.arik.home.local/projects/MOS/repos/main/browse/org.mosaic.utils/${project.artifactId}</url>
+        <connection>scm:git:ssh://git@github.com:arikkfir/mosaic.git/org.mosaic.utils/${project.artifactId}</connection>
+        <developerConnection>scm:git:ssh://git@github.com:arikkfir/mosaic.git/org.mosaic.utils/${project.artifactId}</developerConnection>
+        <url>https://github.com/arikkfir/mosaic/org.mosaic.utils/${project.artifactId}</url>
         <tag>HEAD</tag>
     </scm>
 

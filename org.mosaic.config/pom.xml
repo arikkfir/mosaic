@@ -10,10 +10,12 @@
 
     <artifactId>org.mosaic.config</artifactId>
     <name>Mosaic :: Config</name>
-    <description>Mosaic config</description>
+    <description>Provides generic configuration services.</description>
     <packaging>bundle</packaging>
 
     <dependencies>
+
+        <!-- mosaic -->
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.jsr305</artifactId>
@@ -42,6 +44,13 @@
             <artifactId>org.mosaic.utils.method</artifactId>
             <scope>provided</scope>
         </dependency>
+
+        <!-- utilities -->
+        <dependency>
+            <groupId>biz.aQute.bnd</groupId>
+            <artifactId>bndlib</artifactId>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
@@ -57,17 +66,13 @@
             <artifactId>slf4j-api</artifactId>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>biz.aQute.bnd</groupId>
-            <artifactId>bndlib</artifactId>
-            <scope>provided</scope>
-        </dependency>
+
     </dependencies>
 
     <scm>
-        <connection>scm:git:ssh://git@git.arik.home.local:7999/mos/main.git/${project.artifactId}</connection>
-        <developerConnection>scm:git:ssh://git@git.arik.home.local:7999/mos/main.git/${project.artifactId}</developerConnection>
-        <url>http://git.arik.home.local/projects/MOS/repos/main/browse/${project.artifactId}</url>
+        <connection>scm:git:ssh://git@github.com:arikkfir/mosaic.git/${project.artifactId}</connection>
+        <developerConnection>scm:git:ssh://git@github.com:arikkfir/mosaic.git/${project.artifactId}</developerConnection>
+        <url>https://github.com/arikkfir/mosaic/${project.artifactId}</url>
         <tag>HEAD</tag>
     </scm>
 

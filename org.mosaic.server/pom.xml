@@ -10,11 +10,15 @@
 
     <artifactId>org.mosaic.server</artifactId>
     <name>Mosaic :: Server</name>
-    <description>Mosaic server</description>
+    <description>
+        Mosaic Server module provides the super-simple yet intrinsic API for the server entity - the Server service.
+    </description>
     <packaging>bundle</packaging>
 
     <build>
         <plugins>
+
+            <!-- configure bundle -->
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
@@ -30,6 +34,8 @@
     </build>
 
     <dependencies>
+
+        <!-- mosaic -->
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.jsr305</artifactId>
@@ -38,6 +44,8 @@
             <groupId>org.mosaic.utils</groupId>
             <artifactId>org.mosaic.utils.base</artifactId>
         </dependency>
+
+        <!-- utilities -->
         <dependency>
             <groupId>biz.aQute.bnd</groupId>
             <artifactId>bndlib</artifactId>
@@ -48,12 +56,13 @@
             <artifactId>org.apache.felix.framework</artifactId>
             <scope>provided</scope>
         </dependency>
+
     </dependencies>
 
     <scm>
-        <connection>scm:git:ssh://git@git.arik.home.local:7999/mos/main.git/${project.artifactId}</connection>
-        <developerConnection>scm:git:ssh://git@git.arik.home.local:7999/mos/main.git/${project.artifactId}</developerConnection>
-        <url>http://git.arik.home.local/projects/MOS/repos/main/browse/${project.artifactId}</url>
+        <connection>scm:git:ssh://git@github.com:arikkfir/mosaic.git/${project.artifactId}</connection>
+        <developerConnection>scm:git:ssh://git@github.com:arikkfir/mosaic.git/${project.artifactId}</developerConnection>
+        <url>https://github.com/arikkfir/mosaic/${project.artifactId}</url>
         <tag>HEAD</tag>
     </scm>
 

@@ -11,11 +11,17 @@
     <groupId>org.mosaic.utils</groupId>
     <artifactId>org.mosaic.utils.conversion</artifactId>
     <name>Mosaic :: Utils :: Conversion</name>
-    <description>Mosaic conversion utilities</description>
+    <description>
+        Mosaic Conversion module provides a generic and extensible object conversion framework, allowing custom
+        converters to be registered, and a smart framework for using as little converters as possible to perform
+        conversions from one type to another.
+    </description>
     <packaging>bundle</packaging>
 
     <build>
         <plugins>
+
+            <!-- configure bundle -->
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
@@ -34,6 +40,8 @@
                     </instructions>
                 </configuration>
             </plugin>
+
+            <!-- configure dependency plugin to register logback as a used dependency (used for unit testing) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
@@ -48,22 +56,31 @@
     </build>
 
     <dependencies>
+
+        <!-- mosaic -->
         <dependency>
             <groupId>org.mosaic</groupId>
             <artifactId>org.mosaic.jsr305</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
         </dependency>
         <dependency>
             <groupId>org.mosaic.utils</groupId>
             <artifactId>org.mosaic.utils.reflection</artifactId>
             <scope>provided</scope>
         </dependency>
+
+        <!-- utilities -->
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
+            <groupId>biz.aQute.bnd</groupId>
+            <artifactId>bndlib</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -72,20 +89,17 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>net.sf.jgrapht</groupId>
             <artifactId>jgrapht</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>biz.aQute.bnd</groupId>
-            <artifactId>bndlib</artifactId>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
             <scope>provided</scope>
         </dependency>
+
+        <!-- testing -->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
@@ -101,12 +115,13 @@
             <artifactId>hamcrest-core</artifactId>
             <scope>test</scope>
         </dependency>
+
     </dependencies>
 
     <scm>
-        <connection>scm:git:ssh://git@git.arik.home.local:7999/mos/main.git/org.mosaic.utils/${project.artifactId}</connection>
-        <developerConnection>scm:git:ssh://git@git.arik.home.local:7999/mos/main.git/org.mosaic.utils/${project.artifactId}</developerConnection>
-        <url>http://git.arik.home.local/projects/MOS/repos/main/browse/org.mosaic.utils/${project.artifactId}</url>
+        <connection>scm:git:ssh://git@github.com:arikkfir/mosaic.git/org.mosaic.utils/${project.artifactId}</connection>
+        <developerConnection>scm:git:ssh://git@github.com:arikkfir/mosaic.git/org.mosaic.utils/${project.artifactId}</developerConnection>
+        <url>https://github.com/arikkfir/mosaic/org.mosaic.utils/${project.artifactId}</url>
         <tag>HEAD</tag>
     </scm>
 
