@@ -115,7 +115,7 @@ final class QueryAction extends Action
         Class<?> rawReturnType = returnType.getRawType();
         if( rawReturnType.equals( List.class ) )
         {
-            TypeToken<?> itemType = TypeTokens.ofList( rawReturnType );
+            TypeToken<?> itemType = TypeTokens.ofListItemType( rawReturnType );
             if( resultSetExtractorParameter == null )
             {
                 this.resultSetExtractor = new ListResultSetExtractor<>( createResultSetExtractorFor( itemType ) );

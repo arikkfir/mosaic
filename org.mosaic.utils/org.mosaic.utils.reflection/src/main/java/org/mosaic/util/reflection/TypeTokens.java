@@ -53,7 +53,7 @@ public class TypeTokens
     }
 
     @Nonnull
-    public static TypeToken<?> ofList( @Nonnull Type type )
+    public static TypeToken<?> ofListItemType( @Nonnull Type type )
     {
         TypeToken<?> listToken = TypeTokens.of( type );
         try

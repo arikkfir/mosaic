@@ -19,7 +19,7 @@ class TypeDescriptorFieldComponentList extends TypeDescriptorField
     TypeDescriptorFieldComponentList( @Nonnull TypeDescriptor typeDescriptor, @Nonnull Field field )
     {
         super( typeDescriptor, field );
-        this.listItemType = TypeTokens.ofList( this.field.getGenericType() ).getRawType();
+        this.listItemType = TypeTokens.ofListItemType( this.field.getGenericType() ).getRawType();
     }
 
     @Nullable
