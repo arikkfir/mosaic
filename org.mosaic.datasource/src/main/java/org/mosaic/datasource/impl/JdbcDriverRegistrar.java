@@ -34,11 +34,6 @@ final class JdbcDriverRegistrar
     @Component
     private Module module;
 
-    JdbcDriverRegistrar() throws InstantiationException, IllegalAccessException, SQLException
-    {
-        this.drivers.put( this.module.getId(), new DriverEntry( org.mariadb.jdbc.Driver.class ) );
-    }
-
     @EventListener
     synchronized void handleModuleEvent( @Nonnull ModuleEvent event ) throws IOException
     {
