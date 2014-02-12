@@ -32,9 +32,9 @@
     </dependencies>
 
     <scm>
-        <connection>scm:git:ssh://git@git.arik.home.local:7999/mos/main.git/${project.artifactId}</connection>
-        <developerConnection>scm:git:ssh://git@git.arik.home.local:7999/mos/main.git/${project.artifactId}</developerConnection>
-        <url>http://git.arik.home.local/projects/MOS/repos/main/browse/${project.artifactId}</url>
+        <connection>scm:git:ssh://git@github.com:arikkfir/mosaic.git/${project.artifactId}</connection>
+        <developerConnection>scm:git:ssh://git@github.com:arikkfir/mosaic.git/${project.artifactId}</developerConnection>
+        <url>https://github.com/arikkfir/mosaic/${project.artifactId}</url>
         <tag>HEAD</tag>
     </scm>
 
