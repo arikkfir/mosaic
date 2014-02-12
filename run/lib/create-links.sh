@@ -2,8 +2,7 @@
 
 # clear jar links
 find -name '*.jar' | xargs rm -f
-mkdir -p mosaic
-mkdir -p lib
+mkdir -p mosaic thirdparty
 
 # create mosaic links
 MOSAIC_VERSION="1.0.0-SNAPSHOT"
@@ -19,7 +18,7 @@ done
 popd
 
 # create 3rd party links
-pushd lib
+pushd thirdparty
 ln -s ~/.m2/repository/com/google/guava/guava/16.0-rc1/guava-16.0-rc1.jar com.google.guava.jar
 ln -s ~/.m2/repository/joda-time/joda-time/2.3/joda-time-2.3.jar org.joda-time.jar
 ln -s ~/.m2/repository/org/apache/commons/commons-lang3/3.2.1/commons-lang3-3.2.1.jar org.apache.commons.lang3.jar

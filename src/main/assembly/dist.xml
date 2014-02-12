@@ -1,31 +1,37 @@
-<assembly xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2"
+<assembly xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2"
           xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2 http://maven.apache.org/xsd/assembly-1.1.2.xsd">
     <id>dist</id>
+
+    <!-- output formats -->
     <formats>
         <format>zip</format>
         <format>tar.gz</format>
         <format>tar.bz2</format>
     </formats>
+
+    <!-- static files: launchers, configurations and schema files -->
+    <fileSets>
+        <fileSet>
+            <directory>run/bin</directory>
+            <outputDirectory>bin</outputDirectory>
+            <fileMode>755</fileMode>
+            <lineEnding>unix</lineEnding>
+            <filtered>false</filtered>
+        </fileSet>
+        <fileSet>
+            <directory>run/etc</directory>
+            <outputDirectory>etc</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>run/schemas</directory>
+            <outputDirectory>schemas</outputDirectory>
+        </fileSet>
+    </fileSets>
+
     <dependencySets>
-        <dependencySet>
-            <includes>
-                <include>org.apache.felix:org.apache.felix.log</include>
-                <include>org.apache.felix:org.apache.felix.configadmin</include>
-                <include>org.apache.felix:org.apache.felix.eventadmin</include>
-                <include>com.google.guava:guava</include>
-                <include>org.slf4j:jcl-over-slf4j</include>
-                <include>org.slf4j:log4j-over-slf4j</include>
-                <include>joda-time:joda-time</include>
-                <include>org.jboss.logging:jboss-logging</include>
-                <include>javax.validation:validation-api</include>
-                <include>org.hibernate:hibernate-validator</include>
-                <include>javax.el:javax.el-api</include>
-                <include>org.glassfish.web:javax.el</include>
-            </includes>
-            <outputDirectory>boot</outputDirectory>
-            <useStrictFiltering>true</useStrictFiltering>
-            <useTransitiveDependencies>true</useTransitiveDependencies>
-        </dependencySet>
+
+        <!-- configure the lib/thirdparty dir -->
         <dependencySet>
             <includes>
                 <include>com.fasterxml:classmate</include>
@@ -33,13 +39,27 @@
                 <include>com.fasterxml.jackson.core:jackson-annotations</include>
                 <include>com.fasterxml.jackson.core:jackson-databind</include>
                 <include>com.fasterxml.jackson.dataformat:jackson-dataformat-csv</include>
+                <include>com.google.guava:guava</include>
+                <include>javax.el:javax.el-api</include>
+                <include>org.slf4j:jcl-over-slf4j</include>
+                <include>org.slf4j:log4j-over-slf4j</include>
+                <include>org.apache.commons:commons-lang3</include>
+                <include>org.apache.felix:org.apache.felix.configadmin</include>
+                <include>org.apache.felix:org.apache.felix.eventadmin</include>
+                <include>org.apache.felix:org.apache.felix.log</include>
+                <include>org.glassfish.web:javax.el</include>
+                <include>joda-time:joda-time</include>
             </includes>
-            <outputDirectory>lib</outputDirectory>
+            <outputDirectory>lib/thirdparty</outputDirectory>
             <useStrictFiltering>true</useStrictFiltering>
             <useTransitiveDependencies>true</useTransitiveDependencies>
         </dependencySet>
+
     </dependencySets>
+
     <moduleSets>
+
+        <!-- place the launcher in the bin directory -->
         <moduleSet>
             <includes>
                 <include>org.mosaic:org.mosaic.launcher</include>
@@ -51,18 +71,8 @@
                 <unpack>false</unpack>
             </binaries>
         </moduleSet>
-        <moduleSet>
-            <includes>
-                <include>org.mosaic:org.mosaic.modules</include>
-                <include>org.mosaic:org.mosaic.server</include>
-                <include>org.mosaic:org.mosaic.util</include>
-            </includes>
-            <binaries>
-                <outputDirectory>boot</outputDirectory>
-                <includeDependencies>false</includeDependencies>
-                <unpack>false</unpack>
-            </binaries>
-        </moduleSet>
+
+        <!-- mosaic modules in the lib/mosaic directory -->
         <moduleSet>
             <includes>
                 <include>org.mosaic:org.mosaic.config</include>
@@ -71,36 +81,30 @@
                 <include>org.mosaic:org.mosaic.dao</include>
                 <include>org.mosaic:org.mosaic.datasource</include>
                 <include>org.mosaic:org.mosaic.event</include>
+                <include>org.mosaic:org.mosaic.modules</include>
                 <include>org.mosaic:org.mosaic.pathwatchers</include>
                 <include>org.mosaic:org.mosaic.security</include>
+                <include>org.mosaic:org.mosaic.server</include>
                 <include>org.mosaic:org.mosaic.tasks</include>
                 <include>org.mosaic:org.mosaic.validation</include>
                 <include>org.mosaic:org.mosaic.web</include>
+                <include>org.mosaic.utils:org.mosaic.utils.base</include>
+                <include>org.mosaic.utils:org.mosaic.utils.collections</include>
+                <include>org.mosaic.utils:org.mosaic.utils.conversion</include>
+                <include>org.mosaic.utils:org.mosaic.utils.expression</include>
+                <include>org.mosaic.utils:org.mosaic.utils.method</include>
+                <include>org.mosaic.utils:org.mosaic.utils.osgi</include>
+                <include>org.mosaic.utils:org.mosaic.utils.reflection</include>
+                <include>org.mosaic.utils:org.mosaic.utils.resource</include>
+                <include>org.mosaic.utils:org.mosaic.utils.xml</include>
             </includes>
+            <includeSubModules>true</includeSubModules>
             <binaries>
-                <outputDirectory>lib</outputDirectory>
+                <outputDirectory>lib/mosaic</outputDirectory>
                 <includeDependencies>false</includeDependencies>
                 <unpack>false</unpack>
             </binaries>
         </moduleSet>
     </moduleSets>
-
-    <fileSets>
-        <fileSet>
-            <directory>run/bin</directory>
-            <outputDirectory>bin</outputDirectory>
-            <fileMode>755</fileMode>
-            <lineEnding>unix</lineEnding>
-            <filtered>false</filtered>
-        </fileSet>
-        <fileSet>
-            <directory>run/schemas</directory>
-            <outputDirectory>schemas</outputDirectory>
-        </fileSet>
-        <fileSet>
-            <directory>run/etc</directory>
-            <outputDirectory>etc</outputDirectory>
-        </fileSet>
-    </fileSets>
 
 </assembly>

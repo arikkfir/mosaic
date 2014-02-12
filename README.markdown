@@ -14,7 +14,7 @@ general
 ---
 
 v use [Paranamer](https://github.com/paul-hammant/paranamer) instead of Spring's ParameterNameDiscoverer
-* fix project assembly
+v fix project assembly
 
 lifecycle
 ---
