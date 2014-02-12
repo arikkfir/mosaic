@@ -6,7 +6,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.apache.commons.lang3.tuple.Pair;
 import org.mosaic.modules.*;
 import org.mosaic.util.collections.EmptyMapEx;
 import org.mosaic.util.collections.HashMapEx;
@@ -20,26 +19,26 @@ import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableMap;
-import static org.mosaic.modules.impl.Activator.getServiceAndFilterFromType;
 
 /**
  * @author arik
  */
-@SuppressWarnings("unchecked")
 final class TypeDescriptorServiceAdapter extends Lifecycle
-        implements ServiceTrackerCustomizer, Module.ServiceRequirement, ServiceCapabilityProvider
+        implements ServiceTrackerCustomizer<Object, Object>,
+                   Module.ServiceRequirement,
+                   ServiceCapabilityProvider
 {
     @Nonnull
     private final TypeDescriptor typeDescriptor;
 
     @Nonnull
-    private final Class<?> adaptedType;
+    private final ServiceTypeHandle.Token<?> adaptedToken;
 
     @Nullable
     private final String filter;
 
     @Nonnull
-    private final Constructor adapterConstructor;
+    private final Constructor<?> adapterConstructor;
 
     @Nonnull
     private final Class<?>[] serviceTypes;
@@ -48,7 +47,7 @@ final class TypeDescriptorServiceAdapter extends Lifecycle
     private final Map<String, Object> serviceProperties;
 
     @Nonnull
-    private final ServiceTracker serviceTracker;
+    private final ServiceTracker<Object, Object> serviceTracker;
 
     @Nonnull
     private final Map<Long, Collection<ServiceRegistration<?>>> serviceAdaptations = new ConcurrentHashMap<>( 100 );
@@ -59,10 +58,42 @@ final class TypeDescriptorServiceAdapter extends Lifecycle
         this.serviceTypes = getServiceInterfaces();
         this.serviceProperties = getServiceProperties();
 
-        Pair<Constructor<?>, FilterBuilder> ctor = getServiceConstructor();
-        this.adapterConstructor = ctor.getKey();
-        this.adaptedType = this.adapterConstructor.getParameterTypes()[ 0 ];
-        this.filter = ctor.getValue().toString();
+        Constructor<?> constructor = null;
+        ServiceTypeHandle.Token<?> adaptedToken = null;
+        String filter = null;
+        for( Constructor<?> ctor : this.typeDescriptor.getType().getDeclaredConstructors() )
+        {
+            Service serviceAnn = ctor.getAnnotation( Service.class );
+            if( serviceAnn != null && ctor.getParameterTypes().length == 1 )
+            {
+                constructor = ctor;
+                adaptedToken = ServiceTypeHandle.createToken( ctor.getGenericParameterTypes()[ 0 ],
+                                                              ServiceTypeHandle.ServiceToken.class,
+                                                              ServiceTypeHandle.MethodEndpointServiceToken.class,
+                                                              ServiceTypeHandle.ServiceTemplateServiceToken.class,
+                                                              ServiceTypeHandle.ServiceReferenceToken.class );
+
+                FilterBuilder filterBuilder = adaptedToken.createFilterBuilder();
+                for( Service.P property : serviceAnn.properties() )
+                {
+                    filterBuilder.addEquals( property.key(), property.value() );
+                }
+
+                ctor.setAccessible( true );
+                filter = filterBuilder.toString();
+                break;
+            }
+        }
+        if( constructor == null || filter == null )
+        {
+            throw new ComponentDefinitionException( "@Adapter has no one-argument constructor annotated with @Adapter",
+                                                    this.typeDescriptor.getType(),
+                                                    this.typeDescriptor.getModule() );
+        }
+
+        this.adapterConstructor = constructor;
+        this.adaptedToken = adaptedToken;
+        this.filter = filter;
         try
         {
             BundleContext bundleContext = this.typeDescriptor.getModule().getBundle().getBundleContext();
@@ -70,7 +101,7 @@ final class TypeDescriptorServiceAdapter extends Lifecycle
             {
                 throw new IllegalStateException( "no bundle context for module " + typeDescriptor.getModule() );
             }
-            this.serviceTracker = new ServiceTracker( bundleContext, FrameworkUtil.createFilter( this.filter ), this );
+            this.serviceTracker = new ServiceTracker<>( bundleContext, FrameworkUtil.createFilter( this.filter ), this );
         }
         catch( InvalidSyntaxException e )
         {
@@ -82,7 +113,7 @@ final class TypeDescriptorServiceAdapter extends Lifecycle
     @Override
     public final String toString()
     {
-        return "TypeDescriptorServiceAdapter[" + this.adaptedType.getSimpleName() + " as " + asList( this.serviceTypes ) + "]";
+        return "TypeDescriptorServiceAdapter[" + this.adaptedToken.getServiceClass().getSimpleName() + " as " + asList( this.serviceTypes ) + "]";
     }
 
     @Nonnull
@@ -96,7 +127,7 @@ final class TypeDescriptorServiceAdapter extends Lifecycle
     @Override
     public Class<?> getType()
     {
-        return this.adaptedType;
+        return this.adaptedToken.getServiceClass();
     }
 
     @Nullable
@@ -110,7 +141,7 @@ final class TypeDescriptorServiceAdapter extends Lifecycle
     @Override
     public List<org.mosaic.modules.ServiceReference<?>> getReferences()
     {
-        org.osgi.framework.ServiceReference[] tracked = this.serviceTracker.getServiceReferences();
+        org.osgi.framework.ServiceReference<Object>[] tracked = this.serviceTracker.getServiceReferences();
         if( tracked == null )
         {
             return Collections.emptyList();
@@ -118,7 +149,7 @@ final class TypeDescriptorServiceAdapter extends Lifecycle
         else
         {
             List<org.mosaic.modules.ServiceReference<?>> serviceReferences = new LinkedList<>();
-            for( org.osgi.framework.ServiceReference reference : tracked )
+            for( org.osgi.framework.ServiceReference<Object> reference : tracked )
             {
                 serviceReferences.add( new ServiceReferenceImpl( reference ) );
             }
@@ -142,7 +173,7 @@ final class TypeDescriptorServiceAdapter extends Lifecycle
     }
 
     @Override
-    public Object addingService( @Nonnull ServiceReference reference )
+    public Object addingService( @Nonnull ServiceReference<Object> reference )
     {
         BundleContext bundleContext = this.typeDescriptor.getModule().getBundle().getBundleContext();
         if( bundleContext == null )
@@ -158,7 +189,14 @@ final class TypeDescriptorServiceAdapter extends Lifecycle
         Object adapter;
         try
         {
-            adapter = this.adapterConstructor.newInstance( service );
+            if( this.adaptedToken instanceof ServiceTypeHandle.ServiceReferenceToken )
+            {
+                adapter = this.adapterConstructor.newInstance( new ServiceReferenceImpl( reference ) );
+            }
+            else
+            {
+                adapter = this.adapterConstructor.newInstance( service );
+            }
         }
         catch( Throwable e )
         {
@@ -180,9 +218,9 @@ final class TypeDescriptorServiceAdapter extends Lifecycle
         }
 
         Collection<ServiceRegistration<?>> registrations = new LinkedList<>();
-        for( Class serviceType : this.serviceTypes )
+        for( Class<?> serviceType : this.serviceTypes )
         {
-            registrations.add( bundleContext.registerService( serviceType, adapter, properties ) );
+            registrations.add( bundleContext.registerService( serviceType.getName(), adapter, properties ) );
         }
 
         this.serviceAdaptations.put( ( Long ) reference.getProperty( Constants.SERVICE_ID ), registrations );
@@ -288,39 +326,12 @@ final class TypeDescriptorServiceAdapter extends Lifecycle
         return unmodifiableMap( properties );
     }
 
-    @Nonnull
-    private Pair<Constructor<?>, FilterBuilder> getServiceConstructor()
-    {
-        for( Constructor<?> ctor : this.typeDescriptor.getType().getDeclaredConstructors() )
-        {
-            Service serviceAnn = ctor.getAnnotation( Service.class );
-            if( serviceAnn != null && ctor.getParameterTypes().length == 1 )
-            {
-                Pair<Class<?>, FilterBuilder> pair = getServiceAndFilterFromType( this.typeDescriptor.getModule(),
-                                                                                  this.typeDescriptor.getType(),
-                                                                                  ctor.getGenericParameterTypes()[ 0 ] );
-
-                FilterBuilder filterBuilder = pair.getRight();
-                for( Service.P property : serviceAnn.properties() )
-                {
-                    filterBuilder.addEquals( property.key(), property.value() );
-                }
-
-                ctor.setAccessible( true );
-                return Pair.<Constructor<?>, FilterBuilder>of( ctor, filterBuilder );
-            }
-        }
-        throw new ComponentDefinitionException( "@Adapter has no one-argument constructor annotated with @Adapter",
-                                                this.typeDescriptor.getType(),
-                                                this.typeDescriptor.getModule() );
-    }
-
     private class ServiceReferenceImpl implements org.mosaic.modules.ServiceReference
     {
         @Nonnull
-        private final org.osgi.framework.ServiceReference<?> reference;
+        private final org.osgi.framework.ServiceReference<Object> reference;
 
-        private ServiceReferenceImpl( @Nonnull ServiceReference<?> reference )
+        private ServiceReferenceImpl( @Nonnull ServiceReference<Object> reference )
         {
             this.reference = reference;
         }
@@ -335,7 +346,7 @@ final class TypeDescriptorServiceAdapter extends Lifecycle
         @Override
         public Class getType()
         {
-            return TypeDescriptorServiceAdapter.this.adaptedType;
+            return TypeDescriptorServiceAdapter.this.adaptedToken.getServiceClass();
         }
 
         @Nullable

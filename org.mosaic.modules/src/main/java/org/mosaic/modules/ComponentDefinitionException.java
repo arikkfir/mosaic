@@ -12,7 +12,7 @@ public class ComponentDefinitionException extends ComponentException
                                          @Nonnull Type type,
                                          @Nonnull Module module )
     {
-        super( "bad component definition for type '" + type + "': " + message, type, module );
+        super( "bad component definition for type '" + type + "' in module " + module + ": " + message, type, module );
     }
 
     public ComponentDefinitionException( @Nonnull String message,
@@ -20,13 +20,13 @@ public class ComponentDefinitionException extends ComponentException
                                          @Nonnull Type type,
                                          @Nonnull Module module )
     {
-        super( "bad component definition for type '" + type + "': " + message, cause, type, module );
+        super( "bad component definition for type '" + type + "' in module " + module + ": " + message, cause, type, module );
     }
 
     public ComponentDefinitionException( @Nonnull Throwable cause,
                                          @Nonnull Type type,
                                          @Nonnull Module module )
     {
-        super( "bad component definition for type '" + type + "'", cause, type, module );
+        super( "bad component definition for type '" + type + "' in module " + module, cause, type, module );
     }
 }

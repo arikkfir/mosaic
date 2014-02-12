@@ -2,11 +2,9 @@ package org.mosaic.modules.impl;
 
 import com.google.common.base.Optional;
 import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
 import java.util.*;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.apache.commons.lang3.tuple.Pair;
 import org.mosaic.modules.ComponentDefinitionException;
 import org.mosaic.modules.Module;
 import org.mosaic.modules.Service;
@@ -16,10 +14,11 @@ import org.mosaic.util.collections.MapEx;
 import org.mosaic.util.osgi.FilterBuilder;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
-import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.util.tracker.ServiceTracker;
 import org.osgi.util.tracker.ServiceTrackerCustomizer;
+
+import static org.osgi.framework.FrameworkUtil.createFilter;
 
 /**
  * @author arik
@@ -29,7 +28,7 @@ final class TypeDescriptorFieldServiceList extends TypeDescriptorField
         implements ServiceTrackerCustomizer, List, Module.ServiceRequirement
 {
     @Nonnull
-    private final Class<?> requiredServiceType;
+    private final ServiceTypeHandle.ServiceListToken serviceType;
 
     @Nullable
     private final String requiredFilter;
@@ -51,25 +50,10 @@ final class TypeDescriptorFieldServiceList extends TypeDescriptorField
             throw new ComponentDefinitionException( msg, typeDescriptor.getType(), typeDescriptor.getModule() );
         }
 
-        java.lang.reflect.Type listType = field.getGenericType();
-        if( !( listType instanceof ParameterizedType ) )
-        {
-            String msg = "field '" + field.getName() + "' of component " + typeDescriptor + " does not specify type for List";
-            throw new ComponentDefinitionException( msg, typeDescriptor.getType(), typeDescriptor.getModule() );
-        }
+        this.serviceType = ( ServiceTypeHandle.ServiceListToken )
+                ServiceTypeHandle.createToken( field.getGenericType(), ServiceTypeHandle.ServiceListToken.class );
 
-        ParameterizedType parameterizedListType = ( ParameterizedType ) listType;
-        java.lang.reflect.Type[] listTypeArguments = parameterizedListType.getActualTypeArguments();
-        if( listTypeArguments.length == 0 )
-        {
-            String msg = "field '" + field.getName() + "' of component " + typeDescriptor + " does not specify type for List";
-            throw new ComponentDefinitionException( msg, typeDescriptor.getType(), typeDescriptor.getModule() );
-        }
-
-        Pair<Class<?>, FilterBuilder> pair = Activator.getServiceAndFilterFromType( typeDescriptor.getModule(), typeDescriptor.getType(), listTypeArguments[ 0 ] );
-        this.requiredServiceType = pair.getKey();
-
-        FilterBuilder filterBuilder = pair.getRight();
+        FilterBuilder filterBuilder = this.serviceType.createFilterBuilder();
         for( Service.P property : serviceAnn.properties() )
         {
             filterBuilder.addEquals( property.key(), property.value() );
@@ -83,7 +67,7 @@ final class TypeDescriptorFieldServiceList extends TypeDescriptorField
             {
                 throw new IllegalStateException( "no bundle context for module " + typeDescriptor.getModule() );
             }
-            this.serviceTracker = new ServiceTracker( bundleContext, FrameworkUtil.createFilter( this.requiredFilter ), this );
+            this.serviceTracker = new ServiceTracker( bundleContext, createFilter( this.requiredFilter ), this );
         }
         catch( InvalidSyntaxException e )
         {
@@ -274,7 +258,7 @@ final class TypeDescriptorFieldServiceList extends TypeDescriptorField
     @Override
     public Class<?> getType()
     {
-        return this.requiredServiceType;
+        return this.serviceType.getServiceClass();
     }
 
     @Nullable
@@ -317,7 +301,15 @@ final class TypeDescriptorFieldServiceList extends TypeDescriptorField
         List services = this.services;
         if( services == null )
         {
-            services = new ArrayList( this.serviceTracker.getTracked().values() );
+            ServiceTypeHandle.Token<?> itemType = this.serviceType.getItemType();
+            if( itemType instanceof ServiceTypeHandle.ServiceReferenceToken )
+            {
+                services = new ArrayList( getReferences() );
+            }
+            else
+            {
+                services = new ArrayList( this.serviceTracker.getTracked().values() );
+            }
             this.services = services;
         }
         return services;
@@ -368,7 +360,7 @@ final class TypeDescriptorFieldServiceList extends TypeDescriptorField
         @Override
         public Class getType()
         {
-            return TypeDescriptorFieldServiceList.this.requiredServiceType;
+            return TypeDescriptorFieldServiceList.this.serviceType.getServiceClass();
         }
 
         @Nullable

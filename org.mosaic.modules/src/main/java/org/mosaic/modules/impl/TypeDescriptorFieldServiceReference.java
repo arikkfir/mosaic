@@ -2,13 +2,11 @@ package org.mosaic.modules.impl;
 
 import com.google.common.base.Optional;
 import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.apache.commons.lang3.tuple.Pair;
 import org.mosaic.modules.ComponentDefinitionException;
 import org.mosaic.modules.Module;
 import org.mosaic.modules.Service;
@@ -25,12 +23,12 @@ import org.osgi.util.tracker.ServiceTracker;
 /**
  * @author arik
  */
-@SuppressWarnings( "unchecked" )
+@SuppressWarnings("unchecked")
 final class TypeDescriptorFieldServiceReference extends TypeDescriptorField
         implements ServiceReference, Module.ServiceRequirement
 {
     @Nonnull
-    private final Class serviceType;
+    private final ServiceTypeHandle.Token<?> serviceType;
 
     @Nullable
     private final String filter;
@@ -50,25 +48,9 @@ final class TypeDescriptorFieldServiceReference extends TypeDescriptorField
             throw new ComponentDefinitionException( msg, this.typeDescriptor.getType(), this.typeDescriptor.getModule() );
         }
 
-        java.lang.reflect.Type serviceRefType = field.getGenericType();
-        if( !( serviceRefType instanceof ParameterizedType ) )
-        {
-            String msg = "field '" + field.getName() + "' of component " + this.typeDescriptor + " does not specify type for ServiceReference";
-            throw new ComponentDefinitionException( msg, this.typeDescriptor.getType(), this.typeDescriptor.getModule() );
-        }
+        this.serviceType = ServiceTypeHandle.createToken( field.getGenericType(), ServiceTypeHandle.ServiceReferenceToken.class );
 
-        ParameterizedType parameterizedServiceRefType = ( ParameterizedType ) serviceRefType;
-        java.lang.reflect.Type[] serviceRefTypeArguments = parameterizedServiceRefType.getActualTypeArguments();
-        if( serviceRefTypeArguments.length == 0 )
-        {
-            String msg = "field '" + field.getName() + "' of component " + this.typeDescriptor + " does not specify type for ServiceReference";
-            throw new ComponentDefinitionException( msg, this.typeDescriptor.getType(), this.typeDescriptor.getModule() );
-        }
-
-        Pair<Class<?>, FilterBuilder> pair = Activator.getServiceAndFilterFromType( this.typeDescriptor.getModule(), this.typeDescriptor.getType(), serviceRefTypeArguments[ 0 ] );
-        this.serviceType = pair.getKey();
-
-        FilterBuilder filterBuilder = pair.getRight();
+        FilterBuilder filterBuilder = this.serviceType.createFilterBuilder();
         for( Service.P property : serviceAnn.properties() )
         {
             filterBuilder.addEquals( property.key(), property.value() );
@@ -113,7 +95,7 @@ final class TypeDescriptorFieldServiceReference extends TypeDescriptorField
     @Override
     public Class getType()
     {
-        return this.serviceType;
+        return this.serviceType.getServiceClass();
     }
 
     @Nullable

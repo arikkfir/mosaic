@@ -7,7 +7,6 @@ import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.apache.commons.lang3.tuple.Pair;
 import org.mosaic.modules.ComponentDefinitionException;
 import org.mosaic.modules.Module;
 import org.mosaic.modules.Service;
@@ -31,7 +30,7 @@ final class TypeDescriptorFieldServiceProxy extends TypeDescriptorField
         implements InvocationHandler, ServiceTrackerCustomizer, Module.ServiceRequirement
 {
     @Nonnull
-    private final Class<?> serviceType;
+    private final ServiceTypeHandle.Token<?> serviceType;
 
     @Nullable
     private final String filter;
@@ -56,10 +55,13 @@ final class TypeDescriptorFieldServiceProxy extends TypeDescriptorField
             throw new ComponentDefinitionException( msg, this.typeDescriptor.getType(), this.typeDescriptor.getModule() );
         }
 
-        Pair<Class<?>, FilterBuilder> pair = Activator.getServiceAndFilterFromType( this.typeDescriptor.getModule(), typeDescriptor.getType(), field.getGenericType() );
-        this.serviceType = pair.getKey();
+        this.serviceType = ServiceTypeHandle.createToken( field.getGenericType(),
+                                                          ServiceTypeHandle.ServiceToken.class,
+                                                          ServiceTypeHandle.MethodEndpointServiceToken.class,
+                                                          ServiceTypeHandle.ServiceTemplateServiceToken.class,
+                                                          ServiceTypeHandle.ServiceReferenceToken.class );
 
-        FilterBuilder filterBuilder = pair.getRight();
+        FilterBuilder filterBuilder = this.serviceType.createFilterBuilder();
         for( Service.P property : serviceAnn.properties() )
         {
             filterBuilder.addEquals( property.key(), property.value() );
@@ -100,7 +102,7 @@ final class TypeDescriptorFieldServiceProxy extends TypeDescriptorField
     @Override
     public Class<?> getType()
     {
-        return this.serviceType;
+        return this.serviceType.getServiceClass();
     }
 
     @Nullable
@@ -131,7 +133,7 @@ final class TypeDescriptorFieldServiceProxy extends TypeDescriptorField
         Object service = this.service;
         if( service == null )
         {
-            throw new IllegalStateException( "service '" + this.serviceType.getName() + "' is not available" );
+            throw new IllegalStateException( "service '" + this.serviceType.getServiceClass().getName() + "' is not available" );
         }
 
         switch( method.getName() )
@@ -270,7 +272,7 @@ final class TypeDescriptorFieldServiceProxy extends TypeDescriptorField
         @Override
         public Class getType()
         {
-            return TypeDescriptorFieldServiceProxy.this.serviceType;
+            return TypeDescriptorFieldServiceProxy.this.serviceType.getServiceClass();
         }
 
         @Nullable

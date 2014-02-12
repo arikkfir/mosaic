@@ -1,18 +1,12 @@
 package org.mosaic.modules.impl;
 
-import java.lang.reflect.ParameterizedType;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.apache.commons.lang3.tuple.Pair;
-import org.mosaic.modules.ComponentDefinitionException;
-import org.mosaic.modules.MethodEndpoint;
 import org.mosaic.modules.ModuleManager;
-import org.mosaic.modules.ServiceTemplate;
-import org.mosaic.util.osgi.FilterBuilder;
 import org.mosaic.util.resource.PathWatcher;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -58,51 +52,6 @@ public final class Activator implements BundleActivator
             throw new IllegalStateException( "bundle property 'mosaic.home.work' is missing" );
         }
         return Paths.get( workPath );
-    }
-
-    @Nonnull
-    static Pair<Class<?>, FilterBuilder> getServiceAndFilterFromType( @Nonnull ModuleImpl module,
-                                                                      @Nonnull Class<?> componentType,
-                                                                      @Nonnull java.lang.reflect.Type type )
-    {
-        if( type instanceof Class<?> )
-        {
-            return Pair.<Class<?>, FilterBuilder>of( ( Class<?> ) type, new FilterBuilder().addClass( ( Class<?> ) type ) );
-        }
-        else if( type instanceof ParameterizedType )
-        {
-            ParameterizedType parameterizedType = ( ParameterizedType ) type;
-            java.lang.reflect.Type rawType = parameterizedType.getRawType();
-
-            if( !MethodEndpoint.class.equals( rawType ) && !ServiceTemplate.class.equals( rawType ) )
-            {
-                String msg = "only MethodEndpoint and ServiceTemplate can serve as parameterized service types";
-                throw new ComponentDefinitionException( msg, componentType, module );
-            }
-
-            FilterBuilder filterBuilder = new FilterBuilder().addClass( ( Class<?> ) rawType );
-
-            java.lang.reflect.Type[] typeArguments = parameterizedType.getActualTypeArguments();
-            if( typeArguments.length == 1 )
-            {
-                java.lang.reflect.Type arg = typeArguments[ 0 ];
-                if( arg instanceof Class<?> )
-                {
-                    filterBuilder.addEquals( "type", ( ( Class<?> ) arg ).getName() );
-                }
-                else
-                {
-                    String msg = "MethodEndpoint can only receive concrete type arguments";
-                    throw new ComponentDefinitionException( msg, componentType, module );
-                }
-            }
-            return Pair.<Class<?>, FilterBuilder>of( MethodEndpoint.class, filterBuilder );
-        }
-        else
-        {
-            String msg = "illegal service type: " + type;
-            throw new ComponentDefinitionException( msg, componentType, module );
-        }
     }
 
     @Nullable

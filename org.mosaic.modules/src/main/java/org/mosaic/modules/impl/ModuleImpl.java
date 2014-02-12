@@ -845,15 +845,33 @@ final class ModuleImpl extends Lifecycle implements Module
                 className = className.substring( 1 );
             }
 
+            Class<?> clazz;
             try
             {
-                Class<?> clazz = this.bundle.loadClass( className );
+                clazz = this.bundle.loadClass( className );
+            }
+            catch( Throwable e )
+            {
+                CLASS_LOAD_ERRORS_LOG.trace( "Could not load class '{}' from module {}: {}", className, this, e.getMessage(), e );
+                continue;
+            }
+
+            try
+            {
                 org.mosaic.modules.impl.TypeDescriptor componentDescriptor = new org.mosaic.modules.impl.TypeDescriptor( this, clazz );
                 componentDescriptors.put( clazz, componentDescriptor );
             }
-            catch( ClassNotFoundException | NoClassDefFoundError | TypeNotPresentException e )
+            catch( NoClassDefFoundError | TypeNotPresentException e )
             {
                 CLASS_LOAD_ERRORS_LOG.trace( "Could not load class '{}' from module {}: {}", className, this, e.getMessage(), e );
+            }
+            catch( ComponentDefinitionException e )
+            {
+                throw e;
+            }
+            catch( Throwable e )
+            {
+                throw new ComponentDefinitionException( e, clazz, this );
             }
         }
         return componentDescriptors;

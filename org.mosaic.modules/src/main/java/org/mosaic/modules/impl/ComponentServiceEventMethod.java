@@ -3,7 +3,6 @@ package org.mosaic.modules.impl;
 import com.google.common.base.Optional;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -12,7 +11,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.apache.commons.lang3.tuple.Pair;
 import org.mosaic.modules.*;
 import org.mosaic.modules.ServiceReference;
 import org.mosaic.util.collections.HashMapEx;
@@ -23,8 +21,6 @@ import org.osgi.util.tracker.ServiceTracker;
 import org.osgi.util.tracker.ServiceTrackerCustomizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.mosaic.modules.impl.Activator.getServiceAndFilterFromType;
 
 /**
  * @author arik
@@ -42,7 +38,7 @@ final class ComponentServiceEventMethod extends Lifecycle
     private final Method method;
 
     @Nonnull
-    private final Class serviceType;
+    private final ServiceTypeHandle.Token<?> serviceType;
 
     @Nullable
     private final String filter;
@@ -63,8 +59,20 @@ final class ComponentServiceEventMethod extends Lifecycle
         this.method = method;
         this.method.setAccessible( true );
 
-        Pair<Class<?>, FilterBuilder> pair = getServiceAndFilterFromType( this.component.getModule(), this.component.getType(), getServiceType() );
-        this.serviceType = pair.getKey();
+        Type[] parameterTypes = this.method.getGenericParameterTypes();
+        if( parameterTypes.length != 1 )
+        {
+            String msg = "Service event method " + this + " must have exactly 1 parameter";
+            throw new ComponentDefinitionException( msg, this.component.getType(), this.component.getModule() );
+        }
+
+        this.serviceType = ServiceTypeHandle.createToken(
+                parameterTypes[ 0 ],
+                ServiceTypeHandle.ServiceToken.class,
+                ServiceTypeHandle.ServiceTemplateServiceToken.class,
+                ServiceTypeHandle.MethodEndpointServiceToken.class,
+                ServiceTypeHandle.ServiceReferenceToken.class );
+        FilterBuilder filterBuilder = this.serviceType.createFilterBuilder();
 
         // check if are to invoke this method when services become available
         OnServiceAdded onServiceAddedAnn = this.method.getAnnotation( OnServiceAdded.class );
@@ -73,7 +81,7 @@ final class ComponentServiceEventMethod extends Lifecycle
         {
             for( OnServiceAdded.P property : onServiceAddedAnn.properties() )
             {
-                pair.getRight().addEquals( property.key(), property.value() );
+                filterBuilder.addEquals( property.key(), property.value() );
             }
         }
 
@@ -84,7 +92,7 @@ final class ComponentServiceEventMethod extends Lifecycle
         {
             for( OnServiceRemoved.P property : onServiceRemovedAnn.properties() )
             {
-                pair.getRight().addEquals( property.key(), property.value() );
+                filterBuilder.addEquals( property.key(), property.value() );
             }
         }
 
@@ -96,7 +104,7 @@ final class ComponentServiceEventMethod extends Lifecycle
         }
 
         // create our service tracker
-        this.filter = pair.getRight().toString();
+        this.filter = filterBuilder.toString();
         try
         {
             BundleContext bundleContext = this.component.getModule().getBundle().getBundleContext();
@@ -105,7 +113,7 @@ final class ComponentServiceEventMethod extends Lifecycle
                 throw new IllegalStateException( "no bundle context for module " + this.component.getModule() );
             }
 
-            Filter filter = FrameworkUtil.createFilter( pair.getRight().toString() );
+            Filter filter = FrameworkUtil.createFilter( this.filter );
             this.serviceTracker = new ServiceTracker( bundleContext, filter, this );
         }
         catch( InvalidSyntaxException e )
@@ -132,7 +140,7 @@ final class ComponentServiceEventMethod extends Lifecycle
     @Override
     public Class<?> getType()
     {
-        return this.serviceType;
+        return this.serviceType.getServiceClass();
     }
 
     @Nullable
@@ -234,46 +242,6 @@ final class ComponentServiceEventMethod extends Lifecycle
         this.serviceTracker.close();
     }
 
-    @Nonnull
-    private Type getServiceType()
-    {
-        Type[] parameterTypes = this.method.getGenericParameterTypes();
-        if( parameterTypes.length != 1 )
-        {
-            String msg = "@OnService[Added/Removed] method " + this + " must have exactly 1 parameter";
-            throw new ComponentDefinitionException( msg, this.component.getType(), this.component.getModule() );
-        }
-
-        Type serviceRefType = parameterTypes[ 0 ];
-        if( !( serviceRefType instanceof ParameterizedType ) )
-        {
-            String msg = "@OnService[Added/Removed] method " + this + " does not specify type for ServiceReference";
-            throw new ComponentDefinitionException( msg, this.component.getType(), this.component.getModule() );
-        }
-
-        ParameterizedType parameterizedServiceRefType = ( ParameterizedType ) serviceRefType;
-        if( !( parameterizedServiceRefType.getRawType() instanceof Class<?> ) )
-        {
-            String msg = "@OnService[Added/Removed] method " + this + " specifies non-concrete service reference parameter - must be 'ServiceReference<...>'";
-            throw new ComponentDefinitionException( msg, this.component.getType(), this.component.getModule() );
-        }
-
-        Class<?> serviceRefClassType = ( Class<?> ) parameterizedServiceRefType.getRawType();
-        if( !serviceRefClassType.isAssignableFrom( ServiceReference.class ) )
-        {
-            String msg = "@OnService[Added/Removed] method " + this + " does not receive 'ServiceReference<...>'";
-            throw new ComponentDefinitionException( msg, this.component.getType(), this.component.getModule() );
-        }
-
-        Type[] serviceRefTypeArguments = parameterizedServiceRefType.getActualTypeArguments();
-        if( serviceRefTypeArguments.length == 0 )
-        {
-            String msg = "@OnService[Added/Removed] method " + this + " does not specify type for ServiceReference";
-            throw new ComponentDefinitionException( msg, this.component.getType(), this.component.getModule() );
-        }
-        return serviceRefTypeArguments[ 0 ];
-    }
-
     private class ServiceReferenceImpl implements ServiceReference
     {
         @Nonnull
@@ -298,7 +266,7 @@ final class ComponentServiceEventMethod extends Lifecycle
         @Override
         public Class getType()
         {
-            return ComponentServiceEventMethod.this.serviceType;
+            return ComponentServiceEventMethod.this.serviceType.getServiceClass();
         }
 
         @Nullable
