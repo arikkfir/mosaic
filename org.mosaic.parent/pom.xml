@@ -166,7 +166,7 @@
                         <updateDependencies>false</updateDependencies>
                         <updateVersionsToSnapshot>false</updateVersionsToSnapshot>
                         <updateWorkingCopyVersions>false</updateWorkingCopyVersions>
-                        <releaseProfiles>mosaic-release</releaseProfiles>
+                        <releaseProfiles>dist</releaseProfiles>
                     </configuration>
                 </plugin>
                 <plugin>
