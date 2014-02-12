@@ -28,6 +28,7 @@
                             jackson-datatype-guava,jackson-datatype-joda,freemarker,jetty*,javax.servlet,commons-codec
                         </Embed-Dependency>
                         <Import-Package>
+                            com.fasterxml.jackson.core.type,
                             !javax.servlet.jsp*,
                             !org.apache.log,
                             !org.apache.tools.ant*,
@@ -41,7 +42,7 @@
                             !org.zeroturnaround*,
                             *
                         </Import-Package>
-                        <Module-Activator>org.mosaic.web.impl.Activator</Module-Activator>
+                        <Module-Activator>org.mosaic.web.server.impl.Activator</Module-Activator>
                     </instructions>
                 </configuration>
             </plugin>
