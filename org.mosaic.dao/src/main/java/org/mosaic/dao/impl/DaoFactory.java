@@ -11,11 +11,10 @@ import org.mosaic.modules.*;
 /**
  * @author arik
  */
-@SuppressWarnings( "unchecked" )
 @Component
 final class DaoFactory
 {
-    @SuppressWarnings( "MismatchedQueryAndUpdateOfCollection" )
+    @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
     @Nonnull
     private final Map<Long, ServiceRegistration> registrations = new ConcurrentHashMap<>();
 
@@ -23,13 +22,14 @@ final class DaoFactory
     @Component
     private Module module;
 
+    @SuppressWarnings( "unchecked" )
     @OnServiceAdded
     void onDaoTemplateAdded( @Nonnull ServiceReference<ServiceTemplate<Dao>> daoTemplateReference )
     {
         Optional<ServiceTemplate<Dao>> tmplHolder = daoTemplateReference.service();
         if( tmplHolder.isPresent() )
         {
-            Class daoType = tmplHolder.get().getTemplate();
+            Class<Object> daoType = ( Class<Object> ) tmplHolder.get().getTemplate();
             Object dao = Proxy.newProxyInstance( daoType.getClassLoader(),
                                                  new Class[] { daoType },
                                                  new DaoProxy( daoType, tmplHolder.get().getType().value() ) );
