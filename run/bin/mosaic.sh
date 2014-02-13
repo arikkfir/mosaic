@@ -43,7 +43,6 @@ MOSAIC_HOME="$( cd -P "$( dirname "${SOURCE}" )" && cd .. && pwd )"
 ####################################################################################
 # Make sure required variables are set
 ####################################################################################
-[ -z "${MOSAIC_PID_FILE}" ] && MOSAIC_PID_FILE="/var/run/mosaic.pid"
 [ -z "${MOSAIC_JAVA_OPTS}" ] && MOSAIC_JAVA_OPTS=""
 [ -z "${MOSAIC_SERVER_PROC_PTRN}" ] && MOSAIC_SERVER_PROC_PTRN="java.*${MOSAIC_HOME}.*-jar.*launcher\.jar"
 [ -z "${MOSAIC_DEBUG_PORT}" ] && MOSAIC_DEBUG_PORT="5005"
@@ -57,6 +56,7 @@ MOSAIC_HOME="$( cd -P "$( dirname "${SOURCE}" )" && cd .. && pwd )"
 [ -z "${MOSAIC_HOME_LOGS}" ] && MOSAIC_HOME_LOGS="${MOSAIC_HOME}/logs"
 [ -z "${MOSAIC_HOME_SCHEMAS}" ] && MOSAIC_HOME_SCHEMAS="${MOSAIC_HOME}/schemas"
 [ -z "${MOSAIC_HOME_WORK}" ] && MOSAIC_HOME_WORK="${MOSAIC_HOME}/work"
+[ -z "${MOSAIC_PID_FILE}" ] && MOSAIC_PID_FILE="/var/run/mosaic.pid"
 
 
 ####################################################################################
@@ -80,13 +80,6 @@ start()
     if [ "0" = "$?" ] ; then
         echo "Mosaic server already running."
         exit 0
-    fi
-
-    #
-    # Prepare mosaic applications
-    #
-    if [ -f "${MOSAIC_HOME}/bin/prepare_app.sh" ]; then
-        ${MOSAIC_HOME}/bin/prepare_app.sh -a prepare
     fi
 
     #
@@ -202,6 +195,18 @@ stop()
 ####################################################################################
 # Main section: determine command and execute it accordingly
 ####################################################################################
+
+# check PID can be created/removed
+MOSAIC_PID_DIR = `dirname ${MOSAIC_PID_FILE}`
+if [ ! -d ${MOSAIC_PID_DIR} -o ! -w ${MOSAIC_PID_DIR} ]; then
+    echo "Directory for PID file at ${MOSAIC_PID_FILE} does not exist or is not writable by `whoami`."
+    echo "Please create it first or change the MOSAIC_PID_FILE environment variable."
+    exit 1
+fi
+if [ -f ${MOSAIC_PID_FILE} -a ! -w ${MOSAIC_PID_FILE} ]; then
+    echo "PID file at ${MOSAIC_PID_FILE} is not writable by `whoami`."
+    exit 1
+fi
 
 # Log the invocation
 mkdir -p ${MOSAIC_HOME}/logs
