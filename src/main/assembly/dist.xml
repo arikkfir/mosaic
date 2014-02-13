@@ -16,7 +16,7 @@
             <directory>run/bin</directory>
             <outputDirectory>bin</outputDirectory>
             <fileMode>755</fileMode>
-            <directoryMode>644</directoryMode>
+            <directoryMode>755</directoryMode>
             <lineEnding>unix</lineEnding>
             <filtered>false</filtered>
         </fileSet>
