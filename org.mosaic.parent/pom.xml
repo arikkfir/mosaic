@@ -163,9 +163,9 @@
                     <version>2.4.1</version>
                     <configuration>
                         <autoVersionSubmodules>true</autoVersionSubmodules>
-                        <updateDependencies>false</updateDependencies>
-                        <updateVersionsToSnapshot>false</updateVersionsToSnapshot>
-                        <updateWorkingCopyVersions>false</updateWorkingCopyVersions>
+                        <!--<updateDependencies>false</updateDependencies>-->
+                        <!--<updateVersionsToSnapshot>false</updateVersionsToSnapshot>-->
+                        <!--<updateWorkingCopyVersions>true</updateWorkingCopyVersions>-->
                         <releaseProfiles>dist</releaseProfiles>
                     </configuration>
                 </plugin>
