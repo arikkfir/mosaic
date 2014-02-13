@@ -38,9 +38,10 @@
                             <include>org.mosaic:org.mosaic.jsr305</include>
                             <include>org.slf4j:slf4j-api</include>
                             <include>org.slf4j:jul-to-slf4j</include>
-                            <include>ch.qos.logback:ch.qos.logback.classic</include>
-                            <include>ch.qos.logback:ch.qos.logback.core</include>
+                            <include>ch.qos.logback:logback-classic</include>
+                            <include>ch.qos.logback:logback-core</include>
                             <include>org.apache.felix:org.apache.felix.framework</include>
+                            <include>com.google.guava:guava</include>
                         </includes>
                     </artifactSet>
                     <transformers>
