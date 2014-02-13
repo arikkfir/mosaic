@@ -123,8 +123,8 @@
     </modules>
 
     <scm>
-        <connection>scm:git:ssh://git@github.com/mosaic.git</connection>
-        <developerConnection>scm:git:ssh://arikkfir@github.com/mosaic.git</developerConnection>
+        <connection>scm:git:git@github.com:arikkfir/mosaic.git</connection>
+        <developerConnection>scm:git:git@github.com:arikkfir/mosaic.git</developerConnection>
         <url>https://github.com/arikkfir/mosaic</url>
         <tag>HEAD</tag>
     </scm>

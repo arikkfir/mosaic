@@ -68,8 +68,8 @@
 
     <!-- scm -->
     <scm>
-        <connection>scm:git:ssh://git@github.com/mosaic.git/${project.artifactId}</connection>
-        <developerConnection>scm:git:ssh://arikkfir@github.com/mosaic.git/${project.artifactId}</developerConnection>
+        <connection>scm:git:git@github.com:arikkfir/mosaic.git/${project.artifactId}</connection>
+        <developerConnection>scm:git:git@github.com:arikkfir/mosaic.git/${project.artifactId}</developerConnection>
         <url>https://github.com/arikkfir/mosaic</url>
         <tag>HEAD</tag>
     </scm>
