@@ -45,7 +45,7 @@
                     </artifactSet>
                     <transformers>
                         <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                            <mainClass>org.mosaic.launcher.Main</mainClass>
+                            <mainClass>org.mosaic.launcher.Mosaic</mainClass>
                         </transformer>
                     </transformers>
                 </configuration>
