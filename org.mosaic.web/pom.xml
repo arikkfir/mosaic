@@ -54,7 +54,9 @@
                 <configuration>
                     <ignoreNonCompile>true</ignoreNonCompile>
                     <usedDependencies>
+                        <usedDependency>org.eclipse.jetty:jetty-continuation</usedDependency>
                         <usedDependency>org.eclipse.jetty:jetty-jmx</usedDependency>
+                        <usedDependency>org.eclipse.jetty:jetty-security</usedDependency>
                     </usedDependencies>
                 </configuration>
             </plugin>
@@ -132,6 +134,11 @@
         <!-- jetty -->
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-continuation</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-http</artifactId>
             <scope>provided</scope>
         </dependency>
@@ -140,13 +147,11 @@
             <artifactId>jetty-jmx</artifactId>
             <scope>provided</scope>
         </dependency>
-        <!--
-                <dependency>
-                    <groupId>org.eclipse.jetty</groupId>
-                    <artifactId>jetty-security</artifactId>
-                    <optional>true</optional>
-                </dependency>
-        -->
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-security</artifactId>
+            <optional>true</optional>
+        </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>
