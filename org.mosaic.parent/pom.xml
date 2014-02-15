@@ -97,7 +97,7 @@
                             <requireNoRepositories>
                                 <message>Best Practice is to never define repositories in pom.xml (use a repository manager instead)</message>
                             </requireNoRepositories>
-                            <requireUpperBoundDeps />
+                            <requireUpperBoundDeps/>
                             <bannedDependencies>
                                 <searchTransitive>true</searchTransitive>
                                 <message>Your dependency list contains banned dependencies. Please remove them.</message>
@@ -195,7 +195,7 @@
                         <createSourcesJar>true</createSourcesJar>
                         <shadeSourcesContent>true</shadeSourcesContent>
                         <transformers>
-                            <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer" />
+                            <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer"/>
                             <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
                                 <addHeader>true</addHeader>
                             </transformer>
@@ -205,7 +205,7 @@
                             <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
                                 <resource>META-INF/spring.schemas</resource>
                             </transformer>
-                            <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+                            <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                         </transformers>
                     </configuration>
                 </plugin>
@@ -434,6 +434,16 @@
                 <groupId>javax.validation</groupId>
                 <artifactId>validation-api</artifactId>
                 <version>[1.1.0.Final]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.logmanager</groupId>
+                <artifactId>jboss-logmanager</artifactId>
+                <version>[1.5.2.Final]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.logging</groupId>
+                <artifactId>jboss-logging</artifactId>
+                <version>[3.1.1.GA]</version>
             </dependency>
 
             <!-- jetty -->
