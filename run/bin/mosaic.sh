@@ -197,7 +197,7 @@ stop()
 ####################################################################################
 
 # check PID can be created/removed
-MOSAIC_PID_DIR = `dirname ${MOSAIC_PID_FILE}`
+MOSAIC_PID_DIR=`dirname ${MOSAIC_PID_FILE}`
 if [ ! -d ${MOSAIC_PID_DIR} -o ! -w ${MOSAIC_PID_DIR} ]; then
     echo "Directory for PID file at ${MOSAIC_PID_FILE} does not exist or is not writable by `whoami`."
     echo "Please create it first or change the MOSAIC_PID_FILE environment variable."
