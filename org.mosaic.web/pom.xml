@@ -35,6 +35,7 @@
                             !org.apache.xml*,
                             !org.apache.xpath*,
                             !org.dom4j*,
+                            !org.eclipse.jetty*,
                             !org.jaxen*,
                             !org.jdom*,
                             !org.mozilla.javascript*,
