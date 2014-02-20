@@ -1,0 +1,60 @@
+<idea-plugin version="2" url="https://github.com/arikkfir/mosaic">
+    <id>org.mosaic.development.idea.build</id>
+    <name>Mosaic Server Build Integration</name>
+    <version>1.0.0-SNAPSHOT</version>
+    <vendor email="arik.kfir@gmail.com" url="https://github.com/arikkfir/mosaic">Mosaic Server</vendor>
+
+    <description><![CDATA[
+        <h3>Mosaic Server Build Integration for IntelliJ IDEA.</h3>
+        <p>
+            This plugin provides IntelliJ IDEA support for developing applications using Mosaic Server.
+        </p>
+    ]]></description>
+
+    <change-notes><![CDATA[
+      <h3>1.0.0</h3>
+      Initial version.
+    ]]>
+    </change-notes>
+
+    <!-- please see http://confluence.jetbrains.com/display/IDEADEV/Build+Number+Ranges for description -->
+    <idea-version since-build="133"/>
+
+    <!-- please see http://confluence.jetbrains.com/display/IDEADEV/Plugin+Compatibility+with+IntelliJ+Platform+Products
+         on how to target different products -->
+    <depends>com.intellij.modules.java</depends>
+    <depends>org.jetbrains.idea.maven</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <facetType implementation="org.mosaic.development.idea.facet.impl.OsgiBundleFacetTypeImpl"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="org.jetbrains.idea.maven">
+        <importer implementation="org.mosaic.development.idea.facet.impl.OsgiBundleFacetImporter"/>
+    </extensions>
+
+    <application-components>
+        <component>
+            <implementation-class>org.mosaic.development.idea.osmorc.OsmorcConflictDetector</implementation-class>
+        </component>
+        <component>
+            <implementation-class>org.mosaic.development.idea.server.impl.MosaicServerManagerImpl</implementation-class>
+            <interface-class>org.mosaic.development.idea.server.MosaicServerManager</interface-class>
+        </component>
+    </application-components>
+
+    <project-components>
+        <component>
+            <implementation-class>org.mosaic.development.idea.messages.impl.BundleMessageViewImpl</implementation-class>
+            <interface-class>org.mosaic.development.idea.messages.BundleMessageView</interface-class>
+        </component>
+        <component>
+            <implementation-class>org.mosaic.development.idea.make.BundleMakeListener</implementation-class>
+        </component>
+        <component>
+            <implementation-class>org.mosaic.development.idea.make.impl.BuildBundlesTaskFactoryImpl</implementation-class>
+            <interface-class>org.mosaic.development.idea.make.BuildBundlesTaskFactory</interface-class>
+        </component>
+    </project-components>
+
+</idea-plugin>

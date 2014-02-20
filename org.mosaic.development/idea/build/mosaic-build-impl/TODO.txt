@@ -1,0 +1,4 @@
+* Add "Build bundle" module action
+* Add "Build all bundles" project action
+* OK SO PackagingCompiler APIs are now deprecated in IDEA 13!!!
+    * We need to convert to either JPS or use CompilerManager.addListener
