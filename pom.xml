@@ -107,6 +107,7 @@
         <module>org.mosaic.console.remote</module>
         <module>org.mosaic.dao</module>
         <module>org.mosaic.datasource</module>
+        <module>org.mosaic.development</module>
         <module>org.mosaic.event</module>
         <module>org.mosaic.jsr305</module>
         <module>org.mosaic.launcher</module>
