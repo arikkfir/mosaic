@@ -29,6 +29,13 @@
             <outputDirectory>schemas</outputDirectory>
         </fileSet>
     </fileSets>
+    <files>
+        <file>
+            <source>run/version</source>
+            <fileMode>664</fileMode>
+            <filtered>true</filtered>
+        </file>
+    </files>
 
     <dependencySets>
 
