@@ -6,7 +6,9 @@ import com.intellij.openapi.ui.ValidationInfo;
 import com.intellij.ui.AnActionButton;
 import com.intellij.ui.AnActionButtonRunnable;
 import com.intellij.ui.ToolbarDecorator;
+import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBList;
+import com.intellij.util.NotNullFunction;
 import java.awt.BorderLayout;
 import java.io.File;
 import java.util.Enumeration;
@@ -49,7 +51,19 @@ public class MosaicServerManagerForm
     {
         this.serversModel = new DefaultListModel<>();
         this.serversList = new JBList( this.serversModel );
-        // TODO: list renderer should show name, and the location bracketed in gray
+        this.serversList.installCellRenderer( new NotNullFunction<Object, JComponent>()
+        {
+            private final JBLabel label = new JBLabel();
+
+            @NotNull
+            @Override
+            public JComponent fun( Object dom )
+            {
+                Server server = ( Server ) dom;
+                this.label.setText( server.name + " (" + server.location + ")" );
+                return this.label;
+            }
+        } );
         this.listContainer.add( createServersListPanel(), BorderLayout.CENTER );
     }
 
@@ -174,7 +188,7 @@ public class MosaicServerManagerForm
             return;
         }
 
-        MosaicServerDialog dlg = new MosaicServerDialog()
+        MosaicServerDialog dlg = new MosaicServerDialog(server)
         {
             @Override
             protected void doOKAction( @NotNull MosaicServerForm form )
@@ -205,9 +219,16 @@ public class MosaicServerManagerForm
 
         public MosaicServerDialog()
         {
+            this( null );
+        }
+
+        public MosaicServerDialog( Server server )
+        {
             super( MosaicServerManagerForm.this.serversList, true );
             init();
             initValidation();
+            this.form.setName( server.name );
+            this.form.setLocation( server.location );
         }
 
         @Override
