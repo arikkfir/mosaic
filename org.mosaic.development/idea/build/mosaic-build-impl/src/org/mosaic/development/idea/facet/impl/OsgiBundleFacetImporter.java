@@ -59,11 +59,10 @@ public class OsgiBundleFacetImporter
             Element pluginConfig = getConfig( mavenProject );
             if( pluginConfig != null && "bundle".equalsIgnoreCase( mavenProject.getPackaging() ) )
             {
-                // TODO: create/update bundle artifact for module
+                // no-op
             }
             else
             {
-                // TODO: remove bundle artifact for module
                 modelsProvider.getFacetModel( module ).removeFacet( facet );
             }
         }
