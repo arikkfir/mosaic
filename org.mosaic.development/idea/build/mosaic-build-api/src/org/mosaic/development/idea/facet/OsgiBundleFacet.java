@@ -26,4 +26,7 @@ public abstract class OsgiBundleFacet extends Facet<OsgiBundleFacetConfiguration
     {
         super( facetType, module, name, configuration, underlyingFacet );
     }
+
+    @Nullable
+    public abstract String getBundlePath();
 }
