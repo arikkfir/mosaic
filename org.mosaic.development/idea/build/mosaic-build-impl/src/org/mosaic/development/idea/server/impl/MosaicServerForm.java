@@ -43,7 +43,7 @@ public class MosaicServerForm
                     protected void onFileChoosen( @NotNull VirtualFile chosenFile )
                     {
                         super.onFileChoosen( chosenFile );
-                        updateVersion();
+                        updateNameAndVersion();
                     }
                 }
         );
@@ -75,7 +75,7 @@ public class MosaicServerForm
     public void setLocation( String location )
     {
         this.locationField.setText( Objects.toString( location, "" ) );
-        updateVersion();
+        updateNameAndVersion();
     }
 
     @NotNull
@@ -84,7 +84,7 @@ public class MosaicServerForm
         return this.versionLabel.getText();
     }
 
-    private void updateVersion()
+    private void updateNameAndVersion()
     {
         versionLabel.setText( "Unknown" );
 
@@ -109,6 +109,11 @@ public class MosaicServerForm
                 {
                 }
             }
+        }
+
+        if( this.nameField.getText().trim().isEmpty() )
+        {
+            this.nameField.setText( chosenFile.getName() );
         }
     }
 }
