@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.mosaic</groupId>
         <artifactId>org.mosaic.parent</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>1.0.0-alpha-11</version>
         <relativePath>../../org.mosaic.parent/pom.xml</relativePath>
     </parent>
 
@@ -74,7 +74,7 @@
         <connection>scm:git:git@github.com:arikkfir/mosaic.git/org.mosaic.utils/${project.artifactId}</connection>
         <developerConnection>scm:git:git@github.com:arikkfir/mosaic.git/org.mosaic.utils/${project.artifactId}</developerConnection>
         <url>https://github.com/arikkfir/mosaic</url>
-        <tag>HEAD</tag>
+        <tag>org.mosaic-1.0.0-alpha-11</tag>
     </scm>
 
 </project>
