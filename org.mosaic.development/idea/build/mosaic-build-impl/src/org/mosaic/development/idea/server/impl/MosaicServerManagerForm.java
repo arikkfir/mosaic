@@ -227,8 +227,11 @@ public class MosaicServerManagerForm
             super( MosaicServerManagerForm.this.serversList, true );
             init();
             initValidation();
-            this.form.setName( server.name );
-            this.form.setLocation( server.location );
+            if( server != null )
+            {
+                this.form.setName( server.name );
+                this.form.setLocation( server.location );
+            }
         }
 
         @Override
