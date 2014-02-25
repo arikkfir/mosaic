@@ -26,7 +26,17 @@
     <depends>org.jetbrains.idea.maven</depends>
 
     <extensions defaultExtensionNs="com.intellij">
+
+        <!-- OSGi facet -->
         <facetType implementation="org.mosaic.development.idea.facet.impl.OsgiBundleFacetTypeImpl"/>
+
+        <!-- Mosaic run configuration type -->
+        <configurationType implementation="org.mosaic.development.idea.run.MosaicRunConfigurationType"/>
+        <programRunner id="mosaicProgramRunner" implementation="org.mosaic.development.idea.run.MosaicProgramRunner" order="last"/>
+        <programRunner id="mosaicDebugRunner" implementation="org.mosaic.development.idea.run.MosaicProgramDebugger" order="last"/>
+
+        <!-- TODO: <stacktrace.fold substring="at com.intellij.testFramework."/>-->
+
     </extensions>
 
     <extensions defaultExtensionNs="org.jetbrains.idea.maven">
@@ -54,6 +64,9 @@
         <component>
             <implementation-class>org.mosaic.development.idea.make.impl.BuildBundlesTaskFactoryImpl</implementation-class>
             <interface-class>org.mosaic.development.idea.make.BuildBundlesTaskFactory</interface-class>
+        </component>
+        <component>
+            <implementation-class>org.mosaic.development.idea.run.DeploymentUnitsManager</implementation-class>
         </component>
     </project-components>
 
