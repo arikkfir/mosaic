@@ -85,11 +85,17 @@ public final class Mosaic
         }
 
         // initialize home directory locations
-        apps = home.resolve( "apps" );
-        etc = home.resolve( "etc" );
-        lib = home.resolve( "lib" );
-        logs = home.resolve( "logs" );
-        work = home.resolve( "work" );
+        apps = Paths.get( System.getProperty( "mosaic.home.apps", home.resolve( "apps" ).toString() ) );
+        etc = Paths.get( System.getProperty( "mosaic.home.etc", home.resolve( "etc" ).toString() ) );
+        lib = Paths.get( System.getProperty( "mosaic.home.lib", home.resolve( "lib" ).toString() ) );
+        logs = Paths.get( System.getProperty( "mosaic.home.logs", home.resolve( "logs" ).toString() ) );
+        work = Paths.get( System.getProperty( "mosaic.home.work", home.resolve( "work" ).toString() ) );
+        System.setProperty( "mosaic.home", home.toString() );
+        System.setProperty( "mosaic.home.apps", home.toString() );
+        System.setProperty( "mosaic.home.etc", etc.toString() );
+        System.setProperty( "mosaic.home.lib", lib.toString() );
+        System.setProperty( "mosaic.home.logs", logs.toString() );
+        System.setProperty( "mosaic.home.work", work.toString() );
 
         // initialize tasks
         InitHomeTask initHomeTask = new InitHomeTask();
