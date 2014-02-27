@@ -1,28 +1,19 @@
 package org.mosaic.launcher;
 
-import com.google.common.base.Optional;
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.Hashtable;
 import java.util.Map;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.apache.felix.framework.Felix;
 import org.osgi.framework.*;
-import org.osgi.framework.startlevel.BundleStartLevel;
 import org.osgi.framework.startlevel.FrameworkStartLevel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.lang.Integer.parseInt;
 import static java.nio.file.Files.exists;
-import static java.nio.file.Files.newInputStream;
 import static java.util.Arrays.asList;
 import static org.apache.felix.framework.cache.BundleCache.CACHE_BUFSIZE_PROP;
 import static org.apache.felix.framework.util.FelixConstants.LOG_LEVEL_PROP;
@@ -41,30 +32,6 @@ final class InitFelixTask extends InitTask
     private static final Logger OSGI_FRWK_LOG = LoggerFactory.getLogger( "org.osgi.framework" );
 
     private static final int FELIX_CACHE_BUFSIZE = 1024 * 64;
-
-    @Nonnull
-    private static final Map<String, Integer> BOOT_BUNDLES;
-
-    static
-    {
-        Map<String, Integer> bootBundles = new HashMap<>();
-        bootBundles.put( "com.fasterxml.classmate", 1 );
-        bootBundles.put( "com.fasterxml.jackson.core.jackson-annotations", 1 );
-        bootBundles.put( "com.fasterxml.jackson.core.jackson-core", 1 );
-        bootBundles.put( "com.fasterxml.jackson.core.jackson-databind", 1 );
-        bootBundles.put( "com.fasterxml.jackson.dataformat.jackson-dataformat-csv", 1 );
-        bootBundles.put( "com.google.guava", 1 );
-        bootBundles.put( "javax.el-api", 1 );
-        bootBundles.put( "jcl.over.slf4j", 1 );
-        bootBundles.put( "joda-time", 1 );
-        bootBundles.put( "log4j.over.slf4j", 1 );
-        bootBundles.put( "org.apache.commons.lang3", 1 );
-        bootBundles.put( "org.apache.felix.configadmin", 1 );
-        bootBundles.put( "org.apache.felix.eventadmin", 1 );
-        bootBundles.put( "org.apache.felix.log", 1 );
-        bootBundles.put( "org.glassfish.web.javax.el", 1 );
-        BOOT_BUNDLES = bootBundles;
-    }
 
     @Nullable
     private Felix felix;
@@ -145,8 +112,16 @@ final class InitFelixTask extends InitTask
                 throw SystemError.bootstrapError( "Felix not started correctly" );
             }
 
-            // install bundles
-            installBundles( bundleContext );
+            // create bundle scanner
+            BundleScanner bundleScanner = new BundleScanner( bundleContext );
+            Hashtable<String, Object> bundleScannerDict = new Hashtable<>();
+            bundleScannerDict.put( "bundleScanner", true );
+            bundleContext.registerService( Runnable.class, bundleScanner, bundleScannerDict );
+            bundleScanner.run();
+            if( !bundleScanner.isLastRunSuccessful() )
+            {
+                throw bootstrapError( "Could not start boot bundles - one or more bundles failed to load" );
+            }
 
             // add listeners
             OsgiEventsLoggingListener loggingListener = new OsgiEventsLoggingListener();
@@ -160,7 +135,7 @@ final class InitFelixTask extends InitTask
         }
         catch( Exception e )
         {
-            throw SystemError.bootstrapError( "Could not create Felix instance: {}", e.getMessage(), e );
+            throw bootstrapError( "Could not create Felix instance: {}", e.getMessage(), e );
         }
     }
 
@@ -203,88 +178,6 @@ final class InitFelixTask extends InitTask
         return this.felix;
     }
 
-    private void installBundles( @Nonnull final BundleContext bundleContext )
-    {
-        final List<Bundle> bootBundles = new LinkedList<>();
-
-        // first just install the boot bundles without starting them (so they can use classes from one another in any order)
-        this.log.debug( "Installing bundles" );
-        try
-        {
-            Files.walkFileTree( Mosaic.getLib(), new SimpleFileVisitor<Path>()
-            {
-                @Nonnull
-                @Override
-                public FileVisitResult visitFile( @Nonnull Path file, @Nonnull BasicFileAttributes attrs )
-                        throws IOException
-                {
-                    if( file.toString().toLowerCase().endsWith( ".jar" ) )
-                    {
-                        bootBundles.add( installBootBundle( bundleContext, file ) );
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
-            } );
-        }
-        catch( Exception e )
-        {
-            throw bootstrapError( "could not install bundles: {}", e.getMessage(), e );
-        }
-
-        // now that we've installed them, lets start them
-        this.log.debug( "Starting bundles: {}", bootBundles );
-        for( Bundle bundle : bootBundles )
-        {
-            try
-            {
-                this.log.debug( "Starting bundle {}@{}[{}]", bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId() );
-                bundle.start();
-            }
-            catch( Throwable e )
-            {
-                throw bootstrapError( "Could not start boot bundle at '{}': {}", bundle.getLocation(), e.getMessage(), e );
-            }
-        }
-    }
-
-    @Nonnull
-    private Bundle installBootBundle( @Nonnull BundleContext bundleContext, @Nonnull Path path )
-    {
-        try
-        {
-            // install the bundle
-            this.log.debug( "Installing boot bundle at '{}'", path );
-            Bundle bundle = bundleContext.installBundle( "file:" + path.toString(), newInputStream( path ) );
-
-            Integer startLevel = null;
-
-            String explicitStartLevel = bundle.getHeaders().get( "Start-Level" );
-            if( explicitStartLevel != null )
-            {
-                try
-                {
-                    startLevel = parseInt( explicitStartLevel );
-                }
-                catch( NumberFormatException ignore )
-                {
-                }
-            }
-
-            if( startLevel == null && BOOT_BUNDLES.containsKey( bundle.getSymbolicName() ) )
-            {
-                startLevel = BOOT_BUNDLES.get( bundle.getSymbolicName() );
-            }
-
-            bundle.adapt( BundleStartLevel.class ).setStartLevel( Optional.fromNullable( startLevel ).or( 3 ) );
-
-            return bundle;
-        }
-        catch( Exception e )
-        {
-            throw bootstrapError( "Could not install boot bundle at '{}': {}", path, e.getMessage(), e );
-        }
-    }
-
     private class OsgiEventsLoggingListener implements FrameworkListener, ServiceListener, SynchronousBundleListener
     {
         @Override
@@ -323,31 +216,31 @@ final class InitFelixTask extends InitTask
             switch( event.getType() )
             {
                 case BundleEvent.INSTALLED:
-                    OSGI_FRWK_LOG.debug( "Bundle {}@{}[{}] has been installed", bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId() );
+                    OSGI_FRWK_LOG.info( "Bundle {}@{}[{}] has been installed", bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId() );
                     break;
                 case BundleEvent.RESOLVED:
-                    OSGI_FRWK_LOG.debug( "Bundle {}@{}[{}] has been resolved", bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId() );
+                    OSGI_FRWK_LOG.info( "Bundle {}@{}[{}] has been resolved", bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId() );
                     break;
                 case BundleEvent.STARTING:
-                    OSGI_FRWK_LOG.debug( "Bundle {}@{}[{}] is starting", bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId() );
+                    OSGI_FRWK_LOG.info( "Bundle {}@{}[{}] is starting", bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId() );
                     break;
                 case BundleEvent.STARTED:
-                    OSGI_FRWK_LOG.debug( "Bundle {}@{}[{}] has been started", bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId() );
+                    OSGI_FRWK_LOG.info( "Bundle {}@{}[{}] has been started", bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId() );
                     break;
                 case BundleEvent.STOPPING:
-                    OSGI_FRWK_LOG.debug( "Bundle {}@{}[{}] is stopping", bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId() );
+                    OSGI_FRWK_LOG.info( "Bundle {}@{}[{}] is stopping", bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId() );
                     break;
                 case BundleEvent.STOPPED:
-                    OSGI_FRWK_LOG.debug( "Bundle {}@{}[{}] has been stopped", bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId() );
+                    OSGI_FRWK_LOG.info( "Bundle {}@{}[{}] has been stopped", bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId() );
                     break;
                 case BundleEvent.UNRESOLVED:
-                    OSGI_FRWK_LOG.debug( "Bundle {}@{}[{}] has been unresolved", bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId() );
+                    OSGI_FRWK_LOG.info( "Bundle {}@{}[{}] has been unresolved", bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId() );
                     break;
                 case BundleEvent.UNINSTALLED:
-                    OSGI_FRWK_LOG.debug( "Bundle {}@{}[{}] has been uninstalled", bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId() );
+                    OSGI_FRWK_LOG.info( "Bundle {}@{}[{}] has been uninstalled", bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId() );
                     break;
                 case BundleEvent.UPDATED:
-                    OSGI_FRWK_LOG.debug( "Bundle {}@{}[{}] has been updated", bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId() );
+                    OSGI_FRWK_LOG.info( "Bundle {}@{}[{}] has been updated", bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId() );
                     break;
             }
         }

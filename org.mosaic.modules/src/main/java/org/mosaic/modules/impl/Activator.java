@@ -2,18 +2,20 @@ package org.mosaic.modules.impl;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Dictionary;
-import java.util.Hashtable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.modules.ModuleManager;
-import org.mosaic.util.resource.PathWatcher;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.hooks.weaving.WeavingHook;
+import org.osgi.util.tracker.ServiceTracker;
 
 import static org.mosaic.util.osgi.BundleUtils.bundleContext;
+import static org.osgi.framework.FrameworkUtil.createFilter;
 
 /**
  * @author arik
@@ -61,7 +63,10 @@ public final class Activator implements BundleActivator
     private ServiceRegistration<ModuleManager> moduleManagerServiceRegistration;
 
     @Nullable
-    private ServiceRegistration<PathWatcher> libWatcherServiceRegistration;
+    private ServiceTracker<Runnable, Runnable> bundleScannerTracker;
+
+    @Nullable
+    private ScheduledExecutorService executor;
 
     @Override
     public void start( @Nonnull final BundleContext context ) throws Exception
@@ -72,32 +77,45 @@ public final class Activator implements BundleActivator
         moduleManager.open( context );
         this.moduleManagerServiceRegistration = context.registerService( ModuleManager.class, moduleManager, null );
 
-        new Thread( new Runnable()
+        this.bundleScannerTracker = new ServiceTracker<>( context,
+                                                          createFilter( "(&(objectClass=java.lang.Runnable)(bundleScanner=true))" ),
+                                                          null );
+        this.bundleScannerTracker.open();
+
+        this.executor = Executors.newSingleThreadScheduledExecutor();
+        this.executor.scheduleWithFixedDelay( new Runnable()
         {
             @Override
             public void run()
             {
-                Dictionary<String, Object> dict = new Hashtable<>();
-                dict.put( "location", "${mosaic.home.lib}" );
-                Activator.this.libWatcherServiceRegistration = context.registerService( PathWatcher.class, new ServerLibWatcher(), dict );
+                ServiceTracker<Runnable, Runnable> tracker = Activator.this.bundleScannerTracker;
+                if( tracker != null )
+                {
+                    Runnable scanner = tracker.getService();
+                    if( scanner != null )
+                    {
+                        scanner.run();
+                    }
+                }
             }
-        }, "ModulesStarter" ).start();
+        }, 1, 200, TimeUnit.SECONDS );
     }
 
     @Override
     public void stop( @Nonnull BundleContext context ) throws Exception
     {
-        ServiceRegistration<PathWatcher> libWatcherServiceRegistration = this.libWatcherServiceRegistration;
-        if( libWatcherServiceRegistration != null )
+        ScheduledExecutorService executor = this.executor;
+        if( executor != null )
         {
-            try
-            {
-                libWatcherServiceRegistration.unregister();
-            }
-            catch( Exception ignore )
-            {
-            }
-            this.libWatcherServiceRegistration = null;
+            executor.shutdown();
+            this.executor = null;
+        }
+
+        ServiceTracker<Runnable, Runnable> tracker = this.bundleScannerTracker;
+        if( tracker != null )
+        {
+            tracker.close();
+            this.bundleScannerTracker = null;
         }
 
         ModuleManagerImpl moduleManager = Activator.moduleManager;

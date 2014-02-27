@@ -1,49 +1,237 @@
-package org.mosaic.modules.impl;
+package org.mosaic.launcher;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.Sets;
+import java.io.IOException;
 import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.Nonnull;
-import org.joda.time.Duration;
-import org.joda.time.format.PeriodFormatterBuilder;
-import org.mosaic.modules.Module;
-import org.mosaic.modules.ModuleState;
-import org.mosaic.util.collections.MapEx;
-import org.mosaic.util.properties.PropertyPlaceholderResolver;
-import org.mosaic.util.reflection.TypeTokens;
-import org.mosaic.util.resource.support.PathWatcherAdapter;
+import javax.annotation.Nullable;
 import org.osgi.framework.*;
 import org.osgi.framework.namespace.PackageNamespace;
+import org.osgi.framework.startlevel.BundleStartLevel;
 import org.osgi.framework.wiring.BundleWire;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.framework.wiring.FrameworkWiring;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.lang.Integer.MAX_VALUE;
+import static java.lang.Integer.parseInt;
+import static java.nio.file.FileVisitOption.FOLLOW_LINKS;
 import static java.nio.file.Files.*;
-import static org.mosaic.modules.impl.Activator.getModuleManager;
 
 /**
  * @author arik
  */
-final class ServerLibWatcher extends PathWatcherAdapter
+final class BundleScanner implements Runnable
 {
-    private static final Logger LOG = LoggerFactory.getLogger( ServerLibWatcher.class );
+    private static final Logger LOG = LoggerFactory.getLogger( BundleScanner.class );
 
-    private static final PropertyPlaceholderResolver PROPERTY_PLACEHOLDER_RESOLVER = new PropertyPlaceholderResolver();
+    @Nonnull
+    private static final Map<String, Integer> BOOT_BUNDLES;
+
+    static
+    {
+        Map<String, Integer> bootBundles = new HashMap<>();
+        bootBundles.put( "com.fasterxml.classmate", 1 );
+        bootBundles.put( "com.fasterxml.jackson.core.jackson-annotations", 1 );
+        bootBundles.put( "com.fasterxml.jackson.core.jackson-core", 1 );
+        bootBundles.put( "com.fasterxml.jackson.core.jackson-databind", 1 );
+        bootBundles.put( "com.fasterxml.jackson.dataformat.jackson-dataformat-csv", 1 );
+        bootBundles.put( "com.google.guava", 1 );
+        bootBundles.put( "javax.el-api", 1 );
+        bootBundles.put( "jcl.over.slf4j", 1 );
+        bootBundles.put( "joda-time", 1 );
+        bootBundles.put( "log4j.over.slf4j", 1 );
+        bootBundles.put( "org.apache.commons.lang3", 1 );
+        bootBundles.put( "org.apache.felix.configadmin", 1 );
+        bootBundles.put( "org.apache.felix.eventadmin", 1 );
+        bootBundles.put( "org.apache.felix.log", 1 );
+        bootBundles.put( "org.glassfish.web.javax.el", 1 );
+        BOOT_BUNDLES = bootBundles;
+    }
+
+    private static final int DEFAULT_START_LEVEL = 3;
+
+    @Nonnull
+    private final PathMatcher jarsPathMatcher = FileSystems.getDefault().getPathMatcher( "glob:**/*.{jar,jars}" );
+
+    @Nonnull
+    private final BundleContext bundleContext;
+
+    @Nonnull
+    private final Map<Path, Long> knownTimes = new ConcurrentHashMap<>();
 
     @Nonnull
     private final Map<Path, JarCollection> jarCollections = new ConcurrentHashMap<>();
 
-    private boolean firstScan = true;
+    private boolean running;
+
+    private boolean lastRunSuccessful;
+
+    private boolean tempLastRunSuccessful;
+
+    BundleScanner( @Nonnull BundleContext bundleContext )
+    {
+        this.bundleContext = bundleContext;
+    }
+
+    public boolean isLastRunSuccessful()
+    {
+        return this.lastRunSuccessful;
+    }
 
     @Override
-    public void pathCreated( @Nonnull Path path, @Nonnull MapEx<String, Object> context )
+    public void run()
+    {
+        synchronized( this )
+        {
+            if( this.running )
+            {
+                return;
+            }
+            this.running = true;
+        }
+
+        this.tempLastRunSuccessful = true;
+        try
+        {
+            final Context context = new Context();
+
+            walkFileTree( Mosaic.getLib(), EnumSet.of( FOLLOW_LINKS ), MAX_VALUE, new SimpleFileVisitor<Path>()
+            {
+                @Nonnull
+                @Override
+                public FileVisitResult visitFile( @Nonnull Path file,
+                                                  @Nonnull BasicFileAttributes attrs )
+                        throws IOException
+                {
+                    if( BundleScanner.this.jarsPathMatcher.matches( file ) )
+                    {
+                        BundleScanner.this.visitFile( file, context );
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            } );
+
+            visitDeletedFiles();
+            scanCompleted( context );
+        }
+        catch( Throwable e )
+        {
+            LOG.error( "Error while scanning Mosaic server lib directory: {}", e.getMessage(), e );
+            this.tempLastRunSuccessful = false;
+        }
+        finally
+        {
+            this.running = false;
+            this.lastRunSuccessful = this.tempLastRunSuccessful;
+        }
+    }
+
+    public void visitFile( @Nonnull Path path, @Nonnull Context context )
+    {
+        // get file modification time
+        Long fileModificationTime = getFileModificationTime( path );
+        if( fileModificationTime == null )
+        {
+            return;
+        }
+
+        // get last known mod-time and store this new updated mod-time in our map
+        Long lastModificationTime = this.knownTimes.get( path );
+        this.knownTimes.put( path, fileModificationTime );
+
+        // if this is a new file we did not know about before - file-created event
+        if( lastModificationTime == null )
+        {
+            try
+            {
+                pathCreated( path, context );
+            }
+            catch( Exception e )
+            {
+                scanError( path, e );
+            }
+        }
+        else if( fileModificationTime > lastModificationTime )
+        {
+            try
+            {
+                pathModified( path, context );
+            }
+            catch( Exception e )
+            {
+                scanError( path, e );
+            }
+        }
+        else
+        {
+            try
+            {
+                pathUnmodified( path, context );
+            }
+            catch( Exception e )
+            {
+                scanError( path, e );
+            }
+        }
+    }
+
+    void visitDeletedFiles()
+    {
+        Iterator<Path> iterator = this.knownTimes.keySet().iterator();
+        while( iterator.hasNext() )
+        {
+            Path path = iterator.next();
+            if( isDirectory( path ) )
+            {
+                // a previous file has become a directory - remove it
+                iterator.remove();
+                LOG.warn( "A watched file at '{}' has been replaced by a directory - this event is not supported and will not be propagated to the path watcher" );
+            }
+            else if( notExists( path ) )
+            {
+                // file has been deleted
+                iterator.remove();
+                try
+                {
+                    pathDeleted( path );
+                }
+                catch( Exception e )
+                {
+                    scanError( path, e );
+                }
+            }
+        }
+    }
+
+    @Nullable
+    private Long getFileModificationTime( Path file )
+    {
+        try
+        {
+            long fileModificationTimeInMillis = Files.getLastModifiedTime( file ).toMillis();
+
+            // ignore files modified in the last second (probably still being modified)
+            if( fileModificationTimeInMillis < System.currentTimeMillis() - 1000 )
+            {
+                return fileModificationTimeInMillis;
+            }
+        }
+        catch( IOException e )
+        {
+            LOG.warn( "Could not obtain file modification time for '{}': {}", file, e.getMessage(), e );
+        }
+        return null;
+    }
+
+    private void pathCreated( @Nonnull Path path, @Nonnull Context context )
     {
         String lcFilename = path.toString().toLowerCase();
         if( lcFilename.endsWith( ".jar" ) )
@@ -56,8 +244,7 @@ final class ServerLibWatcher extends PathWatcherAdapter
         }
     }
 
-    @Override
-    public void pathModified( @Nonnull Path path, @Nonnull MapEx<String, Object> context )
+    private void pathModified( @Nonnull Path path, @Nonnull Context context )
     {
         String lcFilename = path.toString().toLowerCase();
         if( lcFilename.endsWith( ".jar" ) )
@@ -70,8 +257,7 @@ final class ServerLibWatcher extends PathWatcherAdapter
         }
     }
 
-    @Override
-    public void pathUnmodified( @Nonnull Path path, @Nonnull MapEx<String, Object> context )
+    private void pathUnmodified( @Nonnull Path path, @Nonnull Context context )
     {
         String lcFilename = path.toString().toLowerCase();
         if( lcFilename.endsWith( ".jars" ) )
@@ -80,8 +266,7 @@ final class ServerLibWatcher extends PathWatcherAdapter
         }
     }
 
-    @Override
-    public void pathDeleted( @Nonnull Path path, @Nonnull MapEx<String, Object> context )
+    private void pathDeleted( @Nonnull Path path )
     {
         String lcFilename = path.toString().toLowerCase();
         if( lcFilename.endsWith( ".jar" ) )
@@ -94,11 +279,10 @@ final class ServerLibWatcher extends PathWatcherAdapter
         }
     }
 
-    @Override
-    public void scanCompleted( @Nonnull MapEx<String, Object> context )
+    private void scanCompleted( @Nonnull Context context )
     {
         Map<Long, String> startErrors = new HashMap<>();
-        for( Bundle bundle : getInstalledBundles( context ) )
+        for( Bundle bundle : context.getInstalledBundles() )
         {
             try
             {
@@ -110,76 +294,21 @@ final class ServerLibWatcher extends PathWatcherAdapter
                 if( e.getType() != BundleException.RESOLVE_ERROR )
                 {
                     LOG.error( "Could not start bundle '{}-{}[{}]': {}", bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId(), e.getMessage(), e );
+                    this.tempLastRunSuccessful = false;
                 }
                 else
                 {
                     LOG.error( "Could not resolve bundle '{}-{}[{}]': {}", bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId(), e.getMessage() );
+                    this.tempLastRunSuccessful = false;
                 }
             }
-        }
-
-        if( this.firstScan )
-        {
-            String startupDuration = "unknown";
-
-            Long launchTime = Long.getLong( "mosaic.launch.start" );
-            if( launchTime != null )
-            {
-                startupDuration = new PeriodFormatterBuilder()
-                        .appendMinutes()
-                        .appendSuffix( " minute", " minutes" )
-                        .appendSeparatorIfFieldsBefore( " and " )
-                        .appendSecondsWithOptionalMillis()
-                        .appendSuffix( " second", " seconds" )
-                        .printZeroRarelyLast()
-                        .toFormatter().print( new Duration( launchTime, System.currentTimeMillis() ).toPeriod() );
-            }
-
-            StringBuilder msg = new StringBuilder();
-
-            msg.append( "\n\n******************************************************************************\n\n" );
-            msg.append( "  Mosaic server STARTED! (in " ).append( startupDuration ).append( ")\n" );
-            for( Module module : getModuleManager().getModules() )
-            {
-                if( module.getId() > 0 && module.getState() != ModuleState.ACTIVE )
-                {
-                    ModuleImpl moduleImpl = ( ModuleImpl ) module;
-                    msg.append( "\n  Module " ).append( module ).append( " could not be activated:\n" );
-
-                    String startError = startErrors.get( module.getId() );
-                    if( startError != null )
-                    {
-                        msg.append( "    -> " ).append( startError ).append( "\n" );
-                    }
-
-                    for( Lifecycle child : moduleImpl.getInactivatables() )
-                    {
-                        msg.append( "    -> " ).append( child ).append( "\n" );
-                    }
-                }
-            }
-            msg.append( "\n******************************************************************************\n\n" );
-
-            LOG.warn( msg.toString() );
-            this.firstScan = false;
         }
     }
 
-    @Nonnull
-    private BundleContext getBundleContext()
+    void scanError( @Nonnull Path path, @Nonnull Throwable e )
     {
-        Bundle modulesBundle = FrameworkUtil.getBundle( getClass() );
-        if( modulesBundle == null )
-        {
-            throw new IllegalStateException( "could not find 'org.mosaic.modules' bundle" );
-        }
-
-        BundleContext bundleContext = modulesBundle.getBundleContext();
-        if( bundleContext == null )
-        {
-            throw new IllegalStateException( "could not obtain bundle context for 'org.mosaic.modules' bundle" );
-        }
-        return bundleContext;
+        LOG.warn( "Error while handling '{}': {}", this, path, e.getMessage(), e );
+        this.tempLastRunSuccessful = false;
     }
 
     @Nonnull
@@ -189,42 +318,52 @@ final class ServerLibWatcher extends PathWatcherAdapter
         return "file:" + absolutePath;
     }
 
-    @Nonnull
-    private List<Bundle> getInstalledBundles( @Nonnull MapEx<String, Object> context )
-    {
-        @SuppressWarnings("unchecked")
-        List<Bundle> installed = context.find( "installed", TypeTokens.of( List.class ) ).orNull();
-        if( installed == null )
-        {
-            installed = new LinkedList<>();
-            context.put( "installed", installed );
-        }
-        return installed;
-    }
-
-    private void handleCreatedJar( @Nonnull Path path, @Nonnull MapEx<String, Object> context )
+    private void handleCreatedJar( @Nonnull Path path, @Nonnull Context context )
     {
         try
         {
             String location = getLocationFromFile( path );
 
-            BundleContext bundleContext = getBundleContext();
-            Bundle bundle = bundleContext.getBundle( location );
+            Bundle bundle = this.bundleContext.getBundle( location );
             if( bundle == null )
             {
-                bundle = bundleContext.installBundle( location );
+                bundle = this.bundleContext.installBundle( location );
+                bundle.adapt( BundleStartLevel.class ).setStartLevel( getAppropriateStartLevel( bundle ) );
             }
-            getInstalledBundles( context ).add( bundle );
+            context.getInstalledBundles().add( bundle );
         }
         catch( Exception e )
         {
             LOG.error( "Error installing module from '{}': {}", path, e.getMessage(), e );
+            this.tempLastRunSuccessful = false;
         }
     }
 
-    private void handleModifiedJar( @Nonnull Path path, @Nonnull MapEx<String, Object> context )
+    private int getAppropriateStartLevel( Bundle bundle )
     {
-        Bundle bundle = getBundleContext().getBundle( getLocationFromFile( path ) );
+        String explicitStartLevel = bundle.getHeaders().get( "Start-Level" );
+        if( explicitStartLevel != null )
+        {
+            try
+            {
+                return parseInt( explicitStartLevel );
+            }
+            catch( NumberFormatException ignore )
+            {
+            }
+        }
+
+        if( BOOT_BUNDLES.containsKey( bundle.getSymbolicName() ) )
+        {
+            return BOOT_BUNDLES.get( bundle.getSymbolicName() );
+        }
+
+        return DEFAULT_START_LEVEL;
+    }
+
+    private void handleModifiedJar( @Nonnull Path path, @Nonnull Context context )
+    {
+        Bundle bundle = this.bundleContext.getBundle( getLocationFromFile( path ) );
         if( bundle == null )
         {
             // oh no! no such bundle.. must be a mistake :)
@@ -233,12 +372,10 @@ final class ServerLibWatcher extends PathWatcherAdapter
         }
         else
         {
-            // remember if we need to start the bundle after the update is complete
-            boolean started = bundle.getState() == Bundle.ACTIVE;
-
             // create a list of bundles we will want to start after this process
+            // if this bundle is started, add it to the list, as it will need to be [re]started too
             List<Bundle> bundlesToStart = new LinkedList<>();
-            if( started )
+            if( bundle.getState() == Bundle.ACTIVE )
             {
                 bundlesToStart.add( bundle );
             }
@@ -253,6 +390,7 @@ final class ServerLibWatcher extends PathWatcherAdapter
                 {
                     for( BundleWire packageWire : packageWires )
                     {
+                        // TODO: if requirer is not started, we should not [re]start it after
                         bundlesToStart.add( packageWire.getRequirer().getBundle() );
                     }
                 }
@@ -266,6 +404,7 @@ final class ServerLibWatcher extends PathWatcherAdapter
             catch( Exception e )
             {
                 LOG.error( "Error stopping module at '{}' (stopping in order to update it): {}", path, e.getMessage(), e );
+                this.tempLastRunSuccessful = false;
                 return;
             }
 
@@ -277,11 +416,13 @@ final class ServerLibWatcher extends PathWatcherAdapter
             catch( Exception e )
             {
                 LOG.error( "Error updating module at '{}': {}", path, e.getMessage(), e );
+                this.tempLastRunSuccessful = false;
+                return;
             }
 
             // refresh packages
             final AtomicBoolean refreshComplete = new AtomicBoolean( false );
-            FrameworkWiring frameworkWiring = getBundleContext().getBundle( 0 ).adapt( FrameworkWiring.class );
+            FrameworkWiring frameworkWiring = this.bundleContext.getBundle( 0 ).adapt( FrameworkWiring.class );
             if( frameworkWiring != null )
             {
                 frameworkWiring.refreshBundles( null, new FrameworkListener()
@@ -297,11 +438,12 @@ final class ServerLibWatcher extends PathWatcherAdapter
             {
                 try
                 {
-                    Thread.sleep( 100 );
+                    Thread.sleep( 10 );
                 }
                 catch( InterruptedException e )
                 {
-                    LOG.error( "Module update process of '{}' was interrupted", path );
+                    LOG.error( "Bundle update process of '{}' was interrupted", path );
+                    this.tempLastRunSuccessful = false;
                     return;
                 }
             }
@@ -319,6 +461,7 @@ final class ServerLibWatcher extends PathWatcherAdapter
                               bundleToStart.getSymbolicName(), bundleToStart.getBundleId(),
                               bundle.getSymbolicName(), bundle.getBundleId(),
                               e.getMessage(), e );
+                    this.tempLastRunSuccessful = false;
                 }
             }
         }
@@ -326,7 +469,7 @@ final class ServerLibWatcher extends PathWatcherAdapter
 
     private void handleDeletedJar( @Nonnull Path path )
     {
-        Bundle bundle = getBundleContext().getBundle( getLocationFromFile( path ) );
+        Bundle bundle = this.bundleContext.getBundle( getLocationFromFile( path ) );
         if( bundle != null )
         {
             try
@@ -336,18 +479,19 @@ final class ServerLibWatcher extends PathWatcherAdapter
             catch( Exception e )
             {
                 LOG.error( "Error uninstalling module from '{}': {}", path, e.getMessage(), e );
+                this.tempLastRunSuccessful = false;
             }
         }
     }
 
-    private void handleCreatedJarCollection( @Nonnull Path path, @Nonnull MapEx<String, Object> context )
+    private void handleCreatedJarCollection( @Nonnull Path path, @Nonnull Context context )
     {
         JarCollection collection = new JarCollection( path );
         this.jarCollections.put( path, collection );
         collection.refresh( context );
     }
 
-    private void handleModifiedJarCollection( @Nonnull Path path, @Nonnull MapEx<String, Object> context )
+    private void handleModifiedJarCollection( @Nonnull Path path, @Nonnull Context context )
     {
         JarCollection collection = this.jarCollections.get( path );
         if( collection != null )
@@ -365,7 +509,7 @@ final class ServerLibWatcher extends PathWatcherAdapter
         }
     }
 
-    private void checkJarCollectionForUpdates( @Nonnull Path path, @Nonnull MapEx<String, Object> context )
+    private void checkJarCollectionForUpdates( @Nonnull Path path, @Nonnull Context context )
     {
         JarCollection collection = this.jarCollections.get( path );
         if( collection != null )
@@ -387,7 +531,7 @@ final class ServerLibWatcher extends PathWatcherAdapter
             this.file = file;
         }
 
-        private void refresh( @Nonnull MapEx<String, Object> context )
+        private void refresh( @Nonnull Context context )
         {
             List<String> lines;
             try
@@ -397,6 +541,7 @@ final class ServerLibWatcher extends PathWatcherAdapter
             catch( Exception e )
             {
                 LOG.warn( "Unable to refresh file collection at '{}': {}", this.file, e.getMessage(), e );
+                BundleScanner.this.tempLastRunSuccessful = false;
                 return;
             }
 
@@ -407,7 +552,7 @@ final class ServerLibWatcher extends PathWatcherAdapter
             Set<Path> newFileSet = new HashSet<>();
             for( String line : lines )
             {
-                Path normalizedPath = Paths.get( PROPERTY_PLACEHOLDER_RESOLVER.resolve( line ) );
+                Path normalizedPath = Paths.get( line );    // TODO: can we resolve system properties here?
                 if( !normalizedPath.isAbsolute() )
                 {
                     normalizedPath = this.file.getParent().resolve( normalizedPath );
@@ -427,11 +572,11 @@ final class ServerLibWatcher extends PathWatcherAdapter
             }
         }
 
-        private void checkForUpdates( @Nonnull MapEx<String, Object> context )
+        private void checkForUpdates( @Nonnull Context context )
         {
             for( Path path : this.files )
             {
-                Bundle bundle = getBundleContext().getBundle( getLocationFromFile( path ) );
+                Bundle bundle = BundleScanner.this.bundleContext.getBundle( getLocationFromFile( path ) );
                 if( notExists( path ) || isDirectory( path ) || !isReadable( path ) )
                 {
                     if( bundle != null )
@@ -474,6 +619,23 @@ final class ServerLibWatcher extends PathWatcherAdapter
             {
                 handleDeletedJar( path );
             }
+        }
+    }
+
+    private class Context
+    {
+        @Nonnull
+        private Optional<List<Bundle>> installedBundles = Optional.absent();
+
+        @Nonnull
+        List<Bundle> getInstalledBundles()
+        {
+            if( !this.installedBundles.isPresent() )
+            {
+                List<Bundle> installedBundles = new LinkedList<>();
+                this.installedBundles = Optional.of( installedBundles );
+            }
+            return this.installedBundles.get();
         }
     }
 }
