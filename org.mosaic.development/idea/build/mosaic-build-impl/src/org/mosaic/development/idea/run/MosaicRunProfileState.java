@@ -15,10 +15,14 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.extensions.Extensions;
 import com.intellij.openapi.roots.ProjectRootManager;
 import com.intellij.openapi.util.Key;
+import com.intellij.openapi.util.io.FileUtil;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.nio.file.*;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.LinkedList;
 import java.util.List;
@@ -42,6 +46,21 @@ public class MosaicRunProfileState extends JavaCommandLineState
     }
 
     @Override
+    @NotNull
+    public ExecutionResult execute( @NotNull final Executor executor, @NotNull ProgramRunner runner )
+            throws ExecutionException
+    {
+        ExecutionResult result = super.execute( executor, runner );
+
+        final ProcessHandler processHandler = result.getProcessHandler();
+        if( processHandler != null )
+        {
+            processHandler.addProcessListener( new MosaicProcessAdapter() );
+        }
+        return result;
+    }
+
+    @Override
     protected JavaParameters createJavaParameters() throws ExecutionException
     {
         JavaParameters params = new JavaParameters();
@@ -62,61 +81,39 @@ public class MosaicRunProfileState extends JavaCommandLineState
 
         File systemDir = new File( PathManager.getSystemPath() );
         File mosaicPluginDir = new File( systemDir, "mosaic" );
-        File runDir = new File( mosaicPluginDir, "run-" + this.runConfiguration.getName() );
-        File apps = new File( runDir, "apps" );
-        File etc = new File( runDir, "etc" );
-        File lib = new File( runDir, "lib" );
-        File logs = new File( runDir, "logs" );
-        File work = new File( runDir, "work" );
-        try
-        {
-            Files.createDirectories( apps.toPath() );
-            Files.createDirectories( etc.toPath() );
-            Files.createDirectories( lib.toPath() );
-            Files.createDirectories( logs.toPath() );
-            Files.createDirectories( work.toPath() );
-
-            final List<String> libs = new LinkedList<>();
-            Files.walkFileTree( new File( getServerLocation(), "lib" ).toPath(), new SimpleFileVisitor<Path>()
-            {
-                @NotNull
-                @Override
-                public FileVisitResult visitFile( @NotNull Path file, @NotNull BasicFileAttributes attrs )
-                        throws IOException
-                {
-                    String lcname = file.toString().toLowerCase();
-                    if( lcname.endsWith( ".jar" ) || lcname.endsWith( ".jars" ) )
-                    {
-                        libs.add( file.toString() );
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
-            } );
-            Files.write( new File( lib, "original.jars" ).toPath(), libs, Charset.forName( "UTF-8" ) );
-        }
-        catch( IOException e )
-        {
-            Logger.getInstance( getClass() ).error( "Could not create Mosaic home: " + e.getMessage(), e );
-            throw new ExecutionException( "Could not create Mosaic home: " + e.getMessage(), e );
-        }
+        File runDir = getServerDir( mosaicPluginDir, "run-" + this.runConfiguration.getName() );
+        File apps = getServerDir( runDir, "apps" );
+        File etc = getServerDir( runDir, "etc" );
+        cleanAndCopyDirContents( new File( getServerLocation(), "apps" ), getServerDir( runDir, "apps" ) );
+        cleanAndCopyDirContents( new File( getServerLocation(), "etc" ), getServerDir( runDir, "etc" ) );
+        createOriginalJarLinks( getServerDir( runDir, "lib" ) );
+        // TODO: create deployed.jars file linking to deployed bundles in project
 
         params.getVMParametersList().addProperty( "mosaic.home", getServerLocation().getAbsolutePath() );
         params.getVMParametersList().addProperty( "mosaic.home.apps", apps.getAbsolutePath() );
         params.getVMParametersList().addProperty( "mosaic.home.etc", etc.getAbsolutePath() );
-        params.getVMParametersList().addProperty( "mosaic.home.lib", lib.getAbsolutePath() );
-        params.getVMParametersList().addProperty( "mosaic.home.logs", logs.getAbsolutePath() );
-        params.getVMParametersList().addProperty( "mosaic.home.work", work.getAbsolutePath() );
+        params.getVMParametersList().addProperty( "mosaic.home.lib", getServerDir( runDir, "lib" ).getAbsolutePath() );
+        params.getVMParametersList().addProperty( "mosaic.home.logs", getServerDir( runDir, "logs" ).getAbsolutePath() );
+        params.getVMParametersList().addProperty( "mosaic.home.work", getServerDir( runDir, "work" ).getAbsolutePath() );
+
+        PathMacroManager pathMacroManager = PathMacroManager.getInstance( this.runConfiguration.getProject() );
+        try
+        {
+            String srcAppsLocation = pathMacroManager.expandPath( this.runConfiguration.getAppsLocation() );
+            String srcEtcLocation = pathMacroManager.expandPath( this.runConfiguration.getEtcLocation() );
+            FileUtil.copyDirContent( new File( srcAppsLocation ), getServerDir( runDir, "apps" ) );
+            FileUtil.copyDirContent( new File( srcEtcLocation ), getServerDir( runDir, "etc" ) );
+        }
+        catch( IOException e )
+        {
+            throw new ExecutionException( "Could not copy apps/etc locations: " + e.getMessage(), e );
+        }
 
         // extensions
         for( RunConfigurationExtension ext : Extensions.getExtensions( RunConfigurationExtension.EP_NAME ) )
         {
             ext.updateJavaParameters( this.runConfiguration, params, getRunnerSettings() );
         }
-
-        // TODO: custom locations synchronizer
-        PathMacroManager pathMacroManager = PathMacroManager.getInstance( this.runConfiguration.getProject() );
-        File srcAppsLocation = new File( pathMacroManager.expandPath( this.runConfiguration.getAppsLocation() ) );
-        File srcEtcLocation = new File( pathMacroManager.expandPath( this.runConfiguration.getEtcLocation() ) );
 
         return params;
     }
@@ -129,21 +126,6 @@ public class MosaicRunProfileState extends JavaCommandLineState
         JavaRunConfigurationExtensionManager.getInstance().attachExtensionsToProcess(
                 this.runConfiguration, handler, getRunnerSettings() );
         return handler;
-    }
-
-    @Override
-    @NotNull
-    public ExecutionResult execute( @NotNull final Executor executor, @NotNull ProgramRunner runner )
-            throws ExecutionException
-    {
-        ExecutionResult result = super.execute( executor, runner );
-
-        final ProcessHandler processHandler = result.getProcessHandler();
-        if( processHandler != null )
-        {
-            processHandler.addProcessListener( new MosaicProcessAdapter() );
-        }
-        return result;
     }
 
     @NotNull
@@ -178,8 +160,72 @@ public class MosaicRunProfileState extends JavaCommandLineState
         return new File( binDir, "org.mosaic.launcher.jar" );
     }
 
+    @NotNull
+    private File getServerDir( @NotNull File parent, @NotNull String name ) throws ExecutionException
+    {
+        File dir = new File( parent, name );
+        try
+        {
+            Files.createDirectories( dir.toPath() );
+            return dir;
+        }
+        catch( IOException e )
+        {
+            throw new ExecutionException( "Cannot create directory '" + dir.getAbsolutePath() + "': " + e.getMessage(), e );
+        }
+    }
+
+    private void createOriginalJarLinks( File lib ) throws ExecutionException
+    {
+        try
+        {
+            final List<String> libs = new LinkedList<>();
+            Files.walkFileTree( new File( getServerLocation(), "lib" ).toPath(), new SimpleFileVisitor<Path>()
+            {
+                @NotNull
+                @Override
+                public FileVisitResult visitFile( @NotNull Path file, @NotNull BasicFileAttributes attrs )
+                        throws IOException
+                {
+                    String lcname = file.toString().toLowerCase();
+                    if( lcname.endsWith( ".jar" ) || lcname.endsWith( ".jars" ) )
+                    {
+                        libs.add( file.toString() );
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            } );
+            Files.write( new File( lib, "original.jars" ).toPath(), libs, Charset.forName( "UTF-8" ) );
+        }
+        catch( IOException e )
+        {
+            Logger.getInstance( getClass() ).error( "Could not create Mosaic home: " + e.getMessage(), e );
+            throw new ExecutionException( "Could not create Mosaic home: " + e.getMessage(), e );
+        }
+    }
+
+    private void cleanAndCopyDirContents( @NotNull File src, @NotNull File dst ) throws ExecutionException
+    {
+        try
+        {
+            FileUtil.delete( dst );
+            FileUtil.createDirectory( dst );
+            if( src.isDirectory() )
+            {
+                FileUtil.copyDir( src, dst );
+            }
+        }
+        catch( IOException e )
+        {
+            throw new ExecutionException( "Could not copy '" + src.getAbsolutePath() + "' to '" + dst.getAbsolutePath() + "': " + e.getMessage(), e );
+        }
+    }
+
     private class MosaicProcessAdapter extends ProcessAdapter
     {
+        // TODO: synchronize apps/etc locations
+        // TODO: listen to Make events and rebuild bundles
+
         @Override
         public void startNotified( ProcessEvent event )
         {
