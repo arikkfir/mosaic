@@ -23,6 +23,7 @@ final class InitHomeTask extends InitTask
                 }
             }
 
+            // TODO: when mosaic dirs are symbolic links, this does not work
             this.log.debug( "Creating missing home directories" );
             createDirectories( Mosaic.getHome() );
             createDirectories( Mosaic.getApps() );
