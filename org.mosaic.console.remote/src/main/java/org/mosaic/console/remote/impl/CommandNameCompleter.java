@@ -2,7 +2,7 @@ package org.mosaic.console.remote.impl;
 
 import java.util.List;
 import javax.annotation.Nonnull;
-import org.mosaic.console.spi.CommandManager;
+import org.mosaic.console.CommandManager;
 import org.mosaic.modules.Service;
 
 /**

@@ -1,10 +1,9 @@
-package org.mosaic.console.spi;
+package org.mosaic.console;
 
 import java.io.IOException;
 import java.util.Collection;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.mosaic.console.Console;
 
 /**
  * @author arik

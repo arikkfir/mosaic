@@ -1,4 +1,4 @@
-package org.mosaic.console.spi;
+package org.mosaic.console;
 
 /**
  * @author arik

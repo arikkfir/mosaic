@@ -12,9 +12,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.mosaic.console.Command;
-import org.mosaic.console.Console;
-import org.mosaic.console.spi.*;
+import org.mosaic.console.*;
 import org.mosaic.console.util.table.SimpleColumn;
 import org.mosaic.console.util.table.TablePrinter;
 import org.mosaic.modules.*;
@@ -77,22 +75,6 @@ public class CommandManagerImpl implements CommandManager
     @Nonnull
     @Service
     private ConversionService conversionService;
-
-    @OnServiceAdded
-    void addCommand( @Nonnull ServiceReference<MethodEndpoint<Command>> reference )
-    {
-        Optional<MethodEndpoint<Command>> endpoint = reference.service();
-        if( endpoint.isPresent() )
-        {
-            this.commandAdapters.put( reference.getId(), new CommandAdapter( endpoint.get() ) );
-        }
-    }
-
-    @OnServiceRemoved
-    void removeCommand( @Nonnull ServiceReference<MethodEndpoint<Command>> reference )
-    {
-        this.commandAdapters.remove( reference.getId() );
-    }
 
     @Nonnull
     @Override
@@ -173,6 +155,22 @@ public class CommandManagerImpl implements CommandManager
             }
         }
         console.println( "unknown command: {}", commandName );
+    }
+
+    @OnServiceAdded
+    void addCommand( @Nonnull ServiceReference<MethodEndpoint<Command>> reference )
+    {
+        Optional<MethodEndpoint<Command>> endpoint = reference.service();
+        if( endpoint.isPresent() )
+        {
+            this.commandAdapters.put( reference.getId(), new CommandAdapter( endpoint.get() ) );
+        }
+    }
+
+    @OnServiceRemoved
+    void removeCommand( @Nonnull ServiceReference<MethodEndpoint<Command>> reference )
+    {
+        this.commandAdapters.remove( reference.getId() );
     }
 
     abstract class ValuedParameter
@@ -520,7 +518,7 @@ public class CommandManagerImpl implements CommandManager
             }
             else
             {
-                @SuppressWarnings("unchecked")
+                @SuppressWarnings( "unchecked" )
                 TablePrinter<CommandArgument> argumentsTable =
                         new TablePrinter<>( console,
                                             8,
@@ -564,7 +562,7 @@ public class CommandManagerImpl implements CommandManager
             }
             else
             {
-                @SuppressWarnings("unchecked")
+                @SuppressWarnings( "unchecked" )
                 TablePrinter<CommandOption> optionsTable =
                         new TablePrinter<>( console,
                                             8,

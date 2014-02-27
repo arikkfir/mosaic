@@ -8,9 +8,9 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import jline.console.ConsoleReader;
 import jline.console.Operation;
+import org.mosaic.console.CommandCanceledException;
 import org.mosaic.console.Console;
-import org.mosaic.console.spi.CommandCanceledException;
-import org.mosaic.console.spi.QuitSessionException;
+import org.mosaic.console.QuitSessionException;
 import org.slf4j.helpers.FormattingTuple;
 
 import static java.util.Arrays.binarySearch;
@@ -145,7 +145,7 @@ final class ConsoleImpl implements Console
         FormattingTuple tuple = arrayFormat( Objects.toString( value, "" ), args );
         this.consoleReader.println( tuple.getMessage() );
 
-        @SuppressWarnings( "ThrowableResultOfMethodCallIgnored" )
+        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
         Throwable throwable = tuple.getThrowable();
         if( throwable != null )
         {
