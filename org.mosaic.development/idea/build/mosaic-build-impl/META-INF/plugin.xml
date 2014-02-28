@@ -37,6 +37,7 @@
         <stepsBeforeRunProvider implementation="org.mosaic.development.idea.make.impl.RebuildBundlesBeforeRunTaskProvider" order="last"/>
 
         <!-- TODO: <stacktrace.fold substring="at com.intellij.testFramework."/>-->
+        <!-- TODO: create error reporter that creates Github issues -->
 
     </extensions>
 
