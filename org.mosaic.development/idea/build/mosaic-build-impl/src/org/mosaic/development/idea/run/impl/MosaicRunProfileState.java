@@ -275,12 +275,26 @@ public class MosaicRunProfileState extends JavaCommandLineState
 
         private final VirtualFileAdapter etcMonitor;
 
-        private MosaicProcessAdapter( @NotNull String srcAppsDir, @NotNull String srcEtcDir ) throws CantRunException
+        private MosaicProcessAdapter( String srcAppsDir, String srcEtcDir ) throws CantRunException
         {
-            this.appsMonitor = new UserProvisioningMonitor( Paths.get( srcAppsDir ),
-                                                            new File( getServerLocation(), "apps" ).toPath() );
-            this.etcMonitor = new UserProvisioningMonitor( Paths.get( srcEtcDir ),
-                                                           new File( getServerLocation(), "etc" ).toPath() );
+            if( srcAppsDir != null )
+            {
+                this.appsMonitor = new UserProvisioningMonitor( Paths.get( srcAppsDir ),
+                                                                new File( getServerLocation(), "apps" ).toPath() );
+            }
+            else
+            {
+                this.appsMonitor = null;
+            }
+            if( srcEtcDir != null )
+            {
+                this.etcMonitor = new UserProvisioningMonitor( Paths.get( srcEtcDir ),
+                                                               new File( getServerLocation(), "etc" ).toPath() );
+            }
+            else
+            {
+                this.etcMonitor = null;
+            }
         }
 
         @Override
@@ -289,15 +303,27 @@ public class MosaicRunProfileState extends JavaCommandLineState
             Project project = MosaicRunProfileState.this.runConfiguration.getProject();
             CompilerManager.getInstance( project ).addCompilationStatusListener( this.compilationStatusAdapter );
 
-            LocalFileSystem.getInstance().addVirtualFileListener( this.appsMonitor );
-            LocalFileSystem.getInstance().addVirtualFileListener( this.etcMonitor );
+            if( this.appsMonitor != null )
+            {
+                LocalFileSystem.getInstance().addVirtualFileListener( this.appsMonitor );
+            }
+            if( this.etcMonitor != null )
+            {
+                LocalFileSystem.getInstance().addVirtualFileListener( this.etcMonitor );
+            }
         }
 
         @Override
         public void processWillTerminate( ProcessEvent event, boolean willBeDestroyed )
         {
-            LocalFileSystem.getInstance().removeVirtualFileListener( this.appsMonitor );
-            LocalFileSystem.getInstance().removeVirtualFileListener( this.etcMonitor );
+            if( this.appsMonitor != null )
+            {
+                LocalFileSystem.getInstance().removeVirtualFileListener( this.appsMonitor );
+            }
+            if( this.etcMonitor != null )
+            {
+                LocalFileSystem.getInstance().removeVirtualFileListener( this.etcMonitor );
+            }
 
             Project project = MosaicRunProfileState.this.runConfiguration.getProject();
             CompilerManager.getInstance( project ).removeCompilationStatusListener( this.compilationStatusAdapter );
