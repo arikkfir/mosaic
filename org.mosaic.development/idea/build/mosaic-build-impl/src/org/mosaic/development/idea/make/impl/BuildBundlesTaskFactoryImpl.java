@@ -19,17 +19,36 @@ public class BuildBundlesTaskFactoryImpl extends BuildBundlesTaskFactory
 
     @NotNull
     @Override
-    public Task.Backgroundable createBuildBundlesTask( @NotNull Project project, @NotNull List<Module> modules )
+    public Task.Backgroundable createBuildBundlesTask( @NotNull List<Module> modules )
     {
-        return new BuildBundlesBackgroundable( project, modules, null );
+        return new BuildBundlesBackgroundable( this.myProject, modules, null );
     }
 
     @NotNull
     @Override
-    public Task.Backgroundable createBuildBundlesTask( @NotNull Project project,
-                                                       @NotNull List<Module> modules,
-                                                       Runnable completion )
+    public Task.Backgroundable createBuildBundlesTask( @NotNull List<Module> modules,
+                                                       Runnable onCompletion )
     {
-        return new BuildBundlesBackgroundable( project, modules, completion );
+        return new BuildBundlesBackgroundable( this.myProject, modules, onCompletion );
+    }
+
+    @NotNull
+    @Override
+    public Task.Backgroundable createBuildBundlesTask( @NotNull List<Module> modules,
+                                                       Runnable onCompletion,
+                                                       Runnable onSuccess )
+    {
+        return new BuildBundlesBackgroundable( this.myProject, modules, onCompletion, onSuccess, null, null );
+    }
+
+    @NotNull
+    @Override
+    public Task.Backgroundable createBuildBundlesTask( @NotNull List<Module> modules,
+                                                       Runnable onCompletion,
+                                                       Runnable onSuccess,
+                                                       Runnable onFailure,
+                                                       Runnable onCancel )
+    {
+        return new BuildBundlesBackgroundable( this.myProject, modules, onCompletion, onSuccess, onFailure, onCancel );
     }
 }

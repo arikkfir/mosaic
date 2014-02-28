@@ -1,4 +1,4 @@
-package org.mosaic.development.idea.run;
+package org.mosaic.development.idea.run.impl;
 
 import com.intellij.compiler.options.CompileStepBeforeRun;
 import com.intellij.execution.BeforeRunTask;
@@ -8,6 +8,7 @@ import com.intellij.execution.configurations.RunConfiguration;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Key;
 import org.jetbrains.annotations.NotNull;
+import org.mosaic.development.idea.make.impl.RebuildBundlesBeforeRunTaskProvider;
 
 /**
  * @author arik
@@ -36,6 +37,10 @@ public class MosaicRunConfigurationFactory extends ConfigurationFactory
     {
         super.configureBeforeRunTaskDefaults( providerID, task );
         if( providerID == CompileStepBeforeRun.ID )
+        {
+            task.setEnabled( true );
+        }
+        else if( providerID == RebuildBundlesBeforeRunTaskProvider.ID )
         {
             task.setEnabled( true );
         }

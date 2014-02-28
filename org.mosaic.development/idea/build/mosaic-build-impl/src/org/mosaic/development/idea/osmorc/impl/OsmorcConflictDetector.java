@@ -1,4 +1,4 @@
-package org.mosaic.development.idea.osmorc;
+package org.mosaic.development.idea.osmorc.impl;
 
 import com.intellij.ide.plugins.PluginManager;
 import com.intellij.notification.Notification;

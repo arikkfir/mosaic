@@ -11,7 +11,7 @@ import org.jetbrains.idea.maven.project.MavenProjectsManager;
 import org.mosaic.development.idea.facet.OsgiBundleFacet;
 import org.mosaic.development.idea.facet.OsgiBundleFacetConfiguration;
 
-import static org.mosaic.development.idea.util.Util.getBundleFileName;
+import static org.mosaic.development.idea.util.impl.Util.getBundleFileName;
 
 /**
  * @author arik

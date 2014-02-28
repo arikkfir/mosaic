@@ -31,9 +31,10 @@
         <facetType implementation="org.mosaic.development.idea.facet.impl.OsgiBundleFacetTypeImpl"/>
 
         <!-- Mosaic run configuration type -->
-        <configurationType implementation="org.mosaic.development.idea.run.MosaicRunConfigurationType"/>
-        <programRunner id="mosaicProgramRunner" implementation="org.mosaic.development.idea.run.MosaicProgramRunner" order="last"/>
-        <programRunner id="mosaicDebugRunner" implementation="org.mosaic.development.idea.run.MosaicProgramDebugger" order="last"/>
+        <configurationType implementation="org.mosaic.development.idea.run.impl.MosaicRunConfigurationType"/>
+        <programRunner id="mosaicProgramRunner" implementation="org.mosaic.development.idea.run.impl.MosaicProgramRunner" order="last"/>
+        <programRunner id="mosaicDebugRunner" implementation="org.mosaic.development.idea.run.impl.MosaicProgramDebugger" order="last"/>
+        <stepsBeforeRunProvider implementation="org.mosaic.development.idea.make.impl.RebuildBundlesBeforeRunTaskProvider" order="last"/>
 
         <!-- TODO: <stacktrace.fold substring="at com.intellij.testFramework."/>-->
 
@@ -45,7 +46,7 @@
 
     <application-components>
         <component>
-            <implementation-class>org.mosaic.development.idea.osmorc.OsmorcConflictDetector</implementation-class>
+            <implementation-class>org.mosaic.development.idea.osmorc.impl.OsmorcConflictDetector</implementation-class>
         </component>
         <component>
             <implementation-class>org.mosaic.development.idea.server.impl.MosaicServerManagerImpl</implementation-class>
@@ -59,14 +60,18 @@
             <interface-class>org.mosaic.development.idea.messages.BundleMessageView</interface-class>
         </component>
         <component>
-            <implementation-class>org.mosaic.development.idea.make.BundleMakeListener</implementation-class>
-        </component>
-        <component>
             <implementation-class>org.mosaic.development.idea.make.impl.BuildBundlesTaskFactoryImpl</implementation-class>
             <interface-class>org.mosaic.development.idea.make.BuildBundlesTaskFactory</interface-class>
         </component>
         <component>
-            <implementation-class>org.mosaic.development.idea.run.DeploymentUnitsManager</implementation-class>
+            <implementation-class>org.mosaic.development.idea.run.impl.DeploymentUnitsManagerImpl</implementation-class>
+            <interface-class>org.mosaic.development.idea.run.DeploymentUnitsManager</interface-class>
+        </component>
+        <component>
+            <implementation-class>org.mosaic.development.idea.make.impl.BundleRebuilderCompilationListener</implementation-class>
+        </component>
+        <component>
+            <implementation-class>org.mosaic.development.idea.run.impl.RunProfileUtil</implementation-class>
         </component>
     </project-components>
 

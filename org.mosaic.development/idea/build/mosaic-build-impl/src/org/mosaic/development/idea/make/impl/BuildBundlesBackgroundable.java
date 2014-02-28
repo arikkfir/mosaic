@@ -23,8 +23,8 @@ import org.mosaic.development.idea.messages.BundleMessageView;
 import static com.intellij.openapi.vfs.VfsUtil.findFileByIoFile;
 import static com.intellij.openapi.vfs.VfsUtilCore.virtualToIoFile;
 import static java.util.Arrays.asList;
-import static org.mosaic.development.idea.util.Util.findLatestFileModificationTime;
-import static org.mosaic.development.idea.util.Util.getBundleFileName;
+import static org.mosaic.development.idea.util.impl.Util.findLatestFileModificationTime;
+import static org.mosaic.development.idea.util.impl.Util.getBundleFileName;
 
 /**
  * @author arik
@@ -39,21 +39,42 @@ final class BuildBundlesBackgroundable extends ModalityIgnorantBackgroundableTas
     @NotNull
     private final Module[] modules;
 
-    private final Runnable completion;
+    private final Runnable onCompletion;
+
+    private final Runnable onSuccess;
+
+    private final Runnable onFailure;
+
+    private final Runnable onCancel;
 
     private boolean success;
 
-    BuildBundlesBackgroundable( @NotNull Project project, @NotNull List<Module> modules, Runnable completion )
+    BuildBundlesBackgroundable( @NotNull Project project, @NotNull List<Module> modules, Runnable onCompletion )
+    {
+        this( project, modules, onCompletion, null, null, null );
+    }
+
+    BuildBundlesBackgroundable( @NotNull Project project,
+                                @NotNull List<Module> modules,
+                                Runnable onCompletion,
+                                Runnable onSuccess,
+                                Runnable onFailure,
+                                Runnable onCancel )
     {
         super( project, "Building OSGi bundles", false );
         this.project = project;
         this.modules = modules.toArray( new Module[ modules.size() ] );
-        this.completion = completion;
+        this.onCompletion = onCompletion;
+        this.onSuccess = onSuccess;
+        this.onFailure = onFailure;
+        this.onCancel = onCancel;
     }
 
     @Override
     protected final void runImpl( @NotNull ProgressIndicator indicator )
     {
+        BundleMessageView.SERVICE.getInstance( this.project ).clear();
+
         ProgressIndicator progressIndicator = ProgressManager.getInstance().getProgressIndicator();
         progressIndicator.setIndeterminate( true );
 
@@ -101,9 +122,24 @@ final class BuildBundlesBackgroundable extends ModalityIgnorantBackgroundableTas
     @Override
     protected void doInAwtIfSuccess()
     {
-        if( this.success && this.completion != null )
+        if( this.success )
         {
-            this.completion.run();
+            if( this.onSuccess != null )
+            {
+                this.onSuccess.run();
+            }
+        }
+        else
+        {
+            if( this.onFailure != null )
+            {
+                this.onFailure.run();
+            }
+        }
+
+        if( this.onCompletion != null )
+        {
+            this.onCompletion.run();
         }
     }
 
@@ -116,12 +152,36 @@ final class BuildBundlesBackgroundable extends ModalityIgnorantBackgroundableTas
                 new ExecutionHelper.FakeNavigatable(),
                 e.getMessage()
         );
+
+        if( this.onFailure != null )
+        {
+            this.onFailure.run();
+        }
+
+        if( this.onCompletion != null )
+        {
+            this.onCompletion.run();
+        }
     }
 
     @Override
     protected void doInAwtIfCancel()
     {
-        // no-op
+        BundleMessageView.SERVICE.getInstance( this.project ).showError(
+                "General",
+                new ExecutionHelper.FakeNavigatable(),
+                "User canceled OSGi bundles build."
+        );
+
+        if( this.onCancel != null )
+        {
+            this.onCancel.run();
+        }
+
+        if( this.onCompletion != null )
+        {
+            this.onCompletion.run();
+        }
     }
 
     private boolean shouldBuild( @NotNull Module module )
@@ -134,40 +194,41 @@ final class BuildBundlesBackgroundable extends ModalityIgnorantBackgroundableTas
         }
 
         // find build directory - if not exists, continue to building the bundle
-        VirtualFile buildDirectory = findFileByIoFile( new File( mavenProject.getBuildDirectory() ), true );
-        if( buildDirectory == null )
+        File buildDirectory = new File( mavenProject.getBuildDirectory() );
+        if( !buildDirectory.exists() )
         {
             // no build dir -> build needed
-            return false;
+            return true;
         }
 
         // find bundle JAR file - if not exists, continue to building the bundle
-        VirtualFile jarFile = buildDirectory.findChild( getBundleFileName( mavenProject ) );
-        if( jarFile == null )
+        File jarFile = new File( buildDirectory, getBundleFileName( mavenProject ) );
+        if( !jarFile.exists() )
         {
             // no bundle jar file -> build needed
-            return false;
+            return true;
         }
 
         // check if POM file is older than the bundle JAR file - if newer, continue to building the bundle
-        long bundleModificationTime = virtualToIoFile( jarFile ).lastModified();
+        long bundleModificationTime = jarFile.lastModified();
         if( virtualToIoFile( mavenProject.getFile() ).lastModified() >= bundleModificationTime )
         {
             // POM file modified after bundle was last modified -> build needed
-            return false;
+            return true;
         }
 
         // find output directory (classes) - if not exists, continue to building the bundle
-        VirtualFile outputDirectory = findFileByIoFile( new File( mavenProject.getOutputDirectory() ), true );
-        if( outputDirectory == null )
+        File outputDirectory = new File( mavenProject.getOutputDirectory() );
+        if( !outputDirectory.exists() )
         {
             // no output directory (classes) -> build needed
-            return false;
+            return true;
         }
 
         // check if there are classes newer than the bundle - if not, there is no need to build the bundle
         // we add 1sec bcz the bundle modtime might be equal to the file modified last in it, in which case no need to rebuild it
-        return bundleModificationTime + 1000 < findLatestFileModificationTime( outputDirectory );
+        VirtualFile outputDirectoryVFile = findFileByIoFile( outputDirectory, true );
+        return outputDirectoryVFile == null || bundleModificationTime + 500 < findLatestFileModificationTime( outputDirectoryVFile );
     }
 
     private boolean build( @NotNull Module module,

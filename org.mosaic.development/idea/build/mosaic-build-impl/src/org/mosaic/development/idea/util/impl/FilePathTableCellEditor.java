@@ -1,4 +1,4 @@
-package org.mosaic.development.idea.util;
+package org.mosaic.development.idea.util.impl;
 
 import com.intellij.openapi.fileChooser.FileChooser;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;

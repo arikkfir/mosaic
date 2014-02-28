@@ -24,11 +24,21 @@ public abstract class BuildBundlesTaskFactory extends AbstractProjectComponent
     }
 
     @NotNull
-    public abstract Task.Backgroundable createBuildBundlesTask( @NotNull Project project,
-                                                                @NotNull List<Module> modules );
+    public abstract Task.Backgroundable createBuildBundlesTask( @NotNull List<Module> modules );
 
     @NotNull
-    public abstract Task.Backgroundable createBuildBundlesTask( @NotNull Project project,
-                                                                @NotNull List<Module> modules,
+    public abstract Task.Backgroundable createBuildBundlesTask( @NotNull List<Module> modules,
                                                                 Runnable completion );
+
+    @NotNull
+    public abstract Task.Backgroundable createBuildBundlesTask( @NotNull List<Module> modules,
+                                                                Runnable onCompletion,
+                                                                Runnable onSuccess );
+
+    @NotNull
+    public abstract Task.Backgroundable createBuildBundlesTask( @NotNull List<Module> modules,
+                                                                Runnable onCompletion,
+                                                                Runnable onSuccess,
+                                                                Runnable onFailure,
+                                                                Runnable onCancel );
 }

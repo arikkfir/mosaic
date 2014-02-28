@@ -1,4 +1,4 @@
-package org.mosaic.development.idea.run;
+package org.mosaic.development.idea.run.impl;
 
 import com.intellij.openapi.options.ConfigurationException;
 import com.intellij.openapi.options.SettingsEditor;
@@ -31,7 +31,7 @@ public class GeneralConfigurationSettingsEditor extends SettingsEditor<MosaicRun
 
     private RawCommandLineEditor vmOptionsField;
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     public GeneralConfigurationSettingsEditor()
     {
         this.serverField.setRenderer( new ListCellRendererWrapper<MosaicServer>()

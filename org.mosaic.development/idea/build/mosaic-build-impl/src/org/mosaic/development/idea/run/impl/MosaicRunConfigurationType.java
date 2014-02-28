@@ -1,4 +1,4 @@
-package org.mosaic.development.idea.run;
+package org.mosaic.development.idea.run.impl;
 
 import com.intellij.execution.configurations.ConfigurationTypeBase;
 import com.intellij.icons.AllIcons;

@@ -1,4 +1,4 @@
-package org.mosaic.development.idea.run;
+package org.mosaic.development.idea.run.impl;
 
 import com.intellij.execution.*;
 import com.intellij.execution.configurations.JavaCommandLineState;
@@ -10,25 +10,35 @@ import com.intellij.execution.process.ProcessHandler;
 import com.intellij.execution.runners.ExecutionEnvironment;
 import com.intellij.execution.runners.ProgramRunner;
 import com.intellij.openapi.application.PathManager;
+import com.intellij.openapi.compiler.CompilationStatusAdapter;
+import com.intellij.openapi.compiler.CompileContext;
+import com.intellij.openapi.compiler.CompilerManager;
 import com.intellij.openapi.components.PathMacroManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.extensions.Extensions;
+import com.intellij.openapi.module.Module;
+import com.intellij.openapi.module.ModuleManager;
+import com.intellij.openapi.progress.ProgressManager;
+import com.intellij.openapi.progress.Task;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.ProjectRootManager;
-import com.intellij.openapi.util.Key;
 import com.intellij.openapi.util.io.FileUtil;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
+import org.mosaic.development.idea.make.BuildBundlesTaskFactory;
+import org.mosaic.development.idea.run.DeploymentUnit;
 import org.mosaic.development.idea.server.MosaicServer;
 import org.mosaic.development.idea.server.MosaicServerManager;
+
+import static java.util.Arrays.asList;
+import static java.util.Collections.addAll;
 
 /**
  * @author arik
@@ -55,7 +65,8 @@ public class MosaicRunProfileState extends JavaCommandLineState
         final ProcessHandler processHandler = result.getProcessHandler();
         if( processHandler != null )
         {
-            processHandler.addProcessListener( new MosaicProcessAdapter() );
+            processHandler.addProcessListener( new MosaicProcessAdapter( this.runConfiguration.getAppsLocation(),
+                                                                         this.runConfiguration.getEtcLocation() ) );
         }
         return result;
     }
@@ -87,7 +98,7 @@ public class MosaicRunProfileState extends JavaCommandLineState
         cleanAndCopyDirContents( new File( getServerLocation(), "apps" ), getServerDir( runDir, "apps" ) );
         cleanAndCopyDirContents( new File( getServerLocation(), "etc" ), getServerDir( runDir, "etc" ) );
         createOriginalJarLinks( getServerDir( runDir, "lib" ) );
-        // TODO: create deployed.jars file linking to deployed bundles in project
+        createDeployedJarLinks( getServerDir( runDir, "lib" ) );
 
         params.getVMParametersList().addProperty( "mosaic.home", getServerLocation().getAbsolutePath() );
         params.getVMParametersList().addProperty( "mosaic.home.apps", apps.getAbsolutePath() );
@@ -204,6 +215,30 @@ public class MosaicRunProfileState extends JavaCommandLineState
         }
     }
 
+    private void createDeployedJarLinks( File lib ) throws ExecutionException
+    {
+        try
+        {
+            List<String> libs = new LinkedList<>();
+
+            DeploymentUnit[] units = this.runConfiguration.getDeploymentUnits();
+            if( units != null )
+            {
+                for( DeploymentUnit unit : units )
+                {
+                    addAll( libs, unit.getFilePaths() );
+                }
+            }
+
+            Files.write( new File( lib, "deployed.jars" ).toPath(), libs, Charset.forName( "UTF-8" ) );
+        }
+        catch( IOException e )
+        {
+            Logger.getInstance( getClass() ).error( "Could not create Mosaic home: " + e.getMessage(), e );
+            throw new ExecutionException( "Could not create Mosaic home: " + e.getMessage(), e );
+        }
+    }
+
     private void cleanAndCopyDirContents( @NotNull File src, @NotNull File dst ) throws ExecutionException
     {
         try
@@ -223,31 +258,71 @@ public class MosaicRunProfileState extends JavaCommandLineState
 
     private class MosaicProcessAdapter extends ProcessAdapter
     {
+        private final MyCompilationStatusAdapter compilationStatusAdapter = new MyCompilationStatusAdapter();
+
+        @NotNull
+        private final Path srcAppsDir;
+
+        @NotNull
+        private final Path srcEtcDir;
+
+        private MosaicProcessAdapter( @NotNull String srcAppsDir, @NotNull String srcEtcDir )
+        {
+            this.srcAppsDir = Paths.get( srcAppsDir );
+            this.srcEtcDir = Paths.get( srcEtcDir );
+        }
+
         // TODO: synchronize apps/etc locations
-        // TODO: listen to Make events and rebuild bundles
 
         @Override
         public void startNotified( ProcessEvent event )
         {
-            super.startNotified( event );
-        }
+            Project project = MosaicRunProfileState.this.runConfiguration.getProject();
+            CompilerManager.getInstance( project ).addCompilationStatusListener( this.compilationStatusAdapter );
 
-        @Override
-        public void onTextAvailable( ProcessEvent event, Key outputType )
-        {
-            super.onTextAvailable( event, outputType );
+
         }
 
         @Override
         public void processWillTerminate( ProcessEvent event, boolean willBeDestroyed )
         {
-            super.processWillTerminate( event, willBeDestroyed );
+            Project project = MosaicRunProfileState.this.runConfiguration.getProject();
+            CompilerManager.getInstance( project ).removeCompilationStatusListener( this.compilationStatusAdapter );
         }
+    }
 
+    private class MyCompilationStatusAdapter extends CompilationStatusAdapter
+    {
         @Override
-        public void processTerminated( ProcessEvent event )
+        public void compilationFinished( boolean aborted,
+                                         int errors,
+                                         int warnings,
+                                         @NotNull CompileContext compileContext )
         {
-            super.processTerminated( event );
+            if( !aborted && errors <= 0 )
+            {
+                Project project = compileContext.getProject();
+
+                // get list of compiled modules, and sorted list of all modules (depending before dependant in sorted list)
+                List<Module> affectedModules = asList( compileContext.getCompileScope().getAffectedModules() );
+                List<Module> modulesToBuild = new LinkedList<>( asList( ModuleManager.getInstance( project ).getSortedModules() ) );
+
+                // keep only modules that were compiled, but in a sorted way
+                Iterator<Module> iterator = modulesToBuild.iterator();
+                while( iterator.hasNext() )
+                {
+                    Module module = iterator.next();
+                    if( !affectedModules.contains( module ) )
+                    {
+                        iterator.remove();
+                    }
+                }
+
+                // build in background
+                BuildBundlesTaskFactory buildBundlesTaskFactory = BuildBundlesTaskFactory.getInstance( project );
+                Task.Backgroundable task = buildBundlesTaskFactory.createBuildBundlesTask( modulesToBuild );
+                ProgressManager.getInstance().run( task );
+            }
         }
     }
 }

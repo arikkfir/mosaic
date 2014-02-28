@@ -1,4 +1,4 @@
-package org.mosaic.development.idea.run;
+package org.mosaic.development.idea.run.impl;
 
 import com.intellij.openapi.options.ConfigurationException;
 import com.intellij.openapi.options.SettingsEditor;
@@ -10,6 +10,8 @@ import java.util.List;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import org.jetbrains.annotations.NotNull;
+import org.mosaic.development.idea.run.DeploymentUnit;
+import org.mosaic.development.idea.run.DeploymentUnitsManager;
 
 /**
  * @author arik
@@ -40,7 +42,8 @@ public class DeploymentSettingsEditor extends SettingsEditor<MosaicRunConfigurat
                                      {
                                          return deploymentUnit.getName();
                                      }
-                                 } );
+                                 }
+        );
 
         DeploymentUnit[] deploymentUnits = s.getDeploymentUnits();
         if( deploymentUnits != null )

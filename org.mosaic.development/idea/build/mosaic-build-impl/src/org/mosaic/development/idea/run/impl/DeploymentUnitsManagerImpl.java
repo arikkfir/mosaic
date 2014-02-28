@@ -1,6 +1,5 @@
-package org.mosaic.development.idea.run;
+package org.mosaic.development.idea.run.impl;
 
-import com.intellij.openapi.components.AbstractProjectComponent;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleManager;
 import com.intellij.openapi.project.Project;
@@ -11,19 +10,15 @@ import java.util.ArrayList;
 import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import org.mosaic.development.idea.facet.OsgiBundleFacet;
+import org.mosaic.development.idea.run.DeploymentUnit;
+import org.mosaic.development.idea.run.DeploymentUnitsManager;
 
 /**
  * @author arik
  */
-public class DeploymentUnitsManager extends AbstractProjectComponent
+public class DeploymentUnitsManagerImpl extends DeploymentUnitsManager
 {
-    @NotNull
-    public static DeploymentUnitsManager getInstance( @NotNull Project project )
-    {
-        return project.getComponent( DeploymentUnitsManager.class );
-    }
-
-    public DeploymentUnitsManager( Project project )
+    public DeploymentUnitsManagerImpl( Project project )
     {
         super( project );
     }
@@ -48,7 +43,7 @@ public class DeploymentUnitsManager extends AbstractProjectComponent
         LibraryTable projectLibTable = ProjectLibraryTable.getInstance( this.myProject );
         for( Library library : projectLibTable.getLibraries() )
         {
-            deploymentUnits.add( DeploymentUnit.projectLibrary( library ) );
+            deploymentUnits.add( DeploymentUnit.projectLibrary( this.myProject, library ) );
         }
 
         return deploymentUnits;

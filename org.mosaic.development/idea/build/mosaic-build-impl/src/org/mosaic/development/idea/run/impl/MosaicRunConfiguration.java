@@ -1,4 +1,4 @@
-package org.mosaic.development.idea.run;
+package org.mosaic.development.idea.run.impl;
 
 import com.intellij.diagnostic.logging.LogConfigurationPanel;
 import com.intellij.execution.ExecutionBundle;
@@ -8,6 +8,7 @@ import com.intellij.execution.JavaRunConfigurationExtensionManager;
 import com.intellij.execution.configurations.*;
 import com.intellij.execution.filters.TextConsoleBuilderFactory;
 import com.intellij.execution.runners.ExecutionEnvironment;
+import com.intellij.openapi.module.Module;
 import com.intellij.openapi.options.SettingsEditor;
 import com.intellij.openapi.options.SettingsEditorGroup;
 import com.intellij.openapi.project.Project;
@@ -19,14 +20,17 @@ import java.util.List;
 import org.jdom.Element;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.mosaic.development.idea.run.DeploymentUnit;
 import org.mosaic.development.idea.server.MosaicServer;
 import org.mosaic.development.idea.server.MosaicServerManager;
 
 /**
  * @author arik
  */
-public class MosaicRunConfiguration extends RunConfigurationBase
+public class MosaicRunConfiguration extends RunConfigurationBase implements RunProfileWithCompileBeforeLaunchOption
 {
+    private static final Module[] EMPTY_MODULES_ARRAY = new Module[ 0 ];
+
     private String serverName;
 
     private int jmxPort = 7040;
@@ -144,6 +148,33 @@ public class MosaicRunConfiguration extends RunConfigurationBase
         return state;
     }
 
+    @NotNull
+    @Override
+    public Module[] getModules()
+    {
+        if( this.deploymentUnits != null )
+        {
+            List<Module> modules = new LinkedList<>();
+            for( DeploymentUnit unit : this.deploymentUnits )
+            {
+                if( unit instanceof DeploymentUnit.ModuleDeploymentUnit )
+                {
+                    DeploymentUnit.ModuleDeploymentUnit moduleDeploymentUnit = ( DeploymentUnit.ModuleDeploymentUnit ) unit;
+                    Module module = moduleDeploymentUnit.getModule();
+                    if( module != null )
+                    {
+                        modules.add( module );
+                    }
+                }
+            }
+            return modules.toArray( new Module[ modules.size() ] );
+        }
+        else
+        {
+            return EMPTY_MODULES_ARRAY;
+        }
+    }
+
     @Override
     public void readExternal( Element element ) throws InvalidDataException
     {
@@ -172,7 +203,7 @@ public class MosaicRunConfiguration extends RunConfigurationBase
             for( Element unitElt : unitsElt.getChildren( "unit" ) )
             {
                 DeploymentUnit.Type type = DeploymentUnit.Type.valueOf( unitElt.getAttributeValue( "type" ) );
-                units.add( DeploymentUnit.unit( type, unitElt.getAttributeValue( "value" ) ) );
+                units.add( DeploymentUnit.unit( getProject(), type, unitElt.getAttributeValue( "value" ) ) );
             }
             this.deploymentUnits = units.toArray( new DeploymentUnit[ units.size() ] );
         }
