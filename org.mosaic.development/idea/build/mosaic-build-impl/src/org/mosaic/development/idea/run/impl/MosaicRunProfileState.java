@@ -23,6 +23,10 @@ import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.ProjectRootManager;
 import com.intellij.openapi.util.io.FileUtil;
+import com.intellij.openapi.vfs.LocalFileSystem;
+import com.intellij.openapi.vfs.VirtualFileAdapter;
+import com.intellij.openapi.vfs.VirtualFileEvent;
+import com.intellij.openapi.vfs.VirtualFileMoveEvent;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -37,6 +41,9 @@ import org.mosaic.development.idea.run.DeploymentUnit;
 import org.mosaic.development.idea.server.MosaicServer;
 import org.mosaic.development.idea.server.MosaicServerManager;
 
+import static com.intellij.openapi.util.io.FileUtil.copy;
+import static com.intellij.openapi.util.io.FileUtil.copyDirContent;
+import static com.intellij.openapi.vfs.VfsUtilCore.virtualToIoFile;
 import static java.util.Arrays.asList;
 import static java.util.Collections.addAll;
 
@@ -45,6 +52,8 @@ import static java.util.Collections.addAll;
  */
 public class MosaicRunProfileState extends JavaCommandLineState
 {
+    private static final Logger LOG = Logger.getInstance( MosaicRunProfileState.class );
+
     @NotNull
     private final MosaicRunConfiguration runConfiguration;
 
@@ -65,8 +74,10 @@ public class MosaicRunProfileState extends JavaCommandLineState
         final ProcessHandler processHandler = result.getProcessHandler();
         if( processHandler != null )
         {
-            processHandler.addProcessListener( new MosaicProcessAdapter( this.runConfiguration.getAppsLocation(),
-                                                                         this.runConfiguration.getEtcLocation() ) );
+            processHandler.addProcessListener(
+                    new MosaicProcessAdapter( this.runConfiguration.getAppsLocation(),
+                                              this.runConfiguration.getEtcLocation() )
+            );
         }
         return result;
     }
@@ -112,8 +123,8 @@ public class MosaicRunProfileState extends JavaCommandLineState
         {
             String srcAppsLocation = pathMacroManager.expandPath( this.runConfiguration.getAppsLocation() );
             String srcEtcLocation = pathMacroManager.expandPath( this.runConfiguration.getEtcLocation() );
-            FileUtil.copyDirContent( new File( srcAppsLocation ), getServerDir( runDir, "apps" ) );
-            FileUtil.copyDirContent( new File( srcEtcLocation ), getServerDir( runDir, "etc" ) );
+            copyDirContent( new File( srcAppsLocation ), getServerDir( runDir, "apps" ) );
+            copyDirContent( new File( srcEtcLocation ), getServerDir( runDir, "etc" ) );
         }
         catch( IOException e )
         {
@@ -260,19 +271,17 @@ public class MosaicRunProfileState extends JavaCommandLineState
     {
         private final MyCompilationStatusAdapter compilationStatusAdapter = new MyCompilationStatusAdapter();
 
-        @NotNull
-        private final Path srcAppsDir;
+        private final VirtualFileAdapter appsMonitor;
 
-        @NotNull
-        private final Path srcEtcDir;
+        private final VirtualFileAdapter etcMonitor;
 
-        private MosaicProcessAdapter( @NotNull String srcAppsDir, @NotNull String srcEtcDir )
+        private MosaicProcessAdapter( @NotNull String srcAppsDir, @NotNull String srcEtcDir ) throws CantRunException
         {
-            this.srcAppsDir = Paths.get( srcAppsDir );
-            this.srcEtcDir = Paths.get( srcEtcDir );
+            this.appsMonitor = new UserProvisioningMonitor( Paths.get( srcAppsDir ),
+                                                            new File( getServerLocation(), "apps" ).toPath() );
+            this.etcMonitor = new UserProvisioningMonitor( Paths.get( srcEtcDir ),
+                                                           new File( getServerLocation(), "etc" ).toPath() );
         }
-
-        // TODO: synchronize apps/etc locations
 
         @Override
         public void startNotified( ProcessEvent event )
@@ -280,12 +289,16 @@ public class MosaicRunProfileState extends JavaCommandLineState
             Project project = MosaicRunProfileState.this.runConfiguration.getProject();
             CompilerManager.getInstance( project ).addCompilationStatusListener( this.compilationStatusAdapter );
 
-
+            LocalFileSystem.getInstance().addVirtualFileListener( this.appsMonitor );
+            LocalFileSystem.getInstance().addVirtualFileListener( this.etcMonitor );
         }
 
         @Override
         public void processWillTerminate( ProcessEvent event, boolean willBeDestroyed )
         {
+            LocalFileSystem.getInstance().removeVirtualFileListener( this.appsMonitor );
+            LocalFileSystem.getInstance().removeVirtualFileListener( this.etcMonitor );
+
             Project project = MosaicRunProfileState.this.runConfiguration.getProject();
             CompilerManager.getInstance( project ).removeCompilationStatusListener( this.compilationStatusAdapter );
         }
@@ -322,6 +335,109 @@ public class MosaicRunProfileState extends JavaCommandLineState
                 BuildBundlesTaskFactory buildBundlesTaskFactory = BuildBundlesTaskFactory.getInstance( project );
                 Task.Backgroundable task = buildBundlesTaskFactory.createBuildBundlesTask( modulesToBuild );
                 ProgressManager.getInstance().run( task );
+            }
+        }
+    }
+
+    private class UserProvisioningMonitor extends VirtualFileAdapter
+    {
+        private final Path sourceDirectory;
+
+        private final Path targetDirectory;
+
+        public UserProvisioningMonitor( Path sourceDirectory, Path targetDirectory )
+        {
+            this.sourceDirectory = sourceDirectory;
+            this.targetDirectory = targetDirectory;
+        }
+
+        @Override
+        public void fileCreated( VirtualFileEvent event )
+        {
+            copyEventFile( event );
+        }
+
+        @Override
+        public void contentsChanged( VirtualFileEvent event )
+        {
+            copyEventFile( event );
+        }
+
+        @Override
+        public void fileDeleted( VirtualFileEvent event )
+        {
+            File deletedSourceFile = virtualToIoFile( event.getFile() );
+            File targetFileToDelete = getTargetFile( deletedSourceFile );
+            if( targetFileToDelete != null )
+            {
+                if( !targetFileToDelete.delete() )
+                {
+                    LOG.error( "Could not delete file '" + targetFileToDelete + "'" );
+                }
+            }
+        }
+
+        @Override
+        public void fileMoved( VirtualFileMoveEvent event )
+        {
+            // delete old file if its in source etc dir
+            File deletedFile = new File( virtualToIoFile( event.getOldParent() ), event.getFileName() );
+            File targetFileToDelete = getTargetFile( deletedFile );
+            if( targetFileToDelete != null )
+            {
+                if( !targetFileToDelete.delete() )
+                {
+                    LOG.error( "Could not delete file '" + targetFileToDelete + "'" );
+                }
+            }
+
+            // created / update new file if its in source etc dir
+            copyEventFile( event );
+        }
+
+        private void copyEventFile( VirtualFileEvent event )
+        {
+            File sourceFile = virtualToIoFile( event.getFile() );
+            File targetFile = getTargetFile( sourceFile );
+            if( targetFile != null )
+            {
+                try
+                {
+                    if( sourceFile.isDirectory() )
+                    {
+                        if( !targetFile.mkdirs() )
+                        {
+                            LOG.error( "Could not create directory '" + targetFile + "'" );
+                        }
+                        else
+                        {
+                            copyDirContent( sourceFile, targetFile );
+                        }
+                    }
+                    else
+                    {
+                        copy( sourceFile, targetFile );
+                    }
+                }
+                catch( IOException e )
+                {
+                    LOG.error( "Could not copy file '" + sourceFile + "' to '" + targetFile + "': " + e.getMessage(), e );
+                }
+            }
+        }
+
+        private File getTargetFile( File sourceFile )
+        {
+            String path = sourceFile.getAbsolutePath();
+            if( path.startsWith( this.sourceDirectory.toString() ) )
+            {
+                String relativePath = path.substring( this.sourceDirectory.toString().length() );
+                String newPath = this.targetDirectory.toString() + "/" + relativePath;
+                return new File( newPath );
+            }
+            else
+            {
+                return null;
             }
         }
     }
