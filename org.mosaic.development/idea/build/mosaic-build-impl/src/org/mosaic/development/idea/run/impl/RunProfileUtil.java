@@ -1,6 +1,5 @@
 package org.mosaic.development.idea.run.impl;
 
-import com.intellij.execution.configurations.ModuleRunProfile;
 import com.intellij.execution.configurations.RunProfile;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.AbstractProjectComponent;
@@ -41,11 +40,6 @@ public class RunProfileUtil extends AbstractProjectComponent
                 {
                     MosaicRunConfiguration mosaicRunConfiguration = ( MosaicRunConfiguration ) runProfile;
                     return asList( mosaicRunConfiguration.getModules() );
-                }
-                else if( runProfile instanceof ModuleRunProfile )
-                {
-                    ModuleRunProfile moduleRunProfile = ( ModuleRunProfile ) runProfile;
-                    return asList( moduleRunProfile.getModules() );
                 }
                 else
                 {
