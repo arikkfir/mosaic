@@ -93,6 +93,7 @@ public class MosaicRunProfileState extends JavaCommandLineState
         params.getVMParametersList().add( "-XX:-OmitStackTraceInFastThrow" );
         params.getVMParametersList().add( "-XX:+PrintCommandLineFlags" );
         params.getVMParametersList().add( "-XX:-UseSplitVerifier" );
+        params.getVMParametersList().addProperty( "dev", "true" );
         params.getVMParametersList().addProperty( "com.sun.management.jmxremote.port", this.runConfiguration.getJmxPort() + "" );
         params.getVMParametersList().addProperty( "com.sun.management.jmxremote.authenticate", "false" );
         params.getVMParametersList().addProperty( "networkaddress.cache.ttl", "0" );
