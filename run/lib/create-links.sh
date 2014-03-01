@@ -16,6 +16,7 @@ do
     ln -s ../../../org.mosaic.${s}/target/org.mosaic.${s}-${MOSAIC_VERSION}.jar org.mosaic.${s}.jar
 done
 popd
+ln -s ../../org.mosaic.demo/org.mosaic.demo.accounting/target/org.mosaic.demo.accounting-${MOSAIC_VERSION}.jar org.mosaic.demo.accounting.jar
 
 # create 3rd party links
 pushd thirdparty
