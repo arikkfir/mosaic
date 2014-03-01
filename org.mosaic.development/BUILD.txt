@@ -3,7 +3,7 @@
 3. Modify 'plugin.xml':
     a. Update version to the going-to-be-released version
     b. Update change notes
-    c. Commit changes.
+    c. Commit changes (comment: "[release] Prepare release <version>")
 4. In IntelliJ, invoke menu command "Build/Prepare all plugins for deployment"
 5. Modify 'plugin.xml' again:
     a. Update version back to a snapshot version
