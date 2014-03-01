@@ -7,6 +7,7 @@ import com.intellij.openapi.roots.OrderRootType;
 import com.intellij.openapi.roots.impl.libraries.ProjectLibraryTable;
 import com.intellij.openapi.roots.libraries.Library;
 import com.intellij.openapi.roots.libraries.LibraryTable;
+import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import java.io.File;
 import java.util.LinkedList;
@@ -128,7 +129,7 @@ public abstract class DeploymentUnit
                 List<String> paths = new LinkedList<>();
                 for( VirtualFile file : library.getFiles( OrderRootType.CLASSES ) )
                 {
-                    paths.add( file.getPath() );
+                    paths.add( VfsUtil.virtualToIoFile( file ).getAbsolutePath() );
                 }
                 return paths.toArray( new String[ paths.size() ] );
             }
