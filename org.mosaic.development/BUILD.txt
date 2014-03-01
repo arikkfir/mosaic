@@ -1,0 +1,13 @@
+1. Ensure no uncommitted changes exist
+2. Update the workspace and pull all possible changes
+3. Modify 'plugin.xml':
+    a. Update version to the going-to-be-released version
+    b. Update change notes
+    c. Commit changes.
+4. In IntelliJ, invoke menu command "Build/Prepare all plugins for deployment"
+5. Modify 'plugin.xml' again:
+    a. Update version back to a snapshot version
+    b. Update change notes (add new future version)
+    c. Commit changes
+6. Deploy plugin zip file and then remove it
+
