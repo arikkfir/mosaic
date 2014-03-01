@@ -65,7 +65,7 @@ public class DeploymentSettingsEditor extends SettingsEditor<MosaicRunConfigurat
         {
             if( this.unitsList.isItemSelected( i ) )
             {
-                units.add( ( DeploymentUnit ) this.unitsList.getItemAt( i ) );
+                units.add( this.unitsList.getItemAt( i ) );
             }
         }
         s.setDeploymentUnits( units.toArray( new DeploymentUnit[ units.size() ] ) );

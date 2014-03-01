@@ -8,15 +8,30 @@ import com.intellij.execution.JavaRunConfigurationExtensionManager;
 import com.intellij.execution.configurations.*;
 import com.intellij.execution.filters.TextConsoleBuilderFactory;
 import com.intellij.execution.runners.ExecutionEnvironment;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.options.SettingsEditor;
 import com.intellij.openapi.options.SettingsEditorGroup;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.InvalidDataException;
+import com.intellij.openapi.util.Pair;
 import com.intellij.openapi.util.WriteExternalException;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.jar.Attributes;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 import org.jdom.Element;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -29,6 +44,8 @@ import org.mosaic.development.idea.server.MosaicServerManager;
  */
 public class MosaicRunConfiguration extends RunConfigurationBase implements RunProfileWithCompileBeforeLaunchOption
 {
+    private static final Logger LOG = Logger.getInstance( MosaicRunConfiguration.class );
+
     private static final Module[] EMPTY_MODULES_ARRAY = new Module[ 0 ];
 
     private String serverName;
@@ -70,23 +87,21 @@ public class MosaicRunConfiguration extends RunConfigurationBase implements RunP
         {
             throw new RuntimeConfigurationError( "Please select a Mosaic server instance." );
         }
-        else
-        {
-            MosaicServer server = MosaicServerManager.getInstance().getServer( this.serverName );
-            if( server == null )
-            {
-                throw new RuntimeConfigurationError( "No such Mosaic server: " + this.serverName );
-            }
 
-            File location = new File( server.getLocation() );
-            if( !location.exists() )
-            {
-                throw new RuntimeConfigurationError( "Mosaic server directory at '" + location.getPath() + "' does not exist" );
-            }
-            else if( !location.isDirectory() )
-            {
-                throw new RuntimeConfigurationError( "Mosaic server directory at '" + location.getPath() + "' is not an actual directory" );
-            }
+        // check server
+        MosaicServer server = MosaicServerManager.getInstance().getServer( this.serverName );
+        if( server == null )
+        {
+            throw new RuntimeConfigurationError( "No such Mosaic server: " + this.serverName );
+        }
+        File serverLocation = new File( server.getLocation() );
+        if( !serverLocation.exists() )
+        {
+            throw new RuntimeConfigurationError( "Mosaic server directory at '" + serverLocation.getPath() + "' does not exist" );
+        }
+        else if( !serverLocation.isDirectory() )
+        {
+            throw new RuntimeConfigurationError( "Mosaic server directory at '" + serverLocation.getPath() + "' is not an actual directory" );
         }
 
         // if apps directory specified, check if it exists and is an actual directory
@@ -117,19 +132,80 @@ public class MosaicRunConfiguration extends RunConfigurationBase implements RunP
             }
         }
 
-        // WARNINGS - MUST BE CHECKED ONLY AFTER ABOVE "ERROR" CHECKS ARE DONE
-
         // if no apps dir specified, warn user about it
         if( this.appsLocation == null || this.appsLocation.trim().isEmpty() )
         {
-            throw new RuntimeConfigurationWarning( "Please select location of applications directory." );
+            throw new RuntimeConfigurationError( "Please select location of applications directory." );
         }
 
         // if no etc dir specified, warn user about it
         if( this.etcLocation == null || this.etcLocation.trim().isEmpty() )
         {
-            throw new RuntimeConfigurationWarning( "Please select location of configurations directory." );
+            throw new RuntimeConfigurationError( "Please select location of configurations directory." );
         }
+
+        // collect bundles in server
+        final Map<String, Set<String>> deployedVersions = new ConcurrentHashMap<>();
+        try
+        {
+            Files.walkFileTree( new File( serverLocation, "lib" ).toPath(), new SimpleFileVisitor<Path>()
+            {
+                @Override
+                @NotNull
+                public FileVisitResult visitFile( @NotNull Path file, @NotNull BasicFileAttributes attrs )
+                        throws IOException
+                {
+                    String lcName = file.getFileName().toString().toLowerCase();
+                    if( lcName.endsWith( ".jar" ) )
+                    {
+                        Pair<String, String> symbolicNameAndVersion = getBundleSymbolicNameAndVersion( file.toFile() );
+                        if( symbolicNameAndVersion != null )
+                        {
+                            String symbolicName = symbolicNameAndVersion.getFirst();
+                            if( !deployedVersions.containsKey( symbolicName ) )
+                            {
+                                deployedVersions.put( symbolicName, new ConcurrentSkipListSet<String>() );
+                            }
+                            deployedVersions.get( symbolicName ).add( symbolicNameAndVersion.getSecond() );
+                        }
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            } );
+        }
+        catch( IOException e )
+        {
+            LOG.warn( "Error while checking duplicate deployment of bundles to Mosaic: " + e.getMessage(), e );
+        }
+
+        // check if any deployed unit is already deployed in the server
+        if( this.deploymentUnits != null )
+        {
+            for( DeploymentUnit unit : this.deploymentUnits )
+            {
+                for( String path : unit.getFilePaths() )
+                {
+                    File file = new File( path );
+                    if( file.exists() )
+                    {
+                        Pair<String, String> symbolicNameAndVersion = getBundleSymbolicNameAndVersion( file );
+                        if( symbolicNameAndVersion != null )
+                        {
+                            Set<String> versions = deployedVersions.get( symbolicNameAndVersion.getFirst() );
+                            if( versions != null )
+                            {
+                                String name = symbolicNameAndVersion.getFirst() + ":" + symbolicNameAndVersion.getSecond();
+                                throw new RuntimeConfigurationError( "Bundle '" + name + "' is already deployed in server '" + this.serverName + "'" );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        //----------------------------------------------------------------------------------------
+        // WARNINGS - FOLLOWING CHECKS MUST BE DONE ONLY AFTER ABOVE "ERROR" CHECKS ARE DONE
+        //----------------------------------------------------------------------------------------
 
         // if no deployment units specified, warn user about it
         if( this.deploymentUnits == null || this.deploymentUnits.length == 0 )
@@ -173,6 +249,66 @@ public class MosaicRunConfiguration extends RunConfigurationBase implements RunP
         {
             return EMPTY_MODULES_ARRAY;
         }
+    }
+
+    public String getServerName()
+    {
+        return serverName;
+    }
+
+    public void setServerName( String serverName )
+    {
+        this.serverName = serverName;
+    }
+
+    public int getJmxPort()
+    {
+        return jmxPort;
+    }
+
+    public void setJmxPort( int jmxPort )
+    {
+        this.jmxPort = jmxPort;
+    }
+
+    public String getAppsLocation()
+    {
+        return appsLocation;
+    }
+
+    public void setAppsLocation( String appsLocation )
+    {
+        this.appsLocation = appsLocation;
+    }
+
+    public String getEtcLocation()
+    {
+        return etcLocation;
+    }
+
+    public void setEtcLocation( String etcLocation )
+    {
+        this.etcLocation = etcLocation;
+    }
+
+    public String getVmOptions()
+    {
+        return vmOptions;
+    }
+
+    public void setVmOptions( String vmOptions )
+    {
+        this.vmOptions = vmOptions;
+    }
+
+    public DeploymentUnit[] getDeploymentUnits()
+    {
+        return this.deploymentUnits;
+    }
+
+    public void setDeploymentUnits( DeploymentUnit[] deploymentUnits )
+    {
+        this.deploymentUnits = deploymentUnits;
     }
 
     @Override
@@ -238,63 +374,42 @@ public class MosaicRunConfiguration extends RunConfigurationBase implements RunP
         }
     }
 
-    public String getServerName()
+    private Pair<String, String> getBundleSymbolicNameAndVersion( @NotNull File file )
     {
-        return serverName;
-    }
-
-    public void setServerName( String serverName )
-    {
-        this.serverName = serverName;
-    }
-
-    public int getJmxPort()
-    {
-        return jmxPort;
-    }
-
-    public void setJmxPort( int jmxPort )
-    {
-        this.jmxPort = jmxPort;
-    }
-
-    public String getAppsLocation()
-    {
-        return appsLocation;
-    }
-
-    public void setAppsLocation( String appsLocation )
-    {
-        this.appsLocation = appsLocation;
-    }
-
-    public String getEtcLocation()
-    {
-        return etcLocation;
-    }
-
-    public void setEtcLocation( String etcLocation )
-    {
-        this.etcLocation = etcLocation;
-    }
-
-    public String getVmOptions()
-    {
-        return vmOptions;
-    }
-
-    public void setVmOptions( String vmOptions )
-    {
-        this.vmOptions = vmOptions;
-    }
-
-    public DeploymentUnit[] getDeploymentUnits()
-    {
-        return this.deploymentUnits;
-    }
-
-    public void setDeploymentUnits( DeploymentUnit[] deploymentUnits )
-    {
-        this.deploymentUnits = deploymentUnits;
+        JarFile jarFile = null;
+        try
+        {
+            jarFile = new JarFile( file );
+            Manifest manifest = jarFile.getManifest();
+            Attributes mainAttributes = manifest.getMainAttributes();
+            String symbolicName = mainAttributes.getValue( "Bundle-SymbolicName" );
+            if( symbolicName != null )
+            {
+                String version = mainAttributes.getValue( "Bundle-Version" );
+                if( version != null )
+                {
+                    return new Pair<>( symbolicName, version );
+                }
+            }
+            return null;
+        }
+        catch( IOException e )
+        {
+            LOG.warn( "Could not inspect file '" + file.getAbsolutePath() + "': " + e.getMessage(), e );
+            return null;
+        }
+        finally
+        {
+            if( jarFile != null )
+            {
+                try
+                {
+                    jarFile.close();
+                }
+                catch( IOException ignore )
+                {
+                }
+            }
+        }
     }
 }

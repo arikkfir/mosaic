@@ -45,7 +45,11 @@ public class DeploymentUnitsManagerImpl extends DeploymentUnitsManager
         LibraryTable projectLibTable = ProjectLibraryTable.getInstance( this.myProject );
         for( Library library : projectLibTable.getLibraries() )
         {
-            deploymentUnits.add( DeploymentUnit.projectLibrary( this.myProject, library ) );
+            String name = library.getName();
+            if( name == null || !name.startsWith( "Maven: org.mosaic:org.mosaic." ) )
+            {
+                deploymentUnits.add( DeploymentUnit.projectLibrary( this.myProject, library ) );
+            }
         }
 
         Collections.sort( deploymentUnits, new Comparator<DeploymentUnit>()
