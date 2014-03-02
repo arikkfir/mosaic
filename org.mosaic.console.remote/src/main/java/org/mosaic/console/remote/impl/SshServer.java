@@ -43,14 +43,7 @@ final class SshServer
     void configure( @Nonnull final MapEx<String, String> cfg )
     {
         LOG.info( "SSH server configured - {}", this.sshServer != null ? "restarting" : "starting" );
-        new Thread( new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                startSshServer( cfg );
-            }
-        }, "StartSshServer" ).start();
+        startSshServer( cfg );
     }
 
     @PreDestroy
