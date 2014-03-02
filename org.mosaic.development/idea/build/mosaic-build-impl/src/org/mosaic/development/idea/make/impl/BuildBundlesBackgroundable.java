@@ -18,6 +18,7 @@ import org.jetbrains.idea.maven.server.MavenEmbedderWrapper;
 import org.jetbrains.idea.maven.server.MavenServerExecutionResult;
 import org.jetbrains.idea.maven.server.MavenServerManager;
 import org.jetbrains.idea.maven.utils.MavenProcessCanceledException;
+import org.mosaic.development.idea.facet.OsgiBundleFacet;
 import org.mosaic.development.idea.messages.BundleMessageView;
 
 import static com.intellij.openapi.vfs.VfsUtil.findFileByIoFile;
@@ -89,7 +90,7 @@ final class BuildBundlesBackgroundable extends ModalityIgnorantBackgroundableTas
 
             // check that module is still a valid Maven module
             MavenProject mavenProject = MavenProjectsManager.getInstance( module.getProject() ).findProject( module );
-            if( mavenProject != null && shouldBuild( module ) )
+            if( mavenProject != null && shouldBuild( module, mavenProject ) )
             {
                 progressIndicator.setText( "Building bundle for module " + module.getName() );
                 MavenEmbedderWrapper embedder = MavenServerManager.getInstance().createEmbedder( module.getProject(), false );
@@ -184,11 +185,10 @@ final class BuildBundlesBackgroundable extends ModalityIgnorantBackgroundableTas
         }
     }
 
-    private boolean shouldBuild( @NotNull Module module )
+    private boolean shouldBuild( @NotNull Module module, @NotNull MavenProject mavenProject )
     {
-        // check that module is still a valid Maven module
-        MavenProject mavenProject = MavenProjectsManager.getInstance( module.getProject() ).findProject( module );
-        if( mavenProject == null )
+        OsgiBundleFacet facet = OsgiBundleFacet.getInstance( module );
+        if( facet == null )
         {
             return false;
         }
