@@ -36,6 +36,7 @@ import org.xml.sax.SAXException;
 
 /**
  * @author arik
+ * @todo support loading permission policies from modules (eg. a file named "/SECURITY-INF/<name>.xml" in a module)
  */
 @Component
 final class PermissionPolicyManager
