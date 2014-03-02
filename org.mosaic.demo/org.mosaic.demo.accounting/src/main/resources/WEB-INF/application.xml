@@ -1,13 +1,9 @@
 <?xml version="1.0"?>
 
-<application xmlns="http://www.mosaicserver.com/application-fragment-1.0.0"
-             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<application xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns="http://www.mosaicserver.com/application-fragment-1.0.0"
              xsi:schemaLocation="http://www.mosaicserver.com/application-fragment-1.0.0 http://www.mosaicserver.com/application-fragment-1.0.0"
              id="accounting">
-
-    <name>Mosaic Accounting Demo</name>
-
-    <max-session-age>1 hour, 30 minutes</max-session-age>
 
     <security>
 
