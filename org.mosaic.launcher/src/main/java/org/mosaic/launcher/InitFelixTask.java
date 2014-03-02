@@ -17,6 +17,7 @@ import static java.nio.file.Files.exists;
 import static java.util.Arrays.asList;
 import static org.apache.felix.framework.cache.BundleCache.CACHE_BUFSIZE_PROP;
 import static org.apache.felix.framework.util.FelixConstants.LOG_LEVEL_PROP;
+import static org.mosaic.launcher.EventsLogger.printEmphasizedInfoMessage;
 import static org.mosaic.launcher.SystemError.bootstrapError;
 import static org.mosaic.launcher.SystemPackages.getExtraSystemPackages;
 import static org.osgi.framework.Constants.*;
@@ -132,6 +133,9 @@ final class InitFelixTask extends InitTask
             // felix started!
             this.felix = felix;
             felix.start();
+
+            // started!
+            printEmphasizedInfoMessage( "MOSAIC STARTED!" );
         }
         catch( Exception e )
         {

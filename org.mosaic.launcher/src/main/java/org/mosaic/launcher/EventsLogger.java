@@ -14,7 +14,6 @@ final class EventsLogger
 
     private static final String SEPARATOR = "******************************************************************************";
 
-    @SuppressWarnings( "UnusedDeclaration" )
     public static void printEmphasizedInfoMessage( @Nonnull String message, @Nullable Object... args )
     {
         LOG.info( "" );
@@ -33,7 +32,6 @@ final class EventsLogger
         LOG.warn( "" );
     }
 
-    @SuppressWarnings( "UnusedDeclaration" )
     public static void printEmphasizedErrorMessage( @Nonnull String message, @Nullable Object... args )
     {
         LOG.error( "" );
