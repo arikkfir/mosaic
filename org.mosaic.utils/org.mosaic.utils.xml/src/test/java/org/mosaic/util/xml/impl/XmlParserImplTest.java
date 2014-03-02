@@ -1,4 +1,4 @@
-package org.mosaic.utils.xml.impl;
+package org.mosaic.util.xml.impl;
 
 /**
  * @author arik
