@@ -170,6 +170,31 @@ public final class Mosaic
         return work;
     }
 
+    public static void main( String[] args ) throws InterruptedException
+    {
+        if( Boolean.getBoolean( "dev" ) )
+        {
+            // sleep so that BundleScanner will think enough time has passed since their last modification
+            Thread.sleep( 1500 );
+        }
+
+        // ensure split verifier is not used
+        assertJvmSplitVerifierIsDisabled();
+
+        // install an exception handler for all threads that don't have an exception handler, that simply logs the exception
+        Thread.setDefaultUncaughtExceptionHandler( new Thread.UncaughtExceptionHandler()
+        {
+            @Override
+            public void uncaughtException( Thread t, Throwable e )
+            {
+                LOG.error( e.getMessage(), e );
+            }
+        } );
+
+        // start mosaic
+        start();
+    }
+
     static void start()
     {
         LOG.debug( "Starting Mosaic server" );
@@ -222,27 +247,9 @@ public final class Mosaic
         printEmphasizedWarnMessage( "Mosaic server is stopped" );
     }
 
-    public static void main( String[] args )
+    private static void assertJvmSplitVerifierIsDisabled()
     {
-        assertJvmSplitVerifierIsUsed();
-
-        // install an exception handler for all threads that don't have an exception handler, that simply logs the exception
-        Thread.setDefaultUncaughtExceptionHandler( new Thread.UncaughtExceptionHandler()
-        {
-            @Override
-            public void uncaughtException( Thread t, Throwable e )
-            {
-                LOG.error( e.getMessage(), e );
-            }
-        } );
-
-        // start mosaic
-        start();
-    }
-
-    private static void assertJvmSplitVerifierIsUsed()
-    {
-        LOG.debug( "Verifying JVM split-verifier is used (required for bytecode weaving)" );
+        LOG.debug( "Verifying JVM split-verifier is not used (conflicts with bytecode weaving)" );
         for( String arg : getRuntimeMXBean().getInputArguments() )
         {
             if( arg.contains( XX_USE_SPLIT_VERIFIER ) )
@@ -251,9 +258,9 @@ public final class Mosaic
             }
         }
         throw bootstrapError(
-                "The JVM split verifier argument has not been specified.\n" +
-                "The JVM split verifier is required to enable bytecode \n" +
-                "weaving by the Mosaic server.\n" +
+                "The JVM split verifier argument has not been disabled.\n" +
+                "The JVM split verifier conflicts with Mosaic's bytecode \n" +
+                "weaving.\n" +
                 "Please provide the argument to the JVM command line:\n" +
                 "    java ... {} ...",
                 XX_USE_SPLIT_VERIFIER
