@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+
+<application xmlns="http://www.mosaicserver.com/application-fragment-1.0.0"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://www.mosaicserver.com/application-fragment-1.0.0 http://www.mosaicserver.com/application-fragment-1.0.0"
+             id="accounting">
+
+    <name>Mosaic Accounting Demo</name>
+
+    <max-session-age>1 hour, 30 minutes</max-session-age>
+
+    <security>
+
+        <!-- protect API endpoints, -->
+        <constraint path="/api/**" auth="basic" challange="basic" expression="subject.authenticated"/>
+
+        <!-- as a last resort, always check the session for a subject, and use it, even for unprotected resources -->
+        <constraint path="/**" auth="session" challange="form"/>
+
+    </security>
+
+</application>
