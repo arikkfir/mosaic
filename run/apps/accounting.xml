@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+
+<application xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns="http://www.mosaicserver.com/application-1.0.0"
+             xsi:schemaLocation="http://www.mosaicserver.com/application-1.0.0 http://www.mosaicserver.com/application-1.0.0">
+
+    <name>Mosaic Accounting Demo</name>
+
+    <virtual-hosts>
+        <virtual-host>localhost</virtual-host>
+    </virtual-hosts>
+
+    <max-session-age>1 hour, 30 minutes</max-session-age>
+
+    <security>
+        <realm>localUsers</realm>
+        <permission-policy>localUsers</permission-policy>
+    </security>
+
+</application>
