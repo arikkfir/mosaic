@@ -1,4 +1,4 @@
-package org.mosaic.web.server.impl;
+package org.mosaic.web.server.impl.marshall;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -17,7 +17,7 @@ import org.mosaic.web.server.MessageMarshaller;
  * @author arik
  */
 @Service
-public class JsonMessageMarshaller implements MessageMarshaller
+final class JsonMessageMarshaller implements MessageMarshaller
 {
     private static final MediaType APPLICATION_JSON = MediaType.create( "application", "json" );
 

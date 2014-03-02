@@ -16,10 +16,7 @@ import javax.xml.validation.SchemaFactory;
 import org.joda.time.Period;
 import org.joda.time.format.PeriodFormatterBuilder;
 import org.mosaic.event.EventListener;
-import org.mosaic.modules.Component;
-import org.mosaic.modules.ModuleEvent;
-import org.mosaic.modules.ModuleEventType;
-import org.mosaic.modules.Service;
+import org.mosaic.modules.*;
 import org.mosaic.pathwatchers.OnPathCreated;
 import org.mosaic.pathwatchers.OnPathDeleted;
 import org.mosaic.pathwatchers.OnPathModified;
@@ -104,7 +101,6 @@ final class ApplicationManager
 
     ApplicationManager() throws IOException, SAXException
     {
-
         Path appSchemaFile = this.server.getHome().resolve( "schemas/application-1.0.0.xsd" );
         if( notExists( appSchemaFile ) )
         {
@@ -137,56 +133,37 @@ final class ApplicationManager
     void onModuleActivationChanged( @Nonnull ModuleEvent event )
     {
         ModuleEventType eventType = event.getEventType();
-        if( eventType == ModuleEventType.ACTIVATED || eventType == ModuleEventType.DEACTIVATING )
+        if( eventType == ModuleEventType.ACTIVATED )
         {
-            Optional<Path> resourceHolder;
-            try
+            Optional<Path> fileHolder = getModuleApplicationFile( event.getModule() );
+            if( fileHolder.isPresent() )
             {
-                resourceHolder = event.getModule().findResource( "/WEB-INF/application.xml" );
-            }
-            catch( IOException e )
-            {
-                LOG.error( "Could not inspect module '{}': {}", event.getModule(), e.getMessage(), e );
-                return;
-            }
+                Path file = fileHolder.get();
 
+                Optional<XmlElement> appEltHolder = getModuleApplicationXml( file );
+                if( appEltHolder.isPresent() )
+                {
+                    String id = appEltHolder.get().getAttribute( "id" ).get();
+
+                    ApplicationHolder application = this.applications.get( id );
+                    if( application == null )
+                    {
+                        application = new ApplicationHolder( id, this.applicationSchema, this.applicationFragmentSchema );
+                        this.applications.put( id, application );
+                    }
+                    application.addContributionFile( file );
+                }
+            }
+        }
+        else if( eventType == ModuleEventType.DEACTIVATING )
+        {
+            Optional<Path> resourceHolder = getModuleApplicationFile( event.getModule() );
             if( resourceHolder.isPresent() )
             {
                 Path file = resourceHolder.get();
-
-                XmlElement appElt;
-                try
+                for( ApplicationHolder appHolder : this.applications.values() )
                 {
-                    appElt = this.xmlParser.parse( file, this.applicationFragmentSchema ).getRoot();
-                }
-                catch( Throwable e )
-                {
-                    LOG.error( "Could not parse application fragment at '{}': {}", file, e.getMessage(), e );
-                    return;
-                }
-
-                Optional<String> idHolder = appElt.getAttribute( "id" );
-                if( idHolder.isPresent() )
-                {
-                    String id = idHolder.get();
-
-                    ApplicationHolder application = this.applications.get( id );
-                    if( eventType == ModuleEventType.ACTIVATED )
-                    {
-                        if( application == null )
-                        {
-                            application = new ApplicationHolder( id, this.applicationSchema, this.applicationFragmentSchema );
-                            this.applications.put( id, application );
-                        }
-                        application.addContributionFile( file );
-                    }
-                    else
-                    {
-                        if( application != null )
-                        {
-                            application.removeContributionFile( file );
-                        }
-                    }
+                    appHolder.removeContributionFile( file );
                 }
             }
         }
@@ -224,6 +201,34 @@ final class ApplicationManager
             catch( Throwable ignore )
             {
             }
+        }
+    }
+
+    @Nonnull
+    private Optional<XmlElement> getModuleApplicationXml( @Nonnull Path file )
+    {
+        try
+        {
+            return Optional.of( this.xmlParser.parse( file, this.applicationFragmentSchema ).getRoot() );
+        }
+        catch( Throwable e )
+        {
+            LOG.error( "Could not parse application fragment at '{}': {}", file, e.getMessage(), e );
+            return Optional.absent();
+        }
+    }
+
+    @Nonnull
+    private Optional<Path> getModuleApplicationFile( @Nonnull Module module )
+    {
+        try
+        {
+            return module.findResource( "/WEB-INF/application.xml" );
+        }
+        catch( IOException e )
+        {
+            LOG.error( "Could not inspect module '{}': {}", module, e.getMessage(), e );
+            return Optional.absent();
         }
     }
 }

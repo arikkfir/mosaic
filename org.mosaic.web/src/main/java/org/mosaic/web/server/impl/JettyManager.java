@@ -75,14 +75,7 @@ final class JettyManager
     void configure( @Nonnull final MapEx<String, String> cfg )
     {
         LOG.info( "Web server configured - {}", this.jettyServer != null ? "restarting" : "starting" );
-        new Thread( new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                startJettyServer( cfg );
-            }
-        }, "StartWebServer" ).start();
+        startJettyServer( cfg );
     }
 
     @PreDestroy
@@ -93,14 +86,7 @@ final class JettyManager
         if( server != null )
         {
             LOG.info( "Web module is deactivating" );
-            new Thread( new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    stopJettyServer( server );
-                }
-            }, "StopWebServer" ).start();
+            stopJettyServer( server );
         }
     }
 

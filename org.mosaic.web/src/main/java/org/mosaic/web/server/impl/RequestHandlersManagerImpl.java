@@ -28,6 +28,8 @@ final class RequestHandlersManagerImpl
     @Nonnull
     List<RequestHandler> findRequestHandlers( @Nonnull WebInvocation request )
     {
+        // TODO: request handlers lookup will need performance improvements
+
         List<RequestHandler> handlers = null;
         for( ServiceReference<RequestHandler> reference : this.requestHandlers )
         {
@@ -95,6 +97,8 @@ final class RequestHandlersManagerImpl
     @Nonnull
     List<RequestInterceptor> findInterceptors( @Nonnull WebInvocation request, @Nonnull RequestHandler requestHandler )
     {
+        // TODO: request interceptors lookup will need performance improvements
+
         List<RequestInterceptor> interceptors = null;
         for( ServiceReference<RequestInterceptor> reference : this.interceptors )
         {

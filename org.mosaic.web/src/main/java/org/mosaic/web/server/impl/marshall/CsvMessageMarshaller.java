@@ -1,4 +1,4 @@
-package org.mosaic.web.server.impl;
+package org.mosaic.web.server.impl.marshall;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
@@ -17,7 +17,7 @@ import org.mosaic.web.server.MessageMarshaller;
  * @author arik
  */
 @Service
-public class CsvMessageMarshaller implements MessageMarshaller
+final class CsvMessageMarshaller implements MessageMarshaller
 {
     private static final MediaType APPLICATION_CSV = MediaType.create( "application", "csv" );
 

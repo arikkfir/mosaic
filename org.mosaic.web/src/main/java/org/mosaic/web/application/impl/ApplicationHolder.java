@@ -1,9 +1,6 @@
 package org.mosaic.web.application.impl;
 
 import com.google.common.base.Optional;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -23,8 +20,6 @@ import org.mosaic.util.collections.MapEx;
 import org.mosaic.util.collections.UnmodifiableMapEx;
 import org.mosaic.util.properties.PropertyPlaceholderResolver;
 import org.mosaic.util.resource.PathMatcher;
-import org.mosaic.util.resource.PathWatcher;
-import org.mosaic.util.resource.support.PathWatcherAdapter;
 import org.mosaic.util.xml.XmlDocument;
 import org.mosaic.util.xml.XmlElement;
 import org.mosaic.util.xml.XmlParser;
@@ -48,8 +43,6 @@ final class ApplicationHolder
     private static final String UNKNOWN_REALM_NAME = "org.mosaic.security.realm.unknown";
 
     private static final String UNKNOWN_PERMISSION_POLICY_NAME = "org.mosaic.security.permissionPolicies.unknown";
-
-    private static final Application.ApplicationResource UNKNOWN_RESOURCE = new UnknownApplicationResource();
 
     @Nonnull
     private final Schema applicationSchema;
@@ -88,12 +81,6 @@ final class ApplicationHolder
     @Nullable
     private ServiceRegistration<Application> registration;
 
-    @Nullable
-    private ApplicationImpl application;
-
-    @Nullable
-    private Collection<ServiceRegistration<PathWatcher>> watcherRegistrations;
-
     ApplicationHolder( @Nonnull String id,
                        @Nonnull Schema applicationSchema,
                        @Nonnull Schema applicationFragmentSchema )
@@ -127,15 +114,15 @@ final class ApplicationHolder
         updateApplication();
     }
 
-    private void updateApplication()
+    private synchronized void updateApplication()
     {
         // parse all application files
-        List<XmlElement> xmlElements = new LinkedList<>();
+        Map<Path, XmlElement> xmlElements = new LinkedHashMap<>();
         for( Path file : ApplicationHolder.this.contributionFiles )
         {
             try
             {
-                xmlElements.add( parse( file, ApplicationHolder.this.applicationFragmentSchema ) );
+                xmlElements.put( file, parse( file, ApplicationHolder.this.applicationFragmentSchema ) );
             }
             catch( Throwable e )
             {
@@ -147,7 +134,7 @@ final class ApplicationHolder
         {
             try
             {
-                xmlElements.add( parse( file, ApplicationHolder.this.applicationSchema ) );
+                xmlElements.put( file, parse( file, ApplicationHolder.this.applicationSchema ) );
             }
             catch( Throwable e )
             {
@@ -175,67 +162,11 @@ final class ApplicationHolder
             }
 
             unregisterApplication();
-
-            this.application = application;
             this.registration = this.module.register( Application.class, application, Property.property( "id", this.id ) );
-        }
-
-        // unregister previous content root watchers
-        Collection<ServiceRegistration<PathWatcher>> watcherRegistrations = this.watcherRegistrations;
-        if( watcherRegistrations != null )
-        {
-            for( ServiceRegistration<PathWatcher> registration : watcherRegistrations )
-            {
-                registration.unregister();
-            }
-        }
-        this.watcherRegistrations = null;
-
-        // re-register content root watchers
-        if( this.application != null )
-        {
-            watcherRegistrations = new LinkedList<>();
-            for( Path contentRoot : this.application.contentRoots )
-            {
-                try
-                {
-                    watcherRegistrations.add( this.module.register(
-                            PathWatcher.class,
-                            new PathWatcherAdapter()
-                            {
-                                @Override
-                                public void pathModified( @Nonnull Path path, @Nonnull MapEx<String, Object> context )
-                                {
-                                    ApplicationImpl app = ApplicationHolder.this.application;
-                                    if( app != null )
-                                    {
-                                        app.resourceCache.invalidateAll();
-                                    }
-                                }
-
-                                @Override
-                                public void pathDeleted( @Nonnull Path path, @Nonnull MapEx<String, Object> context )
-                                {
-                                    ApplicationImpl app = ApplicationHolder.this.application;
-                                    if( app != null )
-                                    {
-                                        app.resourceCache.invalidateAll();
-                                    }
-                                }
-                            },
-                            Property.property( "location", contentRoot ) )
-                    );
-                }
-                catch( Exception e )
-                {
-                    LOG.warn( "Could not register content root watcher for '{}' at '{}': {}", this.id, contentRoot, e.getMessage(), e );
-                }
-            }
-            this.watcherRegistrations = watcherRegistrations;
         }
     }
 
-    private void unregisterApplication()
+    private synchronized void unregisterApplication()
     {
         ServiceRegistration<Application> appRegistration = this.registration;
         if( appRegistration != null )
@@ -243,7 +174,6 @@ final class ApplicationHolder
             appRegistration.unregister();
             this.registration = null;
         }
-        this.application = null;
     }
 
     @Nonnull
@@ -281,10 +211,7 @@ final class ApplicationHolder
         @Nonnull
         private final Set<Path> contentRoots;
 
-        @Nonnull
-        private final LoadingCache<String, ApplicationResource> resourceCache;
-
-        private ApplicationImpl( List<XmlElement> xmlElements )
+        private ApplicationImpl( Map<Path, XmlElement> xmlElements )
                 throws IOException, SAXException, ParserConfigurationException, XPathException
         {
             String[] idTokens = StringUtils.splitByCharacterTypeCamelCase( ApplicationHolder.this.id );
@@ -304,8 +231,11 @@ final class ApplicationHolder
             String permissionPolicyName = UNKNOWN_PERMISSION_POLICY_NAME;
             Set<Path> contentRoots = new LinkedHashSet<>();
 
-            for( XmlElement appElt : xmlElements )
+            for( Map.Entry<Path, XmlElement> entry : xmlElements.entrySet() )
             {
+                Path file = entry.getKey();
+                XmlElement appElt = entry.getValue();
+
                 Optional<String> nameValue = appElt.find( "m:name", STRING );
                 if( nameValue.isPresent() )
                 {
@@ -339,6 +269,11 @@ final class ApplicationHolder
                 {
                     contentRoots.add( Paths.get( PROPERTY_PLACEHOLDER_RESOLVER.resolve( contentRootPath ) ).normalize().toAbsolutePath() );
                 }
+
+                if( file.toString().equals( "/WEB-INF/application.xml" ) )
+                {
+                    contentRoots.add( file.getParent() );
+                }
             }
             // parse period *before* applying changes, to make sure everything is valid
             Period maxSessionAge = ApplicationManager.parsePeriod( maxSessionAgeString );
@@ -351,42 +286,6 @@ final class ApplicationHolder
             this.permissionPolicyName = permissionPolicyName;
             this.securityConstraints = Collections.unmodifiableSet( securityConstraints );
             this.contentRoots = Collections.unmodifiableSet( contentRoots );
-
-            this.resourceCache = CacheBuilder.from( "concurrencyLevel=100," +
-                                                    "initialCapacity=1000," +
-                                                    "maximumSize=1000000" ).build( new CacheLoader<String, ApplicationResource>()
-            {
-                @Nonnull
-                @Override
-                public ApplicationResource load( @Nonnull String path ) throws Exception
-                {
-                    if( path.startsWith( "/" ) )
-                    {
-                        path = path.substring( 1 );
-                    }
-
-                    Path p = Paths.get( path );
-                    if( p.isAbsolute() )
-                    {
-                        return UNKNOWN_RESOURCE;
-                    }
-                    else if( !p.toString().isEmpty() )
-                    {
-                        p = p.normalize();
-                    }
-
-                    for( Path contentRoot : ApplicationImpl.this.contentRoots )
-                    {
-                        Path resolved = contentRoot.resolve( p ).toAbsolutePath().normalize();
-                        if( exists( resolved ) )
-                        {
-                            return new ApplicationResourceImpl( contentRoot, resolved );
-                        }
-                    }
-
-                    return UNKNOWN_RESOURCE;
-                }
-            } );
         }
 
         @Nonnull
@@ -442,8 +341,33 @@ final class ApplicationHolder
         @Override
         public ApplicationResource getResource( @Nonnull String path )
         {
-            ApplicationResource resource = this.resourceCache.getUnchecked( path );
-            return resource == UNKNOWN_RESOURCE ? null : resource;
+            // TODO: cache application resources
+
+            if( path.startsWith( "/" ) )
+            {
+                path = path.substring( 1 );
+            }
+
+            Path p = Paths.get( path );
+            if( p.isAbsolute() )
+            {
+                return null;
+            }
+            else if( !p.toString().isEmpty() )
+            {
+                p = p.normalize();
+            }
+
+            for( Path contentRoot : ApplicationImpl.this.contentRoots )
+            {
+                Path resolved = contentRoot.resolve( p ).toAbsolutePath().normalize();
+                if( exists( resolved ) )
+                {
+                    return new ApplicationResourceImpl( contentRoot, resolved );
+                }
+            }
+
+            return null;
         }
 
         @Nonnull
@@ -472,35 +396,6 @@ final class ApplicationHolder
                 }
             }
             return null;
-        }
-    }
-
-    private static class UnknownApplicationResource implements Application.ApplicationResource
-    {
-        @Nonnull
-        @Override
-        public Path getPath()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean isCompressionEnabled()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean isBrowsingEnabled()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Nullable
-        @Override
-        public Period getCachePeriod()
-        {
-            throw new UnsupportedOperationException();
         }
     }
 }

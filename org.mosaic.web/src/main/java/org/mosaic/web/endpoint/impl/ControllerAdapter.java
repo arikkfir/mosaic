@@ -25,7 +25,7 @@ import static org.mosaic.util.reflection.TypeTokens.BOOLEAN;
  * @author arik
  */
 @Adapter(RequestHandler.class)
-final class ControllerAdapter implements SecuredRequestHandler, ServicePropertiesProvider
+final class ControllerAdapter implements RequestHandler, org.mosaic.web.server.Secured, ServicePropertiesProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger( ControllerAdapter.class );
 

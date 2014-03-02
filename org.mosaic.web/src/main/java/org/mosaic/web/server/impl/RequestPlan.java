@@ -273,10 +273,10 @@ public final class RequestPlan implements Runnable
 
         private MergedSecurityConstraint()
         {
-            if( RequestPlan.this.requestHandler instanceof SecuredRequestHandler )
+            if( RequestPlan.this.requestHandler instanceof Secured )
             {
-                SecuredRequestHandler securedRequestHandler = ( SecuredRequestHandler ) RequestPlan.this.requestHandler;
-                this.handlerSecurityConstraint = securedRequestHandler.getSecurityConstraint( RequestPlan.this.request );
+                Secured secured = ( Secured ) RequestPlan.this.requestHandler;
+                this.handlerSecurityConstraint = secured.getSecurityConstraint( RequestPlan.this.request );
             }
             else
             {
