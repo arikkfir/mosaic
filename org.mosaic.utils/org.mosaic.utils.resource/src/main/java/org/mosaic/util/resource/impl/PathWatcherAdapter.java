@@ -6,7 +6,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -53,79 +52,6 @@ final class PathWatcherAdapter
         this.pathMatcher = pathMatcher;
         this.watcher = pathWatcher;
         setProperties( reference );
-    }
-
-    @Nonnull
-    Path getLocation()
-    {
-        return this.location;
-    }
-
-    void setProperties( @Nonnull final ServiceReference<PathWatcher> reference )
-    {
-        Object location = reference.getProperty( "location" );
-        if( location == null )
-        {
-            throw new IllegalArgumentException( "Path watcher '" + this.watcher + "' did not provide a value for 'location' property" );
-        }
-        else if( location instanceof Path )
-        {
-            this.location = ( ( Path ) location ).toAbsolutePath().normalize();
-        }
-        else
-        {
-            PropertyPlaceholderResolver resolver = new PropertyPlaceholderResolver( new PropertyPlaceholderResolver.Resolver()
-            {
-                @Nullable
-                @Override
-                public String resolve( @Nonnull String propertyName )
-                {
-                    Bundle bundle = reference.getBundle();
-                    if( bundle != null )
-                    {
-                        BundleContext bundleContext = bundle.getBundleContext();
-                        if( bundleContext != null )
-                        {
-                            String value = bundleContext.getProperty( propertyName );
-                            if( value != null )
-                            {
-                                return value;
-                            }
-                        }
-                    }
-                    return System.getProperty( propertyName );
-                }
-            } );
-            this.location = Paths.get( resolver.resolve( location.toString() ) );
-        }
-
-        this.pattern = Objects.toString( reference.getProperty( "pattern" ), null );
-        this.knownTimes.clear();
-    }
-
-    void scanStarted( @Nonnull MapEx<String, Object> context )
-    {
-        try
-        {
-            this.watcher.scanStarted( context );
-        }
-        catch( Exception e )
-        {
-            scanError( this.location, context, e );
-        }
-    }
-
-    void scanError( @Nonnull Path path, @Nonnull MapEx<String, Object> context, @Nonnull Throwable e )
-    {
-        try
-        {
-            this.watcher.scanError( path, context, e );
-        }
-        catch( Exception e1 )
-        {
-            LOG.error( "Path watcher '{}' threw an exception while processing scan-error event of '{}': {}",
-                       this.watcher, path, e1.getMessage(), e1 );
-        }
     }
 
     public void visitFile( @Nonnull Path path, @Nonnull MapEx<String, Object> context )
@@ -180,6 +106,81 @@ final class PathWatcherAdapter
             {
                 scanError( path, context, e );
             }
+        }
+    }
+
+    @Nonnull
+    Path getLocation()
+    {
+        return this.location;
+    }
+
+    void setProperties( @Nonnull final ServiceReference<PathWatcher> reference )
+    {
+        PropertyPlaceholderResolver resolver = new PropertyPlaceholderResolver( new PropertyPlaceholderResolver.Resolver()
+        {
+            @Nullable
+            @Override
+            public String resolve( @Nonnull String propertyName )
+            {
+                Bundle bundle = reference.getBundle();
+                if( bundle != null )
+                {
+                    BundleContext bundleContext = bundle.getBundleContext();
+                    if( bundleContext != null )
+                    {
+                        String value = bundleContext.getProperty( propertyName );
+                        if( value != null )
+                        {
+                            return value;
+                        }
+                    }
+                }
+                return System.getProperty( propertyName );
+            }
+        } );
+
+        Object location = reference.getProperty( "location" );
+        if( location == null )
+        {
+            throw new IllegalArgumentException( "Path watcher '" + this.watcher + "' did not provide a value for 'location' property" );
+        }
+        else if( location instanceof Path )
+        {
+            this.location = ( ( Path ) location ).toAbsolutePath().normalize();
+        }
+        else
+        {
+            this.location = Paths.get( resolver.resolve( location.toString() ) );
+        }
+
+        Object pattern = reference.getProperty( "pattern" );
+        this.pattern = pattern == null ? null : resolver.resolve( pattern.toString() );
+        this.knownTimes.clear();
+    }
+
+    void scanStarted( @Nonnull MapEx<String, Object> context )
+    {
+        try
+        {
+            this.watcher.scanStarted( context );
+        }
+        catch( Exception e )
+        {
+            scanError( this.location, context, e );
+        }
+    }
+
+    void scanError( @Nonnull Path path, @Nonnull MapEx<String, Object> context, @Nonnull Throwable e )
+    {
+        try
+        {
+            this.watcher.scanError( path, context, e );
+        }
+        catch( Exception e1 )
+        {
+            LOG.error( "Path watcher '{}' threw an exception while processing scan-error event of '{}': {}",
+                       this.watcher, path, e1.getMessage(), e1 );
         }
     }
 
