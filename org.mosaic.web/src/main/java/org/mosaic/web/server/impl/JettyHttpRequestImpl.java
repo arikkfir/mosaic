@@ -51,7 +51,7 @@ final class JettyHttpRequestImpl implements HttpRequest
     JettyHttpRequestImpl( @Nonnull Request request )
     {
         this.request = request;
-        this.httpMethod = this.request.getMethod().toUpperCase();
+        this.httpMethod = this.request.getMethod().toLowerCase();
         this.uri = new HttpRequestUriImpl();
         this.headers = new Headers( this.request.getHttpFields() );
     }

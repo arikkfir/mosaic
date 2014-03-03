@@ -1,12 +1,12 @@
 package org.mosaic.web.server.impl;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Splitter;
 import java.util.*;
 import javax.annotation.Nonnull;
 import org.mosaic.modules.Component;
 import org.mosaic.modules.Service;
 import org.mosaic.modules.ServiceReference;
-import org.mosaic.util.reflection.TypeTokens;
 import org.mosaic.web.server.RequestHandler;
 import org.mosaic.web.server.RequestInterceptor;
 import org.mosaic.web.server.WebInvocation;
@@ -17,6 +17,9 @@ import org.mosaic.web.server.WebInvocation;
 @Component
 final class RequestHandlersManagerImpl
 {
+
+    private static final Splitter METHODS_SPLITTER = Splitter.on( "," ).trimResults().omitEmptyStrings();
+
     @Nonnull
     @Service
     private List<ServiceReference<RequestHandler>> requestHandlers;
@@ -33,10 +36,11 @@ final class RequestHandlersManagerImpl
         List<RequestHandler> handlers = null;
         for( ServiceReference<RequestHandler> reference : this.requestHandlers )
         {
-            Optional<List<String>> methodsHolder = reference.getProperties().find( "methods", TypeTokens.STRING_LIST );
+            Optional<String> methodsHolder = reference.getProperties().find( "methods", String.class );
             if( methodsHolder.isPresent() )
             {
-                if( methodsHolder.get().contains( request.getHttpRequest().getMethod() ) )
+                List<String> methods = METHODS_SPLITTER.splitToList( methodsHolder.get() );
+                if( methods.contains( request.getHttpRequest().getMethod() ) )
                 {
                     Optional<RequestHandler> holder = reference.service();
                     if( holder.isPresent() )
@@ -69,11 +73,10 @@ final class RequestHandlersManagerImpl
                 RequestHandler requestHandler = holder.get();
                 if( requestHandler.canHandle( request ) )
                 {
-                    Optional<List<String>> methodsHolder = reference.getProperties().find( "methods", TypeTokens.STRING_LIST );
+                    Optional<String> methodsHolder = reference.getProperties().find( "methods", String.class );
                     if( methodsHolder.isPresent() )
                     {
-                        List<String> methods = methodsHolder.get();
-                        for( String method : methods )
+                        for( String method : METHODS_SPLITTER.splitToList( methodsHolder.get() ) )
                         {
                             if( handlers == null )
                             {
@@ -102,10 +105,11 @@ final class RequestHandlersManagerImpl
         List<RequestInterceptor> interceptors = null;
         for( ServiceReference<RequestInterceptor> reference : this.interceptors )
         {
-            Optional<List<String>> methodsHolder = reference.getProperties().find( "methods", TypeTokens.STRING_LIST );
+            Optional<String> methodsHolder = reference.getProperties().find( "methods", String.class );
             if( methodsHolder.isPresent() )
             {
-                if( methodsHolder.get().contains( request.getHttpRequest().getMethod() ) )
+                List<String> methods = METHODS_SPLITTER.splitToList( methodsHolder.get() );
+                if( methods.contains( request.getHttpRequest().getMethod() ) )
                 {
                     Optional<RequestInterceptor> holder = reference.service();
                     if( holder.isPresent() )

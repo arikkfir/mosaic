@@ -1,5 +1,6 @@
 package org.mosaic.web.endpoint.impl;
 
+import com.google.common.base.Joiner;
 import java.lang.annotation.Annotation;
 import java.util.*;
 import javax.annotation.Nonnull;
@@ -68,7 +69,7 @@ final class TypedInterceptorAdapter implements RequestInterceptor, ServiceProper
         {
             if( annotation.annotationType().isAnnotationPresent( HttpMethodMarker.class ) )
             {
-                httpMethods.add( annotation.annotationType().getSimpleName().toUpperCase() );
+                httpMethods.add( annotation.annotationType().getSimpleName().toLowerCase() );
             }
         }
         this.httpMethods = httpMethods;
@@ -88,7 +89,7 @@ final class TypedInterceptorAdapter implements RequestInterceptor, ServiceProper
     @Override
     public void addProperties( @Nonnull Dictionary<String, Object> properties )
     {
-        properties.put( "methods", new LinkedList<>( this.httpMethods ) );
+        properties.put( "methods", Joiner.on( "," ).join( this.httpMethods ) );
     }
 
     @Override

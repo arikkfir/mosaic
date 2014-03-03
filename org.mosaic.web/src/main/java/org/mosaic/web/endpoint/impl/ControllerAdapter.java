@@ -1,5 +1,6 @@
 package org.mosaic.web.endpoint.impl;
 
+import com.google.common.base.Joiner;
 import java.lang.annotation.Annotation;
 import java.util.*;
 import javax.annotation.Nonnull;
@@ -24,7 +25,7 @@ import static org.mosaic.util.reflection.TypeTokens.BOOLEAN;
 /**
  * @author arik
  */
-@Adapter(RequestHandler.class)
+@Adapter( RequestHandler.class )
 final class ControllerAdapter implements RequestHandler, org.mosaic.web.server.Secured, ServicePropertiesProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger( ControllerAdapter.class );
@@ -75,7 +76,7 @@ final class ControllerAdapter implements RequestHandler, org.mosaic.web.server.S
         {
             if( annotation.annotationType().isAnnotationPresent( HttpMethodMarker.class ) )
             {
-                httpMethods.add( annotation.annotationType().getSimpleName().toUpperCase() );
+                httpMethods.add( annotation.annotationType().getSimpleName().toLowerCase() );
             }
         }
         this.httpMethods = httpMethods;
@@ -94,7 +95,7 @@ final class ControllerAdapter implements RequestHandler, org.mosaic.web.server.S
     @Override
     public void addProperties( @Nonnull Dictionary<String, Object> properties )
     {
-        properties.put( "methods", new LinkedList<>( this.httpMethods ) );
+        properties.put( "methods", Joiner.on( "," ).join( this.httpMethods ) );
     }
 
     @Nullable

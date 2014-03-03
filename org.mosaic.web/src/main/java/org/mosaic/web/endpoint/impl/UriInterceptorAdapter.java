@@ -1,5 +1,6 @@
 package org.mosaic.web.endpoint.impl;
 
+import com.google.common.base.Joiner;
 import java.lang.annotation.Annotation;
 import java.util.*;
 import javax.annotation.Nonnull;
@@ -21,7 +22,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author arik
  */
-@Adapter( RequestInterceptor.class )
+@Adapter(RequestInterceptor.class)
 final class UriInterceptorAdapter implements RequestInterceptor, ServicePropertiesProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger( UriInterceptorAdapter.class );
@@ -67,7 +68,7 @@ final class UriInterceptorAdapter implements RequestInterceptor, ServiceProperti
         {
             if( annotation.annotationType().isAnnotationPresent( HttpMethodMarker.class ) )
             {
-                httpMethods.add( annotation.annotationType().getSimpleName().toUpperCase() );
+                httpMethods.add( annotation.annotationType().getSimpleName().toLowerCase() );
             }
         }
         this.httpMethods = httpMethods;
@@ -87,7 +88,7 @@ final class UriInterceptorAdapter implements RequestInterceptor, ServiceProperti
     @Override
     public void addProperties( @Nonnull Dictionary<String, Object> properties )
     {
-        properties.put( "methods", new LinkedList<>( this.httpMethods ) );
+        properties.put( "methods", Joiner.on( "," ).join( this.httpMethods ) );
     }
 
     @Override
