@@ -54,7 +54,7 @@ public final class PropertyPlaceholderResolver
                     return bundleContext.getProperty( propertyName );
                 }
             }
-            return null;
+            return System.getProperty( propertyName );
         }
     }
 
