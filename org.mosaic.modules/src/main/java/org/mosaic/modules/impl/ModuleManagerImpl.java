@@ -120,23 +120,6 @@ final class ModuleManagerImpl implements ModuleManager
                 handleBundleEvent( event );
             }
         } );
-
-        // start all bundles
-        for( Bundle bundle : bundleContext.getBundles() )
-        {
-            if( bundle.getState() == Bundle.INSTALLED || bundle.getState() == Bundle.RESOLVED )
-            {
-                try
-                {
-                    bundle.start();
-                }
-                catch( BundleException e )
-                {
-                    LOG.error( "Could not start {}@{}[{}]: {}",
-                               bundle.getSymbolicName(), bundle.getVersion(), bundle.getBundleId(), e.getMessage(), e );
-                }
-            }
-        }
     }
 
     void close( @Nonnull BundleContext bundleContext )
