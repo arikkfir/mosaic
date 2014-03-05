@@ -19,6 +19,18 @@ import static java.util.Arrays.asList;
  */
 final class ModulePath implements Path
 {
+    public static void main( String[] args )
+    {
+        Path path = Paths.get( "/a/b" );
+        System.out.println( "'" + path + "' (" + System.identityHashCode( path ) + ")" );
+        System.out.println( path.isAbsolute() );
+        System.out.println( path.getNameCount() );
+        System.out.println( path.getRoot() );
+        System.out.println( path.getParent() );
+        System.out.println( "'" + path.getFileName() + "' (" + System.identityHashCode( path.getFileName() ) + ")" );
+        System.out.println( path.toUri() );
+    }
+
     @Nonnull
     private final ModuleFileSystem fileSystem;
 
@@ -107,18 +119,6 @@ final class ModulePath implements Path
                 this.fileName = this.fileSystem.getPath( this.tokens.get( this.tokens.size() - 1 ) );
             }
         }
-    }
-
-    public static void main( String[] args )
-    {
-        Path path = Paths.get( "/a/b" );
-        System.out.println( "'" + path + "' (" + System.identityHashCode( path ) + ")" );
-        System.out.println( path.isAbsolute() );
-        System.out.println( path.getNameCount() );
-        System.out.println( path.getRoot() );
-        System.out.println( path.getParent() );
-        System.out.println( "'" + path.getFileName() + "' (" + System.identityHashCode( path.getFileName() ) + ")" );
-        System.out.println( path.toUri() );
     }
 
     @Nonnull
@@ -526,7 +526,7 @@ final class ModulePath implements Path
     {
         int result = this.fileSystem.hashCode();
         result = 31 * result + this.tokens.hashCode();
-        result = 31 * result + ( this.root != null ? this.root.hashCode() : 0 );
+        result = 31 * result + ( this.root != null && this.root != this ? this.root.hashCode() : 0 );
         return result;
     }
 
