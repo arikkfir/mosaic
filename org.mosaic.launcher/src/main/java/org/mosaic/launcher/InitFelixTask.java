@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.apache.felix.framework.Felix;
@@ -16,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import static java.nio.file.Files.exists;
 import static java.util.Arrays.asList;
 import static org.apache.felix.framework.cache.BundleCache.CACHE_BUFSIZE_PROP;
+import static org.apache.felix.framework.util.FelixConstants.BUNDLE_STARTLEVEL_PROP;
 import static org.apache.felix.framework.util.FelixConstants.LOG_LEVEL_PROP;
 import static org.mosaic.launcher.EventsLogger.printEmphasizedInfoMessage;
 import static org.mosaic.launcher.SystemError.bootstrapError;
@@ -58,6 +60,23 @@ final class InitFelixTask extends InitTask
             {
                 throw SystemError.bootstrapError( "Could not clean Felix work directory at '{}': {}", felixWork, e.getMessage(), e );
             }
+
+            if( Mosaic.isDevMode() )
+            {
+                Path weavingDir = Mosaic.getWork().resolve( "weaving" );
+                if( exists( weavingDir ) )
+                {
+                    this.log.debug( "Clearing weaving cache directory (happens only in development mode)" );
+                    try
+                    {
+                        IO.deletePath( weavingDir );
+                    }
+                    catch( IOException e )
+                    {
+                        throw SystemError.bootstrapError( "Could not clean weaving cache directory at '{}': {}", weavingDir, e.getMessage(), e );
+                    }
+                }
+            }
         }
 
         Map<Object, Object> felixConfig = new HashMap<>();
@@ -73,7 +92,8 @@ final class InitFelixTask extends InitTask
                                                    "sun.*," +
                                                    "com.yourkit.*" );                   // extra packages available via classloader delegation (ie. not "Import-Package" necessary)
         felixConfig.put( FRAMEWORK_BUNDLE_PARENT, FRAMEWORK_BUNDLE_PARENT_EXT );        // parent class-loader of all bundles
-        felixConfig.put( FRAMEWORK_BEGINNING_STARTLEVEL, "3" );                         // framework level climbs to 3
+        felixConfig.put( FRAMEWORK_BEGINNING_STARTLEVEL, "1" );                         // start at 1, we'll increase the start level manually
+        felixConfig.put( BUNDLE_STARTLEVEL_PROP, "5" );                                 // by default set bundles to start at 4
 
         // mosaic configurations
         felixConfig.put( "mosaic.version", Mosaic.getVersion() );
@@ -133,6 +153,25 @@ final class InitFelixTask extends InitTask
             // felix started!
             this.felix = felix;
             felix.start();
+
+            // climb the start levels
+            FrameworkStartLevel frameworkStartLevel = bundleContext.getBundle().adapt( FrameworkStartLevel.class );
+            for( int i = 1; i <= 5; i++ )
+            {
+                final AtomicBoolean done = new AtomicBoolean( false );
+                frameworkStartLevel.setStartLevel( i, new FrameworkListener()
+                {
+                    @Override
+                    public void frameworkEvent( FrameworkEvent event )
+                    {
+                        done.set( true );
+                    }
+                } );
+                while( !done.get() )
+                {
+                    Thread.sleep( 100 );
+                }
+            }
 
             // started!
             printEmphasizedInfoMessage( "MOSAIC STARTED!" );

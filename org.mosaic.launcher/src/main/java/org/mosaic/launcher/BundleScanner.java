@@ -56,8 +56,6 @@ final class BundleScanner implements Runnable
         BOOT_BUNDLES = bootBundles;
     }
 
-    private static final int DEFAULT_START_LEVEL = 3;
-
     @Nonnull
     private final PathMatcher jarsPathMatcher = FileSystems.getDefault().getPathMatcher( "glob:**/*.{jar,jars}" );
 
@@ -328,7 +326,11 @@ final class BundleScanner implements Runnable
             if( bundle == null )
             {
                 bundle = this.bundleContext.installBundle( location );
-                bundle.adapt( BundleStartLevel.class ).setStartLevel( getAppropriateStartLevel( bundle ) );
+                Integer startlevel = getAppropriateStartLevel( bundle );
+                if( startlevel != null )
+                {
+                    bundle.adapt( BundleStartLevel.class ).setStartLevel( startlevel );
+                }
             }
             context.getInstalledBundles().add( bundle );
         }
@@ -339,7 +341,8 @@ final class BundleScanner implements Runnable
         }
     }
 
-    private int getAppropriateStartLevel( Bundle bundle )
+    @Nullable
+    private Integer getAppropriateStartLevel( Bundle bundle )
     {
         String explicitStartLevel = bundle.getHeaders().get( "Start-Level" );
         if( explicitStartLevel != null )
@@ -358,7 +361,7 @@ final class BundleScanner implements Runnable
             return BOOT_BUNDLES.get( bundle.getSymbolicName() );
         }
 
-        return DEFAULT_START_LEVEL;
+        return null;
     }
 
     private void handleModifiedJar( @Nonnull Path path, @Nonnull Context context )
