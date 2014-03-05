@@ -93,6 +93,10 @@ final class ApplicationManager
 
     @Nonnull
     @Service
+    private ModuleManager moduleManager;
+
+    @Nonnull
+    @Service
     private Server server;
 
     @Nonnull
@@ -126,6 +130,14 @@ final class ApplicationManager
             this.applicationFragmentSchema = schemaFactory.newSchema( new Source[] {
                     new StreamSource( stream100, "http://www.mosaicserver.com/application-fragment-1.0.0" )
             } );
+        }
+
+        for( Module module : this.moduleManager.getModules() )
+        {
+            if( module.getState() == ModuleState.ACTIVE )
+            {
+                onModuleActivationChanged( new ModuleEvent( module, ModuleEventType.ACTIVATED ) );
+            }
         }
     }
 
