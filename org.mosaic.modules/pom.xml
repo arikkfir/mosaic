@@ -69,6 +69,11 @@
         </dependency>
         <dependency>
             <groupId>org.mosaic.utils</groupId>
+            <artifactId>org.mosaic.utils.resource</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mosaic.utils</groupId>
             <artifactId>org.mosaic.utils.reflection</artifactId>
             <scope>provided</scope>
         </dependency>

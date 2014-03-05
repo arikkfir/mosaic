@@ -8,6 +8,8 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.modules.ModuleManager;
+import org.mosaic.util.osgi.SimpleServiceTracker;
+import org.mosaic.util.resource.PathMatcher;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
@@ -22,6 +24,9 @@ import static org.osgi.framework.FrameworkUtil.createFilter;
  */
 public final class Activator implements BundleActivator
 {
+    @Nonnull
+    private static final SimpleServiceTracker<PathMatcher> pathMatcherTracker = new SimpleServiceTracker<>( Activator.class, PathMatcher.class );
+
     @Nullable
     private static ModuleManagerImpl moduleManager;
 
@@ -37,6 +42,12 @@ public final class Activator implements BundleActivator
         {
             return moduleManager;
         }
+    }
+
+    @Nonnull
+    public static PathMatcher getPathMatcher()
+    {
+        return Activator.pathMatcherTracker.require();
     }
 
     @Nonnull

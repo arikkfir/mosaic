@@ -2,18 +2,21 @@ package org.mosaic.modules.impl;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
-import com.google.common.collect.Iterables;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.jgrapht.graph.SimpleDirectedGraph;
@@ -79,6 +82,13 @@ final class ModuleImpl extends Lifecycle implements Module
 
     private static final Logger MODULE_UNINSTALLED_LOG = LoggerFactory.getLogger( Module.class.getName() + ".uninstalled" );
 
+    public static class ComponentDependency
+    {
+    }
+
+    @Nonnull
+    private final LoadingCache<String, List<Path>> resourceCache;
+
     @Nonnull
     private final ModuleManagerImpl moduleManager;
 
@@ -98,6 +108,45 @@ final class ModuleImpl extends Lifecycle implements Module
     {
         this.moduleManager = moduleManager;
         this.bundle = bundle;
+        this.resourceCache = CacheBuilder.newBuilder()
+                                         .concurrencyLevel( 10 )
+                                         .initialCapacity( 1000 )
+                                         .build( new CacheLoader<String, List<Path>>()
+                                         {
+                                             @Override
+                                             public List<Path> load( @Nonnull String key ) throws Exception
+                                             {
+                                                 if( !key.startsWith( "/" ) )
+                                                 {
+                                                     key = "/" + key;
+                                                 }
+                                                 List<Path> paths = null;
+
+                                                 Bundle bundle = ModuleImpl.this.bundle;
+
+                                                 Enumeration<URL> entries = bundle.findEntries( "/", "*", true );
+                                                 if( entries != null )
+                                                 {
+                                                     Path root = Paths.get( URI.create( "module://" + bundle.getBundleId() + "/" ) );
+                                                     while( entries.hasMoreElements() )
+                                                     {
+                                                         URL entry = entries.nextElement();
+                                                         String entryPath = entry.getPath();
+                                                         if( Activator.getPathMatcher().matches( key, entryPath ) )
+                                                         {
+                                                             Path path = root.resolve( entryPath );
+
+                                                             if( paths == null )
+                                                             {
+                                                                 paths = new LinkedList<>();
+                                                             }
+                                                             paths.add( path );
+                                                         }
+                                                     }
+                                                 }
+                                                 return paths == null ? Collections.<Path>emptyList() : paths;
+                                             }
+                                         } );
     }
 
     @Override
@@ -185,17 +234,14 @@ final class ModuleImpl extends Lifecycle implements Module
     @Override
     public Optional<Path> findResource( @Nonnull String glob ) throws IOException
     {
-        try( DirectoryStream<Path> directoryStream = Files.newDirectoryStream( getPath(), glob ) )
+        try
         {
-            Iterator<Path> iterator = directoryStream.iterator();
-            if( iterator.hasNext() )
-            {
-                return Optional.of( iterator.next() );
-            }
-            else
-            {
-                return Optional.absent();
-            }
+            List<Path> paths = this.resourceCache.get( glob );
+            return paths.isEmpty() ? Optional.<Path>absent() : Optional.of( paths.get( 0 ) );
+        }
+        catch( ExecutionException | UncheckedExecutionException e )
+        {
+            throw new IOException( "could not locate resource '" + glob + "': " + e.getMessage(), e );
         }
     }
 
@@ -203,11 +249,13 @@ final class ModuleImpl extends Lifecycle implements Module
     @Override
     public Collection<Path> findResources( @Nonnull String glob ) throws IOException
     {
-        try( DirectoryStream<Path> directoryStream = Files.newDirectoryStream( getPath(), glob ) )
+        try
         {
-            Collection<Path> resources = new LinkedList<>();
-            Iterables.addAll( resources, directoryStream );
-            return resources;
+            return this.resourceCache.get( glob );
+        }
+        catch( ExecutionException | UncheckedExecutionException e )
+        {
+            throw new IOException( "could not locate resource '" + glob + "': " + e.getMessage(), e );
         }
     }
 
@@ -327,7 +375,8 @@ final class ModuleImpl extends Lifecycle implements Module
                             packageFilters.get( packageName ),
                             packageResolutions.get( packageName ),
                             packageProviders.get( packageName ),
-                            packageVersions.get( packageName ) ) );
+                            packageVersions.get( packageName ) )
+            );
         }
         return unmodifiableList( requirements );
     }
@@ -408,7 +457,8 @@ final class ModuleImpl extends Lifecycle implements Module
                     new PackageCapabilityImpl(
                             packageName,
                             packageVersions.get( packageName ),
-                            consumers == null ? Collections.<Module>emptyList() : consumers ) );
+                            consumers == null ? Collections.<Module>emptyList() : consumers )
+            );
         }
         return unmodifiableList( capabilities );
     }
@@ -615,7 +665,7 @@ final class ModuleImpl extends Lifecycle implements Module
             {
                 throw new IllegalStateException( "could not create activator '" + this.moduleActivatorClassName + "' for module '" + this + "': " + e.getMessage(), e );
             }
-
+            // TODO: should we do this here or in ModuleImpl.onBeforeActivate?
             this.activator.onBeforeActivate( this );
         }
     }
@@ -688,6 +738,7 @@ final class ModuleImpl extends Lifecycle implements Module
     synchronized void onBundleResolved()
     {
         MODULE_RESOLVE_LOG.info( "RESOLVED {}", this );
+        this.resourceCache.invalidateAll();
         postModuleEvent( ModuleEventType.RESOLVED );
     }
 
@@ -734,6 +785,7 @@ final class ModuleImpl extends Lifecycle implements Module
     synchronized void onBundleUnresolved()
     {
         MODULE_UNRESOLVED_LOG.info( "UNRESOLVED {}", this );
+        this.resourceCache.invalidateAll();
         postModuleEvent( ModuleEventType.UNRESOLVED );
     }
 
@@ -829,7 +881,7 @@ final class ModuleImpl extends Lifecycle implements Module
         Collection<Path> resources;
         try
         {
-            resources = findResources( "*.class" );
+            resources = findResources( "**/*.class" );
         }
         catch( IOException e )
         {
@@ -1006,10 +1058,6 @@ final class ModuleImpl extends Lifecycle implements Module
         {
             return PackageNamespace.PACKAGE_NAMESPACE.equals( name.toString() ) ? value.toString() : null;
         }
-    }
-
-    public static class ComponentDependency
-    {
     }
 
     private class PackageRequirementImpl implements PackageRequirement
