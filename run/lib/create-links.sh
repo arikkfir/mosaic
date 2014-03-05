@@ -28,7 +28,7 @@ ln -s ~/.m2/repository/com/fasterxml/jackson/dataformat/jackson-dataformat-csv/2
 ln -s ~/.m2/repository/com/google/guava/guava/16.0.1/guava-16.0.1.jar com.google.guava.jar
 ln -s ~/.m2/repository/javax/el/javax.el-api/3.0.0/javax.el-api-3.0.0.jar javax.el.jar
 ln -s ~/.m2/repository/joda-time/joda-time/2.3/joda-time-2.3.jar org.joda-time.jar
-ln -s ~/.m2/repository/org/apache/commons/commons-lang3/3.2.1/commons-lang3-3.2.1.jar org.apache.commons.lang3.jar
+ln -s ~/.m2/repository/org/apache/commons/commons-lang3/3.3/commons-lang3-3.3.jar org.apache.commons.lang3.jar
 ln -s ~/.m2/repository/org/apache/felix/org.apache.felix.configadmin/1.8.0/org.apache.felix.configadmin-1.8.0.jar org.apache.felix.configadmin.jar
 ln -s ~/.m2/repository/org/apache/felix/org.apache.felix.eventadmin/1.3.2/org.apache.felix.eventadmin-1.3.2.jar org.apache.felix.eventadmin.jar
 ln -s ~/.m2/repository/org/apache/felix/org.apache.felix.log/1.0.1/org.apache.felix.log-1.0.1.jar org.apache.felix.log.jar
