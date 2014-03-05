@@ -147,6 +147,7 @@ final class ApplicationHolder
         if( xmlElements.isEmpty() )
         {
             unregisterApplication();
+            LOG.info( "Application '{}' has been deleted", this.id );
         }
         else
         {
@@ -163,6 +164,7 @@ final class ApplicationHolder
 
             unregisterApplication();
             this.registration = this.module.register( Application.class, application, Property.property( "id", this.id ) );
+            LOG.info( "Application '{}' has been added/updated", this.id );
         }
     }
 
