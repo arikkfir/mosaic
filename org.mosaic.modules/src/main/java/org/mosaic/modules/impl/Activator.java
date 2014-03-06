@@ -109,7 +109,7 @@ public final class Activator implements BundleActivator
                     }
                 }
             }
-        }, 1, 200, TimeUnit.SECONDS );
+        }, 1, 1, TimeUnit.SECONDS );
     }
 
     @Override
