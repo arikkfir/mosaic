@@ -1,12 +1,11 @@
 package org.mosaic.modules.spi;
 
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import org.mosaic.util.osgi.BundleUtils;
 import org.osgi.framework.*;
 
 import static org.mosaic.util.osgi.BundleUtils.bundleContext;
@@ -46,15 +45,26 @@ public final class MethodCache
                 {
                     if( event.getType() == BundleEvent.UNRESOLVED )
                     {
-                        long bundleId = event.getBundle().getBundleId();
-                        for( Iterator<MethodEntry> iterator = knownMethods.values().iterator(); iterator.hasNext(); )
+                        final long bundleId = event.getBundle().getBundleId();
+
+                        String taskName = "Clean methods for unresolved bundle '" + BundleUtils.toString( event.getBundle() );
+                        final Timer timer = new Timer( taskName, true );
+                        timer.schedule( new TimerTask()
                         {
-                            MethodEntry entry = iterator.next();
-                            if( entry.moduleId == bundleId )
+                            @Override
+                            public void run()
                             {
-                                iterator.remove();
+                                for( Iterator<MethodEntry> iterator = knownMethods.values().iterator(); iterator.hasNext(); )
+                                {
+                                    MethodEntry entry = iterator.next();
+                                    if( entry.moduleId == bundleId )
+                                    {
+                                        iterator.remove();
+                                    }
+                                }
+                                timer.cancel();
                             }
-                        }
+                        }, 30000 );
                     }
                 }
             } );
@@ -131,7 +141,7 @@ public final class MethodCache
             this.argumentTypeNames = argumentTypeNames;
         }
 
-        @SuppressWarnings("RedundantIfStatement")
+        @SuppressWarnings( "RedundantIfStatement" )
         @Override
         public boolean equals( Object o )
         {
