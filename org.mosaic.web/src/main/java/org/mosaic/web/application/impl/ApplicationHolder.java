@@ -72,6 +72,10 @@ final class ApplicationHolder
 
     @Nonnull
     @Service
+    private ModuleManager moduleManager;
+
+    @Nonnull
+    @Service
     private PathMatcher pathMatcher;
 
     @Nonnull
@@ -274,9 +278,37 @@ final class ApplicationHolder
 
                 if( file.toString().equals( "/WEB-INF/application.xml" ) )
                 {
-                    contentRoots.add( file.getParent() );
+                    Path contentRoot = file.getParent();
+
+                    String host = file.toUri().getHost();
+                    if( host != null && !host.isEmpty() )
+                    {
+                        try
+                        {
+                            int moduleId = Integer.parseInt( host );
+                            Optional<? extends Module> moduleHolder = moduleManager.getModule( moduleId );
+                            if( moduleHolder.isPresent() )
+                            {
+                                Module module = moduleHolder.get();
+                                Optional<String> bundleResourcesHeader = module.getHeaders().find( "Bundle-Resources" );
+                                if( bundleResourcesHeader.isPresent() )
+                                {
+                                    String localResourcesLocation = bundleResourcesHeader.get();
+                                    if( localResourcesLocation != null && !localResourcesLocation.isEmpty() )
+                                    {
+                                        contentRoot = Paths.get( localResourcesLocation );
+                                    }
+                                }
+                            }
+                        }
+                        catch( NumberFormatException ignore )
+                        {
+                        }
+                    }
+                    contentRoots.add( contentRoot );
                 }
             }
+
             // parse period *before* applying changes, to make sure everything is valid
             Period maxSessionAge = ApplicationManager.parsePeriod( maxSessionAgeString );
 
