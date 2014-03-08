@@ -4,10 +4,10 @@
     a. Update version to the going-to-be-released version
     b. Update change notes
     c. Commit changes (comment: "[release] Prepare release <version>")
-4. Create tag
+4. Create tag "mosaic-build-<version>"
 5. In IntelliJ, invoke menu command "Build/Prepare all plugins for deployment"
 6. Modify 'plugin.xml' again:
     a. Update version back to a snapshot version
     b. Update change notes (add new future version)
-    c. Commit changes
+    c. Commit changes (comment: "[release] Back to development")
 7. Deploy plugin zip file and then remove it
