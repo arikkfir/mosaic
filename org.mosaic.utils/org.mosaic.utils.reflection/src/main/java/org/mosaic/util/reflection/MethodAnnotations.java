@@ -6,6 +6,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Sets;
 import com.google.common.reflect.TypeToken;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Collection;
@@ -75,16 +76,46 @@ public final class MethodAnnotations
     @Nonnull
     public static Collection<Annotation> getAnnotations( @Nonnull Method method )
     {
-        return annotationsListCache.getUnchecked( method );
+        try
+        {
+            return annotationsListCache.getUnchecked( method );
+        }
+        catch( UncheckedExecutionException e )
+        {
+            Throwable cause = e.getCause();
+            if( cause instanceof RuntimeException )
+            {
+                throw ( RuntimeException ) cause;
+            }
+            else
+            {
+                throw e;
+            }
+        }
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     @Nullable
     public static <MetaAnnType extends Annotation> MetaAnnType getMetaAnnotation(
             @Nonnull Method method, @Nonnull Class<MetaAnnType> metaAnnType )
     {
         Pair<Method, Class<? extends Annotation>> key = Pair.<Method, Class<? extends Annotation>>of( method, metaAnnType );
-        return ( MetaAnnType ) metaAnnotationCache.getUnchecked( key ).orNull();
+        try
+        {
+            return ( MetaAnnType ) metaAnnotationCache.getUnchecked( key ).orNull();
+        }
+        catch( UncheckedExecutionException e )
+        {
+            Throwable cause = e.getCause();
+            if( cause instanceof RuntimeException )
+            {
+                throw ( RuntimeException ) cause;
+            }
+            else
+            {
+                throw e;
+            }
+        }
     }
 
     @Nullable
@@ -92,7 +123,22 @@ public final class MethodAnnotations
             @Nonnull Method method, @Nonnull Class<? extends Annotation> metaAnnType )
     {
         Pair<Method, Class<? extends Annotation>> key = Pair.<Method, Class<? extends Annotation>>of( method, metaAnnType );
-        return metaAnnotationTargetCache.getUnchecked( key ).orNull();
+        try
+        {
+            return metaAnnotationTargetCache.getUnchecked( key ).orNull();
+        }
+        catch( UncheckedExecutionException e )
+        {
+            Throwable cause = e.getCause();
+            if( cause instanceof RuntimeException )
+            {
+                throw ( RuntimeException ) cause;
+            }
+            else
+            {
+                throw e;
+            }
+        }
     }
 
     public static void clearCaches()

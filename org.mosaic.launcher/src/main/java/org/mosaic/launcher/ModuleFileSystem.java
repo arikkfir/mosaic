@@ -4,6 +4,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.UserPrincipalLookupService;
@@ -22,6 +23,10 @@ import org.osgi.framework.Bundle;
 final class ModuleFileSystem extends FileSystem
 {
     private static final Set<String> SUPPORTED_FILE_ATTRIBUTE_VIEWS = Collections.unmodifiableSet( Sets.newHashSet( "basic" ) );
+
+    private static final String GLOB_SYNTAX = "glob";
+
+    private static final String REGEX_SYNTAX = "regex";
 
     @Nonnull
     private final LoadingCache<String, ModulePath> pathCache;
@@ -137,12 +142,23 @@ final class ModuleFileSystem extends FileSystem
                 buffer.append( s );
             }
         }
-        return this.pathCache.getUnchecked( buffer.toString() );
+        try
+        {
+            return this.pathCache.getUnchecked( buffer.toString() );
+        }
+        catch( UncheckedExecutionException e )
+        {
+            Throwable cause = e.getCause();
+            if( cause instanceof RuntimeException )
+            {
+                throw ( RuntimeException ) cause;
+            }
+            else
+            {
+                throw e;
+            }
+        }
     }
-
-    private static final String GLOB_SYNTAX = "glob";
-
-    private static final String REGEX_SYNTAX = "regex";
 
     @Nonnull
     @Override

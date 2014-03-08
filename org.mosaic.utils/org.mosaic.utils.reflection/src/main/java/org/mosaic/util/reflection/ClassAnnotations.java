@@ -85,6 +85,10 @@ public final class ClassAnnotations
             {
                 return Collections.emptyList();
             }
+            else if( cause instanceof RuntimeException )
+            {
+                throw ( RuntimeException ) cause;
+            }
             else
             {
                 throw e;
@@ -109,6 +113,10 @@ public final class ClassAnnotations
             {
                 return null;
             }
+            else if( cause instanceof RuntimeException )
+            {
+                throw ( RuntimeException ) cause;
+            }
             else
             {
                 throw e;
@@ -131,6 +139,10 @@ public final class ClassAnnotations
             if( cause instanceof TypeNotPresentException )
             {
                 return null;
+            }
+            else if( cause instanceof RuntimeException )
+            {
+                throw ( RuntimeException ) cause;
             }
             else
             {

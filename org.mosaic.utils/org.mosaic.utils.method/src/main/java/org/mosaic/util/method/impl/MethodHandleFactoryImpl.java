@@ -5,6 +5,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.reflect.TypeToken;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -68,14 +69,44 @@ final class MethodHandleFactoryImpl implements MethodHandleFactory
                                                    @Nonnull Class<?>... argumentTypes )
     {
         MethodSignatureKey key = new MethodSignatureKey( clazz, methodName, argumentTypes );
-        return findMethodHandle( this.methodSignaturesCache.getUnchecked( key ) );
+        try
+        {
+            return findMethodHandle( this.methodSignaturesCache.getUnchecked( key ) );
+        }
+        catch( UncheckedExecutionException e )
+        {
+            Throwable cause = e.getCause();
+            if( cause instanceof RuntimeException )
+            {
+                throw ( RuntimeException ) cause;
+            }
+            else
+            {
+                throw e;
+            }
+        }
     }
 
     @Nonnull
     @Override
     public InvokableMethodHandle findMethodHandle( @Nonnull Method method )
     {
-        return this.methodHandlesCache.getUnchecked( method );
+        try
+        {
+            return this.methodHandlesCache.getUnchecked( method );
+        }
+        catch( UncheckedExecutionException e )
+        {
+            Throwable cause = e.getCause();
+            if( cause instanceof RuntimeException )
+            {
+                throw ( RuntimeException ) cause;
+            }
+            else
+            {
+                throw e;
+            }
+        }
     }
 
     void clearCaches()

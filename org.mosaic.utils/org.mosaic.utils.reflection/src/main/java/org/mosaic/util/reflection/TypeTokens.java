@@ -4,6 +4,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.reflect.TypeToken;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.List;
@@ -39,17 +40,47 @@ public class TypeTokens
     {
     };
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     @Nonnull
     public static <T> TypeToken<T> of( @Nonnull Class<T> type )
     {
-        return ( TypeToken<T> ) cache.getUnchecked( type );
+        try
+        {
+            return ( TypeToken<T> ) cache.getUnchecked( type );
+        }
+        catch( UncheckedExecutionException e )
+        {
+            Throwable cause = e.getCause();
+            if( cause instanceof RuntimeException )
+            {
+                throw ( RuntimeException ) cause;
+            }
+            else
+            {
+                throw e;
+            }
+        }
     }
 
     @Nonnull
     public static TypeToken<?> of( @Nonnull Type type )
     {
-        return cache.getUnchecked( type );
+        try
+        {
+            return cache.getUnchecked( type );
+        }
+        catch( UncheckedExecutionException e )
+        {
+            Throwable cause = e.getCause();
+            if( cause instanceof RuntimeException )
+            {
+                throw ( RuntimeException ) cause;
+            }
+            else
+            {
+                throw e;
+            }
+        }
     }
 
     @Nonnull
