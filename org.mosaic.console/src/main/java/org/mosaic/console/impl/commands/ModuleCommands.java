@@ -50,13 +50,13 @@ final class ModuleCommands
         @SuppressWarnings( "unchecked" )
         TablePrinter<Module> table = new TablePrinter<>(
                 console,
-                new SimpleColumn<Module>( "ID", 5 )
+                new SimpleColumn<Module>( "ID", 7 )
                 {
                     @Nullable
                     @Override
                     public String getValue( @Nonnull Module module )
                     {
-                        return module.getId() + "";
+                        return module.getId() + "." + module.getRevision();
                     }
                 },
                 new SimpleColumn<Module>( "Name", 60 )
