@@ -18,6 +18,9 @@ public interface Module
 {
     long getId();
 
+    @Nullable
+    Long getRevision();
+
     @Nonnull
     String getName();
 

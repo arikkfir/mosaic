@@ -107,6 +107,7 @@ class BytecodeCachingCompiler extends BytecodeCompiler
         Path weavingDir = workDir.resolve( "weaving" );
         Path bundleDir = weavingDir.resolve( bundleRevision.getBundle().getSymbolicName() );
         Path versionDir = bundleDir.resolve( bundleRevision.getVersion().toString() );
-        return versionDir.resolve( wovenClass.getClassName() + ".bytes" );
+        Path revisionDir = versionDir.resolve( bundleRevision.toString() );
+        return revisionDir.resolve( wovenClass.getClassName() + ".bytes" );
     }
 }

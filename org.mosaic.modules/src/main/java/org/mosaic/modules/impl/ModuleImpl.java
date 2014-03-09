@@ -155,6 +155,31 @@ final class ModuleImpl extends Lifecycle implements Module
         return this.bundle.getBundleId();
     }
 
+    @Override
+    @Nullable
+    public Long getRevision()
+    {
+        BundleRevision bundleRevision = this.bundle.adapt( BundleRevision.class );
+        if( bundleRevision == null )
+        {
+            return null;
+        }
+
+        String str = bundleRevision.toString();
+        if( str.isEmpty() )
+        {
+            return null;
+        }
+
+        int dotIndex = str.indexOf( "." );
+        if( dotIndex < 0 )
+        {
+            return 0l;
+        }
+
+        return Long.parseLong( str.substring( dotIndex + 1 ) );
+    }
+
     @Nonnull
     @Override
     public String getName()
