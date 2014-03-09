@@ -3,6 +3,7 @@ package org.mosaic.modules.spi;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import java.lang.reflect.Method;
 import java.util.*;
 import javax.annotation.Nonnull;
@@ -96,7 +97,8 @@ final class MethodInterceptorManager
                                       {
                                           MethodInterceptorManager.this.methodInterceptorsCache.invalidateAll();
                                       }
-                                  } );
+                                  }
+            );
 
     @Nonnull
     private final ThreadLocal<Deque<InvocationContext>> contextHolder = new ThreadLocal<Deque<InvocationContext>>()
@@ -113,10 +115,12 @@ final class MethodInterceptorManager
         this.interceptorsTracker.open();
     }
 
-    public boolean beforeInvocation( long id, @Nullable Object object, @Nonnull Object[] arguments ) throws Throwable
+    public boolean beforeInvocation( @Nonnull MethodEntry methodEntry,
+                                     @Nullable Object object,
+                                     @Nonnull Object[] arguments ) throws Throwable
     {
         // create context for method invocation and push to stack
-        InvocationContext context = new InvocationContext( id, object, arguments );
+        InvocationContext context = new InvocationContext( methodEntry, object, arguments );
         this.contextHolder.get().push( context );
 
         // invoke interceptors "before" action, returning true if method should proceed, false if circumvent method and request a call to "after" action
@@ -145,36 +149,20 @@ final class MethodInterceptorManager
         return context.afterInvocation();
     }
 
-    public void cleanup( long id )
+    public void cleanup( @Nonnull MethodEntry methodEntry )
     {
         Deque<InvocationContext> deque = this.contextHolder.get();
         if( deque.isEmpty() )
         {
-            try
-            {
-                Method receivedMethod = MethodCache.getInstance().getMethod( id );
-                LOG.error( "STACK EMPTY! received method: {}", receivedMethod.toGenericString() );
-            }
-            catch( ClassNotFoundException e )
-            {
-                LOG.error( "STACK EMPTY! could not extract method from {}", id, e );
-            }
+            LOG.error( "STACK EMPTY! received method: {}", methodEntry );
         }
-        else if( deque.peek().id != id )
+        else if( !deque.peek().methodEntry.equals( methodEntry ) )
         {
-            try
-            {
-                Method receivedMethod = MethodCache.getInstance().getMethod( id );
-                Method methodOnStack = MethodCache.getInstance().getMethod( deque.peek().id );
-                LOG.error( "STACK DIRTY!\n" +
-                           "    On stack: {}\n" +
-                           "    Received: {}",
-                           methodOnStack.toGenericString(), receivedMethod.toGenericString() );
-            }
-            catch( ClassNotFoundException e )
-            {
-                LOG.error( "STACK DIRTY! could not extract methods from IDs {} and {}", id, deque.peek().id, e );
-            }
+            LOG.error( "STACK DIRTY!\n" +
+                       "    On stack: {}\n" +
+                       "    Received: {}",
+                       deque.peek().methodEntry, methodEntry
+            );
         }
         else
         {
@@ -200,10 +188,8 @@ final class MethodInterceptorManager
 
     private class InvocationContext extends HashMapEx<String, Object>
     {
-        private final long id;
-
         @Nonnull
-        private final Method method;
+        private final MethodEntry methodEntry;
 
         @Nullable
         private final Object object;
@@ -232,19 +218,40 @@ final class MethodInterceptorManager
         @Nullable
         private Object returnValue;
 
-        private InvocationContext( long id, @Nullable Object object, @Nonnull Object[] arguments )
+        private InvocationContext( @Nonnull MethodEntry methodEntry,
+                                   @Nullable Object object,
+                                   @Nonnull Object[] arguments )
                 throws ClassNotFoundException
         {
             super( 5 );
-            this.id = id;
-            this.method = MethodCache.getInstance().getMethod( id );
+            this.methodEntry = methodEntry;
             this.object = object;
             this.arguments = arguments;
         }
 
         private boolean beforeInvocation()
         {
-            for( InterestedMethodInterceptorEntry interceptorEntry : MethodInterceptorManager.this.methodInterceptorsCache.getUnchecked( this.method ) )
+            Method method = this.methodEntry.getMethod();
+
+            List<InterestedMethodInterceptorEntry> entries;
+            try
+            {
+                entries = methodInterceptorsCache.getUnchecked( method );
+            }
+            catch( UncheckedExecutionException e )
+            {
+                Throwable cause = e.getCause();
+                if( cause instanceof RuntimeException )
+                {
+                    throw ( RuntimeException ) cause;
+                }
+                else
+                {
+                    throw e;
+                }
+            }
+
+            for( InterestedMethodInterceptorEntry interceptorEntry : entries )
             {
                 MethodInterceptor interceptor = interceptorEntry.target;
                 try
@@ -412,7 +419,7 @@ final class MethodInterceptorManager
         @Override
         public final Method getMethod()
         {
-            return this.context.method;
+            return this.context.methodEntry.getMethod();
         }
 
         @Nullable

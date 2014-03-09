@@ -475,9 +475,9 @@ final class ModuleImpl extends Lifecycle implements Module
     public Collection<Module.ServiceCapability> getServiceCapabilities()
     {
         List<Module.ServiceCapability> serviceCapabilities = new LinkedList<>();
-        for( ServiceCapabilityProvider serviceCapabilityProvider : getChildren( ServiceCapabilityProvider.class, true ) )
+        for( ModuleServiceCapabilityProvider moduleServiceCapabilityProvider : getChildren( ModuleServiceCapabilityProvider.class, true ) )
         {
-            serviceCapabilities.addAll( serviceCapabilityProvider.getServiceCapabilities() );
+            serviceCapabilities.addAll( moduleServiceCapabilityProvider.getServiceCapabilities() );
         }
         return serviceCapabilities;
     }

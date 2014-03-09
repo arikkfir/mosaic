@@ -26,7 +26,7 @@ import static java.util.Collections.unmodifiableMap;
 final class TypeDescriptorServiceAdapter extends Lifecycle
         implements ServiceTrackerCustomizer<Object, Object>,
                    Module.ServiceRequirement,
-                   ServiceCapabilityProvider
+                   ModuleServiceCapabilityProvider
 {
     @Nonnull
     private final TypeDescriptor typeDescriptor;

@@ -82,7 +82,7 @@ public final class Activator implements BundleActivator
     @Override
     public void start( @Nonnull final BundleContext context ) throws Exception
     {
-        this.weavingHookServiceRegistration = context.registerService( WeavingHook.class, new ModuleWeavingHook( context ), null );
+        this.weavingHookServiceRegistration = context.registerService( WeavingHook.class, new BytecodeWeavingHook(), null );
 
         moduleManager = new ModuleManagerImpl();
         moduleManager.open( context );

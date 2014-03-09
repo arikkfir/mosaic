@@ -85,6 +85,13 @@ final class ServiceTypeHandle
         }
 
         @Nonnull
+        @Override
+        public String toString()
+        {
+            return getClass().getSimpleName() + "[" + this.type + "]";
+        }
+
+        @Nonnull
         Class<?> getServiceClass()
         {
             return this.typeToken.getRawType();
@@ -94,12 +101,6 @@ final class ServiceTypeHandle
         FilterBuilder createFilterBuilder()
         {
             return new FilterBuilder().addClass( getServiceClass() );
-        }
-
-        @Override
-        public String toString()
-        {
-            return getClass().getSimpleName() + "[" + this.type + "]";
         }
     }
 

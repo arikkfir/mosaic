@@ -7,7 +7,7 @@ import org.mosaic.modules.Module;
 /**
  * @author arik
  */
-public interface ServiceCapabilityProvider
+public interface ModuleServiceCapabilityProvider
 {
     @Nonnull
     List<Module.ServiceCapability> getServiceCapabilities();

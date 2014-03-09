@@ -30,10 +30,12 @@ public final class ModulesSpi
         }
     }
 
-    public static boolean beforeInvocation( long id, @Nullable Object object, @Nonnull Object[] arguments )
+    public static boolean beforeInvocation( @Nonnull MethodEntry methodEntry,
+                                            @Nullable Object object,
+                                            @Nonnull Object[] arguments )
             throws Throwable
     {
-        return ModulesSpi.methodInterceptorManager.beforeInvocation( id, object, arguments );
+        return ModulesSpi.methodInterceptorManager.beforeInvocation( methodEntry, object, arguments );
     }
 
     @Nullable
@@ -54,9 +56,9 @@ public final class ModulesSpi
         return ModulesSpi.methodInterceptorManager.afterThrowable( throwable );
     }
 
-    public static void cleanup( long id ) throws Throwable
+    public static void cleanup( @Nonnull MethodEntry methodEntry ) throws Throwable
     {
-        ModulesSpi.methodInterceptorManager.cleanup( id );
+        ModulesSpi.methodInterceptorManager.cleanup( methodEntry );
     }
 
     private ModulesSpi()

@@ -20,7 +20,7 @@ import static java.util.Collections.unmodifiableMap;
  * @author arik
  */
 @SuppressWarnings("unchecked")
-final class ComponentServiceExporter extends Lifecycle implements ServiceCapabilityProvider
+final class ComponentServiceExporter extends Lifecycle implements ModuleServiceCapabilityProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger( ComponentServiceExporter.class );
 

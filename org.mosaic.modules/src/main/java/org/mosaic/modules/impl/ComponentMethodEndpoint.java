@@ -22,7 +22,7 @@ import org.osgi.framework.*;
 /**
  * @author arik
  */
-final class ComponentMethodEndpoint extends Lifecycle implements MethodEndpoint, ServiceCapabilityProvider
+final class ComponentMethodEndpoint extends Lifecycle implements MethodEndpoint, ModuleServiceCapabilityProvider
 {
     @Nonnull
     private final Component component;
