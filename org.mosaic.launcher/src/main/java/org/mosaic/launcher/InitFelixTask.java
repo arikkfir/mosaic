@@ -60,23 +60,6 @@ final class InitFelixTask extends InitTask
             {
                 throw SystemError.bootstrapError( "Could not clean Felix work directory at '{}': {}", felixWork, e.getMessage(), e );
             }
-
-            if( Mosaic.isDevMode() )
-            {
-                Path weavingDir = Mosaic.getWork().resolve( "weaving" );
-                if( exists( weavingDir ) )
-                {
-                    this.log.debug( "Clearing weaving cache directory (happens only in development mode)" );
-                    try
-                    {
-                        IO.deletePath( weavingDir );
-                    }
-                    catch( IOException e )
-                    {
-                        throw SystemError.bootstrapError( "Could not clean weaving cache directory at '{}': {}", weavingDir, e.getMessage(), e );
-                    }
-                }
-            }
         }
 
         Map<Object, Object> felixConfig = new HashMap<>();
