@@ -369,7 +369,13 @@ final class Headers
     @Nonnull
     List<MediaType> getMediaTypes( @Nonnull String headerName )
     {
-        return Lists.transform( getStrings( headerName ), MEDIA_TYPE_TO_STRING_TRANSFORM_FUNCTION );
+        List<String> mediaTypes = getStrings( headerName );
+        if( mediaTypes.isEmpty() )
+        {
+            // this can happen when client is wget or curl or any other rest client...
+            mediaTypes = asList( "*/*" );
+        }
+        return Lists.transform( mediaTypes, MEDIA_TYPE_TO_STRING_TRANSFORM_FUNCTION );
     }
 
     @Nullable
