@@ -296,7 +296,7 @@ final class ApplicationHolder
                                     String localResourcesLocation = bundleResourcesHeader.get();
                                     if( localResourcesLocation != null && !localResourcesLocation.isEmpty() )
                                     {
-                                        contentRoot = Paths.get( localResourcesLocation );
+                                        contentRoot = Paths.get( localResourcesLocation ).resolve( "WEB-INF" );
                                     }
                                 }
                             }
