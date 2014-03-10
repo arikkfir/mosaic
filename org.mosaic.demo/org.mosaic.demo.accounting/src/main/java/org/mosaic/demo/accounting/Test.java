@@ -39,7 +39,7 @@ public class Test
     }
 
     @GET
-    @Controller(uri = "/hello", app = "application.id == 'management'")
+    @Controller(uri = "/hello", app = "application.id == 'accounting'")
     @Secured(value = "true", authMethods = "basic", challangeMethod = "basic")
     public Hello helloService()
     {
