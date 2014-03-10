@@ -152,7 +152,7 @@ final class BundleScanner implements Runnable
             return BOOT_BUNDLES.get( bundle.getSymbolicName() );
         }
 
-        return null;
+        return 5;
     }
 
     private void handleFileError( @Nonnull String message, @Nullable Object... args )

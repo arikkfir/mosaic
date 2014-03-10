@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import static java.util.Arrays.asList;
 import static org.apache.felix.framework.cache.BundleCache.CACHE_BUFSIZE_PROP;
-import static org.apache.felix.framework.util.FelixConstants.BUNDLE_STARTLEVEL_PROP;
 import static org.apache.felix.framework.util.FelixConstants.LOG_LEVEL_PROP;
 import static org.mosaic.launcher.EventsLogger.printEmphasizedInfoMessage;
 import static org.mosaic.launcher.SystemError.bootstrapError;
@@ -59,7 +58,6 @@ final class InitFelixTask extends InitTask
                                                    "com.yourkit.*" );                           // extra packages available via classloader delegation (ie. not "Import-Package" necessary)
         felixConfig.put( FRAMEWORK_BUNDLE_PARENT, FRAMEWORK_BUNDLE_PARENT_EXT );                // parent class-loader of all bundles
         felixConfig.put( FRAMEWORK_BEGINNING_STARTLEVEL, "1" );                                 // start at 1, we'll increase the start level manually
-        felixConfig.put( BUNDLE_STARTLEVEL_PROP, "5" );                                         // by default set bundles to start at 4
 
         // mosaic configurations
         felixConfig.put( "mosaic.version", Mosaic.getVersion() );
@@ -105,16 +103,16 @@ final class InitFelixTask extends InitTask
             bundleContext.addServiceListener( loggingListener );
             bundleContext.addBundleListener( loggingListener );
 
+            // felix started!
+            this.felix = felix;
+            felix.start();
+
             // create bundle scanner
             BundleScanner bundleScanner = new BundleScanner( bundleContext );
             Hashtable<String, Object> bundleScannerDict = new Hashtable<>();
             bundleScannerDict.put( "bundleScanner", true );
             bundleContext.registerService( Runnable.class, bundleScanner, bundleScannerDict );
             bundleScanner.run();
-
-            // felix started!
-            this.felix = felix;
-            felix.start();
 
             // climb the start levels
             FrameworkStartLevel frameworkStartLevel = bundleContext.getBundle().adapt( FrameworkStartLevel.class );
@@ -133,6 +131,7 @@ final class InitFelixTask extends InitTask
                 {
                     Thread.sleep( 100 );
                 }
+                Thread.sleep( 200 );
             }
 
             // started!

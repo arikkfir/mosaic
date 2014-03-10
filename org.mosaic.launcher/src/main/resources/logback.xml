@@ -37,7 +37,7 @@
     <logger name="org.apache.sshd.common.util" level="WARN"/>
     <logger name="org.eclipse.jetty" level="WARN"/>
     <logger name="org.hibernate.validator" level="WARN"/>
-    <logger name="org.osgi.framework" level="WARN"/>
+    <logger name="org.osgi.framework" level="DEBUG"/>
     <logger name="org.mosaic.modules.Module.installed" level="WARN"/>
     <logger name="org.mosaic.modules.Module.resolved" level="WARN"/>
     <logger name="org.mosaic.modules.Module.starting" level="WARN"/>
