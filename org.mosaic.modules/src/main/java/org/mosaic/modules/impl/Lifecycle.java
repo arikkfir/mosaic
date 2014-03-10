@@ -27,26 +27,35 @@ class Lifecycle
     @Nonnull
     private final List<Lifecycle> activatedChildren = new LinkedList<>();
 
-    private boolean started;
-
-    private boolean activated;
+    @Nonnull
+    private LifecycleState state = LifecycleState.STOPPED;
 
     public final boolean isStarted()
     {
-        return this.started;
+        return this.state == LifecycleState.STARTED ||
+               this.state == LifecycleState.ACTIVATING ||
+               this.state == LifecycleState.ACTIVATED ||
+               this.state == LifecycleState.DEACTIVATING;
     }
 
     public final boolean isActivated()
     {
-        return this.activated;
+        return this.state == LifecycleState.ACTIVATED;
+    }
+
+    @Nonnull
+    public final LifecycleState getLifecycleState()
+    {
+        return this.state;
     }
 
     public final synchronized void start()
     {
-        if( this.started )
+        if( isStarted() )
         {
             return;
         }
+        this.state = LifecycleState.STARTING;
 
         onBeforeStart();
 
@@ -64,14 +73,14 @@ class Lifecycle
                 throw e;
             }
         }
-        this.started = true;
+        this.state = LifecycleState.STARTED;
 
         onAfterStart();
     }
 
     public final synchronized void stop()
     {
-        this.started = false;
+        this.state = LifecycleState.STOPPING;
 
         onBeforeStop();
 
@@ -89,13 +98,14 @@ class Lifecycle
             }
             this.startedChildren.remove( child );
         }
+        this.state = LifecycleState.STOPPED;
 
         onAfterStop();
     }
 
     public final synchronized boolean canActivate()
     {
-        return this.started && !this.activated && canActivateInternal() && canActivateChildren();
+        return isStarted() && !isActivated() && canActivateInternal() && canActivateChildren();
     }
 
     public final synchronized boolean canActivateChildren()
@@ -116,8 +126,8 @@ class Lifecycle
         {
             return;
         }
+        this.state = LifecycleState.ACTIVATING;
 
-        this.activated = true;
         onBeforeActivate();
 
         this.activatedChildren.clear();
@@ -134,14 +144,17 @@ class Lifecycle
                 throw e;
             }
         }
+        this.state = LifecycleState.ACTIVATED;
 
         onAfterActivate();
     }
 
     public final synchronized void deactivate()
     {
-        if( this.activated )
+        if( this.state == LifecycleState.ACTIVATED || this.state == LifecycleState.ACTIVATING )
         {
+            this.state = LifecycleState.DEACTIVATING;
+
             onBeforeDeactivate();
 
             List<Lifecycle> reverseActivatedChildren = new LinkedList<>( this.activatedChildren );
@@ -158,8 +171,8 @@ class Lifecycle
                 }
                 this.activatedChildren.remove( child );
             }
+            this.state = LifecycleState.STARTED;
 
-            this.activated = false;
             onAfterDeactivate();
         }
     }
@@ -240,7 +253,7 @@ class Lifecycle
 
     protected synchronized void addChild( @Nonnull Lifecycle child )
     {
-        if( this.started || this.activated )
+        if( isStarted() || isActivated() )
         {
             throw new IllegalStateException( "lifecycle already started" );
         }
@@ -249,7 +262,7 @@ class Lifecycle
 
     protected synchronized void removeChild( @Nonnull Lifecycle child )
     {
-        if( this.started || this.activated )
+        if( isStarted() || isActivated() )
         {
             throw new IllegalStateException( "lifecycle started, cannot remove children" );
         }
@@ -258,7 +271,7 @@ class Lifecycle
 
     protected synchronized void clearChildren()
     {
-        if( this.started || this.activated )
+        if( isStarted() || isActivated() )
         {
             throw new IllegalStateException( "lifecycle started, cannot remove children" );
         }
@@ -320,5 +333,16 @@ class Lifecycle
             throw new IllegalStateException( "could not obtain bundle context for 'org.mosaic.modules' bundle" );
         }
         return bundleContext;
+    }
+
+    static enum LifecycleState
+    {
+        STARTING,
+        STARTED,
+        ACTIVATING,
+        ACTIVATED,
+        DEACTIVATING,
+        STOPPING,
+        STOPPED
     }
 }

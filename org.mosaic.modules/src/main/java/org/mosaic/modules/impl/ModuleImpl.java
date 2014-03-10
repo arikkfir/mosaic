@@ -243,11 +243,27 @@ final class ModuleImpl extends Lifecycle implements Module
             case Bundle.RESOLVED:
                 return ModuleState.RESOLVED;
             case Bundle.STARTING:
-                return ModuleState.STARTING;
-            case Bundle.ACTIVE:
-                return isActivated() ? ModuleState.ACTIVE : ModuleState.STARTED;
             case Bundle.STOPPING:
-                return isActivated() ? ModuleState.ACTIVE : ModuleState.STOPPING;
+            case Bundle.ACTIVE:
+                switch( getLifecycleState() )
+                {
+                    case STARTING:
+                        return ModuleState.STARTING;
+                    case STARTED:
+                        return ModuleState.STARTED;
+                    case ACTIVATING:
+                        return ModuleState.ACTIVATING;
+                    case ACTIVATED:
+                        return ModuleState.ACTIVE;
+                    case DEACTIVATING:
+                        return ModuleState.DEACTIVATING;
+                    case STOPPING:
+                        return ModuleState.STOPPING;
+                    case STOPPED:
+                        return ModuleState.RESOLVED;
+                    default:
+                        throw new IllegalStateException();
+                }
             case Bundle.UNINSTALLED:
                 return ModuleState.UNINSTALLED;
             default:
@@ -565,7 +581,7 @@ final class ModuleImpl extends Lifecycle implements Module
                                                 @Nonnull T service,
                                                 @Nonnull Property... properties )
     {
-        if( getState() != ModuleState.ACTIVE )
+        if( getState() != ModuleState.ACTIVE && getState() != ModuleState.ACTIVATING )
         {
             throw new IllegalStateException( "module " + this + " is not active" );
         }
@@ -868,7 +884,7 @@ final class ModuleImpl extends Lifecycle implements Module
             {
                 Dictionary<String, Object> dict = new Hashtable<>();
                 dict.put( "mosaicEvent", new ModuleEvent( this, eventType ) );
-                eventAdmin.postEvent( new Event( "org/mosaic/modules/ModuleEvent", dict ) );
+                eventAdmin.sendEvent( new Event( "org/mosaic/modules/ModuleEvent", dict ) );
             }
             catch( Throwable e )
             {

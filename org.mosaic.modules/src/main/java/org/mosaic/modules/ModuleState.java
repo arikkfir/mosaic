@@ -9,7 +9,9 @@ public enum ModuleState
     RESOLVED,
     STARTING,
     STARTED,
+    ACTIVATING,
     ACTIVE,
+    DEACTIVATING,
     STOPPING,
     UNINSTALLED
 }
