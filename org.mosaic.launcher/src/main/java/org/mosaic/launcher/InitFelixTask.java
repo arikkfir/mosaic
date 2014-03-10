@@ -89,7 +89,7 @@ final class InitFelixTask extends InitTask
             {
                 try
                 {
-                    felix.stop();
+                    felix.stop( Bundle.STOP_TRANSIENT );
                 }
                 catch( BundleException ignore )
                 {
@@ -152,7 +152,7 @@ final class InitFelixTask extends InitTask
             this.log.info( "Stopping OSGi container" );
             try
             {
-                felix.stop();
+                felix.stop( Bundle.STOP_TRANSIENT );
                 while( true )
                 {
                     try

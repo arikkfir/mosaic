@@ -282,7 +282,7 @@ final class BundleScanner implements Runnable
                         // now stop the bundle
                         try
                         {
-                            bundle.stop();
+                            bundle.stop( Bundle.STOP_TRANSIENT );
                         }
                         catch( Exception e )
                         {
@@ -379,7 +379,7 @@ final class BundleScanner implements Runnable
                         {
                             try
                             {
-                                requirer.stop();
+                                requirer.stop( Bundle.STOP_TRANSIENT );
                                 this.bundlesToStart = addToList( this.bundlesToStart, requirer );
                             }
                             catch( BundleException e )
