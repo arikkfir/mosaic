@@ -68,6 +68,9 @@ public final class Activator implements BundleActivator
     }
 
     @Nullable
+    private BytecodeWeavingHook bytecodeWeavingHook;
+
+    @Nullable
     private ServiceRegistration<WeavingHook> weavingHookServiceRegistration;
 
     @Nullable
@@ -82,7 +85,8 @@ public final class Activator implements BundleActivator
     @Override
     public void start( @Nonnull final BundleContext context ) throws Exception
     {
-        this.weavingHookServiceRegistration = context.registerService( WeavingHook.class, new BytecodeWeavingHook(), null );
+        this.bytecodeWeavingHook = new BytecodeWeavingHook();
+        this.weavingHookServiceRegistration = context.registerService( WeavingHook.class, this.bytecodeWeavingHook, null );
 
         moduleManager = new ModuleManagerImpl();
         moduleManager.open( context );
@@ -147,6 +151,13 @@ public final class Activator implements BundleActivator
             {
             }
             this.weavingHookServiceRegistration = null;
+        }
+
+        BytecodeWeavingHook hook = this.bytecodeWeavingHook;
+        if( hook != null )
+        {
+            hook.stop();
+            this.bytecodeWeavingHook = null;
         }
 
         ServiceRegistration<ModuleManager> moduleManagerServiceRegistration = this.moduleManagerServiceRegistration;

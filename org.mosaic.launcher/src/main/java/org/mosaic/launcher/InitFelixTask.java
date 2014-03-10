@@ -1,7 +1,5 @@
 package org.mosaic.launcher;
 
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
@@ -14,7 +12,6 @@ import org.osgi.framework.startlevel.FrameworkStartLevel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.nio.file.Files.exists;
 import static java.util.Arrays.asList;
 import static org.apache.felix.framework.cache.BundleCache.CACHE_BUFSIZE_PROP;
 import static org.apache.felix.framework.util.FelixConstants.BUNDLE_STARTLEVEL_PROP;
@@ -48,35 +45,21 @@ final class InitFelixTask extends InitTask
             throw SystemError.bootstrapError( "Mosaic already started!" );
         }
 
-        Path felixWork = Mosaic.getWork().resolve( "felix" );
-        if( exists( felixWork ) )
-        {
-            try
-            {
-                this.log.debug( "Clearing Felix work directory at: {}", felixWork );
-                IO.deletePath( felixWork );
-            }
-            catch( IOException e )
-            {
-                throw SystemError.bootstrapError( "Could not clean Felix work directory at '{}': {}", felixWork, e.getMessage(), e );
-            }
-        }
-
         Map<Object, Object> felixConfig = new HashMap<>();
 
         // standard Felix configurations
-        felixConfig.put( FRAMEWORK_STORAGE, felixWork.toString() );                     // specify work location for felix
-        felixConfig.put( CACHE_BUFSIZE_PROP, FELIX_CACHE_BUFSIZE + "" );                // buffer size for reading from storage
-        felixConfig.put( LOG_LEVEL_PROP, "0" );                                         // disable Felix logging output (we'll only log OSGi events)
-        felixConfig.put( FRAMEWORK_SYSTEMPACKAGES_EXTRA, getExtraSystemPackages() );    // extra packages exported by system bundle
+        felixConfig.put( FRAMEWORK_STORAGE, Mosaic.getWork().resolve( "felix" ).toString() );   // specify work location for felix
+        felixConfig.put( CACHE_BUFSIZE_PROP, FELIX_CACHE_BUFSIZE + "" );                        // buffer size for reading from storage
+        felixConfig.put( LOG_LEVEL_PROP, "0" );                                                 // disable Felix logging output (we'll only log OSGi events)
+        felixConfig.put( FRAMEWORK_SYSTEMPACKAGES_EXTRA, getExtraSystemPackages() );            // extra packages exported by system bundle
         felixConfig.put( FRAMEWORK_BOOTDELEGATION, "javax.*," +
                                                    "org.w3c.*," +
                                                    "com.sun.*," +
                                                    "sun.*," +
-                                                   "com.yourkit.*" );                   // extra packages available via classloader delegation (ie. not "Import-Package" necessary)
-        felixConfig.put( FRAMEWORK_BUNDLE_PARENT, FRAMEWORK_BUNDLE_PARENT_EXT );        // parent class-loader of all bundles
-        felixConfig.put( FRAMEWORK_BEGINNING_STARTLEVEL, "1" );                         // start at 1, we'll increase the start level manually
-        felixConfig.put( BUNDLE_STARTLEVEL_PROP, "5" );                                 // by default set bundles to start at 4
+                                                   "com.yourkit.*" );                           // extra packages available via classloader delegation (ie. not "Import-Package" necessary)
+        felixConfig.put( FRAMEWORK_BUNDLE_PARENT, FRAMEWORK_BUNDLE_PARENT_EXT );                // parent class-loader of all bundles
+        felixConfig.put( FRAMEWORK_BEGINNING_STARTLEVEL, "1" );                                 // start at 1, we'll increase the start level manually
+        felixConfig.put( BUNDLE_STARTLEVEL_PROP, "5" );                                         // by default set bundles to start at 4
 
         // mosaic configurations
         felixConfig.put( "mosaic.version", Mosaic.getVersion() );
@@ -116,22 +99,18 @@ final class InitFelixTask extends InitTask
                 throw SystemError.bootstrapError( "Felix not started correctly" );
             }
 
+            // add listeners
+            OsgiEventsLoggingListener loggingListener = new OsgiEventsLoggingListener();
+            bundleContext.addFrameworkListener( loggingListener );
+            bundleContext.addServiceListener( loggingListener );
+            bundleContext.addBundleListener( loggingListener );
+
             // create bundle scanner
             BundleScanner bundleScanner = new BundleScanner( bundleContext );
             Hashtable<String, Object> bundleScannerDict = new Hashtable<>();
             bundleScannerDict.put( "bundleScanner", true );
             bundleContext.registerService( Runnable.class, bundleScanner, bundleScannerDict );
             bundleScanner.run();
-            if( !bundleScanner.isLastRunSuccessful() )
-            {
-                throw bootstrapError( "Could not start boot bundles - one or more bundles failed to load" );
-            }
-
-            // add listeners
-            OsgiEventsLoggingListener loggingListener = new OsgiEventsLoggingListener();
-            bundleContext.addFrameworkListener( loggingListener );
-            bundleContext.addServiceListener( loggingListener );
-            bundleContext.addBundleListener( loggingListener );
 
             // felix started!
             this.felix = felix;

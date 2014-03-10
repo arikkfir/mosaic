@@ -22,6 +22,8 @@ lifecycle
 
 * Add @Cachable facility
 * Weave constructors too, not only methods
+v Weaver can cache ALL bytecode cache files in memory, for one single I/O read
+    * if a class not found in memory cache, still look for it on disk of course
 
 validation
 ---

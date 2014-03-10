@@ -23,10 +23,10 @@ class BytecodeWeavingHook implements WeavingHook
     ) );
 
     @Nonnull
-    private final BytecodeCompiler compiler = new BytecodeCachingCompiler( new BytecodeJavassistCompiler() );
+    private final BytecodeCachingCompiler compiler = new BytecodeCachingCompiler( new BytecodeJavassistCompiler() );
 
     @Override
-    public void weave( WovenClass wovenClass )
+    public void weave( @Nonnull WovenClass wovenClass )
     {
         // ignore our own bundle and specific excluded bundles
         Bundle bundle = wovenClass.getBundleWiring().getRevision().getBundle();
@@ -50,6 +50,11 @@ class BytecodeWeavingHook implements WeavingHook
         {
             wovenClass.setBytes( bytes );
         }
+    }
+
+    void stop()
+    {
+        this.compiler.stop();
     }
 
     private void ensureImported( @Nonnull WovenClass wovenClass, @Nonnull String... packageNames )
