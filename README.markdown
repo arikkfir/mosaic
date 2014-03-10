@@ -1,12 +1,6 @@
 NOTES
 =====
 
-This project currently relies on a patch I sent to [Maven Bundle Plugin](http://felix.apache.org/site/apache-felix-maven-bundle-plugin-bnd.html)
-which allows turning off the setting of "optional" resolution in the OSGi manifest for packages that were imported from
-<optional> maven dependencies.
-
-This patch can be applied locally until they add it for now - see [FELIX-4372](https://issues.apache.org/jira/browse/FELIX-4372)
-
 STUFF TO DO
 ===========
 
