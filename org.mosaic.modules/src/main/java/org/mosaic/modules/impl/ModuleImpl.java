@@ -706,8 +706,6 @@ final class ModuleImpl extends Lifecycle implements Module
             {
                 throw new IllegalStateException( "could not create activator '" + this.moduleActivatorClassName + "' for module '" + this + "': " + e.getMessage(), e );
             }
-            // TODO: should we do this here or in ModuleImpl.onBeforeActivate?
-            this.activator.onBeforeActivate( this );
         }
     }
 
@@ -730,6 +728,10 @@ final class ModuleImpl extends Lifecycle implements Module
     protected synchronized void onBeforeActivate()
     {
         MODULE_ACTIVATING_LOG.info( "ACTIVATING {}", this );
+        if( this.activator != null )
+        {
+            this.activator.onBeforeActivate( this );
+        }
         postModuleEvent( ModuleEventType.ACTIVATING );
     }
 
