@@ -24,7 +24,7 @@ final class JsonMessageMarshaller implements MessageMarshaller
     @Nonnull
     private final ObjectMapper objectMapper;
 
-    public JsonMessageMarshaller()
+    JsonMessageMarshaller()
     {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure( MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true );

@@ -24,7 +24,7 @@ final class CsvMessageMarshaller implements MessageMarshaller
     @Nonnull
     private final ObjectMapper objectMapper;
 
-    public CsvMessageMarshaller()
+    CsvMessageMarshaller()
     {
         CsvMapper objectMapper = new CsvMapper();
         objectMapper.configure( MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true );
