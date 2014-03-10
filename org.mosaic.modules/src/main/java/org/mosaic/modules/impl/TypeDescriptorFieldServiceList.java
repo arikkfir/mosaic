@@ -272,20 +272,18 @@ final class TypeDescriptorFieldServiceList extends TypeDescriptorField
     @Override
     public List<ServiceReference<?>> getReferences()
     {
-        org.osgi.framework.ServiceReference[] tracked = this.serviceTracker.getServiceReferences();
-        if( tracked == null )
+        SortedMap<org.osgi.framework.ServiceReference<?>, Object> tracked = this.serviceTracker.getTracked();
+        if( tracked.isEmpty() )
         {
             return Collections.emptyList();
         }
-        else
+
+        List<ServiceReference<?>> serviceReferences = new LinkedList<>();
+        for( org.osgi.framework.ServiceReference reference : tracked.keySet() )
         {
-            List<ServiceReference<?>> serviceReferences = new LinkedList<>();
-            for( org.osgi.framework.ServiceReference reference : tracked )
-            {
-                serviceReferences.add( new ServiceReferenceImpl( reference ) );
-            }
-            return serviceReferences;
+            serviceReferences.add( new ServiceReferenceImpl( reference ) );
         }
+        return serviceReferences;
     }
 
     @Nullable
