@@ -504,6 +504,12 @@ final class JettyHttpRequestImpl implements HttpRequest
         {
             return this.fragment;
         }
+
+        @Override
+        public String toString()
+        {
+            return this.encodedPath + ( this.encodedQuery.isEmpty() ? "" : "?" + this.encodedQuery ) + this.fragment;
+        }
     }
 
     private class HttpRequestPartImpl implements HttpRequestPart
