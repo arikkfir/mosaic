@@ -162,7 +162,7 @@ final class ResourceResultMarshaller implements HandlerResultMarshaller
         {
             this.freemarkerRenderer.render( invocation.getApplication(),
                                             context,
-                                            "directory-listing.html.ftl",
+                                            "app:/directory-listing.html.ftl",
                                             firstNonNull( invocation.getHttpRequest().getContentLanguage(), ENGLISH ),
                                             invocation.getHttpResponse().getWriter() );
         }
@@ -189,7 +189,7 @@ final class ResourceResultMarshaller implements HandlerResultMarshaller
         context.put( "user", this.security.getSubject() );
         this.freemarkerRenderer.render( invocation.getApplication(),
                                         context,
-                                        invocation.getHttpRequest().getUri().getDecodedPath(),
+                                        path,
                                         firstNonNull( invocation.getHttpRequest().getContentLanguage(), ENGLISH ),
                                         invocation.getHttpResponse().getWriter() );
     }
