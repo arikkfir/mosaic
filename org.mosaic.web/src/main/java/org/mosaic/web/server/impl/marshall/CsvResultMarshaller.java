@@ -10,21 +10,24 @@ import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.google.common.net.MediaType;
 import javax.annotation.Nonnull;
+import org.mosaic.modules.Ranking;
 import org.mosaic.modules.Service;
-import org.mosaic.web.server.MessageMarshaller;
+import org.mosaic.web.server.HandlerResultMarshaller;
+import org.mosaic.web.server.WebInvocation;
 
 /**
  * @author arik
  */
 @Service
-final class CsvMessageMarshaller implements MessageMarshaller
+@Ranking(-200)
+final class CsvResultMarshaller implements HandlerResultMarshaller
 {
     private static final MediaType APPLICATION_CSV = MediaType.create( "application", "csv" );
 
     @Nonnull
     private final ObjectMapper objectMapper;
 
-    CsvMessageMarshaller()
+    CsvResultMarshaller()
     {
         CsvMapper objectMapper = new CsvMapper();
         objectMapper.configure( MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true );
@@ -47,15 +50,15 @@ final class CsvMessageMarshaller implements MessageMarshaller
     }
 
     @Override
-    public boolean canMarshall( @Nonnull Object value, @Nonnull MediaType mediaType )
+    public boolean canMarshall( @Nonnull MediaType mediaType, @Nonnull Object value )
     {
         return APPLICATION_CSV.is( mediaType );
     }
 
     @Override
-    public void marshall( @Nonnull MarshallingSink sink ) throws Exception
+    public void marshall( @Nonnull WebInvocation invocation, @Nonnull Object value ) throws Exception
     {
-        sink.setContentType( APPLICATION_CSV );
-        this.objectMapper.writeValue( sink.getOutputStream(), sink.getValue() );
+        invocation.getHttpResponse().setContentType( APPLICATION_CSV );
+        this.objectMapper.writeValue( invocation.getHttpResponse().getOutputStream(), value );
     }
 }
