@@ -125,7 +125,7 @@ final class Headers
                         case HttpHeaders.ACCEPT_CHARSET:
                         case HttpHeaders.ACCEPT_ENCODING:
                         case HttpHeaders.ACCEPT_LANGUAGE:
-                            headerExtractors.put( headerName, QUALIFIED_COMMA_SEPARATED_VALUE_EXTRACTOR );
+                            headerExtractors.put( headerName.toLowerCase(), QUALIFIED_COMMA_SEPARATED_VALUE_EXTRACTOR );
                             break;
 
                         case HttpHeaders.ACCEPT_RANGES:
@@ -140,11 +140,11 @@ final class Headers
                         case HttpHeaders.IF_MATCH:
                         case HttpHeaders.IF_NONE_MATCH:
                         case HttpHeaders.X_FORWARDED_FOR:
-                            headerExtractors.put( headerName, COMMA_SEPARATED_VALUE_EXTRACTOR );
+                            headerExtractors.put( headerName.toLowerCase(), COMMA_SEPARATED_VALUE_EXTRACTOR );
                             break;
 
                         default:
-                            headerExtractors.put( headerName, SINGLE_VALUE_EXTRACTOR );
+                            headerExtractors.put( headerName.toLowerCase(), SINGLE_VALUE_EXTRACTOR );
                     }
                 }
             }
@@ -369,7 +369,13 @@ final class Headers
     @Nonnull
     List<MediaType> getMediaTypes( @Nonnull String headerName )
     {
-        return Lists.transform( getStrings( headerName ), MEDIA_TYPE_TO_STRING_TRANSFORM_FUNCTION );
+        List<String> mediaTypes = getStrings( headerName );
+        if( mediaTypes.isEmpty() )
+        {
+            // this can happen when client is wget or curl or any other rest client...
+            mediaTypes = asList( "*/*" );
+        }
+        return Lists.transform( mediaTypes, MEDIA_TYPE_TO_STRING_TRANSFORM_FUNCTION );
     }
 
     @Nullable
@@ -387,7 +393,7 @@ final class Headers
     @Nonnull
     private HeaderValuesExtractor getExtractor( @Nonnull String headerName )
     {
-        HeaderValuesExtractor extractor = HEADER_EXTRACTORS.get( headerName );
+        HeaderValuesExtractor extractor = HEADER_EXTRACTORS.get( headerName.toLowerCase() );
         return extractor == null ? SINGLE_VALUE_EXTRACTOR : extractor;
     }
 }

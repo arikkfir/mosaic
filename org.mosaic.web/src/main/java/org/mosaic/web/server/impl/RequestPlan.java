@@ -1,9 +1,6 @@
 package org.mosaic.web.server.impl;
 
 import com.google.common.base.Optional;
-import com.google.common.net.MediaType;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -88,14 +85,15 @@ public final class RequestPlan implements Runnable
                     Object result = this.interceptorChain.proceed();
                     if( result != null )
                     {
-                        List<MediaType> accept = this.request.getHttpRequest().getAccept();
                         try
                         {
-                            this.marshallerManager.marshall( new WebRequestSink( result ), accept );
+                            this.marshallerManager.marshall( request, result );
                         }
                         catch( UnmarshallableContentException e )
                         {
-                            this.request.getHttpResponse().setStatus( HttpStatus.NOT_ACCEPTABLE, "Unable to generate " + accept );
+                            this.request.getHttpResponse().setStatus(
+                                    HttpStatus.NOT_ACCEPTABLE,
+                                    "Unable to generate " + this.request.getHttpRequest().getAccept() );
                             this.request.disableCaching();
                         }
                     }
@@ -222,44 +220,6 @@ public final class RequestPlan implements Runnable
                 this.handlerInvoked = true;
                 return RequestPlan.this.requestHandler.handle( RequestPlan.this.request );
             }
-        }
-    }
-
-    private class WebRequestSink implements MessageMarshaller.MarshallingSink
-    {
-        @Nonnull
-        private final Object value;
-
-        private WebRequestSink( @Nonnull Object value )
-        {
-            this.value = value;
-        }
-
-        @Nullable
-        @Override
-        public MediaType getContentType()
-        {
-            return RequestPlan.this.request.getHttpResponse().getContentType();
-        }
-
-        @Override
-        public void setContentType( @Nullable MediaType mediaType )
-        {
-            RequestPlan.this.request.getHttpResponse().setContentType( mediaType );
-        }
-
-        @Nonnull
-        @Override
-        public Object getValue()
-        {
-            return this.value;
-        }
-
-        @Nonnull
-        @Override
-        public OutputStream getOutputStream() throws IOException
-        {
-            return RequestPlan.this.request.getHttpResponse().getOutputStream();
         }
     }
 

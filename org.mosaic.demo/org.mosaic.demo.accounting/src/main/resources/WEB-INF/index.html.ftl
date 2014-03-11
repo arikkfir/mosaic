@@ -45,8 +45,8 @@
                 </div>
             </form>
         <#else>
-            <form class="navbar-form navbar-right" role="login" action="/login" method="post">
-                <div class="form-group">
+            <form class="navbar-form navbar-right" role="form" action="/login" method="post">
+            <div class="form-group">
                     <input type="text" class="form-control" name="username" placeholder="Username">
                 </div>
                 <div class="form-group">
@@ -61,9 +61,9 @@
 
     <div class="jumbotron">
         <div class="container">
-            <h1>Mosaic Management Console</h1>
-            <p>Mosaic Management Console is your one-stop shop for managing Mosaic servers.</p>
-            <p><a class="btn btn-primary btn-lg" role="button">Learn more &raquo;</a></p>
+            <h1>Mosaic Accounting</h1>
+            <p>Mosaic Accounting is an application for personal accounting made easy!</p>
+            <p><a class="btn btn-primary btn-lg" role="button" href="#/about">Learn more &raquo;</a></p>
         </div>
     </div>
 
@@ -94,9 +94,8 @@
     </div>
 
     <script src="lib/jquery-2.0.3.min.js"></script>
-    <script src="lib/underscore-1.5.2.min.js"></script>
-    <script src="lib/backbone-1.1.0.min.js"></script>
     <script src="lib/bootstrap/js/bootstrap.min.js"></script>
+    <script src="lib/path.min.js"></script>
     <script src="/index.js"></script>
 </body>
 </html>

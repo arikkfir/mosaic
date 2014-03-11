@@ -1,5 +1,6 @@
 package org.mosaic.web.server;
 
+import java.io.IOException;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.joda.time.Period;
@@ -37,6 +38,10 @@ public interface WebInvocation
 
     @Nonnull
     WebSession getOrCreateSession();
+
+    void permanentRedirect( @Nonnull String location ) throws IOException;
+
+    void temporaryRedirect( @Nonnull String location ) throws IOException;
 
     @Nullable
     WebCookie getCookie( String name );

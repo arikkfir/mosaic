@@ -1,5 +1,6 @@
 package org.mosaic.web.server.impl;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import javax.annotation.Nonnull;
@@ -153,6 +154,20 @@ public final class WebInvocationImpl implements WebInvocation
         {
             throw new CreateWebSessionException( "Mosaic session attribute contained a value that does not implement WebSession: " + webSession );
         }
+    }
+
+    @Override
+    public void permanentRedirect( @Nonnull String location ) throws IOException
+    {
+        this.response.setLocation( location );
+        this.response.setStatus( HttpStatus.MOVED_PERMANENTLY, "" );
+    }
+
+    @Override
+    public void temporaryRedirect( @Nonnull String location ) throws IOException
+    {
+        this.response.setLocation( location );
+        this.response.setStatus( HttpStatus.MOVED_TEMPORARILY, "" );
     }
 
     @Nullable

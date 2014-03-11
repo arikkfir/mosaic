@@ -1,4 +1,4 @@
-package org.mosaic.web.server.impl;
+package org.mosaic.web.server.impl.marshall;
 
 import com.google.common.base.Optional;
 import freemarker.cache.TemplateLoader;
@@ -9,6 +9,7 @@ import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.Map;
 import javax.annotation.Nonnull;
@@ -30,7 +31,18 @@ final class FreemarkerRenderer
                  @Nonnull Writer writer ) throws IOException, TemplateException
     {
         Configuration configuration = getConfigurationForApplication( application );
-        Template template = configuration.getTemplate( path, locale );
+        Template template = configuration.getTemplate( "app:" + path, locale );
+        template.process( context, writer );
+    }
+
+    void render( @Nonnull Application application,
+                 @Nonnull Map<String, Object> context,
+                 @Nonnull Path path,
+                 @Nonnull Locale locale,
+                 @Nonnull Writer writer ) throws IOException, TemplateException
+    {
+        Configuration configuration = getConfigurationForApplication( application );
+        Template template = configuration.getTemplate( "path:" + path, locale );
         template.process( context, writer );
     }
 
@@ -70,13 +82,26 @@ final class FreemarkerRenderer
         @Override
         public Object findTemplateSource( String name ) throws IOException
         {
-            return this.application.getResource( name + ".ftl" );
+            if( name.startsWith( "app:" ) )
+            {
+                Application.ApplicationResource resource = this.application.getResource( name.substring( "app:".length() ) + ".ftl" );
+                return resource == null ? null : resource.getPath();
+            }
+            else if( name.startsWith( "path:" ) )
+            {
+                Path path = Paths.get( name.substring( "path:".length() ) );
+                return Files.exists( path ) && Files.isRegularFile( path ) ? path : null;
+            }
+            else
+            {
+                return null;
+            }
         }
 
         @Override
         public long getLastModified( Object templateSource )
         {
-            Path file = ( ( Application.ApplicationResource ) templateSource ).getPath();
+            Path file = ( Path ) templateSource;
             try
             {
                 return Files.getLastModifiedTime( file ).toMillis();
@@ -90,7 +115,7 @@ final class FreemarkerRenderer
         @Override
         public Reader getReader( Object templateSource, String encoding ) throws IOException
         {
-            Path file = ( ( Application.ApplicationResource ) templateSource ).getPath();
+            Path file = ( Path ) templateSource;
             return Files.newBufferedReader( file, Charset.forName( "UTF-8" ) );
         }
 
