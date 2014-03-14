@@ -33,6 +33,7 @@ ln -s ~/.m2/repository/org/apache/felix/org.apache.felix.configadmin/1.8.0/org.a
 ln -s ~/.m2/repository/org/apache/felix/org.apache.felix.eventadmin/1.3.2/org.apache.felix.eventadmin-1.3.2.jar org.apache.felix.eventadmin.jar
 ln -s ~/.m2/repository/org/apache/felix/org.apache.felix.log/1.0.1/org.apache.felix.log-1.0.1.jar org.apache.felix.log.jar
 ln -s ~/.m2/repository/org/glassfish/web/javax.el/2.2.6/javax.el-2.2.6.jar org.glassfish.web.javax.el.jar
+ln -s ~/.m2/repository/org/hsqldb/hsqldb/2.3.1/hsqldb-2.3.1.jar org.hsqldb.jar
 ln -s ~/.m2/repository/org/slf4j/jcl-over-slf4j/1.7.6/jcl-over-slf4j-1.7.6.jar jcl-over-slf4j.jar
 ln -s ~/.m2/repository/org/slf4j/log4j-over-slf4j/1.7.6/log4j-over-slf4j-1.7.6.jar log4j-over-slf4j.jar
 popd
