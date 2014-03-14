@@ -11,7 +11,6 @@ import org.mosaic.modules.Service;
 import org.mosaic.modules.spi.MethodEntry;
 import org.mosaic.modules.spi.MethodInterceptor;
 import org.mosaic.modules.spi.ModulesSpi;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.hooks.weaving.WeavingException;
 import org.osgi.framework.hooks.weaving.WovenClass;
 import org.slf4j.Logger;
@@ -31,9 +30,6 @@ class BytecodeJavassistCompiler extends BytecodeCompiler
     @Override
     byte[] compile( @Nonnull WovenClass wovenClass )
     {
-        // ignore our own bundle and specific excluded bundles
-        Bundle bundle = wovenClass.getBundleWiring().getRevision().getBundle();
-
         // weave the mother..!
         CtClass ctClass = loadConcreteClass( wovenClass );
         if( ctClass != null )
@@ -92,6 +88,10 @@ class BytecodeJavassistCompiler extends BytecodeCompiler
                     }
                 }
             }
+        }
+        catch( NotFoundException ignore )
+        {
+            // simply not weaving the class; it won't load anyway...
         }
         catch( WeavingException e )
         {
@@ -152,6 +152,10 @@ class BytecodeJavassistCompiler extends BytecodeCompiler
                 }
             }
         }
+        catch( NotFoundException ignore )
+        {
+            // simply not weaving the class; it won't load anyway...
+        }
         catch( WeavingException e )
         {
             throw e;
@@ -186,6 +190,10 @@ class BytecodeJavassistCompiler extends BytecodeCompiler
                     weaveMethodForInterception( id, method );
                 }
             }
+        }
+        catch( NotFoundException ignore )
+        {
+            // simply not weaving the class; it won't load anyway...
         }
         catch( WeavingException e )
         {
@@ -250,6 +258,11 @@ class BytecodeJavassistCompiler extends BytecodeCompiler
             }
             classInitializer.insertBefore( "{\n" + methodIdMapSrc.toString() + "}" );
             return methodIds;
+        }
+        catch( NotFoundException ignore )
+        {
+            // simply not weaving the class; it won't load anyway...
+            return Collections.emptyMap();
         }
         catch( Throwable e )
         {
@@ -397,6 +410,7 @@ class BytecodeJavassistCompiler extends BytecodeCompiler
             }
             catch( NotFoundException ignore )
             {
+                // simply not weaving the class; it won't load anyway...
             }
         }
 
