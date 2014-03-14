@@ -1,4 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
     <parent>
@@ -42,6 +42,22 @@
                     </instructions>
                 </configuration>
             </plugin>
+
+            <!--
+                configure dependency plugin to declare jansi as a used dependency even though our code does not use
+                it directly (it is used only indirectly at runtime)
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <configuration>
+                    <ignoreNonCompile>true</ignoreNonCompile>
+                    <usedDependencies>
+                        <usedDependency>com.mchange:mchange-commons-java</usedDependency>
+                    </usedDependencies>
+                </configuration>
+            </plugin>
+
         </plugins>
     </build>
 
@@ -91,6 +107,11 @@
         <dependency>
             <groupId>com.mchange</groupId>
             <artifactId>c3p0</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.mchange</groupId>
+            <artifactId>mchange-commons-java</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
