@@ -62,10 +62,10 @@ final class TypeDescriptor extends Lifecycle implements org.mosaic.modules.TypeD
             }
         }
 
-        // is this a @Template?
+        // is this an interface that has a @Template-annotated annotation? (eg. has a @Dao annotation which has @Template)
         if( this.type.isInterface() )
         {
-            Annotation templateType = getMetaAnnotationTarget( type, Template.class );
+            Annotation templateType = getMetaAnnotationTarget( this.type, Template.class );
             if( templateType != null )
             {
                 addChild( new TypeDescriptorServiceTemplateExporter( this, templateType ) );
