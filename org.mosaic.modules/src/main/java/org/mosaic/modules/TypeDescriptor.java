@@ -8,6 +8,12 @@ import javax.annotation.Nullable;
  */
 public interface TypeDescriptor
 {
+    @Nonnull
+    Module getModule();
+
     @Nullable
     Object getValueForField( @Nonnull String fieldName );
+
+    @Nonnull
+    Class<?> getType();
 }

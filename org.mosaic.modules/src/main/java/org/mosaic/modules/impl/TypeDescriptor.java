@@ -142,13 +142,15 @@ final class TypeDescriptor extends Lifecycle implements org.mosaic.modules.TypeD
     }
 
     @Nonnull
-    ModuleImpl getModule()
+    @Override
+    public ModuleImpl getModule()
     {
         return this.module;
     }
 
+    @Override
     @Nonnull
-    Class<?> getType()
+    public Class<?> getType()
     {
         return this.type;
     }
