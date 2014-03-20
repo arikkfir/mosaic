@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.mosaic.modules.ModuleManager;
+import org.mosaic.util.conversion.ConversionService;
 import org.mosaic.util.osgi.SimpleServiceTracker;
 import org.mosaic.util.resource.PathMatcher;
 import org.osgi.framework.BundleActivator;
@@ -26,6 +27,9 @@ public final class Activator implements BundleActivator
 {
     @Nonnull
     private static final SimpleServiceTracker<PathMatcher> pathMatcherTracker = new SimpleServiceTracker<>( Activator.class, PathMatcher.class );
+
+    @Nonnull
+    private static final SimpleServiceTracker<ConversionService> conversionServiceTracker = new SimpleServiceTracker<>( Activator.class, ConversionService.class );
 
     @Nullable
     private static ModuleManagerImpl moduleManager;
@@ -48,6 +52,12 @@ public final class Activator implements BundleActivator
     public static PathMatcher getPathMatcher()
     {
         return Activator.pathMatcherTracker.require();
+    }
+
+    @Nonnull
+    public static ConversionService getConversionService()
+    {
+        return Activator.conversionServiceTracker.require();
     }
 
     @Nonnull
@@ -77,6 +87,9 @@ public final class Activator implements BundleActivator
     private ServiceRegistration<ModuleManager> moduleManagerServiceRegistration;
 
     @Nullable
+    private ServiceRegistration<ConfigValuesManager> configValuesManagerServiceRegistration;
+
+    @Nullable
     private ServiceTracker<Runnable, Runnable> bundleScannerTracker;
 
     @Nullable
@@ -91,6 +104,9 @@ public final class Activator implements BundleActivator
         moduleManager = new ModuleManagerImpl();
         moduleManager.open( context );
         this.moduleManagerServiceRegistration = context.registerService( ModuleManager.class, moduleManager, null );
+
+        this.configValuesManagerServiceRegistration = context.registerService( ConfigValuesManager.class,
+                                                                               new ConfigValuesManager(), null );
 
         this.bundleScannerTracker = new ServiceTracker<>( context,
                                                           createFilter( "(&(objectClass=java.lang.Runnable)(bundleScanner=true))" ),
@@ -131,6 +147,19 @@ public final class Activator implements BundleActivator
         {
             tracker.close();
             this.bundleScannerTracker = null;
+        }
+
+        ServiceRegistration<ConfigValuesManager> configValuesManagerServiceRegistration = this.configValuesManagerServiceRegistration;
+        if( configValuesManagerServiceRegistration != null )
+        {
+            try
+            {
+                configValuesManagerServiceRegistration.unregister();
+            }
+            catch( Exception ignore )
+            {
+            }
+            this.configValuesManagerServiceRegistration = null;
         }
 
         ModuleManagerImpl moduleManager = Activator.moduleManager;
