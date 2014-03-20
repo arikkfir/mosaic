@@ -11,6 +11,7 @@ import org.mosaic.modules.ComponentDefinitionException;
 import org.mosaic.modules.Module;
 import org.mosaic.modules.Service;
 import org.mosaic.modules.ServiceReference;
+import org.mosaic.util.collections.EmptyMapEx;
 import org.mosaic.util.collections.HashMapEx;
 import org.mosaic.util.collections.MapEx;
 import org.mosaic.util.osgi.FilterBuilder;
@@ -111,6 +112,11 @@ final class TypeDescriptorFieldServiceReference extends TypeDescriptorField
     public MapEx<String, Object> getProperties()
     {
         org.osgi.framework.ServiceReference ref = this.serviceTracker.getServiceReference();
+        if( ref == null )
+        {
+            return EmptyMapEx.emptyMapEx();
+        }
+
         String[] propertyKeys = ref.getPropertyKeys();
 
         MapEx<String, Object> properties = new HashMapEx<>( propertyKeys.length );
