@@ -53,6 +53,9 @@
     </div>
 
     <div id="dynamic-container" class="container"></div>
+    <div class="container">
+        <div class="footer"><p>&copy; Arik Kfir 2014</p></div>
+    </div>
 
     <script src="lib/jquery-2.0.3.min.js"></script>
     <script src="lib/bootstrap/js/bootstrap.min.js"></script>

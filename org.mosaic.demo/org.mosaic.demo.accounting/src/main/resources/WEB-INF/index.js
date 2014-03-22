@@ -6,11 +6,7 @@
  * @param target the target URL
  */
 function routeTo( target ) {
-    var $dynamic = $( "#dynamic-container" );
-    $dynamic.load( target, null, function( responseText, textStatus, XMLHttpRequest ) {
-        // TODO: show error if any
-        $dynamic.append( '<div class="footer"><p>&copy; Arik Kfir 2014</p></div>' );
-    } );
+    $( "#dynamic-container" ).load( target );
 }
 
 /**
@@ -28,6 +24,8 @@ Path.map( "" ).to( createRouteFunction( "/home.html" ) );
 Path.map( "#" ).to( createRouteFunction( "/home.html" ) );
 Path.map( "#/" ).to( createRouteFunction( "/home.html" ) );
 Path.map( "#/about" ).to( createRouteFunction( "/about.html" ) );
+Path.map( "#/expenses" ).to( createRouteFunction( "/expenses.html" ) );
+Path.map( "#/income" ).to( createRouteFunction( "/income.html" ) );
 Path.root( "#" );
 
 // handle unknown routes
