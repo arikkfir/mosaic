@@ -66,8 +66,8 @@
                         <debuglevel>lines,vars,source</debuglevel>
                         <showDeprecation>true</showDeprecation>
                         <showWarnings>true</showWarnings>
-                        <source>1.8</source>
-                        <target>1.8</target>
+                        <source>1.7</source>
+                        <target>1.7</target>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -106,7 +106,7 @@
                                 </excludes>
                             </bannedDependencies>
                             <requireJavaVersion>
-                                <version>[1.8]</version>
+                                <version>[1.7]</version>
                             </requireJavaVersion>
                             <requireMavenVersion>
                                 <version>[3.1.0,4)</version>
