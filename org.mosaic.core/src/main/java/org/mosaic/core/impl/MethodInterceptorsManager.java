@@ -64,11 +64,11 @@ class MethodInterceptorsManager extends TransitionAdapter
     @Override
     public void execute( @Nonnull Status origin, @Nonnull Status target ) throws Exception
     {
-        if( target == ServerImpl.STARTED )
+        if( target == ServerStatus.STARTED )
         {
             initialize();
         }
-        else if( target == ServerImpl.STOPPED )
+        else if( target == ServerStatus.STOPPED )
         {
             shutdown();
         }
@@ -77,7 +77,7 @@ class MethodInterceptorsManager extends TransitionAdapter
     @Override
     public void revert( @Nonnull Status origin, @Nonnull Status target ) throws Exception
     {
-        if( target == ServerImpl.STARTED )
+        if( target == ServerStatus.STARTED )
         {
             shutdown();
         }

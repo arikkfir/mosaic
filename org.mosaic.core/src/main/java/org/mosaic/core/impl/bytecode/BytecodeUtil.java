@@ -1,4 +1,4 @@
-package org.mosaic.core.impl;
+package org.mosaic.core.impl.bytecode;
 
 import java.io.ByteArrayInputStream;
 import java.util.Collection;
@@ -6,6 +6,9 @@ import java.util.LinkedList;
 import java.util.List;
 import javassist.*;
 import javassist.bytecode.Descriptor;
+import org.mosaic.core.ModuleRevision;
+import org.mosaic.core.impl.MethodEntry;
+import org.mosaic.core.impl.ModulesSpi;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.osgi.framework.hooks.weaving.WeavingException;
@@ -34,7 +37,7 @@ class BytecodeUtil
     }
 
     @Nonnull
-    static Collection<CtConstructor> getSuperCallingConstructors( @Nonnull ModuleRevisionImpl moduleRevision,
+    static Collection<CtConstructor> getSuperCallingConstructors( @Nonnull ModuleRevision moduleRevision,
                                                                   @Nonnull CtClass ctClass )
     {
         try

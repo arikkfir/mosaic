@@ -1,15 +1,18 @@
 package org.mosaic.core.impl;
 
 import java.nio.file.Path;
+import org.mosaic.core.ModuleRevision;
 import org.mosaic.core.Server;
+import org.mosaic.core.impl.bytecode.BytecodeWeavingHook;
+import org.mosaic.core.impl.bytecode.ModuleRevisionLookup;
 import org.mosaic.core.util.Nonnull;
+import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
 import org.mosaic.core.util.concurrency.ReadWriteLock;
 import org.mosaic.core.util.version.Version;
-import org.mosaic.core.util.workflow.Status;
 import org.mosaic.core.util.workflow.Workflow;
 import org.osgi.framework.BundleContext;
-import org.slf4j.Logger;
+import org.osgi.framework.wiring.BundleRevision;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.mosaic.core.util.logging.Logging.getMarkerLogger;
@@ -19,12 +22,6 @@ import static org.mosaic.core.util.logging.Logging.getMarkerLogger;
  */
 class ServerImpl extends Workflow implements Server
 {
-    @Nonnull
-    static final Status STOPPED = new Status( "stopped" );
-
-    @Nonnull
-    static final Status STARTED = new Status( "started" );
-
     @Nonnull
     private final BundleContext bundleContext;
 
@@ -66,7 +63,7 @@ class ServerImpl extends Workflow implements Server
 
     ServerImpl( @Nonnull BundleContext bundleContext )
     {
-        super( new ReadWriteLock( "org.mosaic", 15, SECONDS ), "Mosaic", STOPPED, getMarkerLogger( "server" ) );
+        super( new ReadWriteLock( "org.mosaic", 15, SECONDS ), "Mosaic", ServerStatus.STOPPED, getMarkerLogger( "server" ) );
 
         // initialize from external bundle configuration
         this.bundleContext = bundleContext;
@@ -81,13 +78,28 @@ class ServerImpl extends Workflow implements Server
         this.work = Util.getPath( this.bundleContext, "org.mosaic.home.work" );
 
         // add transitions
-        addTransition( STOPPED, STARTED, TransitionDirection.FORWARD );
-        addTransition( STARTED, STOPPED, TransitionDirection.BACKWARDS );
+        addTransition( ServerStatus.STOPPED, ServerStatus.STARTED, TransitionDirection.FORWARD );
+        addTransition( ServerStatus.STARTED, ServerStatus.STOPPED, TransitionDirection.BACKWARDS );
 
         // create bytecode weaver
-        BytecodeJavassistCompiler javassistCompiler = new BytecodeJavassistCompiler();
-        BytecodeCompiler cachingCompiler = addListener( new BytecodeCachingCompiler( this, javassistCompiler ) );
-        addListener( new BytecodeWeavingHook( this, cachingCompiler ) );
+        addListener( new BytecodeWeavingHook( this, this.work.resolve( "weaving" ), new ModuleRevisionLookup()
+        {
+            @Nullable
+            @Override
+            public ModuleRevision getModuleRevision( @Nonnull BundleRevision bundleRevision )
+            {
+                long bundleId = bundleRevision.getBundle().getBundleId();
+                ModuleImpl module = moduleManager.getModule( bundleId );
+                if( module == null )
+                {
+                    throw new IllegalArgumentException( "unknown module: " + bundleId );
+                }
+                else
+                {
+                    return module.getRevision( bundleRevision );
+                }
+            }
+        } ) );
 
         // create the service manager
         this.serviceManager = addListener( new ServiceManagerImpl( this ) );
@@ -171,12 +183,6 @@ class ServerImpl extends Workflow implements Server
     public Path getWork()
     {
         return this.work;
-    }
-
-    @Nonnull
-    Logger getLogger()
-    {
-        return this.logger;
     }
 
     @Nonnull

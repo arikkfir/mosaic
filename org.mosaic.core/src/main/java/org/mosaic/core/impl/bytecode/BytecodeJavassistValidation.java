@@ -1,23 +1,24 @@
-package org.mosaic.core.impl;
+package org.mosaic.core.impl.bytecode;
 
 import java.lang.annotation.Annotation;
 import javassist.CtBehavior;
 import javassist.CtClass;
 import javassist.CtMethod;
 import javassist.NotFoundException;
+import org.mosaic.core.ModuleRevision;
 import org.mosaic.core.util.Nonnull;
 import org.osgi.framework.hooks.weaving.WeavingException;
 
 import static javassist.Modifier.isAbstract;
 import static javassist.Modifier.isNative;
-import static org.mosaic.core.impl.BytecodeUtil.javaCode;
+import static org.mosaic.core.impl.bytecode.BytecodeUtil.javaCode;
 
 /**
  * @author arik
  */
 class BytecodeJavassistValidation
 {
-    void weaveNonnullChecks( @Nonnull ModuleRevisionImpl moduleRevision, @Nonnull CtClass ctClass )
+    void weaveNonnullChecks( @Nonnull ModuleRevision moduleRevision, @Nonnull CtClass ctClass )
     {
         for( CtBehavior behavior : ctClass.getDeclaredBehaviors() )
         {

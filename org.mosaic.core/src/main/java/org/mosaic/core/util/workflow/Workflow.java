@@ -55,6 +55,12 @@ public class Workflow
     }
 
     @Nonnull
+    public Logger getLogger()
+    {
+        return this.logger;
+    }
+
+    @Nonnull
     public ReadWriteLock getLock()
     {
         this.lock.acquireReadLock();

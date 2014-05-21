@@ -1,10 +1,11 @@
-package org.mosaic.core.impl;
+package org.mosaic.core.impl.bytecode;
 
 import java.util.HashMap;
 import java.util.Map;
 import javassist.*;
 import javassist.bytecode.AccessFlag;
 import org.mosaic.core.MethodInterceptor;
+import org.mosaic.core.ModuleRevision;
 import org.mosaic.core.util.Nonnull;
 import org.osgi.framework.hooks.weaving.WeavingException;
 import org.slf4j.Logger;
@@ -13,14 +14,14 @@ import org.slf4j.LoggerFactory;
 import static javassist.Modifier.*;
 import static javassist.bytecode.AccessFlag.BRIDGE;
 import static javassist.bytecode.AccessFlag.SYNTHETIC;
-import static org.mosaic.core.impl.BytecodeUtil.*;
+import static org.mosaic.core.impl.bytecode.BytecodeUtil.*;
 
 /**
  * @author arik
  */
 class BytecodeJavassistMethodInterception
 {
-    void weaveMethodsInterception( @Nonnull ModuleRevisionImpl moduleRevision, @Nonnull CtClass ctClass )
+    void weaveMethodsInterception( @Nonnull ModuleRevision moduleRevision, @Nonnull CtClass ctClass )
     {
         try
         {
@@ -60,7 +61,7 @@ class BytecodeJavassistMethodInterception
     }
 
     @Nonnull
-    private Map<CtMethod, Long> createMethodIdsMap( @Nonnull ModuleRevisionImpl moduleRevision,
+    private Map<CtMethod, Long> createMethodIdsMap( @Nonnull ModuleRevision moduleRevision,
                                                     @Nonnull CtClass ctClass )
     {
         try

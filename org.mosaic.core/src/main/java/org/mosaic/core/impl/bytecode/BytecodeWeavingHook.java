@@ -1,25 +1,35 @@
-package org.mosaic.core.impl;
+package org.mosaic.core.impl.bytecode;
 
+import java.nio.file.Path;
+import org.mosaic.core.ModuleRevision;
+import org.mosaic.core.impl.ModulesSpi;
+import org.mosaic.core.impl.ServerStatus;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
 import org.mosaic.core.util.workflow.Status;
 import org.mosaic.core.util.workflow.TransitionAdapter;
+import org.mosaic.core.util.workflow.Workflow;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.hooks.weaving.WeavingException;
 import org.osgi.framework.hooks.weaving.WeavingHook;
 import org.osgi.framework.hooks.weaving.WovenClass;
 import org.osgi.framework.wiring.BundleRevision;
+import org.slf4j.Logger;
 
 /**
  * @author arik
  */
-class BytecodeWeavingHook extends TransitionAdapter implements WeavingHook
+public class BytecodeWeavingHook extends TransitionAdapter implements WeavingHook
 {
     @Nonnull
-    private final ServerImpl server;
+    private final Logger logger;
+
+    @Nonnull
+    private final ModuleRevisionLookup moduleRevisionLookup;
 
     @Nonnull
     private final BytecodeCompiler compiler;
@@ -27,10 +37,14 @@ class BytecodeWeavingHook extends TransitionAdapter implements WeavingHook
     @Nullable
     private ServiceRegistration<WeavingHook> registration;
 
-    BytecodeWeavingHook( @Nonnull ServerImpl server, @Nonnull BytecodeCompiler cachingCompiler )
+    public BytecodeWeavingHook( @Nonnull Workflow workflow,
+                                @Nonnull Path weavingDirectory,
+                                @Nonnull ModuleRevisionLookup moduleRevisionLookup )
     {
-        this.server = server;
-        this.compiler = cachingCompiler;
+        this.logger = workflow.getLogger();
+        this.moduleRevisionLookup = moduleRevisionLookup;
+        this.compiler = new BytecodeCachingCompiler( workflow, weavingDirectory );
+        workflow.addListener( this );
     }
 
     @Override
@@ -44,11 +58,11 @@ class BytecodeWeavingHook extends TransitionAdapter implements WeavingHook
     @Override
     public void execute( @Nonnull Status origin, @Nonnull Status target ) throws Exception
     {
-        if( target == ServerImpl.STARTED )
+        if( target == ServerStatus.STARTED )
         {
             register();
         }
-        else if( target == ServerImpl.STOPPED )
+        else if( target == ServerStatus.STOPPED )
         {
             unregister();
         }
@@ -57,7 +71,7 @@ class BytecodeWeavingHook extends TransitionAdapter implements WeavingHook
     @Override
     public void revert( @Nonnull Status origin, @Nonnull Status target ) throws Exception
     {
-        if( target == ServerImpl.STARTED )
+        if( target == ServerStatus.STARTED )
         {
             unregister();
         }
@@ -74,18 +88,11 @@ class BytecodeWeavingHook extends TransitionAdapter implements WeavingHook
             return;
         }
 
-        // find Mosaic module for this bundle
-        ModuleImpl module = this.server.getModuleManager().getModule( bundleRevision.getBundle().getBundleId() );
-        if( module == null )
-        {
-            throw new WeavingException( "could not find module for bundle " + bundle );
-        }
-
         // find module revision for the bundle revision this class is woven for
-        ModuleRevisionImpl moduleRevision = module.getRevision( bundleRevision );
+        ModuleRevision moduleRevision = this.moduleRevisionLookup.getModuleRevision( bundleRevision );
         if( moduleRevision == null )
         {
-            throw new WeavingException( "could not find module revision for " + bundleRevision + " in module " + module );
+            throw new WeavingException( "could not find module revision for " + bundleRevision + " in module " + bundleRevision.getBundle().getBundleId() );
         }
 
         // all weaved bundles should import the 'spi' package of 'modules' module
@@ -119,10 +126,21 @@ class BytecodeWeavingHook extends TransitionAdapter implements WeavingHook
 
     private void register()
     {
-        this.server.getLogger().trace( "Registering bytecode weaving hook" );
+        this.logger.trace( "Registering bytecode weaving hook" );
 
-        BundleContext bundleContext = BytecodeWeavingHook.this.server.getBundleContext();
-        this.registration = bundleContext.registerService( WeavingHook.class, BytecodeWeavingHook.this, null );
+        Bundle bundle = FrameworkUtil.getBundle( getClass() );
+        if( bundle == null )
+        {
+            throw new IllegalStateException();
+        }
+
+        BundleContext bundleContext = bundle.getBundleContext();
+        if( bundleContext == null )
+        {
+            throw new IllegalStateException();
+        }
+
+        this.registration = bundleContext.registerService( WeavingHook.class, this, null );
     }
 
     private void unregister()
@@ -132,7 +150,7 @@ class BytecodeWeavingHook extends TransitionAdapter implements WeavingHook
         {
             try
             {
-                this.server.getLogger().trace( "Unregistering bytecode weaving hook" );
+                this.logger.trace( "Unregistering bytecode weaving hook" );
                 registration.unregister();
             }
             catch( Exception ignore )

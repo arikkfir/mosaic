@@ -1,4 +1,4 @@
-package org.mosaic.core.impl;
+package org.mosaic.core.impl.bytecode;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -7,12 +7,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import org.mosaic.core.ModuleRevision;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
 import org.mosaic.core.util.concurrency.ReadWriteLock;
 import org.osgi.framework.hooks.weaving.WovenClass;
 import org.osgi.framework.wiring.BundleRevision;
+import org.slf4j.Logger;
 
 import static java.nio.file.Files.*;
 import static java.nio.file.StandardOpenOption.*;
@@ -23,7 +25,7 @@ import static java.nio.file.StandardOpenOption.*;
 class BytecodeBundleRevisionCache
 {
     @Nonnull
-    private final ServerImpl server;
+    private final Logger logger;
 
     @Nonnull
     private final ReadWriteLock lock;
@@ -42,13 +44,14 @@ class BytecodeBundleRevisionCache
 
     private boolean dirty;
 
-    BytecodeBundleRevisionCache( @Nonnull ServerImpl server,
+    BytecodeBundleRevisionCache( @Nonnull Logger logger,
+                                 @Nonnull ReadWriteLock lock,
                                  @Nonnull BytecodeCompiler compiler,
                                  @Nonnull Path weavingDir,
                                  @Nonnull BundleRevision bundleRevision )
     {
-        this.server = server;
-        this.lock = this.server.getLock();
+        this.logger = logger;
+        this.lock = lock;
         this.bundleRevision = bundleRevision;
         this.compiler = compiler;
 
@@ -67,7 +70,7 @@ class BytecodeBundleRevisionCache
     }
 
     @Nullable
-    byte[] getBytecode( @Nonnull ModuleRevisionImpl moduleRevision, @Nonnull WovenClass wovenClass )
+    byte[] getBytecode( @Nonnull ModuleRevision moduleRevision, @Nonnull WovenClass wovenClass )
     {
         String className = wovenClass.getClassName();
 
@@ -110,7 +113,7 @@ class BytecodeBundleRevisionCache
         {
             if( exists( this.file ) )
             {
-                this.server.getLogger().trace( "Loading bytecode cache for {} from {}", this.bundleRevision, this.file );
+                this.logger.trace( "Loading bytecode cache for {} from {}", this.bundleRevision, this.file );
 
                 boolean corrupt = false;
                 try( DataInputStream in = new DataInputStream( newInputStream( this.file, READ ) ) )
@@ -131,12 +134,12 @@ class BytecodeBundleRevisionCache
                 }
                 catch( IOException e )
                 {
-                    this.server.getLogger().error( "Error reading bytecode cache from '{}': {}", this.file, e.getMessage(), e );
+                    this.logger.error( "Error reading bytecode cache from '{}': {}", this.file, e.getMessage(), e );
                 }
 
                 if( corrupt )
                 {
-                    this.server.getLogger().error( "Bytecode cache file at '{}' is corrupt", this.file );
+                    this.logger.error( "Bytecode cache file at '{}' is corrupt", this.file );
                     try
                     {
                         Files.delete( this.file );
@@ -164,7 +167,7 @@ class BytecodeBundleRevisionCache
         this.lock.acquireWriteLock();
         try
         {
-            this.server.getLogger().trace( "Saving bytecode cache for {} to {}", this.bundleRevision, this.file );
+            this.logger.trace( "Saving bytecode cache for {} to {}", this.bundleRevision, this.file );
 
             try
             {
@@ -172,7 +175,7 @@ class BytecodeBundleRevisionCache
             }
             catch( IOException e )
             {
-                this.server.getLogger().error( "Could not create cache file directory at '{}': {}", this.file.getParent(), e.getMessage(), e );
+                this.logger.error( "Could not create cache file directory at '{}': {}", this.file.getParent(), e.getMessage(), e );
                 return;
             }
 
@@ -192,7 +195,7 @@ class BytecodeBundleRevisionCache
             }
             catch( IOException e )
             {
-                this.server.getLogger().error( "Error persisting bytecode cache to '{}': {}", this.file, e.getMessage(), e );
+                this.logger.error( "Error persisting bytecode cache to '{}': {}", this.file, e.getMessage(), e );
             }
         }
         finally

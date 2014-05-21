@@ -41,12 +41,12 @@ class ServiceManagerImpl extends TransitionAdapter implements ServiceManager
     @Override
     public void execute( @Nonnull Status origin, @Nonnull Status target ) throws Exception
     {
-        if( target == ServerImpl.STARTED )
+        if( target == ServerStatus.STARTED )
         {
             this.services = new HashMap<>();
             this.serviceListeners = new LinkedList<>();
         }
-        else if( target == ServerImpl.STOPPED )
+        else if( target == ServerStatus.STOPPED )
         {
             this.serviceListeners = null;
             this.services = null;
@@ -56,7 +56,7 @@ class ServiceManagerImpl extends TransitionAdapter implements ServiceManager
     @Override
     public void revert( @Nonnull Status origin, @Nonnull Status target ) throws Exception
     {
-        if( target == ServerImpl.STARTED )
+        if( target == ServerStatus.STARTED )
         {
             this.serviceListeners = null;
             this.services = null;

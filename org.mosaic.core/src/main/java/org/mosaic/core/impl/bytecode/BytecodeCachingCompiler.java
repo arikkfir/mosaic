@@ -1,18 +1,24 @@
-package org.mosaic.core.impl;
+package org.mosaic.core.impl.bytecode;
 
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.mosaic.core.ModuleRevision;
+import org.mosaic.core.impl.ServerStatus;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
+import org.mosaic.core.util.concurrency.ReadWriteLock;
 import org.mosaic.core.util.workflow.Status;
 import org.mosaic.core.util.workflow.TransitionAdapter;
+import org.mosaic.core.util.workflow.Workflow;
 import org.osgi.framework.hooks.weaving.WeavingException;
 import org.osgi.framework.hooks.weaving.WovenClass;
 import org.osgi.framework.wiring.BundleRevision;
+import org.slf4j.Logger;
 
 /**
  * @author arik
@@ -20,7 +26,13 @@ import org.osgi.framework.wiring.BundleRevision;
 class BytecodeCachingCompiler extends TransitionAdapter implements BytecodeCompiler
 {
     @Nonnull
-    private final ServerImpl server;
+    private final Logger logger;
+
+    @Nonnull
+    private final ReadWriteLock lock;
+
+    @Nonnull
+    private final Path weavingDirectory;
 
     @Nonnull
     private final BytecodeCompiler compiler;
@@ -31,10 +43,13 @@ class BytecodeCachingCompiler extends TransitionAdapter implements BytecodeCompi
     @Nullable
     private ScheduledExecutorService executorService;
 
-    BytecodeCachingCompiler( @Nonnull ServerImpl server, @Nonnull BytecodeCompiler compiler )
+    BytecodeCachingCompiler( @Nonnull Workflow workflow, @Nonnull Path weavingDirectory )
     {
-        this.server = server;
-        this.compiler = compiler;
+        this.logger = workflow.getLogger();
+        this.lock = workflow.getLock();
+        this.weavingDirectory = weavingDirectory;
+        this.compiler = new BytecodeJavassistCompiler();
+        workflow.addListener( this );
     }
 
     @Override
@@ -48,11 +63,11 @@ class BytecodeCachingCompiler extends TransitionAdapter implements BytecodeCompi
     @Override
     public void execute( @Nonnull Status origin, @Nonnull Status target ) throws Exception
     {
-        if( target == ServerImpl.STARTED )
+        if( target == ServerStatus.STARTED )
         {
             initialize();
         }
-        else if( target == ServerImpl.STOPPED )
+        else if( target == ServerStatus.STOPPED )
         {
             shutdown();
         }
@@ -61,7 +76,7 @@ class BytecodeCachingCompiler extends TransitionAdapter implements BytecodeCompi
     @Override
     public void revert( @Nonnull Status origin, @Nonnull Status target ) throws Exception
     {
-        if( target == ServerImpl.STARTED )
+        if( target == ServerStatus.STARTED )
         {
             shutdown();
         }
@@ -69,7 +84,7 @@ class BytecodeCachingCompiler extends TransitionAdapter implements BytecodeCompi
 
     @Nullable
     @Override
-    public byte[] compile( @Nonnull ModuleRevisionImpl moduleRevision, @Nonnull WovenClass wovenClass )
+    public byte[] compile( @Nonnull ModuleRevision moduleRevision, @Nonnull WovenClass wovenClass )
     {
         try
         {
@@ -89,7 +104,7 @@ class BytecodeCachingCompiler extends TransitionAdapter implements BytecodeCompi
 
     private void initialize()
     {
-        this.server.getLogger().debug( "Initializing bytecode caching compiler" );
+        this.logger.debug( "Initializing bytecode caching compiler" );
         this.cache = new HashMap<>();
         this.executorService = Executors.newSingleThreadScheduledExecutor();
         this.executorService.scheduleWithFixedDelay( new Runnable()
@@ -97,7 +112,7 @@ class BytecodeCachingCompiler extends TransitionAdapter implements BytecodeCompi
             @Override
             public void run()
             {
-                BytecodeCachingCompiler.this.server.acquireWriteLock();
+                BytecodeCachingCompiler.this.lock.acquireWriteLock();
                 try
                 {
                     Map<BundleRevision, BytecodeBundleRevisionCache> cache = BytecodeCachingCompiler.this.cache;
@@ -111,7 +126,7 @@ class BytecodeCachingCompiler extends TransitionAdapter implements BytecodeCompi
                 }
                 finally
                 {
-                    BytecodeCachingCompiler.this.server.releaseWriteLock();
+                    BytecodeCachingCompiler.this.lock.releaseWriteLock();
                 }
             }
         }, 1, 5, TimeUnit.SECONDS );
@@ -119,7 +134,7 @@ class BytecodeCachingCompiler extends TransitionAdapter implements BytecodeCompi
 
     private void shutdown() throws InterruptedException
     {
-        this.server.getLogger().debug( "Shutting down bytecode caching compiler" );
+        this.logger.debug( "Shutting down bytecode caching compiler" );
         ScheduledExecutorService executorService = this.executorService;
         if( executorService != null )
         {
@@ -134,7 +149,7 @@ class BytecodeCachingCompiler extends TransitionAdapter implements BytecodeCompi
     @Nonnull
     private BytecodeBundleRevisionCache getBundleRevisionCache( @Nonnull BundleRevision bundleRevision )
     {
-        this.server.acquireReadLock();
+        this.lock.acquireReadLock();
         try
         {
             Map<BundleRevision, BytecodeBundleRevisionCache> cache = this.cache;
@@ -149,8 +164,8 @@ class BytecodeCachingCompiler extends TransitionAdapter implements BytecodeCompi
                 return revisionCache;
             }
 
-            this.server.releaseReadLock();
-            this.server.acquireWriteLock();
+            this.lock.releaseReadLock();
+            this.lock.acquireWriteLock();
             try
             {
                 // check again in case it was just created between our release of the read lock and acquiring of the write lock
@@ -160,9 +175,10 @@ class BytecodeCachingCompiler extends TransitionAdapter implements BytecodeCompi
                     return revisionCache;
                 }
 
-                revisionCache = new BytecodeBundleRevisionCache( this.server,
+                revisionCache = new BytecodeBundleRevisionCache( this.logger,
+                                                                 this.lock,
                                                                  this.compiler,
-                                                                 this.server.getWork().resolve( "weaving" ),
+                                                                 this.weavingDirectory,
                                                                  bundleRevision );
                 cache.put( bundleRevision, revisionCache );
                 return revisionCache;
@@ -173,13 +189,13 @@ class BytecodeCachingCompiler extends TransitionAdapter implements BytecodeCompi
             }
             finally
             {
-                this.server.releaseWriteLock();
-                this.server.acquireReadLock();
+                this.lock.releaseWriteLock();
+                this.lock.acquireReadLock();
             }
         }
         finally
         {
-            this.server.releaseReadLock();
+            this.lock.releaseReadLock();
         }
     }
 }

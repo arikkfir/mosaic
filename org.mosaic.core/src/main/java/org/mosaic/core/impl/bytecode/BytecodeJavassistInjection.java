@@ -1,4 +1,4 @@
-package org.mosaic.core.impl;
+package org.mosaic.core.impl.bytecode;
 
 import java.util.Collection;
 import javassist.CtClass;
@@ -6,20 +6,21 @@ import javassist.CtConstructor;
 import javassist.CtField;
 import javassist.NotFoundException;
 import org.mosaic.core.Inject;
+import org.mosaic.core.ModuleRevision;
 import org.mosaic.core.util.Nonnull;
 import org.osgi.framework.hooks.weaving.WeavingException;
 import org.osgi.framework.hooks.weaving.WovenClass;
 
 import static javassist.Modifier.isFinal;
 import static javassist.Modifier.isStatic;
-import static org.mosaic.core.impl.BytecodeUtil.javaCode;
+import static org.mosaic.core.impl.bytecode.BytecodeUtil.javaCode;
 
 /**
  * @author arik
  */
 class BytecodeJavassistInjection
 {
-    void weaveFieldInjections( @Nonnull ModuleRevisionImpl moduleRevision,
+    void weaveFieldInjections( @Nonnull ModuleRevision moduleRevision,
                                @Nonnull WovenClass wovenClass,
                                @Nonnull CtClass ctClass )
     {

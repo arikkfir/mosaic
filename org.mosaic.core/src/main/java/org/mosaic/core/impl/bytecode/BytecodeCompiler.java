@@ -1,5 +1,6 @@
-package org.mosaic.core.impl;
+package org.mosaic.core.impl.bytecode;
 
+import org.mosaic.core.ModuleRevision;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.osgi.framework.hooks.weaving.WovenClass;
@@ -10,5 +11,5 @@ import org.osgi.framework.hooks.weaving.WovenClass;
 interface BytecodeCompiler
 {
     @Nullable
-    byte[] compile( @Nonnull ModuleRevisionImpl moduleRevision, @Nonnull WovenClass wovenClass );
+    byte[] compile( @Nonnull ModuleRevision moduleRevision, @Nonnull WovenClass wovenClass );
 }

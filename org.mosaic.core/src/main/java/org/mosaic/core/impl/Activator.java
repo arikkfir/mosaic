@@ -23,7 +23,7 @@ public class Activator implements BundleActivator
     public void start( @Nonnull BundleContext context ) throws Exception
     {
         ServerImpl server = new ServerImpl( context );
-        server.transitionTo( ServerImpl.STARTED, true );
+        server.transitionTo( ServerStatus.STARTED, true );
         Activator.server = server;
     }
 
@@ -33,7 +33,7 @@ public class Activator implements BundleActivator
         ServerImpl server = Activator.server;
         if( server != null )
         {
-            server.transitionTo( ServerImpl.STOPPED, false );
+            server.transitionTo( ServerStatus.STOPPED, false );
         }
     }
 }
