@@ -5,7 +5,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.List;
-import javax.annotation.Nonnull;
+import org.mosaic.core.util.Nonnull;
 import org.mosaic.modules.MethodEndpoint;
 import org.mosaic.modules.ServiceReference;
 import org.mosaic.modules.ServiceTemplate;

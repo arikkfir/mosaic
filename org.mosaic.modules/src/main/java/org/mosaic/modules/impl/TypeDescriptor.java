@@ -8,8 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.mosaic.core.util.Nonnull;
+import org.mosaic.core.util.Nullable;
 import org.mosaic.modules.*;
 
 import static java.lang.reflect.Modifier.isFinal;

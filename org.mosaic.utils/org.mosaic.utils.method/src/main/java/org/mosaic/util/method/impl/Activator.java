@@ -1,7 +1,7 @@
 package org.mosaic.util.method.impl;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.mosaic.core.util.Nonnull;
+import org.mosaic.core.util.Nullable;
 import org.mosaic.util.method.MethodHandleFactory;
 import org.osgi.framework.*;
 

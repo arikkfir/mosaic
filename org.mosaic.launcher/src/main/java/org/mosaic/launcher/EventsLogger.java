@@ -1,7 +1,5 @@
 package org.mosaic.launcher;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,7 +12,7 @@ final class EventsLogger
 
     private static final String SEPARATOR = "******************************************************************************";
 
-    public static void printEmphasizedInfoMessage( @Nonnull String message, @Nullable Object... args )
+    public static void printEmphasizedInfoMessage( String message, Object... args )
     {
         LOG.info( "" );
         LOG.info( SEPARATOR );
@@ -23,7 +21,7 @@ final class EventsLogger
         LOG.info( "" );
     }
 
-    public static void printEmphasizedWarnMessage( @Nonnull String message, @Nullable Object... args )
+    public static void printEmphasizedWarnMessage( String message, Object... args )
     {
         LOG.warn( "" );
         LOG.warn( SEPARATOR );
@@ -32,7 +30,7 @@ final class EventsLogger
         LOG.warn( "" );
     }
 
-    public static void printEmphasizedErrorMessage( @Nonnull String message, @Nullable Object... args )
+    public static void printEmphasizedErrorMessage( String message, Object... args )
     {
         LOG.error( "" );
         LOG.warn( SEPARATOR );

@@ -97,7 +97,6 @@
                             <requireNoRepositories>
                                 <message>Best Practice is to never define repositories in pom.xml (use a repository manager instead)</message>
                             </requireNoRepositories>
-                            <requireUpperBoundDeps/>
                             <bannedDependencies>
                                 <searchTransitive>true</searchTransitive>
                                 <message>Your dependency list contains banned dependencies. Please remove them.</message>
@@ -105,9 +104,6 @@
                                     <exclude>commons-logging</exclude>
                                 </excludes>
                             </bannedDependencies>
-                            <requireJavaVersion>
-                                <version>[1.7]</version>
-                            </requireJavaVersion>
                             <requireMavenVersion>
                                 <version>[3.1.0,4)</version>
                             </requireMavenVersion>
@@ -319,123 +315,6 @@
     <dependencyManagement>
 
         <dependencies>
-
-            <!-- mosaic modules management -->
-            <dependency>
-                <groupId>org.mosaic</groupId>
-                <artifactId>org.mosaic.config</artifactId>
-                <version>[${project.version}]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mosaic</groupId>
-                <artifactId>org.mosaic.console</artifactId>
-                <version>[${project.version}]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mosaic</groupId>
-                <artifactId>org.mosaic.console.remote</artifactId>
-                <version>[${project.version}]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mosaic</groupId>
-                <artifactId>org.mosaic.dao</artifactId>
-                <version>[${project.version}]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mosaic</groupId>
-                <artifactId>org.mosaic.datasource</artifactId>
-                <version>[${project.version}]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mosaic</groupId>
-                <artifactId>org.mosaic.event</artifactId>
-                <version>[${project.version}]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mosaic</groupId>
-                <artifactId>org.mosaic.jsr305</artifactId>
-                <version>[${project.version}]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mosaic</groupId>
-                <artifactId>org.mosaic.modules</artifactId>
-                <version>[${project.version}]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mosaic</groupId>
-                <artifactId>org.mosaic.pathwatchers</artifactId>
-                <version>[${project.version}]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mosaic</groupId>
-                <artifactId>org.mosaic.security</artifactId>
-                <version>[${project.version}]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mosaic</groupId>
-                <artifactId>org.mosaic.server</artifactId>
-                <version>[${project.version}]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mosaic</groupId>
-                <artifactId>org.mosaic.tasks</artifactId>
-                <version>[${project.version}]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mosaic.utils</groupId>
-                <artifactId>org.mosaic.utils.base</artifactId>
-                <version>[${project.version}]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mosaic.utils</groupId>
-                <artifactId>org.mosaic.utils.collections</artifactId>
-                <version>[${project.version}]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mosaic.utils</groupId>
-                <artifactId>org.mosaic.utils.conversion</artifactId>
-                <version>[${project.version}]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mosaic.utils</groupId>
-                <artifactId>org.mosaic.utils.expression</artifactId>
-                <version>[${project.version}]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mosaic.utils</groupId>
-                <artifactId>org.mosaic.utils.method</artifactId>
-                <version>[${project.version}]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mosaic.utils</groupId>
-                <artifactId>org.mosaic.utils.osgi</artifactId>
-                <version>[${project.version}]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mosaic.utils</groupId>
-                <artifactId>org.mosaic.utils.reflection</artifactId>
-                <version>[${project.version}]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mosaic.utils</groupId>
-                <artifactId>org.mosaic.utils.resource</artifactId>
-                <version>[${project.version}]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mosaic.utils</groupId>
-                <artifactId>org.mosaic.utils.xml</artifactId>
-                <version>[${project.version}]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mosaic</groupId>
-                <artifactId>org.mosaic.validation</artifactId>
-                <version>[${project.version}]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mosaic</groupId>
-                <artifactId>org.mosaic.web</artifactId>
-                <version>[${project.version}]</version>
-            </dependency>
 
             <!-- hibernate validation -->
             <dependency>
@@ -700,6 +579,31 @@
                 <version>[3.18.1-GA,3.19.0-GA)</version>
             </dependency>
             <dependency>
+                <groupId>org.ow2.asm</groupId>
+                <artifactId>asm</artifactId>
+                <version>[5.0.1]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.ow2.asm</groupId>
+                <artifactId>asm-tree</artifactId>
+                <version>[5.0.1]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.ow2.asm</groupId>
+                <artifactId>asm-util</artifactId>
+                <version>[5.0.1]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.ow2.asm</groupId>
+                <artifactId>asm-commons</artifactId>
+                <version>[5.0.1]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.ow2.asm</groupId>
+                <artifactId>asm-analysis</artifactId>
+                <version>[5.0.1]</version>
+            </dependency>
+            <dependency>
                 <groupId>commons-codec</groupId>
                 <artifactId>commons-codec</artifactId>
                 <version>[1.7,1.8)</version>
@@ -708,6 +612,26 @@
                 <groupId>com.thoughtworks.paranamer</groupId>
                 <artifactId>paranamer</artifactId>
                 <version>[2.6,2.7)</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.directory.shared</groupId>
+                <artifactId>shared-ldap</artifactId>
+                <version>[0.9.19]</version>
+            </dependency>
+            <dependency>
+                <groupId>de.odysseus.juel</groupId>
+                <artifactId>juel-api</artifactId>
+                <version>[2.2.7]</version>
+            </dependency>
+            <dependency>
+                <groupId>de.odysseus.juel</groupId>
+                <artifactId>juel-impl</artifactId>
+                <version>[2.2.7]</version>
+            </dependency>
+            <dependency>
+                <groupId>de.odysseus.juel</groupId>
+                <artifactId>juel-spi</artifactId>
+                <version>[2.2.7]</version>
             </dependency>
 
             <!-- freemarker -->
@@ -721,7 +645,7 @@
             <dependency>
                 <groupId>com.fasterxml</groupId>
                 <artifactId>classmate</artifactId>
-                <version>[0.8.0,0.9.0)</version>
+                <version>[1.0.0]</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
@@ -781,7 +705,7 @@
             <dependency>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>org.apache.felix.framework</artifactId>
-                <version>[4.2,4.3)</version>
+                <version>[4.4.0]</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.felix</groupId>

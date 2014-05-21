@@ -1,7 +1,7 @@
 package org.mosaic.util.expression;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.mosaic.core.util.Nonnull;
+import org.mosaic.core.util.Nullable;
 
 /**
  * @author arik

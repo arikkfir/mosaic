@@ -1,7 +1,7 @@
 package org.mosaic.modules;
 
 import java.lang.annotation.Annotation;
-import javax.annotation.Nonnull;
+import org.mosaic.core.util.Nonnull;
 
 /**
  * @author arik

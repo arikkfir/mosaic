@@ -1,8 +1,8 @@
 package org.mosaic.util.method;
 
 import java.lang.reflect.Method;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.mosaic.core.util.Nonnull;
+import org.mosaic.core.util.Nullable;
 
 /**
  * @author arik

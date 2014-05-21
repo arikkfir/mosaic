@@ -1,6 +1,6 @@
 package org.mosaic.modules.spi;
 
-import javax.annotation.Nonnull;
+import org.mosaic.core.util.Nonnull;
 import org.mosaic.modules.Module;
 
 /**

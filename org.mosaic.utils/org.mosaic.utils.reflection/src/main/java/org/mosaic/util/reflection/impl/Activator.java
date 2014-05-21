@@ -1,6 +1,6 @@
 package org.mosaic.util.reflection.impl;
 
-import javax.annotation.Nonnull;
+import org.mosaic.core.util.Nonnull;
 import org.mosaic.util.reflection.ClassAnnotations;
 import org.mosaic.util.reflection.MethodAnnotations;
 import org.mosaic.util.reflection.MethodParameterNames;

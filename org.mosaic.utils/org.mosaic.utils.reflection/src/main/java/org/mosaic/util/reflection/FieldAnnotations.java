@@ -10,8 +10,8 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Set;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.mosaic.core.util.Nonnull;
+import org.mosaic.core.util.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 
 import static java.util.Arrays.asList;

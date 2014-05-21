@@ -6,7 +6,7 @@ import java.lang.annotation.Annotation;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.Collection;
-import javax.annotation.Nullable;
+import org.mosaic.core.util.Nullable;
 import org.junit.Before;
 import org.junit.Test;
 import org.mosaic.util.reflection.ClassAnnotations;

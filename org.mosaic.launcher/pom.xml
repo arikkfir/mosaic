@@ -1,4 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
     <parent>
@@ -10,7 +10,7 @@
 
     <artifactId>org.mosaic.launcher</artifactId>
     <name>Mosaic :: Launcher</name>
-    <description>Mosaic launcher</description>
+    <description>Mosaic Launcher</description>
     <packaging>jar</packaging>
 
     <build>
@@ -23,41 +23,13 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <artifactSet>
-                        <includes>
-                            <include>org.mosaic:org.mosaic.jsr305</include>
-                            <include>org.slf4j:slf4j-api</include>
-                            <include>org.slf4j:jul-to-slf4j</include>
-                            <include>ch.qos.logback:logback-classic</include>
-                            <include>ch.qos.logback:logback-core</include>
-                            <include>org.apache.felix:org.apache.felix.framework</include>
-                            <include>com.google.guava:guava</include>
-                        </includes>
-                    </artifactSet>
-                    <transformers>
-                        <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                            <mainClass>org.mosaic.launcher.Mosaic</mainClass>
-                        </transformer>
-                    </transformers>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <configuration>
                     <usedDependencies>
-                        <usedDependency>ch.qos.logback:logback-classic</usedDependency>
-                        <usedDependency>ch.qos.logback:logback-core</usedDependency>
+                        <dependency>ch.qos.logback:logback-core</dependency>
+                        <dependency>ch.qos.logback:logback-classic</dependency>
+                        <dependency>junit:junit</dependency>
+                        <dependency>org.hamcrest:hamcrest-core</dependency>
                     </usedDependencies>
                 </configuration>
             </plugin>
@@ -65,34 +37,45 @@
     </build>
 
     <dependencies>
+
+        <!-- mosaic uses SLF4J as a logging API -->
         <dependency>
-            <groupId>org.mosaic</groupId>
-            <artifactId>org.mosaic.jsr305</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.felix</groupId>
-            <artifactId>org.apache.felix.framework</artifactId>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>jul-to-slf4j</artifactId>
         </dependency>
+
+        <!-- mosaic uses Logback as the logging backend -->
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
+
+        <!-- OSGi -->
+        <dependency>
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.apache.felix.framework</artifactId>
+        </dependency>
+
+        <!-- testing -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <!-- scm -->

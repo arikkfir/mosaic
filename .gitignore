@@ -15,8 +15,7 @@ target
 
 # Run directory
 run/etc/ssh/history/*
-run/lib/mosaic/*
-run/lib/thirdparty/*
+run/lib/*.jar
 run/logs
 run/work
 

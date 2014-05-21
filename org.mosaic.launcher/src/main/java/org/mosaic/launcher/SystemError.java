@@ -1,6 +1,5 @@
 package org.mosaic.launcher;
 
-import javax.annotation.Nonnull;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
@@ -9,25 +8,22 @@ import org.slf4j.helpers.MessageFormatter;
  */
 final class SystemError
 {
-    @Nonnull
-    public static BootstrapException bootstrapError( @Nonnull String message, @Nonnull Object... args )
+    public static BootstrapException bootstrapError( String message, Object... args )
     {
         return new BootstrapException( message, args );
     }
 
     public static class BootstrapException extends RuntimeException
     {
-        @Nonnull
         private final String message;
 
-        private BootstrapException( @Nonnull String message, @Nonnull Object[] arguments )
+        private BootstrapException( String message, Object[] arguments )
         {
             FormattingTuple tuple = MessageFormatter.arrayFormat( message, arguments );
             this.message = tuple.getMessage();
             initCause( tuple.getThrowable() );
         }
 
-        @Nonnull
         @Override
         public String getMessage()
         {

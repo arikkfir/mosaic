@@ -3,10 +3,7 @@ package org.mosaic.launcher;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.StringTokenizer;
+import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,13 +16,13 @@ final class Header
 {
     private static final Logger LOG = LoggerFactory.getLogger( Header.class );
 
-    public static void printHeader()
+    public static void printHeader( Map<String, ?> properties )
     {
         // load logo
         List<String> logoLines;
         try
         {
-            try( Reader reader = new InputStreamReader( Header.class.getResource( "logo.txt" ).openStream(), "UTF-8" ) )
+            try( Reader reader = new InputStreamReader( Header.class.getResource( "/logo.txt" ).openStream(), "UTF-8" ) )
             {
                 StringBuilder buffer = new StringBuilder( 10000 );
 
@@ -53,20 +50,21 @@ final class Header
 
         // create header
         List<String> infoLines = asList(
-                "Mosaic server, version...{}",
-                "Development mode.........{}",
-                "-----------------------------------------------------------------",
+                "Mosaic server version....{}",
+                "------------------------------------------------------------------------------",
                 "Home.....................{}",
                 "Apps.....................{}",
-                "Configurations (etc).....{}",
-                "Bundles (lib)............{}",
+                "Bin......................{}",
+                "Etc......................{}",
+                "Lib......................{}",
                 "Logs.....................{}",
+                "Schemas..................{}",
                 "Work.....................{}"
         );
 
         // unify header and logo lines
         StringBuilder buffer = new StringBuilder( 5000 );
-        buffer.append( "\n\n****************************************************************************************************************\n\n" );
+        buffer.append( "\n\n********************************************************************************************************************\n\n" );
 
         int i = 0;
         while( i < logoLines.size() || i < infoLines.size() )
@@ -81,17 +79,18 @@ final class Header
             buffer.append( logoLine ).append( infoLine ).append( "\n" );
             i++;
         }
-        buffer.append( "\n****************************************************************************************************************\n" );
+        buffer.append( "\n********************************************************************************************************************\n" );
 
         LOG.warn( buffer.toString(),
-                  Mosaic.getVersion(),
-                  Mosaic.isDevMode() ? "ON" : "off",
-                  Mosaic.getHome(),
-                  Mosaic.getApps(),
-                  Mosaic.getEtc(),
-                  Mosaic.getLib(),
-                  Mosaic.getLogs(),
-                  Mosaic.getWork() );
+                  properties.get( "org.mosaic.version" ),
+                  properties.get( "org.mosaic.home" ),
+                  properties.get( "org.mosaic.home.apps" ),
+                  properties.get( "org.mosaic.home.bin" ),
+                  properties.get( "org.mosaic.home.etc" ),
+                  properties.get( "org.mosaic.home.lib" ),
+                  properties.get( "org.mosaic.home.logs" ),
+                  properties.get( "org.mosaic.home.schemas" ),
+                  properties.get( "org.mosaic.home.work" ) );
     }
 
     private Header()

@@ -1,8 +1,8 @@
 package org.mosaic.modules.impl;
 
 import java.lang.reflect.Field;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.mosaic.core.util.Nonnull;
+import org.mosaic.core.util.Nullable;
 
 /**
  * @author arik

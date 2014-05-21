@@ -3,8 +3,8 @@ package org.mosaic.util.method;
 import com.google.common.reflect.TypeToken;
 import java.lang.annotation.Annotation;
 import java.util.Collection;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.mosaic.core.util.Nonnull;
+import org.mosaic.core.util.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**

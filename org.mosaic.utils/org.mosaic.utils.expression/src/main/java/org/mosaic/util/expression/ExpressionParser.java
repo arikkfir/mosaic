@@ -1,7 +1,7 @@
 package org.mosaic.util.expression;
 
 import com.google.common.reflect.TypeToken;
-import javax.annotation.Nonnull;
+import org.mosaic.core.util.Nonnull;
 
 /**
  * @author arik

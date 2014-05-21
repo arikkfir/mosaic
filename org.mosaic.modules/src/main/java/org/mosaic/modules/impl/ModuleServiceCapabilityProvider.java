@@ -1,7 +1,7 @@
 package org.mosaic.modules.impl;
 
 import java.util.List;
-import javax.annotation.Nonnull;
+import org.mosaic.core.util.Nonnull;
 import org.mosaic.modules.Module;
 
 /**

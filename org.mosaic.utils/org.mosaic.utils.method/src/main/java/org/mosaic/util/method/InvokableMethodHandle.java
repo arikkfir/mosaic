@@ -2,8 +2,8 @@ package org.mosaic.util.method;
 
 import java.util.Collection;
 import java.util.Map;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.mosaic.core.util.Nonnull;
+import org.mosaic.core.util.Nullable;
 
 /**
  * @author arik

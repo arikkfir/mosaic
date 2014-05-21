@@ -1,8 +1,8 @@
 package org.mosaic.util.method;
 
 import com.google.common.base.Optional;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.mosaic.core.util.Nonnull;
+import org.mosaic.core.util.Nullable;
 import org.mosaic.util.collections.MapEx;
 
 /**

@@ -1,17 +1,22 @@
 package org.mosaic.launcher;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.lang.management.ManagementFactory;
+import java.net.URI;
 import java.net.URL;
+import java.nio.file.FileSystem;
+import java.nio.file.*;
+import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Properties;
+import java.util.jar.Manifest;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.Arrays.asList;
 import static org.mosaic.launcher.SystemError.bootstrapError;
 
 /**
@@ -21,16 +26,46 @@ final class SystemPackages
 {
     private static final Logger LOG = LoggerFactory.getLogger( SystemPackages.class );
 
-    private static final Pattern ARTIFACT_VERSION_PATTERN = Pattern.compile( "\\$\\{(.+):(.+)\\}" );
+    private static final Pattern VERSION = Pattern.compile( "version=\"?(.+)\"?" );
 
     private static final String extraSystemPackages;
 
+    private static final List<String> BOOT_PACKAGES = asList(
+            "com.sun.jdi",
+            "com.sun.jdi.connect",
+            "com.sun.jdi.event",
+            "com.sun.jdi.request",
+            "sun.reflect"
+    );
+
     static
     {
-        Map<String, String> packages = new LinkedHashMap<>();
-        readPackages( packages, "extra.systempackages.properties" );
-        extraSystemPackages = createSpecForPackages( packages, true );
-        LOG.trace( "Extra system packages: {}", SystemPackages.extraSystemPackages );
+        URL exportedPackagesFile = SystemPackages.class.getResource( "/exported-packages.txt" );
+        if( exportedPackagesFile == null )
+        {
+            throw new IllegalStateException( "could not find /exported-packages.txt file in classpath" );
+        }
+
+        try( BufferedReader reader = new BufferedReader( new InputStreamReader( exportedPackagesFile.openStream() ) ) )
+        {
+            Map<String, String> packages = new LinkedHashMap<>();
+            for( String packageName : BOOT_PACKAGES )
+            {
+                packages.put( packageName, "0.0.0" );
+            }
+
+            String packageName;
+            while( ( packageName = reader.readLine() ) != null )
+            {
+                packages.put( packageName, getVersionForPackage( packageName.trim() ) );
+            }
+
+            extraSystemPackages = createSpecForPackages( packages, true );
+        }
+        catch( IOException e )
+        {
+            throw bootstrapError( "could not read system packages from '{}': {}", exportedPackagesFile, e.getMessage(), e );
+        }
     }
 
     public static String getExtraSystemPackages()
@@ -38,50 +73,88 @@ final class SystemPackages
         return SystemPackages.extraSystemPackages;
     }
 
-    private static void readPackages( @Nonnull Map<String, String> properties, @Nonnull String path )
+    private static String getVersionForPackage( String packageName ) throws IOException
     {
-        // extra packages exported by boot delegation & the system bundle
-        URL sysPkgResource = SystemPackages.class.getResource( path );
-        if( sysPkgResource == null )
+        for( String token : ManagementFactory.getRuntimeMXBean().getClassPath().split( Pattern.quote( File.pathSeparator ) ) )
         {
-            throw bootstrapError( "Could not find system packages file at '{}' - cannot boot server", path );
-        }
-
-        Properties tempProperties = new Properties();
-        try( InputStream is = sysPkgResource.openStream() )
-        {
-            tempProperties.load( is );
-            for( String packageName : tempProperties.stringPropertyNames() )
+            Path path = Paths.get( token );
+            if( Files.isDirectory( path ) )
             {
-                properties.put( packageName, tempProperties.getProperty( packageName ) );
+                String version = getVersionForPackageInPath( path, packageName );
+                if( version != null )
+                {
+                    return version;
+                }
+            }
+            else
+            {
+                URI uri = URI.create( "jar:file:" + path.toUri().getPath() );
+                try( FileSystem fileSystem = FileSystems.newFileSystem( uri, Collections.<String, Object>emptyMap() ) )
+                {
+                    Path root = fileSystem.getRootDirectories().iterator().next();
+                    String version = getVersionForPackageInPath( root, packageName );
+                    if( version != null )
+                    {
+                        return version;
+                    }
+                }
             }
         }
-        catch( IOException e )
-        {
-            throw bootstrapError( "Cannot read system packages from '{}': {}", sysPkgResource, e.getMessage(), e );
-        }
+
+        throw new IllegalStateException( "could not find version of package '" + packageName + "'" );
     }
 
-    private static String createSpecForPackages( @Nonnull Map<String, String> packages, boolean withVersions )
+    private static String getVersionForPackageInPath( Path root, String packageName ) throws IOException
+    {
+        Path packageDir = root.resolve( packageName.replace( '.', '/' ) );
+        if( Files.isDirectory( packageDir ) )
+        {
+            Path manifestFile = root.resolve( "META-INF/MANIFEST.MF" );
+            if( Files.isRegularFile( manifestFile ) )
+            {
+                try( InputStream inputStream = Files.newInputStream( manifestFile ) )
+                {
+                    Manifest manifest = new Manifest( inputStream );
+                    String exportPackageDirective = manifest.getMainAttributes().getValue( "Export-Package" );
+                    if( exportPackageDirective != null )
+                    {
+                        for( String exportedPackage : exportPackageDirective.split( "," ) )
+                        {
+                            int semiColonIndex = exportedPackage.indexOf( ';' );
+                            if( semiColonIndex > 0 )
+                            {
+                                String directives = exportedPackage.substring( semiColonIndex + 1 );
+                                for( String directive : directives.split( ";" ) )
+                                {
+                                    Matcher matcher = VERSION.matcher( directive );
+                                    if( matcher.matches() )
+                                    {
+                                        return matcher.group( 1 );
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private static String createSpecForPackages( Map<String, String> packages, boolean withVersions )
     {
         StringBuilder buffer = new StringBuilder( 2000 );
         for( Map.Entry<String, String> entry : packages.entrySet() )
         {
             String packageName = entry.getKey().trim();
 
-            String version = packageName.startsWith( "javax.annotation" ) ? "2.1.0" : entry.getValue();
-            if( entry.getValue() == null )
+            String version = entry.getValue();
+            if( version == null )
             {
                 LOG.warn( "Null version for package '{}' detected", packageName );
                 continue;
             }
             version = version.trim();
-
-            Matcher matcher = ARTIFACT_VERSION_PATTERN.matcher( version );
-            if( matcher.matches() )
-            {
-                version = getArtifactVersion( matcher.group( 1 ), matcher.group( 2 ) );
-            }
 
             if( buffer.length() > 0 )
             {
@@ -98,35 +171,6 @@ final class SystemPackages
             }
         }
         return buffer.toString();
-    }
-
-    @Nonnull
-    private static String getArtifactVersion( @Nonnull String groupId, @Nonnull String artifactId )
-    {
-        String path = "/META-INF/maven/" + groupId + "/" + artifactId + "/pom.properties";
-        URL resource = SystemPackages.class.getResource( path );
-        if( resource == null )
-        {
-            throw bootstrapError( "could not find Maven properties file for '" + groupId + ":" + artifactId + "' in classpath under '" + path + "'" );
-        }
-
-        Properties properties = new Properties();
-        try( InputStream inputStream = resource.openStream() )
-        {
-            properties.load( inputStream );
-        }
-        catch( IOException e )
-        {
-            throw bootstrapError( "could not read Maven properties file for '" + groupId + ":" + artifactId + "' in classpath under '" + path + "'", e );
-        }
-
-        String version = properties.getProperty( "version" );
-        if( version == null || version.isEmpty() )
-        {
-            throw bootstrapError( "empty version in properties file for " + groupId + ":" + artifactId + "' in classpath under '" + path + "'" );
-        }
-
-        return version;
     }
 
     private SystemPackages()

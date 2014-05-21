@@ -16,68 +16,6 @@
     <profiles>
         <profile>
             <id>dist</id>
-            <dependencies>
-                <dependency>
-                    <groupId>com.fasterxml</groupId>
-                    <artifactId>classmate</artifactId>
-                </dependency>
-                <dependency>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-core</artifactId>
-                </dependency>
-                <dependency>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-annotations</artifactId>
-                </dependency>
-                <dependency>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
-                </dependency>
-                <dependency>
-                    <groupId>com.fasterxml.jackson.dataformat</groupId>
-                    <artifactId>jackson-dataformat-csv</artifactId>
-                </dependency>
-                <dependency>
-                    <groupId>com.google.guava</groupId>
-                    <artifactId>guava</artifactId>
-                </dependency>
-                <dependency>
-                    <groupId>javax.el</groupId>
-                    <artifactId>javax.el-api</artifactId>
-                </dependency>
-                <dependency>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>jcl-over-slf4j</artifactId>
-                </dependency>
-                <dependency>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>log4j-over-slf4j</artifactId>
-                </dependency>
-                <dependency>
-                    <groupId>org.apache.commons</groupId>
-                    <artifactId>commons-lang3</artifactId>
-                </dependency>
-                <dependency>
-                    <groupId>org.apache.felix</groupId>
-                    <artifactId>org.apache.felix.configadmin</artifactId>
-                </dependency>
-                <dependency>
-                    <groupId>org.apache.felix</groupId>
-                    <artifactId>org.apache.felix.eventadmin</artifactId>
-                </dependency>
-                <dependency>
-                    <groupId>org.apache.felix</groupId>
-                    <artifactId>org.apache.felix.log</artifactId>
-                </dependency>
-                <dependency>
-                    <groupId>org.glassfish.web</groupId>
-                    <artifactId>javax.el</artifactId>
-                </dependency>
-                <dependency>
-                    <groupId>joda-time</groupId>
-                    <artifactId>joda-time</artifactId>
-                </dependency>
-            </dependencies>
             <build>
                 <plugins>
                     <plugin>
@@ -102,25 +40,27 @@
     </profiles>
 
     <modules>
-        <module>org.mosaic.config</module>
-        <module>org.mosaic.console</module>
-        <module>org.mosaic.console.remote</module>
-        <module>org.mosaic.dao</module>
-        <module>org.mosaic.datasource</module>
+        <!--<module>org.mosaic.config</module>-->
+        <!--<module>org.mosaic.console</module>-->
+        <!--<module>org.mosaic.console.remote</module>-->
+        <module>org.mosaic.core</module>
         <module>org.mosaic.demo</module>
-        <module>org.mosaic.development</module>
-        <module>org.mosaic.event</module>
-        <module>org.mosaic.jsr305</module>
+        <!--<module>org.mosaic.dao</module>-->
+        <!--<module>org.mosaic.datasource</module>-->
+        <!--<module>org.mosaic.demo</module>-->
+        <!--<module>org.mosaic.development</module>-->
+        <!--<module>org.mosaic.event</module>-->
+        <!--<module>org.mosaic.jsr305</module>-->
         <module>org.mosaic.launcher</module>
-        <module>org.mosaic.modules</module>
+        <!--<module>org.mosaic.modules</module>-->
         <module>org.mosaic.parent</module>
-        <module>org.mosaic.pathwatchers</module>
-        <module>org.mosaic.security</module>
-        <module>org.mosaic.server</module>
-        <module>org.mosaic.tasks</module>
-        <module>org.mosaic.utils</module>
-        <module>org.mosaic.validation</module>
-        <module>org.mosaic.web</module>
+        <!--<module>org.mosaic.pathwatchers</module>-->
+        <!--<module>org.mosaic.security</module>-->
+        <!--<module>org.mosaic.server</module>-->
+        <!--<module>org.mosaic.tasks</module>-->
+        <!--<module>org.mosaic.utils</module>-->
+        <!--<module>org.mosaic.validation</module>-->
+        <!--<module>org.mosaic.web</module>-->
     </modules>
 
     <scm>

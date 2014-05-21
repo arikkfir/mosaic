@@ -2,8 +2,8 @@ package org.mosaic.modules;
 
 import com.google.common.base.Optional;
 import java.util.Collection;
-import javax.annotation.Nonnull;
-import org.mosaic.util.version.Version;
+import org.mosaic.core.util.Nonnull;
+import org.mosaic.core.util.Version;
 
 /**
  * @author arik

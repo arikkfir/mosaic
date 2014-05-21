@@ -10,7 +10,7 @@ import com.thoughtworks.paranamer.PositionalParanamer;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
-import javax.annotation.Nonnull;
+import org.mosaic.core.util.Nonnull;
 
 import static java.util.Arrays.asList;
 

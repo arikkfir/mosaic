@@ -7,7 +7,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Method;
 import java.util.Collection;
-import javax.annotation.Nullable;
+import org.mosaic.core.util.Nullable;
 import org.junit.Before;
 import org.junit.Test;
 import org.mosaic.util.reflection.MethodAnnotations;

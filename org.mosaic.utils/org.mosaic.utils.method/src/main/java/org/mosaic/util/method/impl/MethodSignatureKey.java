@@ -3,7 +3,7 @@ package org.mosaic.util.method.impl;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
-import javax.annotation.Nonnull;
+import org.mosaic.core.util.Nonnull;
 
 /**
  * @author arik
