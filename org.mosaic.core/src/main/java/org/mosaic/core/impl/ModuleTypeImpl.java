@@ -189,7 +189,7 @@ class ModuleTypeImpl implements ModuleType
             return null;
         }
 
-        FilterBuilder filterBuilder = new FilterBuilder();
+        Util.FilterBuilder filterBuilder = new Util.FilterBuilder();
         for( Inject.Property property : properties )
         {
             filterBuilder.addEquals( property.name(), Objects.toString( property.value(), "" ) );

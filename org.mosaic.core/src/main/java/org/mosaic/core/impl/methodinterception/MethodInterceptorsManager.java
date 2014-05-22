@@ -1,13 +1,16 @@
-package org.mosaic.core.impl;
+package org.mosaic.core.impl.methodinterception;
 
 import java.lang.reflect.Method;
 import java.util.*;
 import org.mosaic.core.MethodInterceptor;
 import org.mosaic.core.ServiceListener;
+import org.mosaic.core.ServiceManager;
 import org.mosaic.core.ServiceRegistration;
+import org.mosaic.core.impl.ServerStatus;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
+import org.mosaic.core.util.concurrency.ReadWriteLock;
 import org.mosaic.core.util.logging.Logging;
 import org.mosaic.core.util.workflow.Status;
 import org.mosaic.core.util.workflow.TransitionAdapter;
@@ -18,12 +21,18 @@ import static java.util.Arrays.copyOf;
 /**
  * @author arik
  */
-class MethodInterceptorsManager extends TransitionAdapter
+public class MethodInterceptorsManager extends TransitionAdapter
 {
     private static final Logger LOG = Logging.getLogger();
 
     @Nonnull
-    private final ServerImpl server;
+    private final Logger logger;
+
+    @Nonnull
+    private final ReadWriteLock lock;
+
+    @Nonnull
+    private final ServiceManager serviceManager;
 
     @Nonnull
     private final MethodInterceptor.BeforeInvocationDecision continueDecision = new ContinueDecision();
@@ -50,9 +59,13 @@ class MethodInterceptorsManager extends TransitionAdapter
     @Nullable
     private List<MethodInterceptor> methodInterceptors;
 
-    MethodInterceptorsManager( @Nonnull ServerImpl server )
+    public MethodInterceptorsManager( @Nonnull Logger logger,
+                                      @Nonnull ReadWriteLock lock,
+                                      @Nonnull ServiceManager serviceManager )
     {
-        this.server = server;
+        this.logger = logger;
+        this.lock = lock;
+        this.serviceManager = serviceManager;
     }
 
     @Override
@@ -141,7 +154,7 @@ class MethodInterceptorsManager extends TransitionAdapter
     @Nonnull
     private List<InterestedMethodInterceptorEntry> getMethodInterceptors( @Nonnull Method method )
     {
-        this.server.acquireReadLock();
+        this.lock.acquireReadLock();
         try
         {
             Map<Method, List<InterestedMethodInterceptorEntry>> methodInterceptorsForMethods = this.methodInterceptorsForMethods;
@@ -155,8 +168,8 @@ class MethodInterceptorsManager extends TransitionAdapter
             List<InterestedMethodInterceptorEntry> interceptors = methodInterceptorsForMethods.get( method );
             if( interceptors == null )
             {
-                this.server.releaseReadLock();
-                this.server.acquireWriteLock();
+                this.lock.releaseReadLock();
+                this.lock.acquireWriteLock();
                 try
                 {
                     // check again since it might have been created just after releasing the read lock and acquiring the write lock
@@ -185,37 +198,37 @@ class MethodInterceptorsManager extends TransitionAdapter
                 }
                 finally
                 {
-                    this.server.releaseWriteLock();
-                    this.server.acquireReadLock();
+                    this.lock.releaseWriteLock();
+                    this.lock.acquireReadLock();
                 }
             }
             return interceptors;
         }
         finally
         {
-            this.server.releaseReadLock();
+            this.lock.releaseReadLock();
         }
     }
 
     private void initialize()
     {
-        this.server.getLogger().debug( "Initializing method interceptors manager" );
+        this.logger.debug( "Initializing method interceptors manager" );
         this.methodInterceptorsForMethods = new HashMap<>();
         this.methodInterceptors = new LinkedList<>();
-        this.server.getServiceManager().addListener( this.methodInterceptorServiceListener, MethodInterceptor.class );
+        this.serviceManager.addListener( this.methodInterceptorServiceListener, MethodInterceptor.class );
     }
 
     private void shutdown() throws InterruptedException
     {
-        this.server.getLogger().debug( "Shutting down method interceptors manager" );
-        this.server.getServiceManager().removeListener( this.methodInterceptorServiceListener );
+        this.logger.debug( "Shutting down method interceptors manager" );
+        this.serviceManager.removeListener( this.methodInterceptorServiceListener );
         this.methodInterceptors = null;
         this.methodInterceptorsForMethods = null;
     }
 
     private void clearMethodInterceptorsCache()
     {
-        this.server.acquireWriteLock();
+        this.lock.acquireWriteLock();
         try
         {
             Map<Method, List<InterestedMethodInterceptorEntry>> methodInterceptors = this.methodInterceptorsForMethods;
@@ -226,7 +239,7 @@ class MethodInterceptorsManager extends TransitionAdapter
         }
         finally
         {
-            this.server.releaseWriteLock();
+            this.lock.releaseWriteLock();
         }
     }
 

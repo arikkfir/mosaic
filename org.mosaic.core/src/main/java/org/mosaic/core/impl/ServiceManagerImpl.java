@@ -277,7 +277,7 @@ class ServiceManagerImpl extends TransitionAdapter implements ServiceManager
             return null;
         }
 
-        FilterBuilder filterBuilder = new FilterBuilder();
+        Util.FilterBuilder filterBuilder = new Util.FilterBuilder();
         for( Module.ServiceProperty property : properties )
         {
             filterBuilder.addEquals( property.getName(), Objects.toString( property.getValue(), "" ) );

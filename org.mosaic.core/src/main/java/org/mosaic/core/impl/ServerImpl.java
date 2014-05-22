@@ -5,6 +5,7 @@ import org.mosaic.core.ModuleRevision;
 import org.mosaic.core.Server;
 import org.mosaic.core.impl.bytecode.BytecodeWeavingHook;
 import org.mosaic.core.impl.bytecode.ModuleRevisionLookup;
+import org.mosaic.core.impl.methodinterception.MethodInterceptorsManager;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
@@ -105,7 +106,7 @@ class ServerImpl extends Workflow implements Server
         this.serviceManager = addListener( new ServiceManagerImpl( this ) );
 
         // create method interceptors manager
-        this.methodInterceptorsManager = addListener( new MethodInterceptorsManager( this ) );
+        this.methodInterceptorsManager = addListener( new MethodInterceptorsManager( this.logger, this.getLock(), this.serviceManager ) );
 
         // create the module manager
         this.moduleManager = addListener( new ModuleManagerImpl( this ) );

@@ -1,4 +1,4 @@
-package org.mosaic.core.impl;
+package org.mosaic.core.impl.methodinterception;
 
 import java.lang.reflect.Method;
 import org.mosaic.core.util.Nonnull;

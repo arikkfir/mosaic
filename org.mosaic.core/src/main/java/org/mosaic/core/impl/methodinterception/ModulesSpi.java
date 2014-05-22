@@ -1,9 +1,10 @@
-package org.mosaic.core.impl;
+package org.mosaic.core.impl.methodinterception;
 
 import org.mosaic.core.Module;
 import org.mosaic.core.ModuleManager;
 import org.mosaic.core.ModuleRevision;
 import org.mosaic.core.ModuleType;
+import org.mosaic.core.impl.Activator;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 
@@ -79,28 +80,28 @@ public final class ModulesSpi
     @Nonnull
     private static ModuleManager findModuleManager()
     {
-        ServerImpl server = Activator.getServer();
-        if( server == null )
+        ModuleManager moduleManager = Activator.getModuleManager();
+        if( moduleManager == null )
         {
             throw new IllegalStateException( "Mosaic server is not available" );
         }
         else
         {
-            return server.getModuleManager();
+            return moduleManager;
         }
     }
 
     @Nonnull
     private static MethodInterceptorsManager findMethodInterceptorsManager()
     {
-        ServerImpl server = Activator.getServer();
-        if( server == null )
+        MethodInterceptorsManager methodInterceptorsManager = Activator.getMethodInterceptorsManager();
+        if( methodInterceptorsManager == null )
         {
             throw new IllegalStateException( "Mosaic server is not available" );
         }
         else
         {
-            return server.getMethodInterceptorsManager();
+            return methodInterceptorsManager;
         }
     }
 
