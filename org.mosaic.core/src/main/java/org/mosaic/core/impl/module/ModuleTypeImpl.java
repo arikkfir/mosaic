@@ -1,4 +1,4 @@
-package org.mosaic.core.impl;
+package org.mosaic.core.impl.module;
 
 import com.fasterxml.classmate.ResolvedType;
 import com.fasterxml.classmate.TypeResolver;
@@ -9,19 +9,23 @@ import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.mosaic.core.*;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
-import org.osgi.framework.Filter;
+
+import static java.util.Objects.requireNonNull;
+import static org.mosaic.core.impl.Activator.getServiceManager;
 
 /**
  * @author arik
  */
 class ModuleTypeImpl implements ModuleType
 {
+
+    private static final Module.ServiceProperty[] EMPTY_SERVICE_PROPERTY_ARRAY = new Module.ServiceProperty[ 0 ];
+
     @Nonnull
     private final ModuleRevisionImpl moduleRevision;
 
@@ -56,8 +60,8 @@ class ModuleTypeImpl implements ModuleType
                             new ServiceProviderValueProvider(
                                     this.moduleRevision.getServiceDependency(
                                             resolvedType.getTypeParameters().get( 0 ).getErasedType(),
-                                            createFilter( annotation.properties() ),
-                                            0
+                                            0,
+                                            createFilter( annotation.properties() )
                                     )
                             )
                     );
@@ -69,8 +73,8 @@ class ModuleTypeImpl implements ModuleType
                             new ServicesProviderValueProvider(
                                     this.moduleRevision.getServiceDependency(
                                             resolvedType.getTypeParameters().get( 0 ).getErasedType(),
-                                            createFilter( annotation.properties() ),
-                                            0
+                                            0,
+                                            createFilter( annotation.properties() )
                                     )
                             )
                     );
@@ -82,8 +86,8 @@ class ModuleTypeImpl implements ModuleType
                             new ServiceRegistrationValueProvider(
                                     this.moduleRevision.getServiceDependency(
                                             resolvedType.getTypeParameters().get( 0 ).getErasedType(),
-                                            createFilter( annotation.properties() ),
-                                            field.isAnnotationPresent( Nonnull.class ) ? 1 : 0
+                                            field.isAnnotationPresent( Nonnull.class ) ? 1 : 0,
+                                            createFilter( annotation.properties() )
                                     )
                             )
                     );
@@ -106,8 +110,8 @@ class ModuleTypeImpl implements ModuleType
                             new ServicesListValueProvider(
                                     this.moduleRevision.getServiceDependency(
                                             resolvedType.getTypeParameters().get( 0 ).getErasedType(),
-                                            createFilter( annotation.properties() ),
-                                            0
+                                            0,
+                                            createFilter( annotation.properties() )
                                     )
                             )
                     );
@@ -119,8 +123,8 @@ class ModuleTypeImpl implements ModuleType
                             new ServiceProxyValueProvider(
                                     this.moduleRevision.getServiceDependency(
                                             field.getType(),
-                                            createFilter( annotation.properties() ),
-                                            1
+                                            1,
+                                            createFilter( annotation.properties() )
                                     )
                             )
                     );
@@ -142,7 +146,7 @@ class ModuleTypeImpl implements ModuleType
     @Override
     public Object getInstanceFieldValue( @Nonnull String fieldName )
     {
-        this.moduleRevision.getModule().getServer().getLock().acquireReadLock();
+        this.moduleRevision.getModule().getLock().acquireReadLock();
         try
         {
             ValueProvider<?> valueProvider = this.fieldValueProviders.get( fieldName );
@@ -157,7 +161,7 @@ class ModuleTypeImpl implements ModuleType
         }
         finally
         {
-            this.moduleRevision.getModule().getServer().getLock().releaseReadLock();
+            this.moduleRevision.getModule().getLock().releaseReadLock();
         }
     }
 
@@ -181,20 +185,20 @@ class ModuleTypeImpl implements ModuleType
         return this.type;
     }
 
-    @Nullable
-    private Filter createFilter( @Nonnull Inject.Property... properties )
+    @Nonnull
+    private Module.ServiceProperty[] createFilter( @Nonnull Inject.Property... properties )
     {
         if( properties.length == 0 )
         {
-            return null;
+            return EMPTY_SERVICE_PROPERTY_ARRAY;
         }
 
-        Util.FilterBuilder filterBuilder = new Util.FilterBuilder();
-        for( Inject.Property property : properties )
+        Module.ServiceProperty[] array = new Module.ServiceProperty[ properties.length ];
+        for( int i = 0; i < properties.length; i++ )
         {
-            filterBuilder.addEquals( property.name(), Objects.toString( property.value(), "" ) );
+            array[ i ] = Module.ServiceProperty.p( properties[ i ].name(), properties[ i ].value() );
         }
-        return filterBuilder.toFilter();
+        return array;
     }
 
     private abstract class ValueProvider<Value>
@@ -452,11 +456,10 @@ class ModuleTypeImpl implements ModuleType
         private final List<ServiceListener<ServiceType>> eventHandlers;
 
         private ServiceTrackerValueProvider( @Nonnull Class<ServiceType> serviceType,
-                                             @Nullable Filter filter )
+                                             @Nonnull Module.ServiceProperty... properties )
         {
-            ServerImpl server = ModuleTypeImpl.this.moduleRevision.getModule().getServer();
             this.eventHandlers = new CopyOnWriteArrayList<>();
-            this.serviceTracker = server.getServiceManager().createServiceTracker( serviceType, filter );
+            this.serviceTracker = requireNonNull( getServiceManager() ).createServiceTracker( serviceType, properties );
             this.serviceTracker.addEventHandler( this );
         }
 
@@ -471,7 +474,7 @@ class ModuleTypeImpl implements ModuleType
                 }
                 catch( Throwable e )
                 {
-                    moduleRevision.getModule().getServer().getLogger().warn( "Service tracker listener '{}' threw an exception", listener, e );
+                    moduleRevision.getModule().getLogger().warn( "Service tracker listener '{}' threw an exception", listener, e );
                 }
             }
         }
@@ -488,7 +491,7 @@ class ModuleTypeImpl implements ModuleType
                 }
                 catch( Throwable e )
                 {
-                    moduleRevision.getModule().getServer().getLogger().warn( "Service tracker listener '{}' threw an exception", listener, e );
+                    moduleRevision.getModule().getLogger().warn( "Service tracker listener '{}' threw an exception", listener, e );
                 }
             }
         }

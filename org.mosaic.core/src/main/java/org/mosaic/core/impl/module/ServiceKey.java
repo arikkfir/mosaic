@@ -1,28 +1,34 @@
-package org.mosaic.core.impl;
+package org.mosaic.core.impl.module;
 
+import java.util.Collections;
+import java.util.List;
+import org.mosaic.core.Module;
 import org.mosaic.core.util.Nonnull;
-import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
-import org.osgi.framework.Filter;
+
+import static java.util.Arrays.asList;
 
 /**
  * @author arik
  */
 final class ServiceKey<ServiceType>
 {
+
+    private static final Module.ServiceProperty[] EMPTY_SERVICE_PROPERTIES_ARRAY = new Module.ServiceProperty[ 0 ];
+
     @Nonnull
     private final Class<ServiceType> serviceType;
 
-    @Nullable
-    private final Filter filter;
-
     private final int minCount;
 
-    ServiceKey( @Nonnull Class<ServiceType> serviceType, @Nullable Filter filter, int minCount )
+    @Nonnull
+    private final List<Module.ServiceProperty> serviceProperties;
+
+    ServiceKey( @Nonnull Class<ServiceType> serviceType, int minCount, @Nonnull Module.ServiceProperty... properties )
     {
         this.serviceType = serviceType;
-        this.filter = filter;
         this.minCount = minCount;
+        this.serviceProperties = properties.length == 0 ? Collections.<Module.ServiceProperty>emptyList() : asList( properties );
     }
 
     @Nonnull
@@ -31,10 +37,23 @@ final class ServiceKey<ServiceType>
         return this.serviceType;
     }
 
-    @Nullable
-    public Filter getFilter()
+    @Nonnull
+    public List<Module.ServiceProperty> getServiceProperties()
     {
-        return this.filter;
+        return this.serviceProperties;
+    }
+
+    @Nonnull
+    public Module.ServiceProperty[] getServicePropertiesArray()
+    {
+        if( this.serviceProperties.isEmpty() )
+        {
+            return EMPTY_SERVICE_PROPERTIES_ARRAY;
+        }
+        else
+        {
+            return this.serviceProperties.toArray( new Module.ServiceProperty[ this.serviceProperties.size() ] );
+        }
     }
 
     public int getMinCount()
@@ -57,7 +76,7 @@ final class ServiceKey<ServiceType>
 
         ServiceKey that = ( ServiceKey ) o;
 
-        if( this.filter != null ? !this.filter.equals( that.filter ) : that.filter != null )
+        if( !this.serviceProperties.equals( that.serviceProperties ) )
         {
             return false;
         }
@@ -77,7 +96,7 @@ final class ServiceKey<ServiceType>
     public int hashCode()
     {
         int result = this.serviceType.hashCode();
-        result = 31 * result + ( this.filter != null ? this.filter.hashCode() : 0 );
+        result = 31 * result + this.serviceProperties.hashCode();
         result = 31 * result + this.minCount;
         return result;
     }
@@ -87,7 +106,7 @@ final class ServiceKey<ServiceType>
     {
         return ToStringHelper.create( this )
                              .add( "type", this.serviceType.getSimpleName() )
-                             .add( "filter", this.filter )
+                             .add( "properties", this.serviceProperties )
                              .add( "min", this.minCount )
                              .toString();
     }

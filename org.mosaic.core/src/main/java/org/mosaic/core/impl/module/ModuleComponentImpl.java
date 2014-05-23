@@ -1,21 +1,22 @@
-package org.mosaic.core.impl;
+package org.mosaic.core.impl.module;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Callable;
-import org.mosaic.core.Component;
-import org.mosaic.core.Module;
-import org.mosaic.core.OnDeactivation;
-import org.mosaic.core.ServiceRegistration;
+import org.mosaic.core.*;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
 import org.slf4j.Logger;
 
 import static java.util.Collections.unmodifiableList;
+import static org.mosaic.core.Module.ServiceProperty.p;
+import static org.mosaic.core.util.base.AnnotationUtils.findMetaAnnotationTarget;
 
 /**
  * @author arik
@@ -33,6 +34,9 @@ class ModuleComponentImpl
 
     @Nonnull
     private final List<Method> deactivationMethods;
+
+    @Nonnull
+    private final List<MethodEndpointImpl<?>> methodEndpoints;
 
     @Nullable
     private Object instance;
@@ -52,9 +56,10 @@ class ModuleComponentImpl
         }
         this.providedTypes = unmodifiableList( providedTypes );
 
-        Logger logger = this.moduleType.getModuleRevision().getModule().getServer().getLogger();
+        Logger logger = this.moduleType.getModuleRevision().getModule().getLogger();
 
         List<Method> deactivationMethods = new LinkedList<>();
+        List<MethodEndpointImpl<?>> methodEndpoints = new LinkedList<>();
         Class<?> type = this.moduleType.getType();
         while( type != null && !type.getPackage().getName().startsWith( "java." ) && !type.getPackage().getName().startsWith( "javax." ) )
         {
@@ -71,10 +76,17 @@ class ModuleComponentImpl
                         deactivationMethods.add( method );
                     }
                 }
+
+                Annotation annotation = findMetaAnnotationTarget( method, MethodEndpointMarker.class );
+                if( annotation != null )
+                {
+                    methodEndpoints.add( new MethodEndpointImpl<>( method, annotation ) );
+                }
             }
             type = type.getSuperclass();
         }
         this.deactivationMethods = unmodifiableList( deactivationMethods );
+        this.methodEndpoints = unmodifiableList( methodEndpoints );
     }
 
     @Override
@@ -89,11 +101,11 @@ class ModuleComponentImpl
     void activate()
     {
         ModuleImpl module = this.moduleType.getModuleRevision().getModule();
-        Logger logger = module.getServer().getLogger();
+        Logger logger = module.getLogger();
 
         if( this.instantiator != null )
         {
-            module.getServer().getLogger().debug( "Activating component {}", this );
+            module.getLogger().debug( "Activating component {}", this );
             try
             {
                 this.instance = this.instantiator.call();
@@ -108,6 +120,11 @@ class ModuleComponentImpl
             {
                 providedType.register( this.instance );
             }
+
+            for( MethodEndpointImpl<?> methodEndpoint : this.methodEndpoints )
+            {
+                methodEndpoint.register();
+            }
         }
     }
 
@@ -116,9 +133,15 @@ class ModuleComponentImpl
         Object instance = this.instance;
         if( instance != null )
         {
-            Logger logger = this.moduleType.getModuleRevision().getModule().getServer().getLogger();
+            Logger logger = this.moduleType.getModuleRevision().getModule().getLogger();
 
             logger.debug( "Deactivating component {}", this );
+
+            for( MethodEndpointImpl<?> methodEndpoint : this.methodEndpoints )
+            {
+                methodEndpoint.unregister();
+            }
+
             for( ProvidedType providedType : this.providedTypes )
             {
                 providedType.unregister();
@@ -157,7 +180,7 @@ class ModuleComponentImpl
         }
         catch( Throwable e )
         {
-            this.moduleType.getModuleRevision().getModule().getServer().getLogger().warn( "Error discovering factory method for {}", this, e );
+            this.moduleType.getModuleRevision().getModule().getLogger().warn( "Error discovering factory method for {}", this, e );
         }
 
         try
@@ -171,7 +194,7 @@ class ModuleComponentImpl
         }
         catch( Throwable e )
         {
-            this.moduleType.getModuleRevision().getModule().getServer().getLogger().warn( "Error discovering constructor for {}", this, e );
+            this.moduleType.getModuleRevision().getModule().getLogger().warn( "Error discovering constructor for {}", this, e );
         }
 
         return null;
@@ -194,7 +217,7 @@ class ModuleComponentImpl
             List<Module.ServiceProperty> properties = new LinkedList<>();
             for( Component.Property property : annotation.properties() )
             {
-                properties.add( Module.ServiceProperty.p( property.name(), property.value() ) );
+                properties.add( p( property.name(), property.value() ) );
             }
             this.properties = properties.toArray( new Module.ServiceProperty[ properties.size() ] );
         }
@@ -207,7 +230,7 @@ class ModuleComponentImpl
                                  .toString();
         }
 
-        @SuppressWarnings( "unchecked" )
+        @SuppressWarnings("unchecked")
         private void register( @Nonnull Object instance )
         {
             ModuleImpl module = ModuleComponentImpl.this.moduleType.getModuleRevision().getModule();
@@ -247,7 +270,7 @@ class ModuleComponentImpl
         public Object call() throws Exception
         {
             ModuleImpl module = ModuleComponentImpl.this.moduleType.getModuleRevision().getModule();
-            Logger logger = module.getServer().getLogger();
+            Logger logger = module.getLogger();
             try
             {
                 this.constructor.setAccessible( true );
@@ -283,7 +306,7 @@ class ModuleComponentImpl
         public Object call() throws Exception
         {
             ModuleImpl module = ModuleComponentImpl.this.moduleType.getModuleRevision().getModule();
-            Logger logger = module.getServer().getLogger();
+            Logger logger = module.getLogger();
             try
             {
                 this.method.setAccessible( true );
@@ -293,6 +316,87 @@ class ModuleComponentImpl
             {
                 logger.error( "Error activating component {} - instantiation error", this, e );
                 return null;
+            }
+        }
+    }
+
+    private class MethodEndpointImpl<AnnType extends Annotation> implements MethodEndpoint<AnnType>
+    {
+        @Nonnull
+        private final Method method;
+
+        @Nonnull
+        private final AnnType annotation;
+
+        @Nullable
+        private ServiceRegistration<MethodEndpoint> registration;
+
+        private MethodEndpointImpl( @Nonnull Method method, @Nonnull AnnType annotation )
+        {
+            this.method = method;
+            this.annotation = annotation;
+        }
+
+        @Nonnull
+        @Override
+        public String getName()
+        {
+            return this.method.getName();
+        }
+
+        @Nonnull
+        @Override
+        public AnnType getType()
+        {
+            return this.annotation;
+        }
+
+        @Nonnull
+        @Override
+        public Method getMethod()
+        {
+            return this.method;
+        }
+
+        @Nullable
+        @Override
+        public Object invoke( @Nullable Object... args ) throws Throwable
+        {
+            Object instance = ModuleComponentImpl.this.instance;
+            if( instance == null )
+            {
+                throw new IllegalStateException( "component not created" );
+            }
+
+            try
+            {
+                return this.method.invoke( instance, args );
+            }
+            catch( IllegalAccessException | IllegalArgumentException e )
+            {
+                throw new IllegalStateException( e );
+            }
+            catch( InvocationTargetException e )
+            {
+                throw e.getCause();
+            }
+        }
+
+        void register()
+        {
+            ModuleImpl module = ModuleComponentImpl.this.moduleType.getModuleRevision().getModule();
+            this.registration = module.registerService( MethodEndpoint.class, this,
+                                                        p( "name", getName() ),
+                                                        p( "type", this.annotation.annotationType().getName() ) );
+        }
+
+        void unregister()
+        {
+            ServiceRegistration<MethodEndpoint> registration = this.registration;
+            if( registration != null )
+            {
+                registration.unregister();
+                this.registration = null;
             }
         }
     }

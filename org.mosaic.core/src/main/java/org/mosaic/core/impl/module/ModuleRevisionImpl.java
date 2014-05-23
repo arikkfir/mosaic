@@ -1,21 +1,24 @@
-package org.mosaic.core.impl;
+package org.mosaic.core.impl.module;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
+import java.net.URI;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
-import org.mosaic.core.Component;
-import org.mosaic.core.Components;
-import org.mosaic.core.ModuleRevision;
-import org.mosaic.core.ModuleType;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.mosaic.core.*;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
 import org.mosaic.core.util.version.Version;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.Filter;
 import org.osgi.framework.wiring.BundleRevision;
+
+import static java.nio.file.FileSystems.newFileSystem;
+import static java.nio.file.Files.*;
 
 /**
  * @author arik
@@ -24,7 +27,7 @@ import org.osgi.framework.wiring.BundleRevision;
 class ModuleRevisionImpl implements ModuleRevision
 {
     @Nonnull
-    private final ServerImpl server;
+    private static final Pattern REVISION_ID_PATTERN = Pattern.compile( "\\d+\\.(\\d+)" );
 
     @Nonnull
     private final ModuleImpl module;
@@ -66,12 +69,11 @@ class ModuleRevisionImpl implements ModuleRevision
     ModuleRevisionImpl( @Nonnull ModuleImpl module, @Nonnull BundleRevision bundleRevision )
     {
         this.module = module;
-        this.server = this.module.getServer();
         this.bundleRevision = bundleRevision;
-        this.id = Util.getRevisionNumber( this.bundleRevision );
+        this.id = getRevisionNumber( this.bundleRevision );
         this.name = this.bundleRevision.getSymbolicName();
         this.version = Version.valueOf( this.bundleRevision.getVersion().toString() );
-        this.headers = Util.getHeaders( this.bundleRevision );
+        this.headers = getHeaders( this.bundleRevision );
     }
 
     @Override
@@ -285,7 +287,7 @@ class ModuleRevisionImpl implements ModuleRevision
         this.module.getLock().acquireWriteLock();
         try
         {
-            this.server.getLogger().info( "RESOLVING {}", this );
+            this.module.getLogger().info( "RESOLVING {}", this );
 
             Path path = this.module.getPath();
             if( path == null )
@@ -294,14 +296,14 @@ class ModuleRevisionImpl implements ModuleRevision
             }
             else
             {
-                this.root = Util.findRoot( path );
+                this.root = findRoot( path );
             }
 
-            this.server.getLogger().info( "RESOLVED {}", this );
+            this.module.getLogger().info( "RESOLVED {}", this );
         }
         catch( Throwable e )
         {
-            this.server.getLogger().error( "Error during resolve process of module revision {}: {}", this, e.getMessage(), e );
+            this.module.getLogger().error( "Error during resolve process of module revision {}: {}", this, e.getMessage(), e );
         }
         finally
         {
@@ -314,7 +316,7 @@ class ModuleRevisionImpl implements ModuleRevision
         this.module.getLock().acquireWriteLock();
         try
         {
-            this.server.getLogger().info( "STARTING {}", this );
+            this.module.getLogger().info( "STARTING {}", this );
 
             this.dependencies = new HashSet<>();
             this.satisfiedDependencies = new HashSet<>();
@@ -327,14 +329,14 @@ class ModuleRevisionImpl implements ModuleRevision
             {
                 for( ModuleRevisionImplDependency dependency : dependencies )
                 {
-                    this.module.getServer().getLogger().debug( "Initializing dependency {}", dependency );
+                    this.module.getLogger().debug( "Initializing dependency {}", dependency );
                     dependency.initialize();
                 }
             }
         }
         catch( Throwable e )
         {
-            this.server.getLogger().error( "Error while starting module revision {}: {}", this, e.getMessage(), e );
+            this.module.getLogger().error( "Error while starting module revision {}: {}", this, e.getMessage(), e );
         }
         finally
         {
@@ -347,11 +349,11 @@ class ModuleRevisionImpl implements ModuleRevision
         this.module.getLock().acquireWriteLock();
         try
         {
-            this.server.getLogger().info( "STARTED {}", this );
+            this.module.getLogger().info( "STARTED {}", this );
         }
         catch( Throwable e )
         {
-            this.server.getLogger().error( "Error while starting module revision {}: {}", this, e.getMessage(), e );
+            this.module.getLogger().error( "Error while starting module revision {}: {}", this, e.getMessage(), e );
         }
         finally
         {
@@ -364,21 +366,21 @@ class ModuleRevisionImpl implements ModuleRevision
         this.module.getLock().acquireWriteLock();
         try
         {
-            this.server.getLogger().info( "STOPPING {}", this );
+            this.module.getLogger().info( "STOPPING {}", this );
 
             Set<ModuleRevisionImplDependency> dependencies = this.dependencies;
             if( dependencies != null )
             {
                 for( ModuleRevisionImplDependency dependency : dependencies )
                 {
-                    this.module.getServer().getLogger().debug( "Shutting down dependency {}", dependency );
+                    this.module.getLogger().debug( "Shutting down dependency {}", dependency );
                     dependency.shutdown();
                 }
             }
         }
         catch( Throwable e )
         {
-            this.server.getLogger().error( "Error while stopping module revision {}: {}", this, e.getMessage(), e );
+            this.module.getLogger().error( "Error while stopping module revision {}: {}", this, e.getMessage(), e );
         }
         finally
         {
@@ -407,11 +409,11 @@ class ModuleRevisionImpl implements ModuleRevision
             this.satisfiedDependencies = null;
             this.unsatisfiedDependencies = null;
 
-            this.server.getLogger().info( "STOPPED {}", this );
+            this.module.getLogger().info( "STOPPED {}", this );
         }
         catch( Throwable e )
         {
-            this.server.getLogger().error( "Error while starting module revision {}: {}", this, e.getMessage(), e );
+            this.module.getLogger().error( "Error while starting module revision {}: {}", this, e.getMessage(), e );
         }
         finally
         {
@@ -424,7 +426,7 @@ class ModuleRevisionImpl implements ModuleRevision
         this.module.getLock().acquireWriteLock();
         try
         {
-            this.server.getLogger().info( "UNRESOLVING {}", this );
+            this.module.getLogger().info( "UNRESOLVING {}", this );
 
             Path root = this.root;
             if( root != null )
@@ -438,13 +440,13 @@ class ModuleRevisionImpl implements ModuleRevision
                     }
                     catch( Exception e )
                     {
-                        this.server.getLogger().warn( "Could not close JAR file-system of '{}': {}", root, e.getMessage(), e );
+                        this.module.getLogger().warn( "Could not close JAR file-system of '{}': {}", root, e.getMessage(), e );
                     }
                 }
                 this.root = null;
             }
 
-            this.server.getLogger().info( "UNRESOLVED {}", this );
+            this.module.getLogger().info( "UNRESOLVED {}", this );
         }
         finally
         {
@@ -454,13 +456,13 @@ class ModuleRevisionImpl implements ModuleRevision
 
     @Nonnull
     <ServiceType> ModuleRevisionImplServiceDependency<ServiceType> getServiceDependency( @Nonnull Class<ServiceType> serviceType,
-                                                                                         @Nullable Filter filter,
-                                                                                         int minCount )
+                                                                                         int minCount,
+                                                                                         @Nonnull Module.ServiceProperty... properties )
     {
-        return getServiceDependency( new ServiceKey<>( serviceType, filter, minCount ) );
+        return getServiceDependency( new ServiceKey<>( serviceType, minCount, properties ) );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     @Nonnull
     <ServiceType> ModuleRevisionImplServiceDependency<ServiceType> getServiceDependency( @Nonnull ServiceKey<ServiceType> serviceKey )
     {
@@ -496,7 +498,7 @@ class ModuleRevisionImpl implements ModuleRevision
 
                 ModuleRevisionImplServiceDependency<ServiceType> dependency = new ModuleRevisionImplServiceDependency<>( this, serviceKey );
                 dependencies.add( dependency );
-                this.server.getLogger().debug( "Added dependency {} to module revision {}", dependency, this );
+                this.module.getLogger().debug( "Added dependency {} to module revision {}", dependency, this );
 
                 return dependency;
             }
@@ -518,7 +520,7 @@ class ModuleRevisionImpl implements ModuleRevision
         this.module.getLock().acquireWriteLock();
         try
         {
-            this.server.getLogger().info( "DEPENDENCY {} of {} is {}", dependency, this, satisfied ? "SATISFIED" : "NOT SATISFIED" );
+            this.module.getLogger().info( "DEPENDENCY {} of {} is {}", dependency, this, satisfied ? "SATISFIED" : "NOT SATISFIED" );
 
             Set<ModuleRevisionImplDependency> unsatisfiedDependencies = this.unsatisfiedDependencies;
             Set<ModuleRevisionImplDependency> satisfiedDependencies = this.satisfiedDependencies;
@@ -577,14 +579,14 @@ class ModuleRevisionImpl implements ModuleRevision
         }
         catch( IOException e )
         {
-            this.server.getLogger().error( "Could not inspect classes in module revision {}: {}", this, e.getMessage(), e );
+            this.module.getLogger().error( "Could not inspect classes in module revision {}: {}", this, e.getMessage(), e );
             return Collections.emptyMap();
         }
 
         Map<Class<?>, ModuleTypeImpl> types = new HashMap<>();
         for( Path path : classResources )
         {
-            String className = Util.getClassName( path );
+            String className = getClassName( path );
             Class<?> clazz;
             try
             {
@@ -592,7 +594,7 @@ class ModuleRevisionImpl implements ModuleRevision
             }
             catch( ClassNotFoundException e )
             {
-                this.server.getLogger().warn( "Class '{}' not found, although its resource WAS found at '{}'", className, path, e );
+                this.module.getLogger().warn( "Class '{}' not found, although its resource WAS found at '{}'", className, path, e );
                 continue;
             }
             types.put( clazz, new ModuleTypeImpl( this, clazz ) );
@@ -644,7 +646,7 @@ class ModuleRevisionImpl implements ModuleRevision
         }
     }
 
-    @SuppressWarnings({ "SimplifiableIfStatement", "RedundantIfStatement" })
+    @SuppressWarnings( { "SimplifiableIfStatement", "RedundantIfStatement" } )
     private boolean canActivate()
     {
         if( this.module.getBundle().getState() != Bundle.ACTIVE )
@@ -678,7 +680,7 @@ class ModuleRevisionImpl implements ModuleRevision
             return;
         }
 
-        this.server.getLogger().info( "ACTIVATING {}", this );
+        this.module.getLogger().info( "ACTIVATING {}", this );
 
         Set<ModuleComponentImpl> components = this.components;
         if( components != null )
@@ -691,14 +693,14 @@ class ModuleRevisionImpl implements ModuleRevision
         }
         this.activated = true;
 
-        this.server.getLogger().info( "ACTIVATED {}", this );
+        this.module.getLogger().info( "ACTIVATED {}", this );
     }
 
     void deactivate()
     {
         if( this.activated )
         {
-            this.server.getLogger().info( "DEACTIVATING {}", this );
+            this.module.getLogger().info( "DEACTIVATING {}", this );
 
             Set<ModuleComponentImpl> components = this.components;
             if( components != null )
@@ -711,7 +713,121 @@ class ModuleRevisionImpl implements ModuleRevision
             }
             this.activated = false;
 
-            this.server.getLogger().info( "DEACTIVATED {}", this );
+            this.module.getLogger().info( "DEACTIVATED {}", this );
         }
+    }
+
+    @Nonnull
+    private static Path findRoot( @Nonnull Path path )
+    {
+        if( isSymbolicLink( path ) )
+        {
+            try
+            {
+                Path linkTarget = readSymbolicLink( path );
+                Path resolvedTarget = path.resolveSibling( linkTarget );
+                Path target = resolvedTarget.toAbsolutePath().normalize();
+                return findRoot( target );
+            }
+            catch( Exception e )
+            {
+                throw new IllegalStateException( "could not inspect " + path, e );
+            }
+        }
+        else if( isDirectory( path ) )
+        {
+            return path;
+        }
+        else if( path.getFileName().toString().toLowerCase().endsWith( ".jar" ) )
+        {
+            try
+            {
+                URI uri = URI.create( "jar:file:" + path.toUri().getPath() );
+                return newFileSystem( uri, Collections.<String, Object>emptyMap() ).getRootDirectories().iterator().next();
+            }
+            catch( Exception e )
+            {
+                throw new IllegalStateException( "could not inspect " + path, e );
+            }
+        }
+        else
+        {
+            throw new IllegalStateException( "could not inspect " + path );
+        }
+    }
+
+    @Nonnull
+    private static String getClassName( Path path )
+    {
+        String className = path.toString().replace( '/', '.' );
+        if( className.startsWith( "." ) )
+        {
+            className = className.substring( 1 );
+        }
+        if( className.toLowerCase().endsWith( ".class" ) )
+        {
+            className = className.substring( 0, className.length() - ".class".length() );
+        }
+        return className;
+    }
+
+    private static long getRevisionNumber( @Nonnull BundleRevision bundleRevision )
+    {
+        try
+        {
+            return Long.parseLong( bundleRevision.toString() );
+        }
+        catch( NumberFormatException e )
+        {
+            Matcher matcher = REVISION_ID_PATTERN.matcher( bundleRevision.toString() );
+            if( matcher.matches() )
+            {
+                return Long.parseLong( matcher.group( 1 ) );
+            }
+            else
+            {
+                throw new IllegalStateException( "could not extract bundle revision number from: " + bundleRevision.toString() );
+            }
+        }
+    }
+
+    void deactivate()
+    {
+        if( this.activated )
+        {
+            this.module.getLogger().info( "DEACTIVATING {}", this );
+
+            Set<ModuleComponentImpl> components = this.components;
+            if( components != null )
+            {
+                // we have components - deactivate them
+                for( ModuleComponentImpl component : components )
+                {
+                    component.deactivate();
+                }
+            }
+            this.activated = false;
+
+            this.module.getLogger().info( "DEACTIVATED {}", this );
+        }
+    }    @SuppressWarnings( "unchecked" )
+    @Nonnull
+    private static Map<String, String> getHeaders( @Nonnull BundleRevision bundleRevision )
+    {
+        try
+        {
+            Method getHeadersMethod = bundleRevision.getClass().getMethod( "getHeaders" );
+            getHeadersMethod.setAccessible( true );
+            Object headersMap = getHeadersMethod.invoke( bundleRevision );
+            if( headersMap instanceof Map )
+            {
+                return Collections.unmodifiableMap( ( Map ) headersMap );
+            }
+        }
+        catch( Exception e )
+        {
+            throw new IllegalStateException( "could not extract headers from bundle revision", e );
+        }
+        throw new IllegalStateException( "could not extract headers from bundle revision" );
     }
 }

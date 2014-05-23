@@ -1,10 +1,14 @@
-package org.mosaic.core.impl;
+package org.mosaic.core.impl.module;
 
 import org.mosaic.core.ServiceListener;
+import org.mosaic.core.ServiceManager;
 import org.mosaic.core.ServiceRegistration;
 import org.mosaic.core.ServiceTracker;
+import org.mosaic.core.impl.Activator;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.base.ToStringHelper;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * @author arik
@@ -23,8 +27,8 @@ class ModuleRevisionImplServiceDependency<ServiceType> extends ModuleRevisionImp
         super( moduleRevision );
         this.serviceKey = serviceKey;
 
-        ServiceManagerImpl serviceManager = this.moduleRevision.getModule().getServer().getServiceManager();
-        this.serviceTracker = serviceManager.createServiceTracker( this.serviceKey.getServiceType(), this.serviceKey.getFilter() );
+        ServiceManager serviceManager = requireNonNull( Activator.getServiceManager() );
+        this.serviceTracker = serviceManager.createServiceTracker( this.serviceKey.getServiceType(), this.serviceKey.getServicePropertiesArray() );
         this.serviceTracker.addEventHandler( new DependencySatisfactionSynchronizer() );
     }
 

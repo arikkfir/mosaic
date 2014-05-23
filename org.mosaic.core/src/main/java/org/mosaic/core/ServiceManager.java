@@ -1,5 +1,6 @@
 package org.mosaic.core;
 
+import java.util.Map;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 
@@ -25,4 +26,16 @@ public interface ServiceManager
     @Nonnull
     <ServiceType> ServiceTracker<ServiceType> createServiceTracker( @Nonnull Class<ServiceType> type,
                                                                     @Nonnull Module.ServiceProperty... properties );
+
+    @Nonnull
+    <ServiceType> ServiceRegistration<ServiceType> registerService( @Nonnull Module module,
+                                                                    @Nonnull Class<ServiceType> type,
+                                                                    @Nonnull ServiceType service,
+                                                                    @Nonnull Module.ServiceProperty... properties );
+
+    @Nonnull
+    <ServiceType> ServiceRegistration<ServiceType> registerService( @Nonnull Module module,
+                                                                    @Nonnull Class<ServiceType> type,
+                                                                    @Nonnull ServiceType service,
+                                                                    @Nullable Map<String, Object> properties );
 }

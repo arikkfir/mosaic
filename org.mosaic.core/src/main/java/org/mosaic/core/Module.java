@@ -65,10 +65,6 @@ public interface Module
                                                                     @Nonnull ServiceType service,
                                                                     @Nonnull ServiceProperty... properties );
 
-    @Nonnull
-    <ServiceType> ServiceTracker<ServiceType> createServiceTracker( @Nonnull Class<ServiceType> type,
-                                                                    @Nonnull ServiceProperty... properties );
-
     void start();
 
     void refresh();

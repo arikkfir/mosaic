@@ -1,4 +1,4 @@
-package org.mosaic.core.impl;
+package org.mosaic.core.impl.module;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -12,6 +12,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.mosaic.core.impl.ServerStatus;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
@@ -19,6 +20,7 @@ import org.mosaic.core.util.workflow.Status;
 import org.mosaic.core.util.workflow.TransitionAdapter;
 import org.osgi.framework.*;
 import org.osgi.framework.wiring.FrameworkWiring;
+import org.slf4j.Logger;
 
 import static java.lang.Integer.MAX_VALUE;
 import static java.nio.file.FileVisitOption.FOLLOW_LINKS;
@@ -27,10 +29,10 @@ import static java.nio.file.Files.*;
 /**
  * @author arik
  */
-class ModuleWatcher extends TransitionAdapter
+public class ModuleWatcher extends TransitionAdapter
 {
     @Nonnull
-    private final ServerImpl server;
+    private final Logger logger;
 
     @Nonnull
     private final Path libPath;
@@ -38,10 +40,10 @@ class ModuleWatcher extends TransitionAdapter
     @Nullable
     private ScheduledExecutorService executorService;
 
-    ModuleWatcher( @Nonnull ServerImpl server )
+    public ModuleWatcher( @Nonnull Logger logger, @Nonnull Path libPath )
     {
-        this.server = server;
-        this.libPath = this.server.getLib();
+        this.logger = logger;
+        this.libPath = libPath;
     }
 
     @Override
@@ -74,7 +76,7 @@ class ModuleWatcher extends TransitionAdapter
 
     private void initialize()
     {
-        this.server.getLogger().debug( "Initializing module watcher on {}", this.libPath );
+        this.logger.debug( "Initializing module watcher on {}", this.libPath );
 
         ThreadFactory threadFactory = new ThreadFactory()
         {
@@ -100,7 +102,7 @@ class ModuleWatcher extends TransitionAdapter
 
     private void shutdown() throws InterruptedException
     {
-        this.server.getLogger().debug( "Shutting down module watcher" );
+        this.logger.debug( "Shutting down module watcher" );
 
         ScheduledExecutorService executorService = this.executorService;
         if( executorService != null )
@@ -164,7 +166,7 @@ class ModuleWatcher extends TransitionAdapter
         }
         catch( Throwable e )
         {
-            this.server.getLogger().error( "Modules scanning error: {}", e.getMessage(), e );
+            this.logger.error( "Modules scanning error: {}", e.getMessage(), e );
         }
 
         try
@@ -174,7 +176,7 @@ class ModuleWatcher extends TransitionAdapter
         }
         catch( Throwable e )
         {
-            this.server.getLogger().error( "Scan error", e );
+            this.logger.error( "Scan error", e );
         }
     }
 
@@ -194,7 +196,19 @@ class ModuleWatcher extends TransitionAdapter
 
         public Context()
         {
-            this.bundleContext = server.getBundleContext();
+            Bundle coreBundle = FrameworkUtil.getBundle( getClass() );
+            if( coreBundle == null )
+            {
+                throw new IllegalStateException( "could not find core bundle context" );
+            }
+
+            BundleContext coreBundleContext = coreBundle.getBundleContext();
+            if( coreBundleContext == null )
+            {
+                throw new IllegalStateException( "could not find core bundle context" );
+            }
+
+            this.bundleContext = coreBundleContext;
         }
 
         private void start()
@@ -235,7 +249,7 @@ class ModuleWatcher extends TransitionAdapter
 
         private void handleFileError( @Nonnull String message, @Nullable Object... args )
         {
-            server.getLogger().error( message, args );
+            ModuleWatcher.this.logger.error( message, args );
         }
 
         private void finish() throws InterruptedException

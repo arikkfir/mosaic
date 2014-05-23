@@ -1,4 +1,4 @@
-package org.mosaic.core.impl;
+package org.mosaic.core.impl.module;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -11,6 +11,7 @@ import org.mosaic.core.util.concurrency.ReadWriteLock;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleRevisions;
+import org.slf4j.Logger;
 
 /**
  * @author arik
@@ -18,7 +19,13 @@ import org.osgi.framework.wiring.BundleRevisions;
 class ModuleImpl implements Module
 {
     @Nonnull
-    private final ServerImpl server;
+    private final Logger logger;
+
+    @Nonnull
+    private final ReadWriteLock lock;
+
+    @Nonnull
+    private final ServiceManager serviceManager;
 
     @Nonnull
     private final Bundle bundle;
@@ -26,9 +33,14 @@ class ModuleImpl implements Module
     @Nonnull
     private final Map<BundleRevision, ModuleRevisionImpl> revisions = new WeakHashMap<>();
 
-    ModuleImpl( @Nonnull ServerImpl server, @Nonnull Bundle bundle )
+    ModuleImpl( @Nonnull Logger logger,
+                @Nonnull ReadWriteLock lock,
+                @Nonnull ServiceManager serviceManager,
+                @Nonnull Bundle bundle )
     {
-        this.server = server;
+        this.logger = logger;
+        this.lock = lock;
+        this.serviceManager = serviceManager;
         this.bundle = bundle;
     }
 
@@ -44,14 +56,14 @@ class ModuleImpl implements Module
     @Override
     public long getId()
     {
-        this.server.getLock().acquireReadLock();
+        this.lock.acquireReadLock();
         try
         {
             return this.bundle.getBundleId();
         }
         finally
         {
-            this.server.getLock().releaseReadLock();
+            this.lock.releaseReadLock();
         }
     }
 
@@ -59,7 +71,7 @@ class ModuleImpl implements Module
     @Override
     public Path getPath()
     {
-        this.server.getLock().acquireReadLock();
+        this.lock.acquireReadLock();
         try
         {
             String location = this.bundle.getLocation();
@@ -74,7 +86,7 @@ class ModuleImpl implements Module
         }
         finally
         {
-            this.server.getLock().releaseReadLock();
+            this.lock.releaseReadLock();
         }
     }
 
@@ -82,7 +94,7 @@ class ModuleImpl implements Module
     @Override
     public ModuleState getState()
     {
-        this.server.getLock().acquireReadLock();
+        this.lock.acquireReadLock();
         try
         {
             int state = this.bundle.getState();
@@ -113,7 +125,7 @@ class ModuleImpl implements Module
         }
         finally
         {
-            this.server.getLock().releaseReadLock();
+            this.lock.releaseReadLock();
         }
     }
 
@@ -121,7 +133,7 @@ class ModuleImpl implements Module
     @Override
     public ModuleRevisionImpl getCurrentRevision()
     {
-        this.server.getLock().acquireReadLock();
+        this.lock.acquireReadLock();
         try
         {
             List<BundleRevision> revisions = this.bundle.adapt( BundleRevisions.class ).getRevisions();
@@ -136,7 +148,7 @@ class ModuleImpl implements Module
         }
         finally
         {
-            this.server.getLock().releaseReadLock();
+            this.lock.releaseReadLock();
         }
     }
 
@@ -144,14 +156,14 @@ class ModuleImpl implements Module
     @Override
     public Collection<ModuleRevision> getRevisions()
     {
-        this.server.getLock().acquireReadLock();
+        this.lock.acquireReadLock();
         try
         {
             return Collections.<ModuleRevision>unmodifiableCollection( this.revisions.values() );
         }
         finally
         {
-            this.server.getLock().releaseReadLock();
+            this.lock.releaseReadLock();
         }
     }
 
@@ -159,7 +171,7 @@ class ModuleImpl implements Module
     @Override
     public ModuleRevision getRevision( long revisionId )
     {
-        this.server.getLock().acquireReadLock();
+        this.lock.acquireReadLock();
         try
         {
             for( ModuleRevisionImpl moduleRevision : this.revisions.values() )
@@ -173,7 +185,7 @@ class ModuleImpl implements Module
         }
         finally
         {
-            this.server.getLock().releaseReadLock();
+            this.lock.releaseReadLock();
         }
     }
 
@@ -183,21 +195,13 @@ class ModuleImpl implements Module
                                                                            @Nonnull ServiceType service,
                                                                            @Nonnull ServiceProperty... properties )
     {
-        return this.server.getServiceManager().registerService( this, type, service, properties );
-    }
-
-    @Nonnull
-    @Override
-    public <ServiceType> ServiceTracker<ServiceType> createServiceTracker( @Nonnull Class<ServiceType> type,
-                                                                           @Nonnull ServiceProperty... properties )
-    {
-        return this.server.getServiceManager().createServiceTracker( type, properties );
+        return this.serviceManager.registerService( this, type, service, properties );
     }
 
     @Override
     public void start()
     {
-        this.server.getLock().acquireWriteLock();
+        this.lock.acquireWriteLock();
         try
         {
             this.bundle.start();
@@ -208,14 +212,14 @@ class ModuleImpl implements Module
         }
         finally
         {
-            this.server.getLock().releaseWriteLock();
+            this.lock.releaseWriteLock();
         }
     }
 
     @Override
     public void refresh()
     {
-        this.server.getLock().acquireWriteLock();
+        this.lock.acquireWriteLock();
         try
         {
             this.bundle.update();
@@ -226,14 +230,14 @@ class ModuleImpl implements Module
         }
         finally
         {
-            this.server.getLock().releaseWriteLock();
+            this.lock.releaseWriteLock();
         }
     }
 
     @Override
     public void stop()
     {
-        this.server.getLock().acquireWriteLock();
+        this.lock.acquireWriteLock();
         try
         {
             this.bundle.stop();
@@ -244,14 +248,14 @@ class ModuleImpl implements Module
         }
         finally
         {
-            this.server.getLock().releaseWriteLock();
+            this.lock.releaseWriteLock();
         }
     }
 
     @Override
     public void uninstall()
     {
-        this.server.getLock().acquireWriteLock();
+        this.lock.acquireWriteLock();
         try
         {
             this.bundle.uninstall();
@@ -262,8 +266,20 @@ class ModuleImpl implements Module
         }
         finally
         {
-            this.server.getLock().releaseWriteLock();
+            this.lock.releaseWriteLock();
         }
+    }
+
+    @Nonnull
+    Logger getLogger()
+    {
+        return this.logger;
+    }
+
+    @Nonnull
+    ReadWriteLock getLock()
+    {
+        return this.lock;
     }
 
     @Nonnull
@@ -272,35 +288,23 @@ class ModuleImpl implements Module
         return this.bundle;
     }
 
-    @Nonnull
-    ReadWriteLock getLock()
-    {
-        return this.server.getLock();
-    }
-
-    @Nonnull
-    ServerImpl getServer()
-    {
-        return this.server;
-    }
-
     @Nullable
     ModuleRevisionImpl getRevision( @Nonnull BundleRevision bundleRevision )
     {
-        this.server.getLock().acquireReadLock();
+        this.lock.acquireReadLock();
         try
         {
             return this.revisions.get( bundleRevision );
         }
         finally
         {
-            this.server.getLock().releaseReadLock();
+            this.lock.releaseReadLock();
         }
     }
 
     void syncBundleRevisions()
     {
-        this.server.getLock().acquireWriteLock();
+        this.lock.acquireWriteLock();
         try
         {
             for( BundleRevision bundleRevision : this.bundle.adapt( BundleRevisions.class ).getRevisions() )
@@ -313,31 +317,31 @@ class ModuleImpl implements Module
         }
         finally
         {
-            this.server.getLock().releaseWriteLock();
+            this.lock.releaseWriteLock();
         }
     }
 
     void bundleInstalled()
     {
-        this.server.getLock().acquireWriteLock();
+        this.lock.acquireWriteLock();
         try
         {
-            this.server.getLogger().info( "INSTALLING {}", this );
+            this.logger.info( "INSTALLING {}", this );
             syncBundleRevisions();
-            this.server.getLogger().info( "INSTALLED {}", this );
+            this.logger.info( "INSTALLED {}", this );
         }
         finally
         {
-            this.server.getLock().releaseWriteLock();
+            this.lock.releaseWriteLock();
         }
     }
 
     void bundleResolved()
     {
-        this.server.getLock().acquireWriteLock();
+        this.lock.acquireWriteLock();
         try
         {
-            this.server.getLogger().info( "RESOLVING {}", this );
+            this.logger.info( "RESOLVING {}", this );
 
             syncBundleRevisions();
 
@@ -347,20 +351,20 @@ class ModuleImpl implements Module
                 revision.revisionResolved();
             }
 
-            this.server.getLogger().info( "RESOLVED {}", this );
+            this.logger.info( "RESOLVED {}", this );
         }
         finally
         {
-            this.server.getLock().releaseWriteLock();
+            this.lock.releaseWriteLock();
         }
     }
 
     void bundleStarting()
     {
-        this.server.getLock().acquireWriteLock();
+        this.lock.acquireWriteLock();
         try
         {
-            this.server.getLogger().info( "STARTING {}", this );
+            this.logger.info( "STARTING {}", this );
 
             ModuleRevisionImpl revision = getCurrentRevision();
             if( revision != null )
@@ -370,13 +374,13 @@ class ModuleImpl implements Module
         }
         finally
         {
-            this.server.getLock().releaseWriteLock();
+            this.lock.releaseWriteLock();
         }
     }
 
     void bundleStarted()
     {
-        this.server.getLock().acquireWriteLock();
+        this.lock.acquireWriteLock();
         try
         {
             ModuleRevisionImpl revision = getCurrentRevision();
@@ -385,7 +389,7 @@ class ModuleImpl implements Module
                 revision.revisionStarted();
             }
 
-            this.server.getLogger().info( "STARTED {}", this );
+            this.logger.info( "STARTED {}", this );
 
             if( revision != null )
             {
@@ -394,13 +398,13 @@ class ModuleImpl implements Module
         }
         finally
         {
-            this.server.getLock().releaseWriteLock();
+            this.lock.releaseWriteLock();
         }
     }
 
     void bundleStopping()
     {
-        this.server.getLock().acquireWriteLock();
+        this.lock.acquireWriteLock();
         try
         {
             ModuleRevisionImpl revision = getCurrentRevision();
@@ -409,7 +413,7 @@ class ModuleImpl implements Module
                 revision.deactivate();
             }
 
-            this.server.getLogger().info( "STOPPING {}", this );
+            this.logger.info( "STOPPING {}", this );
 
             if( revision != null )
             {
@@ -418,13 +422,13 @@ class ModuleImpl implements Module
         }
         finally
         {
-            this.server.getLock().releaseWriteLock();
+            this.lock.releaseWriteLock();
         }
     }
 
     void bundleStopped()
     {
-        this.server.getLock().acquireWriteLock();
+        this.lock.acquireWriteLock();
         try
         {
             ModuleRevisionImpl revision = getCurrentRevision();
@@ -433,34 +437,34 @@ class ModuleImpl implements Module
                 revision.revisionStopped();
             }
 
-            this.server.getLogger().info( "STOPPED {}", this );
+            this.logger.info( "STOPPED {}", this );
         }
         finally
         {
-            this.server.getLock().releaseWriteLock();
+            this.lock.releaseWriteLock();
         }
     }
 
     void bundleUpdated()
     {
-        this.server.getLock().acquireWriteLock();
+        this.lock.acquireWriteLock();
         try
         {
             syncBundleRevisions();
-            this.server.getLogger().info( "UPDATED {}", this );
+            this.logger.info( "UPDATED {}", this );
         }
         finally
         {
-            this.server.getLock().releaseWriteLock();
+            this.lock.releaseWriteLock();
         }
     }
 
     void bundleUnresolved()
     {
-        this.server.getLock().acquireWriteLock();
+        this.lock.acquireWriteLock();
         try
         {
-            this.server.getLogger().info( "UNRESOLVING {}", this );
+            this.logger.info( "UNRESOLVING {}", this );
 
             for( BundleRevision bundleRevision : this.bundle.adapt( BundleRevisions.class ).getRevisions() )
             {
@@ -471,24 +475,24 @@ class ModuleImpl implements Module
                 }
             }
 
-            this.server.getLogger().info( "UNRESOLVED {}", this );
+            this.logger.info( "UNRESOLVED {}", this );
         }
         finally
         {
-            this.server.getLock().releaseWriteLock();
+            this.lock.releaseWriteLock();
         }
     }
 
     void bundleUninstalled()
     {
-        this.server.getLock().acquireWriteLock();
+        this.lock.acquireWriteLock();
         try
         {
-            this.server.getLogger().info( "UNINSTALLED {}", this );
+            this.logger.info( "UNINSTALLED {}", this );
         }
         finally
         {
-            this.server.getLock().releaseWriteLock();
+            this.lock.releaseWriteLock();
         }
     }
 }

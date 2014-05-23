@@ -1,4 +1,4 @@
-package org.mosaic.core.impl;
+package org.mosaic.core.impl.module;
 
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.base.ToStringHelper;

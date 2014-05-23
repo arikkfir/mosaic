@@ -1,16 +1,21 @@
 package org.mosaic.core.impl;
 
 import java.nio.file.Path;
-import org.mosaic.core.ModuleRevision;
-import org.mosaic.core.Server;
+import java.nio.file.Paths;
+import org.mosaic.core.*;
 import org.mosaic.core.impl.bytecode.BytecodeWeavingHook;
 import org.mosaic.core.impl.bytecode.ModuleRevisionLookup;
 import org.mosaic.core.impl.methodinterception.MethodInterceptorsManager;
+import org.mosaic.core.impl.module.ModuleManagerImpl;
+import org.mosaic.core.impl.module.ModuleWatcher;
+import org.mosaic.core.impl.service.ServiceManagerImpl;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
 import org.mosaic.core.util.concurrency.ReadWriteLock;
 import org.mosaic.core.util.version.Version;
+import org.mosaic.core.util.workflow.Status;
+import org.mosaic.core.util.workflow.TransitionAdapter;
 import org.mosaic.core.util.workflow.Workflow;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.wiring.BundleRevision;
@@ -24,7 +29,18 @@ import static org.mosaic.core.util.logging.Logging.getMarkerLogger;
 class ServerImpl extends Workflow implements Server
 {
     @Nonnull
-    private final BundleContext bundleContext;
+    private static Path getPath( @Nonnull BundleContext bundleContext, @Nonnull String key )
+    {
+        String location = bundleContext.getProperty( key );
+        if( location == null )
+        {
+            throw new IllegalStateException( "could not discover Mosaic directory location for '" + key + "'" );
+        }
+        else
+        {
+            return Paths.get( location );
+        }
+    }
 
     @Nonnull
     private final Version version;
@@ -67,16 +83,15 @@ class ServerImpl extends Workflow implements Server
         super( new ReadWriteLock( "org.mosaic", 15, SECONDS ), "Mosaic", ServerStatus.STOPPED, getMarkerLogger( "server" ) );
 
         // initialize from external bundle configuration
-        this.bundleContext = bundleContext;
-        this.version = Version.valueOf( this.bundleContext.getProperty( "org.mosaic.version" ) );
-        this.home = Util.getPath( this.bundleContext, "org.mosaic.home" );
-        this.apps = Util.getPath( this.bundleContext, "org.mosaic.home.apps" );
-        this.bin = Util.getPath( this.bundleContext, "org.mosaic.home.bin" );
-        this.etc = Util.getPath( this.bundleContext, "org.mosaic.home.etc" );
-        this.lib = Util.getPath( this.bundleContext, "org.mosaic.home.lib" );
-        this.logs = Util.getPath( this.bundleContext, "org.mosaic.home.logs" );
-        this.schemas = Util.getPath( this.bundleContext, "org.mosaic.home.schemas" );
-        this.work = Util.getPath( this.bundleContext, "org.mosaic.home.work" );
+        this.version = Version.valueOf( bundleContext.getProperty( "org.mosaic.version" ) );
+        this.home = getPath( bundleContext, "org.mosaic.home" );
+        this.apps = getPath( bundleContext, "org.mosaic.home.apps" );
+        this.bin = getPath( bundleContext, "org.mosaic.home.bin" );
+        this.etc = getPath( bundleContext, "org.mosaic.home.etc" );
+        this.lib = getPath( bundleContext, "org.mosaic.home.lib" );
+        this.logs = getPath( bundleContext, "org.mosaic.home.logs" );
+        this.schemas = getPath( bundleContext, "org.mosaic.home.schemas" );
+        this.work = getPath( bundleContext, "org.mosaic.home.work" );
 
         // add transitions
         addTransition( ServerStatus.STOPPED, ServerStatus.STARTED, TransitionDirection.FORWARD );
@@ -89,30 +104,42 @@ class ServerImpl extends Workflow implements Server
             @Override
             public ModuleRevision getModuleRevision( @Nonnull BundleRevision bundleRevision )
             {
-                long bundleId = bundleRevision.getBundle().getBundleId();
-                ModuleImpl module = moduleManager.getModule( bundleId );
-                if( module == null )
-                {
-                    throw new IllegalArgumentException( "unknown module: " + bundleId );
-                }
-                else
-                {
-                    return module.getRevision( bundleRevision );
-                }
+                return moduleManager.getModuleRevision( bundleRevision );
             }
         } ) );
 
         // create the service manager
-        this.serviceManager = addListener( new ServiceManagerImpl( this ) );
+        this.serviceManager = addListener( new ServiceManagerImpl( this.logger, getLock() ) );
 
         // create method interceptors manager
         this.methodInterceptorsManager = addListener( new MethodInterceptorsManager( this.logger, this.getLock(), this.serviceManager ) );
 
         // create the module manager
-        this.moduleManager = addListener( new ModuleManagerImpl( this ) );
+        this.moduleManager = addListener( new ModuleManagerImpl( this.logger, getLock(), this.serviceManager ) );
+
+        // add a listener to register core services
+        addListener( new TransitionAdapter()
+        {
+            @Override
+            public void execute( @Nonnull Status origin, @Nonnull Status target ) throws Exception
+            {
+                if( target == ServerStatus.STARTED )
+                {
+                    Module coreModule = moduleManager.getModule( 1 );
+                    if( coreModule == null )
+                    {
+                        throw new IllegalStateException();
+                    }
+
+                    serviceManager.registerService( coreModule, Server.class, ServerImpl.this );
+                    serviceManager.registerService( coreModule, ModuleManager.class, moduleManager );
+                    serviceManager.registerService( coreModule, ServiceManager.class, serviceManager );
+                }
+            }
+        } );
 
         // create the module watcher
-        addListener( new ModuleWatcher( this ) );
+        addListener( new ModuleWatcher( this.logger, this.lib ) );
     }
 
     @Override
@@ -184,12 +211,6 @@ class ServerImpl extends Workflow implements Server
     public Path getWork()
     {
         return this.work;
-    }
-
-    @Nonnull
-    BundleContext getBundleContext()
-    {
-        return this.bundleContext;
     }
 
     @Nonnull
