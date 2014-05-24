@@ -30,6 +30,101 @@ class ModuleRevisionImpl implements ModuleRevision
     private static final Pattern REVISION_ID_PATTERN = Pattern.compile( "\\d+\\.(\\d+)" );
 
     @Nonnull
+    private static Path findRoot( @Nonnull Path path )
+    {
+        if( isSymbolicLink( path ) )
+        {
+            try
+            {
+                Path linkTarget = readSymbolicLink( path );
+                Path resolvedTarget = path.resolveSibling( linkTarget );
+                Path target = resolvedTarget.toAbsolutePath().normalize();
+                return findRoot( target );
+            }
+            catch( Exception e )
+            {
+                throw new IllegalStateException( "could not inspect " + path, e );
+            }
+        }
+        else if( isDirectory( path ) )
+        {
+            return path;
+        }
+        else if( path.getFileName().toString().toLowerCase().endsWith( ".jar" ) )
+        {
+            try
+            {
+                URI uri = URI.create( "jar:file:" + path.toUri().getPath() );
+                return newFileSystem( uri, Collections.<String, Object>emptyMap() ).getRootDirectories().iterator().next();
+            }
+            catch( Exception e )
+            {
+                throw new IllegalStateException( "could not inspect " + path, e );
+            }
+        }
+        else
+        {
+            throw new IllegalStateException( "could not inspect " + path );
+        }
+    }
+
+    @Nonnull
+    private static String getClassName( Path path )
+    {
+        String className = path.toString().replace( '/', '.' );
+        if( className.startsWith( "." ) )
+        {
+            className = className.substring( 1 );
+        }
+        if( className.toLowerCase().endsWith( ".class" ) )
+        {
+            className = className.substring( 0, className.length() - ".class".length() );
+        }
+        return className;
+    }
+
+    private static long getRevisionNumber( @Nonnull BundleRevision bundleRevision )
+    {
+        try
+        {
+            return Long.parseLong( bundleRevision.toString() );
+        }
+        catch( NumberFormatException e )
+        {
+            Matcher matcher = REVISION_ID_PATTERN.matcher( bundleRevision.toString() );
+            if( matcher.matches() )
+            {
+                return Long.parseLong( matcher.group( 1 ) );
+            }
+            else
+            {
+                throw new IllegalStateException( "could not extract bundle revision number from: " + bundleRevision.toString() );
+            }
+        }
+    }
+
+    @SuppressWarnings( "unchecked" )
+    @Nonnull
+    private static Map<String, String> getHeaders( @Nonnull BundleRevision bundleRevision )
+    {
+        try
+        {
+            Method getHeadersMethod = bundleRevision.getClass().getMethod( "getHeaders" );
+            getHeadersMethod.setAccessible( true );
+            Object headersMap = getHeadersMethod.invoke( bundleRevision );
+            if( headersMap instanceof Map )
+            {
+                return Collections.unmodifiableMap( ( Map ) headersMap );
+            }
+        }
+        catch( Exception e )
+        {
+            throw new IllegalStateException( "could not extract headers from bundle revision", e );
+        }
+        throw new IllegalStateException( "could not extract headers from bundle revision" );
+    }
+
+    @Nonnull
     private final ModuleImpl module;
 
     @Nonnull
@@ -715,119 +810,5 @@ class ModuleRevisionImpl implements ModuleRevision
 
             this.module.getLogger().info( "DEACTIVATED {}", this );
         }
-    }
-
-    @Nonnull
-    private static Path findRoot( @Nonnull Path path )
-    {
-        if( isSymbolicLink( path ) )
-        {
-            try
-            {
-                Path linkTarget = readSymbolicLink( path );
-                Path resolvedTarget = path.resolveSibling( linkTarget );
-                Path target = resolvedTarget.toAbsolutePath().normalize();
-                return findRoot( target );
-            }
-            catch( Exception e )
-            {
-                throw new IllegalStateException( "could not inspect " + path, e );
-            }
-        }
-        else if( isDirectory( path ) )
-        {
-            return path;
-        }
-        else if( path.getFileName().toString().toLowerCase().endsWith( ".jar" ) )
-        {
-            try
-            {
-                URI uri = URI.create( "jar:file:" + path.toUri().getPath() );
-                return newFileSystem( uri, Collections.<String, Object>emptyMap() ).getRootDirectories().iterator().next();
-            }
-            catch( Exception e )
-            {
-                throw new IllegalStateException( "could not inspect " + path, e );
-            }
-        }
-        else
-        {
-            throw new IllegalStateException( "could not inspect " + path );
-        }
-    }
-
-    @Nonnull
-    private static String getClassName( Path path )
-    {
-        String className = path.toString().replace( '/', '.' );
-        if( className.startsWith( "." ) )
-        {
-            className = className.substring( 1 );
-        }
-        if( className.toLowerCase().endsWith( ".class" ) )
-        {
-            className = className.substring( 0, className.length() - ".class".length() );
-        }
-        return className;
-    }
-
-    private static long getRevisionNumber( @Nonnull BundleRevision bundleRevision )
-    {
-        try
-        {
-            return Long.parseLong( bundleRevision.toString() );
-        }
-        catch( NumberFormatException e )
-        {
-            Matcher matcher = REVISION_ID_PATTERN.matcher( bundleRevision.toString() );
-            if( matcher.matches() )
-            {
-                return Long.parseLong( matcher.group( 1 ) );
-            }
-            else
-            {
-                throw new IllegalStateException( "could not extract bundle revision number from: " + bundleRevision.toString() );
-            }
-        }
-    }
-
-    void deactivate()
-    {
-        if( this.activated )
-        {
-            this.module.getLogger().info( "DEACTIVATING {}", this );
-
-            Set<ModuleComponentImpl> components = this.components;
-            if( components != null )
-            {
-                // we have components - deactivate them
-                for( ModuleComponentImpl component : components )
-                {
-                    component.deactivate();
-                }
-            }
-            this.activated = false;
-
-            this.module.getLogger().info( "DEACTIVATED {}", this );
-        }
-    }    @SuppressWarnings( "unchecked" )
-    @Nonnull
-    private static Map<String, String> getHeaders( @Nonnull BundleRevision bundleRevision )
-    {
-        try
-        {
-            Method getHeadersMethod = bundleRevision.getClass().getMethod( "getHeaders" );
-            getHeadersMethod.setAccessible( true );
-            Object headersMap = getHeadersMethod.invoke( bundleRevision );
-            if( headersMap instanceof Map )
-            {
-                return Collections.unmodifiableMap( ( Map ) headersMap );
-            }
-        }
-        catch( Exception e )
-        {
-            throw new IllegalStateException( "could not extract headers from bundle revision", e );
-        }
-        throw new IllegalStateException( "could not extract headers from bundle revision" );
     }
 }
