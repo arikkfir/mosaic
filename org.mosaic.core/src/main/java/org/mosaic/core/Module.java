@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
+import org.mosaic.core.util.base.ToStringHelper;
 
 /**
  * @author arik
@@ -40,6 +41,15 @@ public interface Module
         public Object getValue()
         {
             return value;
+        }
+
+        @Override
+        public String toString()
+        {
+            return ToStringHelper.create( this )
+                                 .add( "name", this.name )
+                                 .add( "value", this.value )
+                                 .toString();
         }
     }
 
