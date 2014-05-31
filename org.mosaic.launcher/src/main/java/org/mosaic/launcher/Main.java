@@ -10,10 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.felix.framework.Felix;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.BundleException;
-import org.osgi.framework.Constants;
+import org.osgi.framework.*;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import static java.lang.Thread.setDefaultUncaughtExceptionHandler;
@@ -141,6 +138,34 @@ public class Main
         {
             throw bootstrapError( "Felix has no bundle context!" );
         }
+
+        // add OSGi listeners that emit log statements on OSGi events
+        felixBundleContext.addFrameworkListener( new FrameworkListener()
+        {
+            @Override
+            public void frameworkEvent( FrameworkEvent frameworkEvent )
+            {
+                Bundle bundle = frameworkEvent.getBundle();
+
+                @SuppressWarnings( "ThrowableResultOfMethodCallIgnored" )
+                Throwable throwable = frameworkEvent.getThrowable();
+
+                switch( frameworkEvent.getType() )
+                {
+                    case FrameworkEvent.ERROR:
+                        EventsLogger.printEmphasizedErrorMessage( throwable.getMessage(), throwable );
+                        break;
+
+                    case FrameworkEvent.PACKAGES_REFRESHED:
+                        EventsLogger.printEmphasizedInfoMessage( "OSGi packages have been refreshed" );
+                        break;
+
+                    case FrameworkEvent.STARTED:
+                        EventsLogger.printEmphasizedInfoMessage( "OSGi framework has been started" );
+                        break;
+                }
+            }
+        } );
 
         // ensure our core bundle is up to date
         Path coreBundlePath = Paths.get( System.getProperty( "coreBundle", home.resolve( "bin" ).resolve( "org.mosaic.core.jar" ).toString() ) );
