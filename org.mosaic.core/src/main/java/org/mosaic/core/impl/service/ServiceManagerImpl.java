@@ -1,7 +1,10 @@
 package org.mosaic.core.impl.service;
 
 import java.util.*;
-import org.mosaic.core.*;
+import org.mosaic.core.Module;
+import org.mosaic.core.ServiceListener;
+import org.mosaic.core.ServiceRegistration;
+import org.mosaic.core.ServiceTracker;
 import org.mosaic.core.impl.ServerStatus;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
@@ -17,7 +20,7 @@ import org.slf4j.Logger;
  * @feature refactor 'addListener' methods to return "ListenerRegistration&lt;?&gt;" instance with an "unregister" method
  */
 @SuppressWarnings( "unchecked" )
-public class ServiceManagerImpl extends TransitionAdapter implements ServiceManager
+public class ServiceManagerImpl extends TransitionAdapter implements ServiceManagerEx
 {
     @Nonnull
     private final ReadWriteLock lock;
@@ -211,6 +214,30 @@ public class ServiceManagerImpl extends TransitionAdapter implements ServiceMana
             }
 
             return registration;
+        }
+        finally
+        {
+            this.lock.releaseWriteLock();
+        }
+    }
+
+    @Override
+    public void unregisterServicesFrom( @Nonnull Module module )
+    {
+        this.lock.acquireWriteLock();
+        try
+        {
+            Map<ServiceRegistrationImpl, Object> services = this.services;
+            if( services != null )
+            {
+                for( ServiceRegistrationImpl registration : services.keySet() )
+                {
+                    if( registration.getProvider().equals( module ) )
+                    {
+                        registration.unregister();
+                    }
+                }
+            }
         }
         finally
         {

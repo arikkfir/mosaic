@@ -1,8 +1,8 @@
 package org.mosaic.core.impl;
 
 import org.mosaic.core.ModuleManager;
-import org.mosaic.core.ServiceManager;
 import org.mosaic.core.impl.methodinterception.MethodInterceptorsManager;
+import org.mosaic.core.impl.service.ServiceManagerEx;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.osgi.framework.BundleActivator;
@@ -23,7 +23,7 @@ public class Activator implements BundleActivator
     }
 
     @Nullable
-    public static ServiceManager getServiceManager()
+    public static ServiceManagerEx getServiceManager()
     {
         ServerImpl server = getServer();
         if( server != null )

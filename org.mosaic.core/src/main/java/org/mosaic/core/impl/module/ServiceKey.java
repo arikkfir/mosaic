@@ -1,8 +1,9 @@
 package org.mosaic.core.impl.module;
 
-import java.util.Collections;
+import com.fasterxml.classmate.ResolvedType;
+import java.util.LinkedList;
 import java.util.List;
-import org.mosaic.core.Module;
+import org.mosaic.core.*;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.base.ToStringHelper;
 
@@ -11,30 +12,32 @@ import static java.util.Arrays.asList;
 /**
  * @author arik
  */
-final class ServiceKey<ServiceType>
+final class ServiceKey
 {
-
+    @Nonnull
     private static final Module.ServiceProperty[] EMPTY_SERVICE_PROPERTIES_ARRAY = new Module.ServiceProperty[ 0 ];
 
     @Nonnull
-    private final Class<ServiceType> serviceType;
+    private final ResolvedType resolvedServiceType;
 
     private final int minCount;
 
     @Nonnull
     private final List<Module.ServiceProperty> serviceProperties;
 
-    ServiceKey( @Nonnull Class<ServiceType> serviceType, int minCount, @Nonnull Module.ServiceProperty... properties )
+    ServiceKey( @Nonnull ResolvedType resolvedServiceType, int minCount, @Nonnull Module.ServiceProperty... properties )
     {
-        this.serviceType = serviceType;
+        List<Module.ServiceProperty> propertiesList = new LinkedList<>();
+        propertiesList.addAll( asList( properties ) );
+        this.resolvedServiceType = discoverServiceType( resolvedServiceType, propertiesList );
         this.minCount = minCount;
-        this.serviceProperties = properties.length == 0 ? Collections.<Module.ServiceProperty>emptyList() : asList( properties );
+        this.serviceProperties = propertiesList;
     }
 
     @Nonnull
-    public Class<ServiceType> getServiceType()
+    public ResolvedType getServiceType()
     {
-        return this.serviceType;
+        return this.resolvedServiceType;
     }
 
     @Nonnull
@@ -61,7 +64,26 @@ final class ServiceKey<ServiceType>
         return this.minCount;
     }
 
-    @SuppressWarnings("RedundantIfStatement")
+    @Override
+    public int hashCode()
+    {
+        int result = this.resolvedServiceType.hashCode();
+        result = 31 * result + this.serviceProperties.hashCode();
+        result = 31 * result + this.minCount;
+        return result;
+    }
+
+    @Override
+    public String toString()
+    {
+        return ToStringHelper.create( this )
+                             .add( "type", this.resolvedServiceType.getSignature() )
+                             .add( "properties", this.serviceProperties )
+                             .add( "min", this.minCount )
+                             .toString();
+    }
+
+    @SuppressWarnings( "RedundantIfStatement" )
     @Override
     public boolean equals( Object o )
     {
@@ -80,7 +102,7 @@ final class ServiceKey<ServiceType>
         {
             return false;
         }
-        if( !this.serviceType.equals( that.serviceType ) )
+        if( !this.resolvedServiceType.equals( that.resolvedServiceType ) )
         {
             return false;
         }
@@ -92,22 +114,66 @@ final class ServiceKey<ServiceType>
         return true;
     }
 
-    @Override
-    public int hashCode()
+    @Nonnull
+    private ResolvedType validateNotOneOf( @Nonnull ResolvedType type, @Nonnull Class<?>... forbiddenTypes )
     {
-        int result = this.serviceType.hashCode();
-        result = 31 * result + this.serviceProperties.hashCode();
-        result = 31 * result + this.minCount;
-        return result;
+        Class<?> erasedType = type.getErasedType();
+        for( Class<?> forbiddenType : forbiddenTypes )
+        {
+            if( erasedType.equals( forbiddenType ) )
+            {
+                throw new IllegalStateException( "illegal type found: " + erasedType.getName() );
+            }
+        }
+        return type;
     }
 
-    @Override
-    public String toString()
+    @Nonnull
+    private ResolvedType getTypeParameter( @Nonnull ResolvedType type, int index )
     {
-        return ToStringHelper.create( this )
-                             .add( "type", this.serviceType.getSimpleName() )
-                             .add( "properties", this.serviceProperties )
-                             .add( "min", this.minCount )
-                             .toString();
+        List<ResolvedType> serviceProviderParams = type.getTypeParameters();
+        if( serviceProviderParams.isEmpty() )
+        {
+            throw new IllegalStateException( type + " has no type parameter" );
+        }
+        else
+        {
+            return serviceProviderParams.get( index );
+        }
+    }
+
+    @Nonnull
+    private ResolvedType discoverServiceType( @Nonnull ResolvedType resolvedType,
+                                              @Nonnull List<Module.ServiceProperty> properties )
+    {
+        Class<?> erasedType = resolvedType.getErasedType();
+        if( erasedType.equals( ServiceProvider.class ) || erasedType.equals( ServicesProvider.class ) ||
+            erasedType.equals( ServiceTracker.class ) || erasedType.equals( ServiceRegistration.class ) )
+        {
+            return discoverServiceType( validateNotOneOf( getTypeParameter( resolvedType, 0 ),
+                                                          ServiceProvider.class,
+                                                          ServicesProvider.class,
+                                                          ServiceRegistration.class,
+                                                          ServiceTracker.class ),
+                                        properties );
+        }
+        else if( erasedType.equals( List.class ) )
+        {
+            return discoverServiceType( validateNotOneOf( getTypeParameter( resolvedType, 0 ),
+                                                          ServiceProvider.class,
+                                                          ServicesProvider.class,
+                                                          ServiceTracker.class ),
+                                        properties );
+        }
+        else if( erasedType.equals( MethodEndpoint.class ) )
+        {
+            properties.add( Module.ServiceProperty.p( "type", getTypeParameter( resolvedType, 0 ).getErasedType().getName() ) );
+            return resolvedType;
+        }
+        else
+        {
+            // TODO: detect ClassEndpoint here, when it will be implement
+            return resolvedType;
+        }
     }
 }

@@ -1,5 +1,6 @@
 package org.mosaic.core.impl.module;
 
+import com.fasterxml.classmate.ResolvedType;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URI;
@@ -10,6 +11,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.mosaic.core.*;
+import org.mosaic.core.impl.Activator;
+import org.mosaic.core.impl.service.ServiceManagerEx;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
@@ -550,16 +553,16 @@ class ModuleRevisionImpl implements ModuleRevision
     }
 
     @Nonnull
-    <ServiceType> ModuleRevisionImplServiceDependency<ServiceType> getServiceDependency( @Nonnull Class<ServiceType> serviceType,
+    <ServiceType> ModuleRevisionImplServiceDependency<ServiceType> getServiceDependency( @Nonnull ResolvedType serviceType,
                                                                                          int minCount,
                                                                                          @Nonnull Module.ServiceProperty... properties )
     {
-        return getServiceDependency( new ServiceKey<>( serviceType, minCount, properties ) );
+        return getServiceDependency( new ServiceKey( serviceType, minCount, properties ) );
     }
 
     @SuppressWarnings( "unchecked" )
     @Nonnull
-    <ServiceType> ModuleRevisionImplServiceDependency<ServiceType> getServiceDependency( @Nonnull ServiceKey<ServiceType> serviceKey )
+    <ServiceType> ModuleRevisionImplServiceDependency<ServiceType> getServiceDependency( @Nonnull ServiceKey serviceKey )
     {
         this.module.getLock().acquireReadLock();
         try
@@ -615,29 +618,29 @@ class ModuleRevisionImpl implements ModuleRevision
         this.module.getLock().acquireWriteLock();
         try
         {
-            this.module.getLogger().info( "DEPENDENCY {} of {} is {}", dependency, this, satisfied ? "SATISFIED" : "NOT SATISFIED" );
-
             Set<ModuleRevisionImplDependency> unsatisfiedDependencies = this.unsatisfiedDependencies;
             Set<ModuleRevisionImplDependency> satisfiedDependencies = this.satisfiedDependencies;
             if( satisfied )
             {
-                if( unsatisfiedDependencies != null )
+                if( unsatisfiedDependencies != null && unsatisfiedDependencies.contains( dependency ) )
                 {
                     unsatisfiedDependencies.remove( dependency );
                 }
-                if( satisfiedDependencies != null )
+                if( satisfiedDependencies != null && !satisfiedDependencies.contains( dependency ) )
                 {
+                    this.module.getLogger().info( "DEPENDENCY {} of {} is SATISFIED", dependency, this );
                     satisfiedDependencies.add( dependency );
                 }
                 activate();
             }
             else
             {
-                if( unsatisfiedDependencies != null )
+                if( unsatisfiedDependencies != null && !unsatisfiedDependencies.contains( dependency ) )
                 {
+                    this.module.getLogger().info( "DEPENDENCY {} of {} is NOT SATISFIED", dependency, this );
                     unsatisfiedDependencies.add( dependency );
                 }
-                if( satisfiedDependencies != null )
+                if( satisfiedDependencies != null && satisfiedDependencies.contains( dependency ) )
                 {
                     satisfiedDependencies.remove( dependency );
                 }
@@ -806,6 +809,13 @@ class ModuleRevisionImpl implements ModuleRevision
                     component.deactivate();
                 }
             }
+
+            ServiceManagerEx serviceManager = Activator.getServiceManager();
+            if( serviceManager != null )
+            {
+                serviceManager.unregisterServicesFrom( this.module );
+            }
+
             this.activated = false;
 
             this.module.getLogger().info( "DEACTIVATED {}", this );

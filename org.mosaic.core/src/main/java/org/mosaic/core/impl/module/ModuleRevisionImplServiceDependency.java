@@ -16,19 +16,24 @@ import static java.util.Objects.requireNonNull;
 class ModuleRevisionImplServiceDependency<ServiceType> extends ModuleRevisionImplDependency
 {
     @Nonnull
-    private final ServiceKey<ServiceType> serviceKey;
+    private final ServiceKey serviceKey;
 
     @Nonnull
     private final ServiceTracker<ServiceType> serviceTracker;
 
+    @SuppressWarnings( "unchecked" )
     ModuleRevisionImplServiceDependency( @Nonnull ModuleRevisionImpl moduleRevision,
-                                         @Nonnull ServiceKey<ServiceType> serviceKey )
+                                         @Nonnull ServiceKey serviceKey )
     {
         super( moduleRevision );
         this.serviceKey = serviceKey;
 
         ServiceManager serviceManager = requireNonNull( Activator.getServiceManager() );
-        this.serviceTracker = serviceManager.createServiceTracker( this.serviceKey.getServiceType(), this.serviceKey.getServicePropertiesArray() );
+        this.serviceTracker =
+                ( ServiceTracker<ServiceType> ) serviceManager.createServiceTracker(
+                        this.serviceKey.getServiceType().getErasedType(),
+                        this.serviceKey.getServicePropertiesArray()
+                );
         this.serviceTracker.addEventHandler( new DependencySatisfactionSynchronizer() );
     }
 
@@ -41,7 +46,7 @@ class ModuleRevisionImplServiceDependency<ServiceType> extends ModuleRevisionImp
     }
 
     @Nonnull
-    final ServiceKey<ServiceType> getServiceKey()
+    final ServiceKey getServiceKey()
     {
         return this.serviceKey;
     }
@@ -72,13 +77,13 @@ class ModuleRevisionImplServiceDependency<ServiceType> extends ModuleRevisionImp
         this.serviceTracker.stopTracking();
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     private class DependencySatisfactionSynchronizer implements ServiceListener<ServiceType>
     {
         @Override
         public void serviceRegistered( @Nonnull ServiceRegistration<ServiceType> registration )
         {
-            ServiceKey<ServiceType> serviceKey = ModuleRevisionImplServiceDependency.this.serviceKey;
+            ServiceKey serviceKey = ModuleRevisionImplServiceDependency.this.serviceKey;
 
             ServiceTracker<ServiceType> serviceTracker = ModuleRevisionImplServiceDependency.this.serviceTracker;
             if( serviceTracker.getServices().size() >= serviceKey.getMinCount() )
@@ -91,7 +96,7 @@ class ModuleRevisionImplServiceDependency<ServiceType> extends ModuleRevisionImp
         public void serviceUnregistered( @Nonnull ServiceRegistration<ServiceType> registration,
                                          @Nonnull ServiceType service )
         {
-            ServiceKey<ServiceType> serviceKey = ModuleRevisionImplServiceDependency.this.serviceKey;
+            ServiceKey serviceKey = ModuleRevisionImplServiceDependency.this.serviceKey;
 
             ServiceTracker<ServiceType> serviceTracker = ModuleRevisionImplServiceDependency.this.serviceTracker;
             if( serviceTracker.getServices().size() < serviceKey.getMinCount() )

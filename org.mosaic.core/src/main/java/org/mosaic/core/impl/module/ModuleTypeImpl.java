@@ -23,7 +23,7 @@ import static org.mosaic.core.impl.Activator.getServiceManager;
  */
 class ModuleTypeImpl implements ModuleType
 {
-
+    @Nonnull
     private static final Module.ServiceProperty[] EMPTY_SERVICE_PROPERTY_ARRAY = new Module.ServiceProperty[ 0 ];
 
     @Nonnull
@@ -49,50 +49,50 @@ class ModuleTypeImpl implements ModuleType
                 Inject annotation = field.getAnnotation( Inject.class );
 
                 ResolvedType resolvedType = typeResolver.resolve( field.getGenericType() );
-                if( resolvedType.isInstanceOf( Module.class ) )
+                if( resolvedType.getErasedType().equals( Module.class ) )
                 {
                     this.fieldValueProviders.put( field.getName(), new ModuleValueProvider() );
                 }
-                else if( resolvedType.isInstanceOf( ServiceProvider.class ) )
+                else if( resolvedType.getErasedType().equals( ServiceProvider.class ) )
                 {
                     this.fieldValueProviders.put(
                             field.getName(),
                             new ServiceProviderValueProvider(
                                     this.moduleRevision.getServiceDependency(
-                                            resolvedType.getTypeParameters().get( 0 ).getErasedType(),
+                                            resolvedType,
                                             0,
                                             createFilter( annotation.properties() )
                                     )
                             )
                     );
                 }
-                else if( resolvedType.isInstanceOf( ServicesProvider.class ) )
+                else if( resolvedType.getErasedType().equals( ServicesProvider.class ) )
                 {
                     this.fieldValueProviders.put(
                             field.getName(),
                             new ServicesProviderValueProvider(
                                     this.moduleRevision.getServiceDependency(
-                                            resolvedType.getTypeParameters().get( 0 ).getErasedType(),
+                                            resolvedType,
                                             0,
                                             createFilter( annotation.properties() )
                                     )
                             )
                     );
                 }
-                else if( resolvedType.isInstanceOf( ServiceRegistration.class ) )
+                else if( resolvedType.getErasedType().equals( ServiceRegistration.class ) )
                 {
                     this.fieldValueProviders.put(
                             field.getName(),
                             new ServiceRegistrationValueProvider(
                                     this.moduleRevision.getServiceDependency(
-                                            resolvedType.getTypeParameters().get( 0 ).getErasedType(),
+                                            resolvedType,
                                             field.isAnnotationPresent( Nonnull.class ) ? 1 : 0,
                                             createFilter( annotation.properties() )
                                     )
                             )
                     );
                 }
-                else if( resolvedType.isInstanceOf( ServiceTracker.class ) )
+                else if( resolvedType.getErasedType().equals( ServiceTracker.class ) )
                 {
                     this.fieldValueProviders.put(
                             field.getName(),
@@ -102,14 +102,13 @@ class ModuleTypeImpl implements ModuleType
                             )
                     );
                 }
-                else if( resolvedType.isInstanceOf( List.class ) )
+                else if( resolvedType.getErasedType().equals( List.class ) )
                 {
-                    // TODO: check if this is a list of ServiceRegistration or a list of the actual services
                     this.fieldValueProviders.put(
                             field.getName(),
                             new ServicesListValueProvider(
                                     this.moduleRevision.getServiceDependency(
-                                            resolvedType.getTypeParameters().get( 0 ).getErasedType(),
+                                            resolvedType,
                                             0,
                                             createFilter( annotation.properties() )
                                     )
@@ -122,7 +121,7 @@ class ModuleTypeImpl implements ModuleType
                             field.getName(),
                             new ServiceProxyValueProvider(
                                     this.moduleRevision.getServiceDependency(
-                                            field.getType(),
+                                            resolvedType,
                                             1,
                                             createFilter( annotation.properties() )
                                     )
@@ -320,7 +319,9 @@ class ModuleTypeImpl implements ModuleType
         @Nonnull
         private ServiceType createProxy()
         {
-            return ( ServiceType ) Proxy.newProxyInstance( moduleRevision.getClassLoader(), new Class<?>[] { this.dependency.getServiceKey().getServiceType() }, this );
+            ClassLoader classLoader = moduleRevision.getClassLoader();
+            ResolvedType serviceType = this.dependency.getServiceKey().getServiceType();
+            return ( ServiceType ) Proxy.newProxyInstance( classLoader, new Class<?>[] { serviceType.getErasedType() }, this );
         }
     }
 

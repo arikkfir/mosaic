@@ -1,17 +1,21 @@
 package org.mosaic.core.impl.module;
 
+import com.fasterxml.classmate.ResolvedType;
+import com.fasterxml.classmate.TypeResolver;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.*;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import org.mosaic.core.*;
+import org.mosaic.core.impl.Activator;
+import org.mosaic.core.impl.service.ServiceManagerEx;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
+import org.mosaic.core.util.logging.Logging;
 import org.slf4j.Logger;
 
 import static java.util.Collections.unmodifiableList;
@@ -24,6 +28,9 @@ import static org.mosaic.core.util.base.AnnotationUtils.findMetaAnnotationTarget
 class ModuleComponentImpl
 {
     @Nonnull
+    private static final Module.ServiceProperty[] EMPTY_PROPERTIES_ARRAY = new Module.ServiceProperty[ 0 ];
+
+    @Nonnull
     private final ModuleTypeImpl moduleType;
 
     @Nonnull
@@ -34,6 +41,10 @@ class ModuleComponentImpl
 
     @Nonnull
     private final List<Method> deactivationMethods;
+
+    @SuppressWarnings( { "FieldCanBeLocal", "UnusedDeclaration" } )
+    @Nonnull
+    private final List<ServiceAdapterHandler> serviceAdapterMethods;
 
     @Nonnull
     private final List<MethodEndpointImpl<?>> methodEndpoints;
@@ -60,7 +71,9 @@ class ModuleComponentImpl
 
         List<Method> deactivationMethods = new LinkedList<>();
         List<MethodEndpointImpl<?>> methodEndpoints = new LinkedList<>();
+        List<ServiceAdapterHandler> serviceAdapterMethods = new LinkedList<>();
         Class<?> type = this.moduleType.getType();
+        TypeResolver typeResolver = new TypeResolver();
         while( type != null && !type.getPackage().getName().startsWith( "java." ) && !type.getPackage().getName().startsWith( "javax." ) )
         {
             for( Method method : this.moduleType.getType().getDeclaredMethods() )
@@ -77,7 +90,30 @@ class ModuleComponentImpl
                     }
                 }
 
-                Annotation annotation = findMetaAnnotationTarget( method, MethodEndpointMarker.class );
+                ServiceAdapter serviceAdapterAnn = method.getAnnotation( ServiceAdapter.class );
+                if( serviceAdapterAnn != null )
+                {
+                    Type[] parameterTypes = method.getGenericParameterTypes();
+                    if( parameterTypes.length != 1 )
+                    {
+                        logger.warn( "@ServiceAdapter methods must have exactly one parameter of type ServiceRegistration<...> (found in method '{}' of type '{}')",
+                                     method.toGenericString(), this.moduleType );
+                    }
+                    else if( method.getParameterTypes()[ 0 ].equals( ServiceRegistration.class ) )
+                    {
+                        ModuleRevisionImpl moduleRevision = this.moduleType.getModuleRevision();
+                        ResolvedType resolvedType = typeResolver.resolve( parameterTypes[ 0 ] );
+                        ModuleRevisionImplServiceDependency<Object> dependency = moduleRevision.getServiceDependency( resolvedType, 0, createFilter( serviceAdapterAnn.properties() ) );
+                        serviceAdapterMethods.add( new ServiceAdapterHandler<>( dependency, method ) );
+                    }
+                    else
+                    {
+                        logger.warn( "@ServiceAdapter methods must have exactly one parameter of type ServiceRegistration<...> (found in method '{}' of type '{}')",
+                                     method.toGenericString(), this.moduleType );
+                    }
+                }
+
+                Annotation annotation = findMetaAnnotationTarget( method, EndpointMarker.class );
                 if( annotation != null )
                 {
                     methodEndpoints.add( new MethodEndpointImpl<>( method, annotation ) );
@@ -87,6 +123,7 @@ class ModuleComponentImpl
         }
         this.deactivationMethods = unmodifiableList( deactivationMethods );
         this.methodEndpoints = unmodifiableList( methodEndpoints );
+        this.serviceAdapterMethods = serviceAdapterMethods;
     }
 
     @Override
@@ -200,6 +237,22 @@ class ModuleComponentImpl
         return null;
     }
 
+    @Nonnull
+    private Module.ServiceProperty[] createFilter( @Nonnull ServiceAdapter.Property... properties )
+    {
+        if( properties.length == 0 )
+        {
+            return EMPTY_PROPERTIES_ARRAY;
+        }
+
+        Module.ServiceProperty[] array = new Module.ServiceProperty[ properties.length ];
+        for( int i = 0; i < properties.length; i++ )
+        {
+            array[ i ] = Module.ServiceProperty.p( properties[ i ].name(), properties[ i ].value() );
+        }
+        return array;
+    }
+
     private class ProvidedType
     {
         @Nonnull
@@ -230,7 +283,7 @@ class ModuleComponentImpl
                                  .toString();
         }
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         private void register( @Nonnull Object instance )
         {
             ModuleImpl module = ModuleComponentImpl.this.moduleType.getModuleRevision().getModule();
@@ -334,6 +387,7 @@ class ModuleComponentImpl
         private MethodEndpointImpl( @Nonnull Method method, @Nonnull AnnType annotation )
         {
             this.method = method;
+            this.method.setAccessible( true );
             this.annotation = annotation;
         }
 
@@ -397,6 +451,83 @@ class ModuleComponentImpl
             {
                 registration.unregister();
                 this.registration = null;
+            }
+        }
+    }
+
+    private class ServiceAdapterHandler<OriginalType, AdaptedType> implements ServiceListener<OriginalType>
+    {
+        @Nonnull
+        private final ModuleRevisionImplServiceDependency<OriginalType> dependency;
+
+        @Nonnull
+        private final Method method;
+
+        @Nonnull
+        private final Map<ServiceRegistration<OriginalType>, ServiceRegistration<AdaptedType>> registrations = new HashMap<>();
+
+        private ServiceAdapterHandler( @Nonnull ModuleRevisionImplServiceDependency<OriginalType> dependency,
+                                       @Nonnull Method method )
+        {
+            this.dependency = dependency;
+            this.method = method;
+            this.dependency.getServiceTracker().addEventHandler( this );
+        }
+
+        @SuppressWarnings( "unchecked" )
+        @Override
+        public void serviceRegistered( @Nonnull ServiceRegistration<OriginalType> registration )
+        {
+            ModuleImpl module = ModuleComponentImpl.this.moduleType.getModuleRevision().getModule();
+            module.getLock().acquireWriteLock();
+            try
+            {
+                ServiceManagerEx serviceManager = Activator.getServiceManager();
+                Object instance = ModuleComponentImpl.this.instance;
+                if( serviceManager != null && instance != null )
+                {
+                    try
+                    {
+                        Object adapted = this.method.invoke( instance, registration );
+                        Class serviceType = this.method.getReturnType();
+                        this.registrations.put( registration, serviceManager.registerService( module, serviceType, adapted ) );
+                    }
+                    catch( Throwable e )
+                    {
+                        Logging.getLogger().error( "Could not adapt {} into {}", registration, this.method.getGenericReturnType(), e );
+                    }
+                }
+            }
+            finally
+            {
+                module.getLock().releaseWriteLock();
+            }
+        }
+
+        @Override
+        public void serviceUnregistered( @Nonnull ServiceRegistration<OriginalType> registration,
+                                         @Nonnull OriginalType service )
+        {
+            ModuleImpl module = ModuleComponentImpl.this.moduleType.getModuleRevision().getModule();
+            module.getLock().acquireWriteLock();
+            try
+            {
+                try
+                {
+                    ServiceRegistration<AdaptedType> adaptedRegistration = this.registrations.remove( registration );
+                    if( adaptedRegistration != null )
+                    {
+                        adaptedRegistration.unregister();
+                    }
+                }
+                catch( Throwable e )
+                {
+                    Logging.getLogger().error( "Could not adapt {} into {}", registration, this.method.getGenericReturnType(), e );
+                }
+            }
+            finally
+            {
+                module.getLock().releaseWriteLock();
             }
         }
     }
