@@ -2,7 +2,10 @@ package org.mosaic.core.impl.methodinterception;
 
 import java.lang.reflect.Method;
 import java.util.*;
-import org.mosaic.core.*;
+import org.mosaic.core.ListenerRegistration;
+import org.mosaic.core.MethodInterceptor;
+import org.mosaic.core.ServiceListener;
+import org.mosaic.core.ServiceRegistration;
 import org.mosaic.core.impl.ServerStatus;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
@@ -14,6 +17,8 @@ import org.mosaic.core.util.workflow.TransitionAdapter;
 import org.slf4j.Logger;
 
 import static java.util.Arrays.copyOf;
+import static java.util.Objects.requireNonNull;
+import static org.mosaic.core.impl.Activator.getServiceManager;
 
 /**
  * @author arik
@@ -27,9 +32,6 @@ public class MethodInterceptorsManager extends TransitionAdapter
 
     @Nonnull
     private final ReadWriteLock lock;
-
-    @Nonnull
-    private final ServiceManager serviceManager;
 
     @Nonnull
     private final MethodInterceptor.BeforeInvocationDecision continueDecision = new ContinueDecision();
@@ -59,13 +61,10 @@ public class MethodInterceptorsManager extends TransitionAdapter
     @Nullable
     private ListenerRegistration<MethodInterceptor> interceptorListenerRegistration;
 
-    public MethodInterceptorsManager( @Nonnull Logger logger,
-                                      @Nonnull ReadWriteLock lock,
-                                      @Nonnull ServiceManager serviceManager )
+    public MethodInterceptorsManager( @Nonnull Logger logger, @Nonnull ReadWriteLock lock )
     {
         this.logger = logger;
         this.lock = lock;
-        this.serviceManager = serviceManager;
     }
 
     @Override
@@ -215,7 +214,8 @@ public class MethodInterceptorsManager extends TransitionAdapter
         this.logger.debug( "Initializing method interceptors manager" );
         this.methodInterceptorsForMethods = new HashMap<>();
         this.methodInterceptors = new LinkedList<>();
-        this.interceptorListenerRegistration = this.serviceManager.addListener( this.methodInterceptorServiceListener, MethodInterceptor.class );
+        this.interceptorListenerRegistration = requireNonNull( getServiceManager() ).addListener(
+                null, this.methodInterceptorServiceListener, MethodInterceptor.class );
     }
 
     private void shutdown() throws InterruptedException

@@ -20,6 +20,7 @@ import org.mosaic.core.util.workflow.Workflow;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.wiring.BundleRevision;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.mosaic.core.util.logging.Logging.getMarkerLogger;
 
@@ -112,7 +113,7 @@ class ServerImpl extends Workflow implements Server
         this.serviceManager = addListener( new ServiceManagerImpl( this.logger, getLock() ) );
 
         // create method interceptors manager
-        this.methodInterceptorsManager = addListener( new MethodInterceptorsManager( this.logger, this.getLock(), this.serviceManager ) );
+        this.methodInterceptorsManager = addListener( new MethodInterceptorsManager( this.logger, this.getLock() ) );
 
         // create the module manager
         this.moduleManager = addListener( new ModuleManagerImpl( this.logger, getLock(), this.serviceManager ) );
@@ -125,12 +126,7 @@ class ServerImpl extends Workflow implements Server
             {
                 if( target == ServerStatus.STARTED )
                 {
-                    Module coreModule = moduleManager.getModule( 1 );
-                    if( coreModule == null )
-                    {
-                        throw new IllegalStateException();
-                    }
-
+                    Module coreModule = requireNonNull( Activator.getCoreModule() );
                     serviceManager.registerService( coreModule, Server.class, ServerImpl.this );
                     serviceManager.registerService( coreModule, ModuleManager.class, moduleManager );
                     serviceManager.registerService( coreModule, ServiceManager.class, serviceManager );

@@ -15,9 +15,6 @@ import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
 
-import static java.util.Objects.requireNonNull;
-import static org.mosaic.core.impl.Activator.getServiceManager;
-
 /**
  * @author arik
  */
@@ -460,7 +457,7 @@ class ModuleTypeImpl implements ModuleType
                                              @Nonnull Module.ServiceProperty... properties )
         {
             this.eventHandlers = new CopyOnWriteArrayList<>();
-            this.serviceTracker = requireNonNull( getServiceManager() ).createServiceTracker( serviceType, properties );
+            this.serviceTracker = moduleRevision.getModule().createServiceTracker( serviceType, properties );
             this.serviceTracker.addEventHandler( this );
         }
 

@@ -101,19 +101,21 @@ public class ServiceManagerImpl extends TransitionAdapter implements ServiceMana
     }
 
     @Override
-    public <ServiceType> ListenerRegistration<ServiceType> addListener( @Nonnull ServiceListener<ServiceType> listener,
+    public <ServiceType> ListenerRegistration<ServiceType> addListener( @Nullable Module module,
+                                                                        @Nonnull ServiceListener<ServiceType> listener,
                                                                         @Nonnull Class<ServiceType> type,
                                                                         @Nonnull Module.ServiceProperty... properties )
     {
-        return addListenerEntry( new ServiceListenerAdapter( this.logger, this.lock, this, listener, type, properties ) );
+        return addListenerEntry( new ServiceListenerAdapter( this.logger, this.lock, this, module, listener, type, properties ) );
     }
 
     @Override
-    public <ServiceType> ListenerRegistration<ServiceType> addWeakListener( @Nonnull ServiceListener<ServiceType> listener,
+    public <ServiceType> ListenerRegistration<ServiceType> addWeakListener( @Nullable Module module,
+                                                                            @Nonnull ServiceListener<ServiceType> listener,
                                                                             @Nonnull Class<ServiceType> type,
                                                                             @Nonnull Module.ServiceProperty... properties )
     {
-        return addListenerEntry( new WeakServiceListenerAdapter( this.logger, this.lock, this, listener, type, properties ) );
+        return addListenerEntry( new WeakServiceListenerAdapter( this.logger, this.lock, this, module, listener, type, properties ) );
     }
 
     @Override
@@ -153,10 +155,11 @@ public class ServiceManagerImpl extends TransitionAdapter implements ServiceMana
 
     @Override
     @Nonnull
-    public <ServiceType> ServiceTracker<ServiceType> createServiceTracker( @Nonnull Class<ServiceType> type,
+    public <ServiceType> ServiceTracker<ServiceType> createServiceTracker( @Nonnull Module module,
+                                                                           @Nonnull Class<ServiceType> type,
                                                                            @Nonnull Module.ServiceProperty... properties )
     {
-        return new ServiceTrackerImpl<>( this.lock, this.logger, this, type, properties );
+        return new ServiceTrackerImpl<>( this.lock, this.logger, module, type, properties );
     }
 
     @Override
@@ -225,11 +228,35 @@ public class ServiceManagerImpl extends TransitionAdapter implements ServiceMana
             Map<ServiceRegistrationImpl, Object> services = this.services;
             if( services != null )
             {
-                for( ServiceRegistrationImpl registration : services.keySet() )
+                for( ServiceRegistrationImpl registration : new LinkedList<>( services.keySet() ) )
                 {
                     if( registration.getProvider().equals( module ) )
                     {
                         registration.unregister();
+                    }
+                }
+            }
+        }
+        finally
+        {
+            this.lock.releaseWriteLock();
+        }
+    }
+
+    @Override
+    public void unregisterListenersFrom( @Nonnull Module module )
+    {
+        this.lock.acquireWriteLock();
+        try
+        {
+            List<BaseServiceListenerAdapter> listeners = this.listeners;
+            if( listeners != null )
+            {
+                for( BaseServiceListenerAdapter listener : new LinkedList<>( listeners ) )
+                {
+                    if( listener.getModule() == module )
+                    {
+                        listener.unregister();
                     }
                 }
             }

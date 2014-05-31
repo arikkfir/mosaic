@@ -28,7 +28,7 @@ class ServiceTrackerImpl<ServiceType> implements ServiceProvider<ServiceType>,
     private final Logger logger;
 
     @Nonnull
-    private final ServiceManagerImpl serviceManager;
+    private final Module module;
 
     @Nonnull
     private final Class<ServiceType> type;
@@ -56,13 +56,13 @@ class ServiceTrackerImpl<ServiceType> implements ServiceProvider<ServiceType>,
 
     ServiceTrackerImpl( @Nonnull ReadWriteLock lock,
                         @Nonnull Logger logger,
-                        @Nonnull ServiceManagerImpl serviceManager,
+                        @Nonnull Module module,
                         @Nonnull Class<ServiceType> type,
                         @Nonnull Module.ServiceProperty... properties )
     {
         this.lock = lock;
         this.logger = logger;
-        this.serviceManager = serviceManager;
+        this.module = module;
         this.type = type;
         this.properties = properties;
     }
@@ -124,7 +124,7 @@ class ServiceTrackerImpl<ServiceType> implements ServiceProvider<ServiceType>,
             this.services = new LinkedList<>();
             this.unmodifiableRegistrations = Collections.unmodifiableList( this.registrations );
             this.unmodifiableServices = Collections.unmodifiableList( this.services );
-            this.listenerRegistration = this.serviceManager.addWeakListener( this, this.type, this.properties );
+            this.listenerRegistration = this.module.addWeakServiceListener( this, this.type, this.properties );
         }
         finally
         {

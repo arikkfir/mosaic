@@ -199,6 +199,30 @@ class ModuleImpl implements Module
     }
 
     @Override
+    public <ServiceType> ListenerRegistration<ServiceType> addServiceListener( @Nonnull ServiceListener<ServiceType> listener,
+                                                                               @Nonnull Class<ServiceType> type,
+                                                                               @Nonnull ServiceProperty... properties )
+    {
+        return this.serviceManager.addListener( this, listener, type, properties );
+    }
+
+    @Override
+    public <ServiceType> ListenerRegistration<ServiceType> addWeakServiceListener( @Nonnull ServiceListener<ServiceType> listener,
+                                                                                   @Nonnull Class<ServiceType> type,
+                                                                                   @Nonnull ServiceProperty... properties )
+    {
+        return this.serviceManager.addWeakListener( this, listener, type, properties );
+    }
+
+    @Nonnull
+    @Override
+    public <ServiceType> ServiceTracker<ServiceType> createServiceTracker( @Nonnull Class<ServiceType> type,
+                                                                           @Nonnull ServiceProperty... properties )
+    {
+        return this.serviceManager.createServiceTracker( this, type, properties );
+    }
+
+    @Override
     public void start()
     {
         this.lock.acquireWriteLock();

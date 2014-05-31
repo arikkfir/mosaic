@@ -10,4 +10,6 @@ import org.mosaic.core.util.Nonnull;
 public interface ServiceManagerEx extends ServiceManager
 {
     void unregisterServicesFrom( @Nonnull Module module );
+
+    void unregisterListenersFrom( @Nonnull Module module );
 }

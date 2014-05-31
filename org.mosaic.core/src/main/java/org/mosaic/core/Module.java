@@ -75,6 +75,18 @@ public interface Module
                                                                     @Nonnull ServiceType service,
                                                                     @Nonnull ServiceProperty... properties );
 
+    <ServiceType> ListenerRegistration<ServiceType> addServiceListener( @Nonnull ServiceListener<ServiceType> listener,
+                                                                        @Nonnull Class<ServiceType> type,
+                                                                        @Nonnull Module.ServiceProperty... properties );
+
+    <ServiceType> ListenerRegistration<ServiceType> addWeakServiceListener( @Nonnull ServiceListener<ServiceType> listener,
+                                                                            @Nonnull Class<ServiceType> type,
+                                                                            @Nonnull Module.ServiceProperty... properties );
+
+    @Nonnull
+    <ServiceType> ServiceTracker<ServiceType> createServiceTracker( @Nonnull Class<ServiceType> type,
+                                                                    @Nonnull Module.ServiceProperty... properties );
+
     void start();
 
     void refresh();

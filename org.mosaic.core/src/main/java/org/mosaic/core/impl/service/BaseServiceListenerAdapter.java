@@ -30,6 +30,9 @@ abstract class BaseServiceListenerAdapter<ServiceType> implements ServiceListene
     @Nullable
     protected final Filter filter;
 
+    @Nullable
+    private final Module module;
+
     @Nonnull
     private final Logger logger;
 
@@ -45,12 +48,14 @@ abstract class BaseServiceListenerAdapter<ServiceType> implements ServiceListene
     BaseServiceListenerAdapter( @Nonnull Logger logger,
                                 @Nonnull ReadWriteLock lock,
                                 @Nonnull ServiceManagerImpl serviceManager,
+                                @Nullable Module module,
                                 @Nonnull Class<ServiceType> type,
                                 @Nonnull Module.ServiceProperty... properties )
     {
         this.logger = logger;
         this.lock = lock;
         this.serviceManager = serviceManager;
+        this.module = module;
         this.type = type;
         this.filter = createFilter( properties );
 
@@ -70,6 +75,13 @@ abstract class BaseServiceListenerAdapter<ServiceType> implements ServiceListene
                              .add( "filter", this.filter )
                              .add( "listener", getListener() )
                              .toString();
+    }
+
+    @Nullable
+    @Override
+    public Module getModule()
+    {
+        return this.module;
     }
 
     @Nonnull

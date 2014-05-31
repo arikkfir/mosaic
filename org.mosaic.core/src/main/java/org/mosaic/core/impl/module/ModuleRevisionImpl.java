@@ -475,6 +475,12 @@ class ModuleRevisionImpl implements ModuleRevision
                     dependency.shutdown();
                 }
             }
+
+            ServiceManagerEx serviceManager = Activator.getServiceManager();
+            if( serviceManager != null )
+            {
+                serviceManager.unregisterListenersFrom( this.module );
+            }
         }
         catch( Throwable e )
         {

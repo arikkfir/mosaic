@@ -1,5 +1,6 @@
 package org.mosaic.core.impl;
 
+import org.mosaic.core.Module;
 import org.mosaic.core.ModuleManager;
 import org.mosaic.core.impl.methodinterception.MethodInterceptorsManager;
 import org.mosaic.core.impl.service.ServiceManagerEx;
@@ -45,6 +46,24 @@ public class Activator implements BundleActivator
     }
 
     @Nullable
+    public static Module getCoreModule()
+    {
+        ModuleManager moduleManager = getModuleManager();
+        if( moduleManager == null )
+        {
+            return null;
+        }
+
+        Module coreModule = moduleManager.getModule( 1 );
+        if( coreModule == null )
+        {
+            return null;
+        }
+
+        return coreModule;
+    }
+
+    @Nullable
     public static MethodInterceptorsManager getMethodInterceptorsManager()
     {
         ServerImpl server = getServer();
@@ -59,8 +78,8 @@ public class Activator implements BundleActivator
     public void start( @Nonnull BundleContext context ) throws Exception
     {
         ServerImpl server = new ServerImpl( context );
-        server.transitionTo( ServerStatus.STARTED, true );
         Activator.server = server;
+        server.transitionTo( ServerStatus.STARTED, true );
     }
 
     @Override

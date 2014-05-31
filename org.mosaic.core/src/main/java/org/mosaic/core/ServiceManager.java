@@ -9,11 +9,13 @@ import org.mosaic.core.util.Nullable;
  */
 public interface ServiceManager
 {
-    <ServiceType> ListenerRegistration<ServiceType> addListener( @Nonnull ServiceListener<ServiceType> listener,
+    <ServiceType> ListenerRegistration<ServiceType> addListener( @Nullable Module module,
+                                                                 @Nonnull ServiceListener<ServiceType> listener,
                                                                  @Nonnull Class<ServiceType> type,
                                                                  @Nonnull Module.ServiceProperty... properties );
 
-    <ServiceType> ListenerRegistration<ServiceType> addWeakListener( @Nonnull ServiceListener<ServiceType> listener,
+    <ServiceType> ListenerRegistration<ServiceType> addWeakListener( @Nullable Module module,
+                                                                     @Nonnull ServiceListener<ServiceType> listener,
                                                                      @Nonnull Class<ServiceType> type,
                                                                      @Nonnull Module.ServiceProperty... properties );
 
@@ -22,7 +24,8 @@ public interface ServiceManager
                                                                 @Nonnull Module.ServiceProperty... properties );
 
     @Nonnull
-    <ServiceType> ServiceTracker<ServiceType> createServiceTracker( @Nonnull Class<ServiceType> type,
+    <ServiceType> ServiceTracker<ServiceType> createServiceTracker( @Nonnull Module module,
+                                                                    @Nonnull Class<ServiceType> type,
                                                                     @Nonnull Module.ServiceProperty... properties );
 
     @Nonnull
