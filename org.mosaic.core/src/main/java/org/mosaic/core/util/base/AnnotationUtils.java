@@ -254,6 +254,7 @@ public final class AnnotationUtils
             }
             catch( NoSuchMethodException ignore )
             {
+                type = type.getSuperclass();
                 continue;
             }
 
@@ -314,6 +315,7 @@ public final class AnnotationUtils
             }
             catch( NoSuchMethodException ignore )
             {
+                type = type.getSuperclass();
                 continue;
             }
 
