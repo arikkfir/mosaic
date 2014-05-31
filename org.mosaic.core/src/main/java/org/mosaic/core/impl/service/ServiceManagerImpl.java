@@ -49,25 +49,41 @@ public class ServiceManagerImpl extends TransitionAdapter implements ServiceMana
     @Override
     public void execute( @Nonnull Status origin, @Nonnull Status target ) throws Exception
     {
-        if( target == ServerStatus.STARTED )
+        this.lock.acquireWriteLock();
+        try
         {
-            this.services = new HashMap<>();
-            this.serviceListeners = new LinkedList<>();
+            if( target == ServerStatus.STARTED )
+            {
+                this.services = new HashMap<>();
+                this.serviceListeners = new LinkedList<>();
+            }
+            else if( target == ServerStatus.STOPPED )
+            {
+                this.serviceListeners = null;
+                this.services = null;
+            }
         }
-        else if( target == ServerStatus.STOPPED )
+        finally
         {
-            this.serviceListeners = null;
-            this.services = null;
+            this.lock.releaseWriteLock();
         }
     }
 
     @Override
     public void revert( @Nonnull Status origin, @Nonnull Status target ) throws Exception
     {
-        if( target == ServerStatus.STARTED )
+        this.lock.acquireWriteLock();
+        try
         {
-            this.serviceListeners = null;
-            this.services = null;
+            if( target == ServerStatus.STARTED )
+            {
+                this.serviceListeners = null;
+                this.services = null;
+            }
+        }
+        finally
+        {
+            this.lock.releaseWriteLock();
         }
     }
 
