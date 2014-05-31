@@ -51,6 +51,9 @@ class ServiceTrackerImpl<ServiceType> implements ServiceProvider<ServiceType>,
     @Nullable
     private List<ServiceType> unmodifiableServices;
 
+    @Nullable
+    private ListenerRegistration<ServiceType> listenerRegistration;
+
     ServiceTrackerImpl( @Nonnull ReadWriteLock lock,
                         @Nonnull Logger logger,
                         @Nonnull ServiceManagerImpl serviceManager,
@@ -121,7 +124,7 @@ class ServiceTrackerImpl<ServiceType> implements ServiceProvider<ServiceType>,
             this.services = new LinkedList<>();
             this.unmodifiableRegistrations = Collections.unmodifiableList( this.registrations );
             this.unmodifiableServices = Collections.unmodifiableList( this.services );
-            this.serviceManager.addWeakListener( this, this.type, this.properties );
+            this.listenerRegistration = this.serviceManager.addWeakListener( this, this.type, this.properties );
         }
         finally
         {
@@ -135,7 +138,13 @@ class ServiceTrackerImpl<ServiceType> implements ServiceProvider<ServiceType>,
         this.lock.acquireWriteLock();
         try
         {
-            this.serviceManager.removeListener( this );
+            ListenerRegistration<ServiceType> listenerRegistration = this.listenerRegistration;
+            if( listenerRegistration != null )
+            {
+                listenerRegistration.unregister();
+                this.listenerRegistration = null;
+            }
+
             this.unmodifiableServices = null;
             this.unmodifiableRegistrations = null;
             this.services = null;

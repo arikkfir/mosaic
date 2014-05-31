@@ -1,11 +1,10 @@
 package org.mosaic.core.impl.service;
 
+import org.mosaic.core.Module;
 import org.mosaic.core.ServiceListener;
 import org.mosaic.core.util.Nonnull;
-import org.mosaic.core.util.Nullable;
-import org.mosaic.core.util.base.ToStringHelper;
 import org.mosaic.core.util.concurrency.ReadWriteLock;
-import org.osgi.framework.Filter;
+import org.slf4j.Logger;
 
 /**
  * @author arik
@@ -15,24 +14,15 @@ class ServiceListenerAdapter<ServiceType> extends BaseServiceListenerAdapter<Ser
     @Nonnull
     private final ServiceListener<ServiceType> listener;
 
-    ServiceListenerAdapter( @Nonnull ReadWriteLock lock,
+    ServiceListenerAdapter( @Nonnull Logger logger,
+                            @Nonnull ReadWriteLock lock,
                             @Nonnull ServiceManagerImpl serviceManager,
                             @Nonnull ServiceListener<ServiceType> listener,
                             @Nonnull Class<ServiceType> type,
-                            @Nullable Filter filter )
+                            @Nonnull Module.ServiceProperty... properties )
     {
-        super( lock, serviceManager, type, filter );
+        super( logger, lock, serviceManager, type, properties );
         this.listener = listener;
-    }
-
-    @Override
-    public String toString()
-    {
-        return ToStringHelper.create( this )
-                             .add( "type", this.type.getName() )
-                             .add( "filter", this.filter )
-                             .add( "listener", this.listener )
-                             .toString();
     }
 
     @Nonnull

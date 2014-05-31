@@ -2,10 +2,7 @@ package org.mosaic.core.impl.methodinterception;
 
 import java.lang.reflect.Method;
 import java.util.*;
-import org.mosaic.core.MethodInterceptor;
-import org.mosaic.core.ServiceListener;
-import org.mosaic.core.ServiceManager;
-import org.mosaic.core.ServiceRegistration;
+import org.mosaic.core.*;
 import org.mosaic.core.impl.ServerStatus;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
@@ -58,6 +55,9 @@ public class MethodInterceptorsManager extends TransitionAdapter
 
     @Nullable
     private List<MethodInterceptor> methodInterceptors;
+
+    @Nullable
+    private ListenerRegistration<MethodInterceptor> interceptorListenerRegistration;
 
     public MethodInterceptorsManager( @Nonnull Logger logger,
                                       @Nonnull ReadWriteLock lock,
@@ -215,13 +215,20 @@ public class MethodInterceptorsManager extends TransitionAdapter
         this.logger.debug( "Initializing method interceptors manager" );
         this.methodInterceptorsForMethods = new HashMap<>();
         this.methodInterceptors = new LinkedList<>();
-        this.serviceManager.addListener( this.methodInterceptorServiceListener, MethodInterceptor.class );
+        this.interceptorListenerRegistration = this.serviceManager.addListener( this.methodInterceptorServiceListener, MethodInterceptor.class );
     }
 
     private void shutdown() throws InterruptedException
     {
         this.logger.debug( "Shutting down method interceptors manager" );
-        this.serviceManager.removeListener( this.methodInterceptorServiceListener );
+
+        ListenerRegistration<MethodInterceptor> registration = this.interceptorListenerRegistration;
+        if( registration != null )
+        {
+            registration.unregister();
+            this.interceptorListenerRegistration = null;
+        }
+
         this.methodInterceptors = null;
         this.methodInterceptorsForMethods = null;
     }

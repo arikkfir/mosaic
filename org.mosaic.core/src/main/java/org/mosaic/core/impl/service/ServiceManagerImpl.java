@@ -1,10 +1,7 @@
 package org.mosaic.core.impl.service;
 
 import java.util.*;
-import org.mosaic.core.Module;
-import org.mosaic.core.ServiceListener;
-import org.mosaic.core.ServiceRegistration;
-import org.mosaic.core.ServiceTracker;
+import org.mosaic.core.*;
 import org.mosaic.core.impl.ServerStatus;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
@@ -22,6 +19,22 @@ import org.slf4j.Logger;
 @SuppressWarnings( "unchecked" )
 public class ServiceManagerImpl extends TransitionAdapter implements ServiceManagerEx
 {
+    @Nullable
+    static Filter createFilter( @Nonnull Module.ServiceProperty... properties )
+    {
+        if( properties.length == 0 )
+        {
+            return null;
+        }
+
+        FilterBuilder filterBuilder = new FilterBuilder();
+        for( Module.ServiceProperty property : properties )
+        {
+            filterBuilder.addEquals( property.getName(), Objects.toString( property.getValue(), "" ) );
+        }
+        return filterBuilder.toFilter();
+    }
+
     @Nonnull
     private final ReadWriteLock lock;
 
@@ -32,7 +45,7 @@ public class ServiceManagerImpl extends TransitionAdapter implements ServiceMana
     private Map<ServiceRegistrationImpl, Object> services;
 
     @Nullable
-    private List<BaseServiceListenerAdapter> serviceListeners;
+    private List<BaseServiceListenerAdapter> listeners;
 
     public ServiceManagerImpl( @Nonnull Logger logger, @Nonnull ReadWriteLock lock )
     {
@@ -55,11 +68,11 @@ public class ServiceManagerImpl extends TransitionAdapter implements ServiceMana
             if( target == ServerStatus.STARTED )
             {
                 this.services = new HashMap<>();
-                this.serviceListeners = new LinkedList<>();
+                this.listeners = new LinkedList<>();
             }
             else if( target == ServerStatus.STOPPED )
             {
-                this.serviceListeners = null;
+                this.listeners = null;
                 this.services = null;
             }
         }
@@ -77,7 +90,7 @@ public class ServiceManagerImpl extends TransitionAdapter implements ServiceMana
         {
             if( target == ServerStatus.STARTED )
             {
-                this.serviceListeners = null;
+                this.listeners = null;
                 this.services = null;
             }
         }
@@ -88,53 +101,19 @@ public class ServiceManagerImpl extends TransitionAdapter implements ServiceMana
     }
 
     @Override
-    public <ServiceType> void addListener( @Nonnull ServiceListener<ServiceType> listener,
-                                           @Nonnull Class<ServiceType> type,
-                                           @Nonnull Module.ServiceProperty... properties )
+    public <ServiceType> ListenerRegistration<ServiceType> addListener( @Nonnull ServiceListener<ServiceType> listener,
+                                                                        @Nonnull Class<ServiceType> type,
+                                                                        @Nonnull Module.ServiceProperty... properties )
     {
-        addListenerEntry( new ServiceListenerAdapter( this.lock, this, listener, type, createFilter( properties ) ) );
+        return addListenerEntry( new ServiceListenerAdapter( this.logger, this.lock, this, listener, type, properties ) );
     }
 
     @Override
-    public <ServiceType> void addWeakListener( @Nonnull ServiceListener<ServiceType> listener,
-                                               @Nonnull Class<ServiceType> type,
-                                               @Nonnull Module.ServiceProperty... properties )
+    public <ServiceType> ListenerRegistration<ServiceType> addWeakListener( @Nonnull ServiceListener<ServiceType> listener,
+                                                                            @Nonnull Class<ServiceType> type,
+                                                                            @Nonnull Module.ServiceProperty... properties )
     {
-        addListenerEntry( new WeakServiceListenerAdapter( this.lock, this, listener, type, createFilter( properties ) ) );
-    }
-
-    @Override
-    public void removeListener( @Nonnull ServiceListener<?> listener )
-    {
-        this.lock.acquireWriteLock();
-        try
-        {
-            List<BaseServiceListenerAdapter> listeners = this.serviceListeners;
-            if( listeners != null )
-            {
-                Iterator<BaseServiceListenerAdapter> iterator = listeners.iterator();
-                while( iterator.hasNext() )
-                {
-                    BaseServiceListenerAdapter adapter = iterator.next();
-                    ServiceListener listenerInAdapter = adapter.getListener();
-                    if( listenerInAdapter == null )
-                    {
-                        this.logger.trace( "Removed listener entry {} (reference lost)", adapter );
-                        iterator.remove();
-                    }
-                    else if( listenerInAdapter == listener )
-                    {
-                        this.logger.trace( "Removed listener entry {}", adapter );
-                        iterator.remove();
-                        break;
-                    }
-                }
-            }
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        return addListenerEntry( new WeakServiceListenerAdapter( this.logger, this.lock, this, listener, type, properties ) );
     }
 
     @Override
@@ -206,7 +185,7 @@ public class ServiceManagerImpl extends TransitionAdapter implements ServiceMana
                 throw new IllegalStateException( "service manager no longer available (is server started?)" );
             }
 
-            List<BaseServiceListenerAdapter> listeners = this.serviceListeners;
+            List<BaseServiceListenerAdapter> listeners = this.listeners;
             if( listeners == null )
             {
                 throw new IllegalStateException( "service manager no longer available (is server started?)" );
@@ -268,12 +247,12 @@ public class ServiceManagerImpl extends TransitionAdapter implements ServiceMana
     }
 
     @Nullable
-    List<BaseServiceListenerAdapter> getServiceListeners()
+    List<BaseServiceListenerAdapter> getListeners()
     {
-        return this.serviceListeners;
+        return this.listeners;
     }
 
-    private void addListenerEntry( @Nonnull BaseServiceListenerAdapter listenerAdapter )
+    private <ServiceType> ListenerRegistration<ServiceType> addListenerEntry( @Nonnull BaseServiceListenerAdapter<ServiceType> listenerAdapter )
     {
         this.lock.acquireWriteLock();
         try
@@ -284,7 +263,7 @@ public class ServiceManagerImpl extends TransitionAdapter implements ServiceMana
                 throw new IllegalStateException( "service manager no longer available (is server started?)" );
             }
 
-            List<BaseServiceListenerAdapter> listeners = this.serviceListeners;
+            List<BaseServiceListenerAdapter> listeners = this.listeners;
             if( listeners == null )
             {
                 throw new IllegalStateException( "service manager no longer available (is server started?)" );
@@ -298,27 +277,12 @@ public class ServiceManagerImpl extends TransitionAdapter implements ServiceMana
             {
                 listenerAdapter.serviceRegistered( registration );
             }
+            return listenerAdapter;
         }
         finally
         {
             this.lock.releaseWriteLock();
         }
-    }
-
-    @Nullable
-    private Filter createFilter( @Nonnull Module.ServiceProperty... properties )
-    {
-        if( properties.length == 0 )
-        {
-            return null;
-        }
-
-        FilterBuilder filterBuilder = new FilterBuilder();
-        for( Module.ServiceProperty property : properties )
-        {
-            filterBuilder.addEquals( property.getName(), Objects.toString( property.getValue(), "" ) );
-        }
-        return filterBuilder.toFilter();
     }
 
     @Nonnull

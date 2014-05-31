@@ -139,7 +139,7 @@ class ServiceRegistrationImpl<ServiceType> implements ServiceRegistration<Servic
                 throw new IllegalStateException( "service manager no longer available (is server started?)" );
             }
 
-            List<BaseServiceListenerAdapter> listeners = this.serviceManager.getServiceListeners();
+            List<BaseServiceListenerAdapter> listeners = this.serviceManager.getListeners();
             if( listeners == null )
             {
                 throw new IllegalStateException( "service manager no longer available (is server started?)" );
