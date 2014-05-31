@@ -5,7 +5,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Marker;
 import org.slf4j.MarkerFactory;
-import sun.reflect.Reflection;
 
 /**
  * @author arik
@@ -15,11 +14,27 @@ public final class Logging
     @Nonnull
     public static Logger getLogger()
     {
-        return getLogger( Reflection.getCallerClass() );
+        RuntimeException runtimeException = new RuntimeException();
+        StackTraceElement[] stackTrace = runtimeException.getStackTrace();
+        for( StackTraceElement stackTraceElement : stackTrace )
+        {
+            String className = stackTraceElement.getClassName();
+            if( !className.equals( Logging.class.getName() ) )
+            {
+                return getLogger( className );
+            }
+        }
+        return getLogger( Logging.class );
     }
 
     @Nonnull
     public static Logger getLogger( @Nonnull Class<?> clazz )
+    {
+        return LoggerFactory.getLogger( clazz );
+    }
+
+    @Nonnull
+    public static Logger getLogger( @Nonnull String clazz )
     {
         return LoggerFactory.getLogger( clazz );
     }
