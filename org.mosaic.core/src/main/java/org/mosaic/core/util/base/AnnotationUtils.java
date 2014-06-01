@@ -27,8 +27,7 @@ public final class AnnotationUtils
             @Nonnull Class<?> type,
             @Nonnull Class<MetaAnnType> metaAnnType )
     {
-        Set<Class<? extends Annotation>> visited = new HashSet<>();
-        return findMetaAnnotation( type, metaAnnType, visited );
+        return findMetaAnnotation( type, metaAnnType, new HashSet<>() );
     }
 
     @Nullable
@@ -36,8 +35,7 @@ public final class AnnotationUtils
             @Nonnull Class<?> type,
             @Nonnull Class<? extends Annotation> metaAnnType )
     {
-        Set<Class<? extends Annotation>> visited = new HashSet<>();
-        return findMetaAnnotationTarget( type, metaAnnType, visited );
+        return findMetaAnnotationTarget( type, metaAnnType, new HashSet<>() );
     }
 
     @Nonnull
@@ -60,8 +58,7 @@ public final class AnnotationUtils
             @Nonnull Method method,
             @Nonnull Class<MetaAnnType> metaAnnType )
     {
-        Set<Class<? extends Annotation>> visited = new HashSet<>();
-        return findMetaAnnotation( method, metaAnnType, visited );
+        return findMetaAnnotation( method, metaAnnType, new HashSet<>() );
     }
 
     @Nullable
@@ -69,8 +66,7 @@ public final class AnnotationUtils
             @Nonnull Method method,
             @Nonnull Class<? extends Annotation> metaAnnType )
     {
-        Set<Class<? extends Annotation>> visited = new HashSet<>();
-        return findMetaAnnotationTarget( method, metaAnnType, visited );
+        return findMetaAnnotationTarget( method, metaAnnType, new HashSet<>() );
     }
 
     @Nonnull
