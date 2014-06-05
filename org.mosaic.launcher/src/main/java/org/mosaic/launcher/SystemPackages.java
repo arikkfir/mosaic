@@ -144,32 +144,32 @@ final class SystemPackages
     private static String createSpecForPackages( Map<String, String> packages, boolean withVersions )
     {
         StringBuilder buffer = new StringBuilder( 2000 );
-        for( Map.Entry<String, String> entry : packages.entrySet() )
-        {
+        packages.entrySet().forEach( entry -> {
             String packageName = entry.getKey().trim();
-
             String version = entry.getValue();
-            if( version == null )
+            if( version != null )
             {
-                LOG.warn( "Null version for package '{}' detected", packageName );
-                continue;
-            }
-            version = version.trim();
+                version = version.trim();
 
-            if( buffer.length() > 0 )
-            {
-                buffer.append( "," );
-            }
+                if( buffer.length() > 0 )
+                {
+                    buffer.append( "," );
+                }
 
-            if( withVersions )
-            {
-                buffer.append( packageName ).append( ";version=" ).append( version );
+                if( withVersions )
+                {
+                    buffer.append( packageName ).append( ";version=" ).append( version );
+                }
+                else
+                {
+                    buffer.append( packageName );
+                }
             }
             else
             {
-                buffer.append( packageName );
+                LOG.warn( "Null version for package '{}' detected", packageName );
             }
-        }
+        } );
         return buffer.toString();
     }
 

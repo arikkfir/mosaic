@@ -3,11 +3,15 @@ package org.mosaic.launcher;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.StringTokenizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.list;
+import static java.util.stream.Collectors.toList;
 
 /**
  * @author arik
@@ -34,13 +38,11 @@ final class Header
                     read = reader.read( chars );
                 }
 
-                List<Object> lines = Collections.list( new StringTokenizer( buffer.toString(), "\n", false ) );
-
-                logoLines = new LinkedList<>();
-                for( Object line : lines )
-                {
-                    logoLines.add( line.toString() );
-                }
+                logoLines =
+                        list( new StringTokenizer( buffer.toString(), "\n", false ) )
+                                .stream()
+                                .map( Object::toString )
+                                .collect( toList() );
             }
         }
         catch( IOException e )

@@ -19,6 +19,7 @@ import static java.nio.file.Files.getLastModifiedTime;
 import static java.nio.file.Files.notExists;
 import static org.apache.felix.framework.cache.BundleCache.CACHE_BUFSIZE_PROP;
 import static org.apache.felix.framework.util.FelixConstants.LOG_LEVEL_PROP;
+import static org.mosaic.launcher.EventsLogger.printEmphasizedErrorMessage;
 import static org.mosaic.launcher.SystemError.bootstrapError;
 import static org.mosaic.launcher.SystemPackages.getExtraSystemPackages;
 import static org.osgi.framework.Constants.*;
@@ -52,14 +53,7 @@ public class Main
         SLF4JBridgeHandler.install();
 
         // install an exception handler for all threads that don't have an exception handler, that simply logs the exception
-        setDefaultUncaughtExceptionHandler( new Thread.UncaughtExceptionHandler()
-        {
-            @Override
-            public void uncaughtException( Thread t, Throwable e )
-            {
-                EventsLogger.printEmphasizedErrorMessage( e.getMessage(), e );
-            }
-        } );
+        setDefaultUncaughtExceptionHandler( ( t, e ) -> printEmphasizedErrorMessage( e.getMessage(), e ) );
 
         //////////////////////////////////////////////////////
         // configuration
@@ -140,30 +134,23 @@ public class Main
         }
 
         // add OSGi listeners that emit log statements on OSGi events
-        felixBundleContext.addFrameworkListener( new FrameworkListener()
-        {
-            @Override
-            public void frameworkEvent( FrameworkEvent frameworkEvent )
+        felixBundleContext.addFrameworkListener( frameworkEvent -> {
+            @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+            Throwable throwable = frameworkEvent.getThrowable();
+
+            switch( frameworkEvent.getType() )
             {
-                Bundle bundle = frameworkEvent.getBundle();
+                case FrameworkEvent.ERROR:
+                    EventsLogger.printEmphasizedErrorMessage( throwable.getMessage(), throwable );
+                    break;
 
-                @SuppressWarnings( "ThrowableResultOfMethodCallIgnored" )
-                Throwable throwable = frameworkEvent.getThrowable();
+                case FrameworkEvent.PACKAGES_REFRESHED:
+                    EventsLogger.printEmphasizedInfoMessage( "OSGi packages have been refreshed" );
+                    break;
 
-                switch( frameworkEvent.getType() )
-                {
-                    case FrameworkEvent.ERROR:
-                        EventsLogger.printEmphasizedErrorMessage( throwable.getMessage(), throwable );
-                        break;
-
-                    case FrameworkEvent.PACKAGES_REFRESHED:
-                        EventsLogger.printEmphasizedInfoMessage( "OSGi packages have been refreshed" );
-                        break;
-
-                    case FrameworkEvent.STARTED:
-                        EventsLogger.printEmphasizedInfoMessage( "OSGi framework has been started" );
-                        break;
-                }
+                case FrameworkEvent.STARTED:
+                    EventsLogger.printEmphasizedInfoMessage( "OSGi framework has been started" );
+                    break;
             }
         } );
 
