@@ -33,7 +33,7 @@ public class Main
 
     private static final int FELIX_CACHE_BUFSIZE = 1024 * 64;
 
-    public static void main( String[] args ) throws IOException, BundleException
+    public static void main( String... args ) throws IOException, BundleException
     {
         //////////////////////////////////////////////////////
         // setup
