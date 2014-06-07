@@ -88,15 +88,19 @@ class ServiceTrackerImpl<ServiceType> implements ServiceProvider<ServiceType>,
             }
             eventHandlers.add( listener );
 
-            for( ServiceRegistration<ServiceType> registration : getRegistrations() )
+            List<ServiceRegistration<ServiceType>> registrations = this.unmodifiableRegistrations;
+            if( registrations != null )
             {
-                try
+                for( ServiceRegistration<ServiceType> registration : getRegistrations() )
                 {
-                    listener.serviceRegistered( registration );
-                }
-                catch( Throwable e )
-                {
-                    logger.warn( "ServiceTracker listener '{}' threw an exception: {}", listener, e.getMessage(), e );
+                    try
+                    {
+                        listener.serviceRegistered( registration );
+                    }
+                    catch( Throwable e )
+                    {
+                        logger.warn( "ServiceTracker listener '{}' threw an exception: {}", listener, e.getMessage(), e );
+                    }
                 }
             }
         } );
