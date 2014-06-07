@@ -2,11 +2,13 @@ package org.mosaic.core.util.workflow;
 
 import java.util.*;
 import org.mosaic.core.util.Nonnull;
+import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
 import org.mosaic.core.util.concurrency.ReadWriteLock;
 import org.mosaic.core.util.logging.Logging;
 import org.slf4j.Logger;
 
+import static java.util.Collections.emptyIterator;
 import static java.util.Collections.unmodifiableSet;
 
 /**
@@ -14,6 +16,21 @@ import static java.util.Collections.unmodifiableSet;
  */
 public class Workflow
 {
+    private static class Action
+    {
+        @Nullable
+        private final TransitionChangeAction execute;
+
+        @Nullable
+        private final TransitionChangeAction revert;
+
+        private Action( @Nullable TransitionChangeAction execute, @Nullable TransitionChangeAction revert )
+        {
+            this.execute = execute;
+            this.revert = revert;
+        }
+    }
+
     @Nonnull
     protected final Logger logger;
 
@@ -24,10 +41,13 @@ public class Workflow
     private final String name;
 
     @Nonnull
-    private final Deque<TransitionListener> listeners = new LinkedList<>();
+    private final Map<Status, Map<Status, TransitionDirection>> statuses = new HashMap<>();
 
     @Nonnull
-    private final Map<Status, Map<Status, TransitionDirection>> statuses = new HashMap<>();
+    private final Map<Status, Deque<TransitionChangeAction>> validators = new HashMap<>();
+
+    @Nonnull
+    private final Map<Status, Deque<Action>> actions = new HashMap<>();
 
     @Nonnull
     private Status status;
@@ -63,82 +83,44 @@ public class Workflow
     @Nonnull
     public ReadWriteLock getLock()
     {
-        this.lock.acquireReadLock();
-        try
-        {
-            return this.lock;
-        }
-        finally
-        {
-            this.lock.releaseReadLock();
-        }
+        return this.lock.read( () -> this.lock );
     }
 
     @Nonnull
     public final String getName()
     {
-        this.lock.acquireReadLock();
-        try
-        {
-            return this.name;
-        }
-        finally
-        {
-            this.lock.releaseReadLock();
-        }
+        return this.lock.read( () -> this.name );
     }
 
     @Nonnull
     public final Set<Status> getStatuses()
     {
-        this.lock.acquireReadLock();
-        try
-        {
-            return unmodifiableSet( new HashSet<>( this.statuses.keySet() ) );
-        }
-        finally
-        {
-            this.lock.releaseReadLock();
-        }
+        return this.lock.read( () -> unmodifiableSet( new HashSet<>( this.statuses.keySet() ) ) );
     }
 
     public final void addStatus( @Nonnull Status status )
     {
-        this.lock.acquireWriteLock();
-        try
-        {
+        this.lock.write( () -> {
             if( !this.statuses.containsKey( status ) )
             {
-                this.statuses.put( status, new HashMap<Status, TransitionDirection>() );
+                this.statuses.put( status, new HashMap<>() );
             }
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        } );
     }
 
     @Nonnull
     public final Set<Status> getTargetStatusesFor( @Nonnull Status origin )
     {
-        this.lock.acquireReadLock();
-        try
-        {
+        return this.lock.read( () -> {
             Map<Status, TransitionDirection> transitions = this.statuses.get( origin );
             return transitions == null ? Collections.<Status>emptySet() : unmodifiableSet( new HashSet<Status>( transitions.keySet() ) );
-        }
-        finally
-        {
-            this.lock.releaseReadLock();
-        }
+        } );
     }
 
     @Nonnull
     public final Set<Status> getOriginStatusesFor( @Nonnull Status target )
     {
-        this.lock.acquireReadLock();
-        try
-        {
+        return this.lock.read( () -> {
             Set<Status> originStatuses = new HashSet<>();
             for( Map.Entry<Status, Map<Status, TransitionDirection>> entry : this.statuses.entrySet() )
             {
@@ -147,35 +129,25 @@ public class Workflow
                     originStatuses.add( entry.getKey() );
                 }
             }
-            return unmodifiableSet( new HashSet<>( originStatuses ) );
-        }
-        finally
-        {
-            this.lock.releaseReadLock();
-        }
+
+            Set<Status> s = new HashSet<>( originStatuses );
+            return unmodifiableSet( s );
+        } );
     }
 
     public final boolean isTransitionAllowed( @Nonnull Status origin, @Nonnull Status target )
     {
-        this.lock.acquireReadLock();
-        try
-        {
+        return this.lock.read( () -> {
             Map<Status, TransitionDirection> transitions = this.statuses.get( origin );
             return transitions != null && transitions.containsKey( target );
-        }
-        finally
-        {
-            this.lock.releaseReadLock();
-        }
+        } );
     }
 
     public final void addTransition( @Nonnull Status origin,
                                      @Nonnull Status target,
                                      @Nonnull TransitionDirection direction )
     {
-        this.lock.acquireWriteLock();
-        try
-        {
+        this.lock.write( () -> {
             Map<Status, TransitionDirection> transitions = this.statuses.get( origin );
             if( transitions == null )
             {
@@ -183,64 +155,55 @@ public class Workflow
                 this.statuses.put( origin, transitions );
             }
             transitions.put( target, direction );
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        } );
     }
 
-    @Nonnull
-    public final <T extends TransitionListener> T addListener( @Nonnull T listener )
+    public final void addValidation( @Nonnull Status target, @Nonnull TransitionChangeAction validator )
     {
-        this.lock.acquireWriteLock();
-        try
-        {
-            this.listeners.add( listener );
-            return listener;
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        this.lock.write( () -> {
+            Deque<TransitionChangeAction> validators = this.validators.get( target );
+            if( validators == null )
+            {
+                validators = new LinkedList<>();
+                this.validators.put( target, validators );
+            }
+            validators.add( validator );
+        } );
     }
 
-    @Nonnull
-    public final <T extends TransitionListener> T removeListener( @Nonnull T listener )
+    public final void addAction( @Nonnull Status target, @Nullable TransitionChangeAction action )
     {
-        this.lock.acquireWriteLock();
-        try
-        {
-            this.listeners.remove( listener );
-            return listener;
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        addAction( target, action, null );
+    }
+
+    public final void addAction( @Nonnull Status target,
+                                 @Nullable TransitionChangeAction action,
+                                 @Nullable TransitionChangeAction revert )
+    {
+        this.lock.write( () -> {
+            Deque<Action> actions = this.actions.get( target );
+            if( actions == null )
+            {
+                actions = new LinkedList<>();
+                this.actions.put( target, actions );
+            }
+            actions.add( new Action( action, revert ) );
+        } );
     }
 
     @Nonnull
     public final Status getStatus()
     {
-        this.lock.acquireReadLock();
-        try
-        {
-            return this.status;
-        }
-        finally
-        {
-            this.lock.releaseReadLock();
-        }
+        return this.lock.read( () -> this.status );
     }
 
     public final void transitionTo( @Nonnull Status target, boolean vetoable )
     {
-        this.lock.acquireWriteLock();
-        try
-        {
+        this.lock.write( () -> {
+
             // save the origin status
             Status origin = this.status;
+            TransitionContext context = new TransitionContext( this, origin, target );
             this.logger.debug( "Transitioning {} from {} to {}", this, origin, target );
 
             // if already in target state, do nothing
@@ -265,21 +228,25 @@ public class Workflow
             // validate transition (validations always run in forward direction for now)
             if( vetoable )
             {
-                for( TransitionListener listener : this.listeners )
+                Deque<TransitionChangeAction> validators = this.validators.get( target );
+                if( validators != null )
                 {
-                    try
+                    for( TransitionChangeAction action : validators )
                     {
-                        listener.validate( origin, target );
-                    }
-                    catch( Throwable e )
-                    {
-                        if( e instanceof WorkflowException )
+                        try
                         {
-                            throw ( WorkflowException ) e;
+                            action.execute( context );
                         }
-                        else
+                        catch( Throwable e )
                         {
-                            throw new TransitionException( "transition of " + this + " from " + origin + " to " + target + " was vetoed by " + listener, e, this, origin, target );
+                            if( e instanceof WorkflowException )
+                            {
+                                throw ( WorkflowException ) e;
+                            }
+                            else
+                            {
+                                throw new TransitionException( "transition of " + this + " from " + origin + " to " + target + " was vetoed by " + action, e, this, origin, target );
+                            }
                         }
                     }
                 }
@@ -289,37 +256,55 @@ public class Workflow
             this.status = target;
 
             // get listeners in appropriate direction
-            Iterator<TransitionListener> listenersIterator =
-                    direction == TransitionDirection.FORWARD
-                    ? this.listeners.iterator()
-                    : this.listeners.descendingIterator();
-            List<TransitionListener> executedListeners = new LinkedList<>();
-            while( listenersIterator.hasNext() )
+            Deque<Action> actions = this.actions.get( target );
+            Iterator<Action> actionIterator;
+            if( actions == null )
             {
-                TransitionListener listener = listenersIterator.next();
+                actionIterator = emptyIterator();
+            }
+            else if( direction == TransitionDirection.FORWARD )
+            {
+                actionIterator = actions.iterator();
+            }
+            else
+            {
+                actionIterator = actions.descendingIterator();
+            }
+            List<Action> executedActions = new LinkedList<>();
+            while( actionIterator.hasNext() )
+            {
+                Action action = actionIterator.next();
                 try
                 {
                     // keep track of executed listeners, in reverse order of execution (this is unrelated to the transition-direction!)
-                    executedListeners.add( 0, listener );
+                    executedActions.add( 0, action );
 
                     // execute the listener
-                    listener.execute( origin, target );
+                    TransitionChangeAction executor = action.execute;
+                    if( executor != null )
+                    {
+                        executor.execute( context );
+                    }
                 }
                 catch( Throwable e )
                 {
                     if( vetoable )
                     {
                         // failure to execute action - revert!
-                        for( TransitionListener executedListener : executedListeners )
+                        for( Action executedAction : executedActions )
                         {
-                            try
+                            TransitionChangeAction revertor = executedAction.revert;
+                            if( revertor != null )
                             {
-                                executedListener.revert( origin, target );
-                            }
-                            catch( Throwable revertException )
-                            {
-                                this.logger.warn( "Transition listener {} failed to revert the transition of {} from {} to {}",
-                                                  listener, this, origin, target, revertException );
+                                try
+                                {
+                                    revertor.execute( context );
+                                }
+                                catch( Throwable revertException )
+                                {
+                                    this.logger.warn( "Transition listener {} failed to revert the transition of {} from {} to {}",
+                                                      action, this, origin, target, revertException );
+                                }
                             }
                         }
 
@@ -333,41 +318,17 @@ public class Workflow
                         }
                         else
                         {
-                            throw new TransitionException( "Transition listener " + listener + " failed while transitioning " + this + " from " + origin + " to " + target, e, this, origin, target );
+                            throw new TransitionException( "Transition listener " + action + " failed while transitioning " + this + " from " + origin + " to " + target, e, this, origin, target );
                         }
                     }
                     else
                     {
                         this.logger.warn( "Transition listener {} failed while transitioning {} from {} to {}, but transition is not vetoable",
-                                          listener, this, origin, target, e );
+                                          action, this, origin, target, e );
                     }
                 }
             }
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
-    }
-
-    public final void acquireWriteLock()
-    {
-        this.lock.acquireWriteLock();
-    }
-
-    public final void releaseWriteLock()
-    {
-        this.lock.releaseWriteLock();
-    }
-
-    public final void acquireReadLock()
-    {
-        this.lock.acquireReadLock();
-    }
-
-    public final void releaseReadLock()
-    {
-        this.lock.releaseReadLock();
+        } );
     }
 
     public static enum TransitionDirection

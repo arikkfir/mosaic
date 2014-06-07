@@ -2,18 +2,19 @@ package org.mosaic.core.impl.module;
 
 import com.fasterxml.classmate.ResolvedType;
 import com.fasterxml.classmate.TypeResolver;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
 import org.mosaic.core.*;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
+import org.mosaic.core.util.concurrency.ReadWriteLock;
+
+import static java.util.Arrays.asList;
 
 /**
  * @author arik
@@ -24,6 +25,25 @@ class ModuleTypeImpl implements ModuleType
     private static final Module.ServiceProperty[] EMPTY_SERVICE_PROPERTY_ARRAY = new Module.ServiceProperty[ 0 ];
 
     @Nonnull
+    private static Module.ServiceProperty[] createFilter( @Nonnull Inject.Property... properties )
+    {
+        if( properties.length == 0 )
+        {
+            return EMPTY_SERVICE_PROPERTY_ARRAY;
+        }
+
+        Module.ServiceProperty[] array = new Module.ServiceProperty[ properties.length ];
+        for( int i = 0; i < properties.length; i++ )
+        {
+            array[ i ] = Module.ServiceProperty.p( properties[ i ].name(), properties[ i ].value() );
+        }
+        return array;
+    }
+
+    @Nonnull
+    private final ReadWriteLock lock;
+
+    @Nonnull
     private final ModuleRevisionImpl moduleRevision;
 
     @Nonnull
@@ -32,119 +52,118 @@ class ModuleTypeImpl implements ModuleType
     @Nonnull
     private final Map<String, ValueProvider<?>> fieldValueProviders = new HashMap<>();
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     ModuleTypeImpl( @Nonnull ModuleRevisionImpl moduleRevision, @Nonnull Class<?> type )
     {
+        this.lock = moduleRevision.getModule().getLock();
         this.moduleRevision = moduleRevision;
         this.type = type;
 
         TypeResolver typeResolver = new TypeResolver();
-        for( Field field : this.type.getDeclaredFields() )
-        {
-            if( field.isAnnotationPresent( Inject.class ) )
-            {
-                Inject annotation = field.getAnnotation( Inject.class );
+        asList( this.type.getDeclaredFields() )
+                .stream()
+                .filter( field -> field.isAnnotationPresent( Inject.class ) )
+                .forEach( field -> {
 
-                ResolvedType resolvedType = typeResolver.resolve( field.getGenericType() );
-                if( resolvedType.getErasedType().equals( Module.class ) )
-                {
-                    this.fieldValueProviders.put( field.getName(), new ModuleValueProvider() );
-                }
-                else if( resolvedType.getErasedType().equals( ServiceProvider.class ) )
-                {
-                    this.fieldValueProviders.put(
-                            field.getName(),
-                            new ServiceProviderValueProvider(
-                                    this.moduleRevision.getServiceDependency(
-                                            resolvedType,
-                                            0,
-                                            createFilter( annotation.properties() )
-                                    )
-                            )
-                    );
-                }
-                else if( resolvedType.getErasedType().equals( ServicesProvider.class ) )
-                {
-                    this.fieldValueProviders.put(
-                            field.getName(),
-                            new ServicesProviderValueProvider(
-                                    this.moduleRevision.getServiceDependency(
-                                            resolvedType,
-                                            0,
-                                            createFilter( annotation.properties() )
-                                    )
-                            )
-                    );
-                }
-                else if( resolvedType.getErasedType().equals( ServiceRegistration.class ) )
-                {
-                    this.fieldValueProviders.put(
-                            field.getName(),
-                            new ServiceRegistrationValueProvider(
-                                    this.moduleRevision.getServiceDependency(
-                                            resolvedType,
-                                            field.isAnnotationPresent( Nonnull.class ) ? 1 : 0,
-                                            createFilter( annotation.properties() )
-                                    )
-                            )
-                    );
-                }
-                else if( resolvedType.getErasedType().equals( ServiceTracker.class ) )
-                {
-                    this.fieldValueProviders.put(
-                            field.getName(),
-                            new ServiceTrackerValueProvider<>(
-                                    resolvedType.getTypeParameters().get( 0 ).getErasedType(),
-                                    createFilter( annotation.properties() )
-                            )
-                    );
-                }
-                else if( resolvedType.getErasedType().equals( List.class ) )
-                {
-                    this.fieldValueProviders.put(
-                            field.getName(),
-                            new ServicesListValueProvider(
-                                    this.moduleRevision.getServiceDependency(
-                                            resolvedType,
-                                            0,
-                                            createFilter( annotation.properties() )
-                                    )
-                            )
-                    );
-                }
-                else
-                {
-                    this.fieldValueProviders.put(
-                            field.getName(),
-                            new ServiceProxyValueProvider(
-                                    this.moduleRevision.getServiceDependency(
-                                            resolvedType,
-                                            1,
-                                            createFilter( annotation.properties() )
-                                    )
-                            )
-                    );
-                }
-            }
-        }
+                    Inject annotation = field.getAnnotation( Inject.class );
+
+                    ResolvedType resolvedType = typeResolver.resolve( field.getGenericType() );
+                    if( resolvedType.getErasedType().equals( Module.class ) )
+                    {
+                        this.fieldValueProviders.put( field.getName(), new ModuleValueProvider() );
+                    }
+                    else if( resolvedType.getErasedType().equals( ServiceProvider.class ) )
+                    {
+                        this.fieldValueProviders.put(
+                                field.getName(),
+                                new ServiceProviderValueProvider(
+                                        this.moduleRevision.getServiceDependency(
+                                                resolvedType,
+                                                0,
+                                                createFilter( annotation.properties() )
+                                        )
+                                )
+                        );
+                    }
+                    else if( resolvedType.getErasedType().equals( ServicesProvider.class ) )
+                    {
+                        this.fieldValueProviders.put(
+                                field.getName(),
+                                new ServicesProviderValueProvider(
+                                        this.moduleRevision.getServiceDependency(
+                                                resolvedType,
+                                                0,
+                                                createFilter( annotation.properties() )
+                                        )
+                                )
+                        );
+                    }
+                    else if( resolvedType.getErasedType().equals( ServiceRegistration.class ) )
+                    {
+                        this.fieldValueProviders.put(
+                                field.getName(),
+                                new ServiceRegistrationValueProvider(
+                                        this.moduleRevision.getServiceDependency(
+                                                resolvedType,
+                                                field.isAnnotationPresent( Nonnull.class ) ? 1 : 0,
+                                                createFilter( annotation.properties() )
+                                        )
+                                )
+                        );
+                    }
+                    else if( resolvedType.getErasedType().equals( ServiceTracker.class ) )
+                    {
+                        this.fieldValueProviders.put(
+                                field.getName(),
+                                new ServiceTrackerValueProvider<>(
+                                        resolvedType.getTypeParameters().get( 0 ).getErasedType(),
+                                        createFilter( annotation.properties() )
+                                )
+                        );
+                    }
+                    else if( resolvedType.getErasedType().equals( List.class ) )
+                    {
+                        this.fieldValueProviders.put(
+                                field.getName(),
+                                new ServicesListValueProvider(
+                                        this.moduleRevision.getServiceDependency(
+                                                resolvedType,
+                                                0,
+                                                createFilter( annotation.properties() )
+                                        )
+                                )
+                        );
+                    }
+                    else
+                    {
+                        this.fieldValueProviders.put(
+                                field.getName(),
+                                new ServiceProxyValueProvider(
+                                        this.moduleRevision.getServiceDependency(
+                                                resolvedType,
+                                                1,
+                                                createFilter( annotation.properties() )
+                                        )
+                                )
+                        );
+                    }
+                } );
     }
 
     @Override
     public String toString()
     {
-        return ToStringHelper.create( this )
-                             .add( "type", this.type )
-                             .add( "revision", this.moduleRevision )
-                             .toString();
+        return this.lock.read( () -> ToStringHelper.create( this )
+                                                   .add( "type", this.type )
+                                                   .add( "revision", this.moduleRevision )
+                                                   .toString() );
     }
 
     @Nullable
     @Override
     public Object getInstanceFieldValue( @Nonnull String fieldName )
     {
-        this.moduleRevision.getModule().getLock().acquireReadLock();
-        try
-        {
+        return this.lock.read( () -> {
             ValueProvider<?> valueProvider = this.fieldValueProviders.get( fieldName );
             if( valueProvider == null )
             {
@@ -154,11 +173,7 @@ class ModuleTypeImpl implements ModuleType
             {
                 return valueProvider.getValue();
             }
-        }
-        finally
-        {
-            this.moduleRevision.getModule().getLock().releaseReadLock();
-        }
+        } );
     }
 
     void shutdown()
@@ -172,29 +187,13 @@ class ModuleTypeImpl implements ModuleType
     @Nonnull
     ModuleRevisionImpl getModuleRevision()
     {
-        return this.moduleRevision;
+        return this.lock.read( () -> this.moduleRevision );
     }
 
     @Nonnull
     Class<?> getType()
     {
-        return this.type;
-    }
-
-    @Nonnull
-    private Module.ServiceProperty[] createFilter( @Nonnull Inject.Property... properties )
-    {
-        if( properties.length == 0 )
-        {
-            return EMPTY_SERVICE_PROPERTY_ARRAY;
-        }
-
-        Module.ServiceProperty[] array = new Module.ServiceProperty[ properties.length ];
-        for( int i = 0; i < properties.length; i++ )
-        {
-            array[ i ] = Module.ServiceProperty.p( properties[ i ].name(), properties[ i ].value() );
-        }
-        return array;
+        return this.lock.read( () -> this.type );
     }
 
     private abstract class ValueProvider<Value>
@@ -312,7 +311,7 @@ class ModuleTypeImpl implements ModuleType
             }
         }
 
-        @SuppressWarnings( "unchecked" )
+        @SuppressWarnings("unchecked")
         @Nonnull
         private ServiceType createProxy()
         {
@@ -443,55 +442,16 @@ class ModuleTypeImpl implements ModuleType
         }
     }
 
-    private class ServiceTrackerValueProvider<ServiceType>
-            extends ValueProvider<ServiceTracker<ServiceType>>
-            implements ServiceTracker<ServiceType>, ServiceListener<ServiceType>
+    private class ServiceTrackerValueProvider<ServiceType> extends ValueProvider<ServiceTracker<ServiceType>>
+            implements ServiceTracker<ServiceType>
     {
         @Nonnull
         private final ServiceTracker<ServiceType> serviceTracker;
 
-        @Nonnull
-        private final List<ServiceListener<ServiceType>> eventHandlers;
-
         private ServiceTrackerValueProvider( @Nonnull Class<ServiceType> serviceType,
                                              @Nonnull Module.ServiceProperty... properties )
         {
-            this.eventHandlers = new CopyOnWriteArrayList<>();
             this.serviceTracker = moduleRevision.getModule().createServiceTracker( serviceType, properties );
-            this.serviceTracker.addEventHandler( this );
-        }
-
-        @Override
-        public void serviceRegistered( @Nonnull ServiceRegistration<ServiceType> registration )
-        {
-            for( ServiceListener<ServiceType> listener : this.eventHandlers )
-            {
-                try
-                {
-                    listener.serviceRegistered( registration );
-                }
-                catch( Throwable e )
-                {
-                    moduleRevision.getModule().getLogger().warn( "Service tracker listener '{}' threw an exception", listener, e );
-                }
-            }
-        }
-
-        @Override
-        public void serviceUnregistered( @Nonnull ServiceRegistration<ServiceType> registration,
-                                         @Nonnull ServiceType service )
-        {
-            for( ServiceListener<ServiceType> listener : this.eventHandlers )
-            {
-                try
-                {
-                    listener.serviceUnregistered( registration, service );
-                }
-                catch( Throwable e )
-                {
-                    moduleRevision.getModule().getLogger().warn( "Service tracker listener '{}' threw an exception", listener, e );
-                }
-            }
         }
 
         @Nonnull
@@ -511,13 +471,20 @@ class ModuleTypeImpl implements ModuleType
         @Override
         public void addEventHandler( @Nonnull ServiceListener<ServiceType> listener )
         {
-            this.eventHandlers.add( listener );
+            this.serviceTracker.addEventHandler( listener );
+        }
+
+        @Override
+        public void addEventHandler( @Nonnull ServiceManager.ServiceRegisteredAction<ServiceType> onRegister,
+                                     @Nonnull ServiceManager.ServiceUnregisteredAction<ServiceType> onUnregister )
+        {
+            this.serviceTracker.addEventHandler( onRegister, onUnregister );
         }
 
         @Override
         public void removeEventHandler( @Nonnull ServiceListener<ServiceType> listener )
         {
-            this.eventHandlers.remove( listener );
+            this.serviceTracker.removeEventHandler( listener );
         }
 
         @Override

@@ -47,56 +47,33 @@ class ModuleImpl implements Module
     @Override
     public String toString()
     {
-        return ToStringHelper.create( "Module" )
-                             .add( "id", this.bundle.getBundleId() )
-                             .add( "name", this.bundle.getSymbolicName() )
-                             .toString();
+        return this.lock.read( () -> ToStringHelper.create( "Module" )
+                                                   .add( "id", this.bundle.getBundleId() )
+                                                   .add( "name", this.bundle.getSymbolicName() )
+                                                   .toString() );
     }
 
     @Override
     public long getId()
     {
-        this.lock.acquireReadLock();
-        try
-        {
-            return this.bundle.getBundleId();
-        }
-        finally
-        {
-            this.lock.releaseReadLock();
-        }
+        return this.lock.read( this.bundle::getBundleId );
     }
 
     @Nullable
     @Override
     public Path getPath()
     {
-        this.lock.acquireReadLock();
-        try
-        {
+        return this.lock.read( () -> {
             String location = this.bundle.getLocation();
-            if( location.startsWith( "file:" ) )
-            {
-                return Paths.get( location.substring( "file:".length() ) );
-            }
-            else
-            {
-                return null;
-            }
-        }
-        finally
-        {
-            this.lock.releaseReadLock();
-        }
+            return location.startsWith( "file:" ) ? Paths.get( location.substring( "file:".length() ) ) : null;
+        } );
     }
 
     @Nonnull
     @Override
     public ModuleState getState()
     {
-        this.lock.acquireReadLock();
-        try
-        {
+        return this.lock.read( () -> {
             int state = this.bundle.getState();
             switch( state )
             {
@@ -122,20 +99,14 @@ class ModuleImpl implements Module
                 default:
                     throw new IllegalStateException( "unknown bundle state: " + state );
             }
-        }
-        finally
-        {
-            this.lock.releaseReadLock();
-        }
+        } );
     }
 
     @Nullable
     @Override
     public ModuleRevisionImpl getCurrentRevision()
     {
-        this.lock.acquireReadLock();
-        try
-        {
+        return this.lock.read( () -> {
             List<BundleRevision> revisions = this.bundle.adapt( BundleRevisions.class ).getRevisions();
             if( revisions.isEmpty() )
             {
@@ -145,35 +116,21 @@ class ModuleImpl implements Module
             {
                 return this.revisions.get( revisions.get( 0 ) );
             }
-        }
-        finally
-        {
-            this.lock.releaseReadLock();
-        }
+        } );
     }
 
     @Nonnull
     @Override
     public Collection<ModuleRevision> getRevisions()
     {
-        this.lock.acquireReadLock();
-        try
-        {
-            return Collections.<ModuleRevision>unmodifiableCollection( this.revisions.values() );
-        }
-        finally
-        {
-            this.lock.releaseReadLock();
-        }
+        return this.lock.read( () -> Collections.<ModuleRevision>unmodifiableCollection( this.revisions.values() ) );
     }
 
     @Nullable
     @Override
     public ModuleRevision getRevision( long revisionId )
     {
-        this.lock.acquireReadLock();
-        try
-        {
+        return this.lock.read( () -> {
             for( ModuleRevisionImpl moduleRevision : this.revisions.values() )
             {
                 if( moduleRevision.getId() == revisionId )
@@ -182,11 +139,7 @@ class ModuleImpl implements Module
                 }
             }
             return null;
-        }
-        finally
-        {
-            this.lock.releaseReadLock();
-        }
+        } );
     }
 
     @Nonnull
@@ -204,6 +157,15 @@ class ModuleImpl implements Module
                                                                                @Nonnull ServiceProperty... properties )
     {
         return this.serviceManager.addListener( this, listener, type, properties );
+    }
+
+    @Override
+    public <ServiceType> ListenerRegistration<ServiceType> addServiceListener( @Nonnull ServiceManager.ServiceRegisteredAction<ServiceType> onRegister,
+                                                                               @Nonnull ServiceManager.ServiceUnregisteredAction<ServiceType> onUnregister,
+                                                                               @Nonnull Class<ServiceType> type,
+                                                                               @Nonnull ServiceProperty... properties )
+    {
+        return this.serviceManager.addListener( this, onRegister, onUnregister, type, properties );
     }
 
     @Override
@@ -225,146 +187,107 @@ class ModuleImpl implements Module
     @Override
     public void start()
     {
-        this.lock.acquireWriteLock();
-        try
-        {
-            this.bundle.start();
-        }
-        catch( Throwable e )
-        {
-            throw new ModuleStartException( "could not start module " + this, e, this );
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        this.lock.write( () -> {
+            try
+            {
+                this.bundle.start();
+            }
+            catch( Throwable e )
+            {
+                throw new ModuleStartException( "could not start module " + this, e, this );
+            }
+        } );
     }
 
     @Override
     public void refresh()
     {
-        this.lock.acquireWriteLock();
-        try
-        {
-            this.bundle.update();
-        }
-        catch( Throwable e )
-        {
-            throw new ModuleRefreshException( "could not refresh module " + this, e, this );
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        this.lock.write( () -> {
+            try
+            {
+                this.bundle.update();
+            }
+            catch( Throwable e )
+            {
+                throw new ModuleRefreshException( "could not refresh module " + this, e, this );
+            }
+        } );
     }
 
     @Override
     public void stop()
     {
-        this.lock.acquireWriteLock();
-        try
-        {
-            this.bundle.stop();
-        }
-        catch( Throwable e )
-        {
-            throw new ModuleStartException( "could not stop module " + this, e, this );
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        this.lock.write( () -> {
+            try
+            {
+                this.bundle.stop();
+            }
+            catch( Throwable e )
+            {
+                throw new ModuleStartException( "could not stop module " + this, e, this );
+            }
+        } );
     }
 
     @Override
     public void uninstall()
     {
-        this.lock.acquireWriteLock();
-        try
-        {
-            this.bundle.uninstall();
-        }
-        catch( Throwable e )
-        {
-            throw new ModuleUninstallException( "could not uninstall module " + this, e, this );
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        this.lock.write( () -> {
+            try
+            {
+                this.bundle.uninstall();
+            }
+            catch( Throwable e )
+            {
+                throw new ModuleUninstallException( "could not uninstall module " + this, e, this );
+            }
+        } );
     }
 
     @Nonnull
     Logger getLogger()
     {
-        return this.logger;
+        return this.lock.read( () -> this.logger );
     }
 
     @Nonnull
     ReadWriteLock getLock()
     {
-        return this.lock;
+        return this.lock.read( () -> this.lock );
     }
 
     @Nonnull
     Bundle getBundle()
     {
-        return this.bundle;
+        return this.lock.read( () -> this.bundle );
     }
 
     @Nullable
     ModuleRevisionImpl getRevision( @Nonnull BundleRevision bundleRevision )
     {
-        this.lock.acquireReadLock();
-        try
-        {
-            return this.revisions.get( bundleRevision );
-        }
-        finally
-        {
-            this.lock.releaseReadLock();
-        }
+        return this.lock.read( () -> this.revisions.get( bundleRevision ) );
     }
 
     void syncBundleRevisions()
     {
-        this.lock.acquireWriteLock();
-        try
-        {
-            for( BundleRevision bundleRevision : this.bundle.adapt( BundleRevisions.class ).getRevisions() )
-            {
-                if( !this.revisions.containsKey( bundleRevision ) )
-                {
-                    this.revisions.put( bundleRevision, new ModuleRevisionImpl( this, bundleRevision ) );
-                }
-            }
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        this.lock.write( () -> this.bundle.adapt( BundleRevisions.class ).getRevisions()
+                                          .stream()
+                                          .filter( rev -> !this.revisions.containsKey( rev ) )
+                                          .forEach( rev -> this.revisions.put( rev, new ModuleRevisionImpl( this, rev ) ) ) );
     }
 
     void bundleInstalled()
     {
-        this.lock.acquireWriteLock();
-        try
-        {
+        this.lock.write( () -> {
             this.logger.info( "INSTALLING {}", this );
             syncBundleRevisions();
             this.logger.info( "INSTALLED {}", this );
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        } );
     }
 
     void bundleResolved()
     {
-        this.lock.acquireWriteLock();
-        try
-        {
+        this.lock.write( () -> {
             this.logger.info( "RESOLVING {}", this );
 
             syncBundleRevisions();
@@ -376,18 +299,12 @@ class ModuleImpl implements Module
             }
 
             this.logger.info( "RESOLVED {}", this );
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        } );
     }
 
     void bundleStarting()
     {
-        this.lock.acquireWriteLock();
-        try
-        {
+        this.lock.write( () -> {
             this.logger.info( "STARTING {}", this );
 
             ModuleRevisionImpl revision = getCurrentRevision();
@@ -395,18 +312,12 @@ class ModuleImpl implements Module
             {
                 revision.revisionStarting();
             }
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        } );
     }
 
     void bundleStarted()
     {
-        this.lock.acquireWriteLock();
-        try
-        {
+        this.lock.write( () -> {
             ModuleRevisionImpl revision = getCurrentRevision();
             if( revision != null )
             {
@@ -419,18 +330,12 @@ class ModuleImpl implements Module
             {
                 revision.activate();
             }
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        } );
     }
 
     void bundleStopping()
     {
-        this.lock.acquireWriteLock();
-        try
-        {
+        this.lock.write( () -> {
             ModuleRevisionImpl revision = getCurrentRevision();
             if( revision != null )
             {
@@ -443,18 +348,12 @@ class ModuleImpl implements Module
             {
                 revision.revisionStopping();
             }
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        } );
     }
 
     void bundleStopped()
     {
-        this.lock.acquireWriteLock();
-        try
-        {
+        this.lock.write( () -> {
             ModuleRevisionImpl revision = getCurrentRevision();
             if( revision != null )
             {
@@ -462,32 +361,20 @@ class ModuleImpl implements Module
             }
 
             this.logger.info( "STOPPED {}", this );
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        } );
     }
 
     void bundleUpdated()
     {
-        this.lock.acquireWriteLock();
-        try
-        {
+        this.lock.write( () -> {
             syncBundleRevisions();
             this.logger.info( "UPDATED {}", this );
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        } );
     }
 
     void bundleUnresolved()
     {
-        this.lock.acquireWriteLock();
-        try
-        {
+        this.lock.write( () -> {
             this.logger.info( "UNRESOLVING {}", this );
 
             for( BundleRevision bundleRevision : this.bundle.adapt( BundleRevisions.class ).getRevisions() )
@@ -500,23 +387,11 @@ class ModuleImpl implements Module
             }
 
             this.logger.info( "UNRESOLVED {}", this );
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        } );
     }
 
     void bundleUninstalled()
     {
-        this.lock.acquireWriteLock();
-        try
-        {
-            this.logger.info( "UNINSTALLED {}", this );
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        this.lock.write( () -> this.logger.info( "UNINSTALLED {}", this ) );
     }
 }

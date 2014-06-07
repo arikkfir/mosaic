@@ -70,40 +70,38 @@ abstract class BaseServiceListenerAdapter<ServiceType> implements ServiceListene
     @Override
     public String toString()
     {
-        return ToStringHelper.create( this )
-                             .add( "type", this.type.getName() )
-                             .add( "filter", this.filter )
-                             .add( "listener", getListener() )
-                             .toString();
+        return this.lock.read( () -> ToStringHelper.create( this )
+                                                   .add( "type", this.type.getName() )
+                                                   .add( "filter", this.filter )
+                                                   .add( "listener", getListener() )
+                                                   .toString() );
     }
 
     @Nullable
     @Override
     public Module getModule()
     {
-        return this.module;
+        return this.lock.read( () -> this.module );
     }
 
     @Nonnull
     @Override
     public Class<ServiceType> getType()
     {
-        return this.type;
+        return this.lock.read( () -> this.type );
     }
 
     @Nonnull
     @Override
     public Map<String, Object> getProperties()
     {
-        return this.properties;
+        return this.lock.read( () -> this.properties );
     }
 
     @Override
     public final void serviceRegistered( @Nonnull ServiceRegistration<ServiceType> registration )
     {
-        this.lock.acquireReadLock();
-        try
-        {
+        this.lock.read( () -> {
             ServiceListener<ServiceType> listener = getListener();
             if( listener == null )
             {
@@ -124,20 +122,14 @@ abstract class BaseServiceListenerAdapter<ServiceType> implements ServiceListene
                     listener.serviceRegistered( registration );
                 }
             }
-        }
-        finally
-        {
-            this.lock.releaseReadLock();
-        }
+        } );
     }
 
     @Override
     public void serviceUnregistered( @Nonnull ServiceRegistration<ServiceType> registration,
                                      @Nonnull ServiceType service )
     {
-        this.lock.acquireReadLock();
-        try
-        {
+        this.lock.read( () -> {
             ServiceListener<ServiceType> listener = getListener();
             if( listener == null )
             {
@@ -160,19 +152,13 @@ abstract class BaseServiceListenerAdapter<ServiceType> implements ServiceListene
                     listener.serviceRegistered( registration );
                 }
             }
-        }
-        finally
-        {
-            this.lock.releaseReadLock();
-        }
+        } );
     }
 
     @Override
     public final void unregister()
     {
-        this.lock.acquireWriteLock();
-        try
-        {
+        this.lock.write( () -> {
             List<BaseServiceListenerAdapter> listeners = this.serviceManager.getListeners();
             if( listeners == null )
             {
@@ -188,11 +174,7 @@ abstract class BaseServiceListenerAdapter<ServiceType> implements ServiceListene
                     this.logger.trace( "Removed listener entry {}", this );
                 }
             }
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        } );
     }
 
     @Nullable

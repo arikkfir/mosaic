@@ -1,7 +1,5 @@
 package org.mosaic.core.impl.module;
 
-import org.mosaic.core.ServiceListener;
-import org.mosaic.core.ServiceRegistration;
 import org.mosaic.core.ServiceTracker;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.base.ToStringHelper;
@@ -28,7 +26,19 @@ class ModuleRevisionImplServiceDependency<ServiceType> extends ModuleRevisionImp
                         this.serviceKey.getServiceType().getErasedType(),
                         this.serviceKey.getServicePropertiesArray()
                 );
-        this.serviceTracker.addEventHandler( new DependencySatisfactionSynchronizer() );
+        this.serviceTracker.addEventHandler(
+                reg -> {
+                    if( this.serviceTracker.getServices().size() >= this.serviceKey.getMinCount() )
+                    {
+                        notifySatisfaction();
+                    }
+                },
+                ( reg, service ) -> {
+                    if( this.serviceTracker.getServices().size() < this.serviceKey.getMinCount() )
+                    {
+                        notifyUnsatisfaction();
+                    }
+                } );
     }
 
     @Override
@@ -69,34 +79,5 @@ class ModuleRevisionImplServiceDependency<ServiceType> extends ModuleRevisionImp
     void shutdown()
     {
         this.serviceTracker.stopTracking();
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private class DependencySatisfactionSynchronizer implements ServiceListener<ServiceType>
-    {
-        @Override
-        public void serviceRegistered( @Nonnull ServiceRegistration<ServiceType> registration )
-        {
-            ServiceKey serviceKey = ModuleRevisionImplServiceDependency.this.serviceKey;
-
-            ServiceTracker<ServiceType> serviceTracker = ModuleRevisionImplServiceDependency.this.serviceTracker;
-            if( serviceTracker.getServices().size() >= serviceKey.getMinCount() )
-            {
-                notifySatisfaction();
-            }
-        }
-
-        @Override
-        public void serviceUnregistered( @Nonnull ServiceRegistration<ServiceType> registration,
-                                         @Nonnull ServiceType service )
-        {
-            ServiceKey serviceKey = ModuleRevisionImplServiceDependency.this.serviceKey;
-
-            ServiceTracker<ServiceType> serviceTracker = ModuleRevisionImplServiceDependency.this.serviceTracker;
-            if( serviceTracker.getServices().size() < serviceKey.getMinCount() )
-            {
-                notifyUnsatisfaction();
-            }
-        }
     }
 }

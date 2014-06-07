@@ -19,6 +19,7 @@ import org.mosaic.core.util.logging.Logging;
 import org.slf4j.Logger;
 
 import static java.util.Collections.unmodifiableList;
+import static java.util.stream.Collectors.toCollection;
 import static org.mosaic.core.Module.ServiceProperty.p;
 import static org.mosaic.core.util.base.AnnotationUtils.findMetaAnnotationTarget;
 
@@ -29,6 +30,22 @@ class ModuleComponentImpl
 {
     @Nonnull
     private static final Module.ServiceProperty[] EMPTY_PROPERTIES_ARRAY = new Module.ServiceProperty[ 0 ];
+
+    @Nonnull
+    private static Module.ServiceProperty[] createFilter( @Nonnull ServiceAdapter.Property... properties )
+    {
+        if( properties.length == 0 )
+        {
+            return EMPTY_PROPERTIES_ARRAY;
+        }
+
+        Module.ServiceProperty[] array = new Module.ServiceProperty[ properties.length ];
+        for( int i = 0; i < properties.length; i++ )
+        {
+            array[ i ] = Module.ServiceProperty.p( properties[ i ].name(), properties[ i ].value() );
+        }
+        return array;
+    }
 
     @Nonnull
     private final ModuleTypeImpl moduleType;
@@ -42,7 +59,7 @@ class ModuleComponentImpl
     @Nonnull
     private final List<Method> deactivationMethods;
 
-    @SuppressWarnings( { "FieldCanBeLocal", "UnusedDeclaration" } )
+    @SuppressWarnings({ "FieldCanBeLocal", "UnusedDeclaration" })
     @Nonnull
     private final List<ServiceAdapterHandler> serviceAdapterMethods;
 
@@ -56,16 +73,10 @@ class ModuleComponentImpl
     {
         this.moduleType = moduleType;
         this.instantiator = createInstantiator( this.moduleType.getType() );
-
-        List<ProvidedType> providedTypes = new LinkedList<>();
-        for( Component annotation : annotations )
-        {
-            if( !void.class.equals( annotation.value() ) )
-            {
-                providedTypes.add( new ProvidedType( annotation ) );
-            }
-        }
-        this.providedTypes = unmodifiableList( providedTypes );
+        this.providedTypes = unmodifiableList( annotations.stream()
+                                                          .filter( annotation -> !void.class.equals( annotation.value() ) )
+                                                          .map( ProvidedType::new )
+                                                          .collect( toCollection( LinkedList::new ) ) );
 
         Logger logger = this.moduleType.getModuleRevision().getModule().getLogger();
 
@@ -174,15 +185,8 @@ class ModuleComponentImpl
 
             logger.debug( "Deactivating component {}", this );
 
-            for( MethodEndpointImpl<?> methodEndpoint : this.methodEndpoints )
-            {
-                methodEndpoint.unregister();
-            }
-
-            for( ProvidedType providedType : this.providedTypes )
-            {
-                providedType.unregister();
-            }
+            this.methodEndpoints.forEach( MethodEndpointImpl::unregister );
+            this.providedTypes.forEach( ProvidedType::unregister );
 
             for( Method method : this.deactivationMethods )
             {
@@ -237,22 +241,6 @@ class ModuleComponentImpl
         return null;
     }
 
-    @Nonnull
-    private Module.ServiceProperty[] createFilter( @Nonnull ServiceAdapter.Property... properties )
-    {
-        if( properties.length == 0 )
-        {
-            return EMPTY_PROPERTIES_ARRAY;
-        }
-
-        Module.ServiceProperty[] array = new Module.ServiceProperty[ properties.length ];
-        for( int i = 0; i < properties.length; i++ )
-        {
-            array[ i ] = Module.ServiceProperty.p( properties[ i ].name(), properties[ i ].value() );
-        }
-        return array;
-    }
-
     private class ProvidedType
     {
         @Nonnull
@@ -283,7 +271,7 @@ class ModuleComponentImpl
                                  .toString();
         }
 
-        @SuppressWarnings( "unchecked" )
+        @SuppressWarnings("unchecked")
         private void register( @Nonnull Object instance )
         {
             ModuleImpl module = ModuleComponentImpl.this.moduleType.getModuleRevision().getModule();
@@ -474,7 +462,7 @@ class ModuleComponentImpl
             this.dependency.getServiceTracker().addEventHandler( this );
         }
 
-        @SuppressWarnings( "unchecked" )
+        @SuppressWarnings("unchecked")
         @Override
         public void serviceRegistered( @Nonnull ServiceRegistration<OriginalType> registration )
         {

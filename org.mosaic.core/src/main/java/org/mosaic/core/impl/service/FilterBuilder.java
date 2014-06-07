@@ -29,11 +29,9 @@ class FilterBuilder
         }
         else
         {
+            @SuppressWarnings("MismatchedQueryAndUpdateOfStringBuilder")
             StringBuilder buf = new StringBuilder( 200 );
-            for( String filter : this.filters )
-            {
-                buf.append( filter );
-            }
+            this.filters.forEach( buf::append );
             return "(&" + buf + ")";
         }
     }

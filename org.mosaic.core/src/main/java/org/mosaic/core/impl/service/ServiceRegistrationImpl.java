@@ -52,87 +52,55 @@ class ServiceRegistrationImpl<ServiceType> implements ServiceRegistration<Servic
     @Override
     public String toString()
     {
-        return ToStringHelper.create( this )
-                             .add( "provider", this.provider )
-                             .add( "type", this.type.getName() )
-                             .toString();
-
+        return this.lock.read( () -> ToStringHelper.create( this )
+                                                   .add( "provider", this.provider )
+                                                   .add( "type", this.type.getName() )
+                                                   .toString() );
     }
 
     @Nonnull
     @Override
     public Module getProvider()
     {
-        this.lock.acquireReadLock();
-        try
-        {
-            return this.provider;
-        }
-        finally
-        {
-            this.lock.releaseReadLock();
-        }
+        return this.lock.read( () -> this.provider );
     }
 
     @Nonnull
     @Override
     public Class<ServiceType> getType()
     {
-        this.lock.acquireReadLock();
-        try
-        {
-            return this.type;
-        }
-        finally
-        {
-            this.lock.releaseReadLock();
-        }
+        return this.lock.read( () -> this.type );
     }
 
     @Nonnull
     @Override
     public Map<String, Object> getProperties()
     {
-        this.lock.acquireReadLock();
-        try
-        {
-            return this.properties;
-        }
-        finally
-        {
-            this.lock.releaseReadLock();
-        }
+        return this.lock.read( () -> this.properties );
     }
 
     @Nullable
     @Override
     public ServiceType getService()
     {
-        this.lock.acquireReadLock();
-        try
-        {
+        return this.lock.read( () -> {
             Map<ServiceRegistrationImpl, Object> services = this.serviceManager.getServices();
             if( services == null )
             {
                 throw new IllegalStateException( "service manager no longer available (is server started?)" );
             }
-
-            Object instance = services.get( this );
-            return this.type.cast( instance );
-        }
-        finally
-        {
-            this.lock.releaseReadLock();
-        }
+            else
+            {
+                return this.type.cast( services.get( this ) );
+            }
+        } );
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     @Override
     public void unregister()
     {
-        this.lock.acquireWriteLock();
-        try
-        {
+        this.lock.write( () -> {
             Map<ServiceRegistrationImpl, Object> services = this.serviceManager.getServices();
             if( services == null )
             {
@@ -162,10 +130,6 @@ class ServiceRegistrationImpl<ServiceType> implements ServiceRegistration<Servic
                     }
                 }
             }
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        } );
     }
 }

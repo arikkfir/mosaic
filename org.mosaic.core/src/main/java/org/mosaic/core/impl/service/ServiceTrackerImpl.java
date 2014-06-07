@@ -70,18 +70,16 @@ class ServiceTrackerImpl<ServiceType> implements ServiceProvider<ServiceType>,
     @Override
     public String toString()
     {
-        return ToStringHelper.create( this )
-                             .add( "type", this.type )
-                             .add( "properties", asList( this.properties ) )
-                             .toString();
+        return this.lock.read( () -> ToStringHelper.create( this )
+                                                   .add( "type", this.type )
+                                                   .add( "properties", asList( this.properties ) )
+                                                   .toString() );
     }
 
     @Override
     public void addEventHandler( @Nonnull ServiceListener<ServiceType> listener )
     {
-        this.lock.acquireWriteLock();
-        try
-        {
+        this.lock.write( () -> {
             List<ServiceListener<ServiceType>> eventHandlers = this.eventHandlers;
             if( eventHandlers == null )
             {
@@ -89,55 +87,70 @@ class ServiceTrackerImpl<ServiceType> implements ServiceProvider<ServiceType>,
                 this.eventHandlers = eventHandlers;
             }
             eventHandlers.add( listener );
-        }
-        finally
+
+            for( ServiceRegistration<ServiceType> registration : getRegistrations() )
+            {
+                try
+                {
+                    listener.serviceRegistered( registration );
+                }
+                catch( Throwable e )
+                {
+                    logger.warn( "ServiceTracker listener '{}' threw an exception: {}", listener, e.getMessage(), e );
+                }
+            }
+        } );
+    }
+
+    @Override
+    public void addEventHandler( @Nonnull ServiceManager.ServiceRegisteredAction<ServiceType> onRegister,
+                                 @Nonnull ServiceManager.ServiceUnregisteredAction<ServiceType> onUnregister )
+    {
+        addEventHandler( new ServiceListener<ServiceType>()
         {
-            this.lock.releaseWriteLock();
-        }
+            @Override
+            public void serviceRegistered( @Nonnull ServiceRegistration<ServiceType> registration )
+            {
+                onRegister.serviceRegistered( registration );
+            }
+
+            @Override
+            public void serviceUnregistered( @Nonnull ServiceRegistration<ServiceType> registration,
+                                             @Nonnull ServiceType service )
+            {
+                onUnregister.serviceUnregistered( registration, service );
+            }
+        } );
     }
 
     @Override
     public void removeEventHandler( @Nonnull ServiceListener<ServiceType> listener )
     {
-        this.lock.acquireWriteLock();
-        try
-        {
+        this.lock.write( () -> {
             List<ServiceListener<ServiceType>> eventHandlers = this.eventHandlers;
             if( eventHandlers != null )
             {
                 eventHandlers.remove( listener );
             }
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        } );
     }
 
     @Override
     public void startTracking()
     {
-        this.lock.acquireWriteLock();
-        try
-        {
+        this.lock.write( () -> {
             this.registrations = new LinkedList<>();
             this.services = new LinkedList<>();
             this.unmodifiableRegistrations = Collections.unmodifiableList( this.registrations );
             this.unmodifiableServices = Collections.unmodifiableList( this.services );
             this.listenerRegistration = this.module.addWeakServiceListener( this, this.type, this.properties );
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        } );
     }
 
     @Override
     public void stopTracking()
     {
-        this.lock.acquireWriteLock();
-        try
-        {
+        this.lock.write( () -> {
             ListenerRegistration<ServiceType> listenerRegistration = this.listenerRegistration;
             if( listenerRegistration != null )
             {
@@ -149,97 +162,61 @@ class ServiceTrackerImpl<ServiceType> implements ServiceProvider<ServiceType>,
             this.unmodifiableRegistrations = null;
             this.services = null;
             this.registrations = null;
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        } );
     }
 
     @Nonnull
     @Override
     public List<ServiceRegistration<ServiceType>> getRegistrations()
     {
-        this.lock.acquireReadLock();
-        try
-        {
+        return this.lock.read( () -> {
             List<ServiceRegistration<ServiceType>> registrations = this.unmodifiableRegistrations;
             if( registrations == null )
             {
                 throw new IllegalStateException( "service tracker not open" );
             }
             return registrations;
-        }
-        finally
-        {
-            this.lock.releaseReadLock();
-        }
+        } );
     }
 
     @Nonnull
     @Override
     public List<ServiceType> getServices()
     {
-        this.lock.acquireReadLock();
-        try
-        {
+        return this.lock.read( () -> {
             List<ServiceType> services = this.unmodifiableServices;
             if( services == null )
             {
                 throw new IllegalStateException( "service tracker not open" );
             }
             return services;
-        }
-        finally
-        {
-            this.lock.releaseReadLock();
-        }
+        } );
     }
 
     @Nullable
     @Override
     public ServiceRegistration<ServiceType> getRegistration()
     {
-        List<ServiceRegistration<ServiceType>> registrations = getRegistrations();
-        if( registrations.isEmpty() )
-        {
-            return null;
-        }
-        else
-        {
-            return registrations.get( 0 );
-        }
+        return this.lock.read( () -> {
+            List<ServiceRegistration<ServiceType>> registrations = getRegistrations();
+            return registrations.isEmpty() ? null : registrations.get( 0 );
+        } );
     }
 
     @Nullable
     @Override
     public ServiceType getService()
     {
-        this.lock.acquireReadLock();
-        try
-        {
+        return this.lock.read( () -> {
             List<ServiceType> services = getServices();
-            if( services.isEmpty() )
-            {
-                return null;
-            }
-            else
-            {
-                return services.get( 0 );
-            }
-        }
-        finally
-        {
-            this.lock.releaseReadLock();
-        }
+            return services.isEmpty() ? null : services.get( 0 );
+        } );
     }
 
     @Override
     public void serviceRegistered( @Nonnull ServiceRegistration<ServiceType> registration )
     {
-        this.lock.acquireWriteLock();
-        try
-        {
+        this.lock.write( () -> {
             List<ServiceRegistration<ServiceType>> registrations = this.registrations;
             if( registrations != null )
             {
@@ -267,21 +244,15 @@ class ServiceTrackerImpl<ServiceType> implements ServiceProvider<ServiceType>,
                     }
                 }
             }
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        } );
     }
 
-    @SuppressWarnings( "SuspiciousMethodCalls" )
+    @SuppressWarnings("SuspiciousMethodCalls")
     @Override
     public void serviceUnregistered( @Nonnull ServiceRegistration<ServiceType> registration,
                                      @Nonnull ServiceType service )
     {
-        this.lock.acquireWriteLock();
-        try
-        {
+        this.lock.write( () -> {
             List<ServiceListener<ServiceType>> eventHandlers = this.eventHandlers;
             if( eventHandlers != null )
             {
@@ -309,10 +280,6 @@ class ServiceTrackerImpl<ServiceType> implements ServiceProvider<ServiceType>,
             {
                 registrations.remove( registration );
             }
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        } );
     }
 }

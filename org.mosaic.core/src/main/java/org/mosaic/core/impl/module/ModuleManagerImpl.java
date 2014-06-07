@@ -2,7 +2,6 @@ package org.mosaic.core.impl.module;
 
 import java.util.*;
 import org.mosaic.core.Module;
-import org.mosaic.core.ModuleManager;
 import org.mosaic.core.ModuleRevision;
 import org.mosaic.core.ServiceManager;
 import org.mosaic.core.impl.ServerStatus;
@@ -10,27 +9,19 @@ import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
 import org.mosaic.core.util.concurrency.ReadWriteLock;
-import org.mosaic.core.util.workflow.Status;
-import org.mosaic.core.util.workflow.TransitionAdapter;
-import org.osgi.framework.*;
+import org.mosaic.core.util.workflow.Workflow;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleEvent;
+import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.wiring.BundleRevision;
 import org.slf4j.Logger;
 
 /**
  * @author arik
  */
-public class ModuleManagerImpl extends TransitionAdapter implements ModuleManager
+public class ModuleManagerImpl implements ModuleManagerEx
 {
-    @Nonnull
-    private final SynchronousBundleListener synchronousBundleListener = new SynchronousBundleListener()
-    {
-        @Override
-        public void bundleChanged( @Nonnull BundleEvent event )
-        {
-            handleBundleEvent( event );
-        }
-    };
-
     @Nonnull
     private final Logger logger;
 
@@ -43,13 +34,16 @@ public class ModuleManagerImpl extends TransitionAdapter implements ModuleManage
     @Nullable
     private Map<Long, ModuleImpl> modules;
 
-    public ModuleManagerImpl( @Nonnull Logger logger,
+    public ModuleManagerImpl( @Nonnull Workflow workflow,
+                              @Nonnull Logger logger,
                               @Nonnull ReadWriteLock lock,
                               @Nonnull ServiceManager serviceManager )
     {
         this.logger = logger;
         this.lock = lock;
         this.serviceManager = serviceManager;
+        workflow.addAction( ServerStatus.STARTED, c -> initialize(), c -> shutdown() );
+        workflow.addAction( ServerStatus.STOPPED, c -> shutdown() );
     }
 
     @Override
@@ -58,51 +52,21 @@ public class ModuleManagerImpl extends TransitionAdapter implements ModuleManage
         return ToStringHelper.create( this ).toString();
     }
 
-    @Override
-    public void execute( @Nonnull Status origin, @Nonnull Status target ) throws Exception
-    {
-        if( target == ServerStatus.STARTED )
-        {
-            initialize();
-        }
-        else if( target == ServerStatus.STOPPED )
-        {
-            shutdown();
-        }
-    }
-
-    @Override
-    public void revert( @Nonnull Status origin, @Nonnull Status target ) throws Exception
-    {
-        if( target == ServerStatus.STARTED )
-        {
-            shutdown();
-        }
-    }
-
     @Nullable
     @Override
     public ModuleImpl getModule( long id )
     {
-        this.lock.acquireReadLock();
-        try
-        {
+        return this.lock.read( () -> {
             Map<Long, ModuleImpl> modules = this.modules;
             return modules == null ? null : modules.get( id );
-        }
-        finally
-        {
-            this.lock.releaseReadLock();
-        }
+        } );
     }
 
     @Nonnull
     @Override
     public Collection<? extends Module> getModules()
     {
-        this.lock.acquireReadLock();
-        try
-        {
+        return this.lock.read( () -> {
             Map<Long, ModuleImpl> modules = this.modules;
             if( modules == null )
             {
@@ -112,33 +76,30 @@ public class ModuleManagerImpl extends TransitionAdapter implements ModuleManage
             {
                 return Collections.unmodifiableList( new LinkedList<>( modules.values() ) );
             }
-        }
-        finally
-        {
-            this.lock.releaseReadLock();
-        }
+        } );
     }
 
+    @Override
     @Nullable
     public ModuleRevision getModuleRevision( @Nonnull BundleRevision bundleRevision )
     {
-        long bundleId = bundleRevision.getBundle().getBundleId();
-        ModuleImpl module = getModule( bundleId );
-        if( module == null )
-        {
-            throw new IllegalArgumentException( "unknown module: " + bundleId );
-        }
-        else
-        {
-            return module.getRevision( bundleRevision );
-        }
+        return this.lock.read( () -> {
+            long bundleId = bundleRevision.getBundle().getBundleId();
+            ModuleImpl module = getModule( bundleId );
+            if( module == null )
+            {
+                throw new IllegalArgumentException( "unknown module: " + bundleId );
+            }
+            else
+            {
+                return module.getRevision( bundleRevision );
+            }
+        } );
     }
 
     private void handleBundleEvent( @Nonnull BundleEvent event )
     {
-        this.lock.acquireWriteLock();
-        try
-        {
+        this.lock.write( () -> {
             Map<Long, ModuleImpl> modules = this.modules;
             if( modules == null )
             {
@@ -189,11 +150,7 @@ public class ModuleManagerImpl extends TransitionAdapter implements ModuleManage
                 default:
                     this.logger.warn( "Unknown event type ({}) received in modules bundle listener", event.getType() );
             }
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        } );
     }
 
     private void initialize()
@@ -204,17 +161,8 @@ public class ModuleManagerImpl extends TransitionAdapter implements ModuleManage
         this.modules = new HashMap<>();
 
         // listen to bundle events so we can update our corresponding modules map
-        Bundle coreBundle = FrameworkUtil.getBundle( getClass() );
-        if( coreBundle != null )
-        {
-            BundleContext coreBundleContext = coreBundle.getBundleContext();
-            if( coreBundleContext != null )
-            {
-                coreBundleContext.removeBundleListener( this.synchronousBundleListener );
-            }
-        }
         BundleContext bundleContext = getBundleContext();
-        bundleContext.addBundleListener( this.synchronousBundleListener );
+        bundleContext.addBundleListener( this::handleBundleEvent );
 
         // synchronize with pre-installed bundles
         for( Bundle bundle : bundleContext.getBundles() )
@@ -272,7 +220,7 @@ public class ModuleManagerImpl extends TransitionAdapter implements ModuleManage
         }
 
         // stop listening to OSGi events
-        getBundleContext().removeBundleListener( this.synchronousBundleListener );
+        getBundleContext().removeBundleListener( this::handleBundleEvent );
 
         // clear modules store
         this.modules = null;

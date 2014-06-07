@@ -12,8 +12,6 @@ import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
 import org.mosaic.core.util.concurrency.ReadWriteLock;
-import org.mosaic.core.util.workflow.Status;
-import org.mosaic.core.util.workflow.TransitionAdapter;
 import org.mosaic.core.util.workflow.Workflow;
 import org.osgi.framework.hooks.weaving.WeavingException;
 import org.osgi.framework.hooks.weaving.WovenClass;
@@ -23,7 +21,7 @@ import org.slf4j.Logger;
 /**
  * @author arik
  */
-class BytecodeCachingCompiler extends TransitionAdapter implements BytecodeCompiler
+class BytecodeCachingCompiler implements BytecodeCompiler
 {
     @Nonnull
     private final Logger logger;
@@ -49,7 +47,8 @@ class BytecodeCachingCompiler extends TransitionAdapter implements BytecodeCompi
         this.lock = workflow.getLock();
         this.weavingDirectory = weavingDirectory;
         this.compiler = new BytecodeJavassistCompiler();
-        workflow.addListener( this );
+        workflow.addAction( ServerStatus.STARTED, c -> initialize(), c -> shutdown() );
+        workflow.addAction( ServerStatus.STOPPED, c -> shutdown() );
     }
 
     @Override
@@ -58,28 +57,6 @@ class BytecodeCachingCompiler extends TransitionAdapter implements BytecodeCompi
         return ToStringHelper.create( this )
                              .add( "compiler", this.compiler )
                              .toString();
-    }
-
-    @Override
-    public void execute( @Nonnull Status origin, @Nonnull Status target ) throws Exception
-    {
-        if( target == ServerStatus.STARTED )
-        {
-            initialize();
-        }
-        else if( target == ServerStatus.STOPPED )
-        {
-            shutdown();
-        }
-    }
-
-    @Override
-    public void revert( @Nonnull Status origin, @Nonnull Status target ) throws Exception
-    {
-        if( target == ServerStatus.STARTED )
-        {
-            shutdown();
-        }
     }
 
     @Nullable
@@ -107,27 +84,22 @@ class BytecodeCachingCompiler extends TransitionAdapter implements BytecodeCompi
         this.logger.debug( "Initializing bytecode caching compiler" );
         this.cache = new HashMap<>();
         this.executorService = Executors.newSingleThreadScheduledExecutor();
-        this.executorService.scheduleWithFixedDelay( new Runnable()
-        {
-            @Override
-            public void run()
+        this.executorService.scheduleWithFixedDelay( () -> {
+            BytecodeCachingCompiler.this.lock.acquireWriteLock();
+            try
             {
-                BytecodeCachingCompiler.this.lock.acquireWriteLock();
-                try
+                Map<BundleRevision, BytecodeBundleRevisionCache> cache1 = BytecodeCachingCompiler.this.cache;
+                if( cache1 != null )
                 {
-                    Map<BundleRevision, BytecodeBundleRevisionCache> cache = BytecodeCachingCompiler.this.cache;
-                    if( cache != null )
+                    for( BytecodeBundleRevisionCache revisionCache : cache1.values() )
                     {
-                        for( BytecodeBundleRevisionCache revisionCache : cache.values() )
-                        {
-                            revisionCache.saveCacheToFile();
-                        }
+                        revisionCache.saveCacheToFile();
                     }
                 }
-                finally
-                {
-                    BytecodeCachingCompiler.this.lock.releaseWriteLock();
-                }
+            }
+            finally
+            {
+                BytecodeCachingCompiler.this.lock.releaseWriteLock();
             }
         }, 1, 5, TimeUnit.SECONDS );
     }

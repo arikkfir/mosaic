@@ -7,17 +7,15 @@ import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
 import org.mosaic.core.util.concurrency.ReadWriteLock;
-import org.mosaic.core.util.workflow.Status;
-import org.mosaic.core.util.workflow.TransitionAdapter;
+import org.mosaic.core.util.workflow.Workflow;
 import org.osgi.framework.Filter;
 import org.slf4j.Logger;
 
 /**
  * @author arik
- * @feature refactor 'addListener' methods to return "ListenerRegistration&lt;?&gt;" instance with an "unregister" method
  */
-@SuppressWarnings( "unchecked" )
-public class ServiceManagerImpl extends TransitionAdapter implements ServiceManagerEx
+@SuppressWarnings("unchecked")
+public class ServiceManagerImpl implements ServiceManagerEx
 {
     @Nullable
     static Filter createFilter( @Nonnull Module.ServiceProperty... properties )
@@ -47,10 +45,26 @@ public class ServiceManagerImpl extends TransitionAdapter implements ServiceMana
     @Nullable
     private List<BaseServiceListenerAdapter> listeners;
 
-    public ServiceManagerImpl( @Nonnull Logger logger, @Nonnull ReadWriteLock lock )
+    public ServiceManagerImpl( @Nonnull Workflow workflow, @Nonnull Logger logger, @Nonnull ReadWriteLock lock )
     {
         this.lock = lock;
         this.logger = logger;
+        workflow.addAction(
+                ServerStatus.STARTED,
+                c -> {
+                    this.services = new HashMap<>();
+                    this.listeners = new LinkedList<>();
+                },
+                c -> {
+                    this.listeners = null;
+                    this.services = null;
+                } );
+        workflow.addAction(
+                ServerStatus.STOPPED,
+                c -> {
+                    this.listeners = null;
+                    this.services = null;
+                } );
     }
 
     @Override
@@ -60,53 +74,39 @@ public class ServiceManagerImpl extends TransitionAdapter implements ServiceMana
     }
 
     @Override
-    public void execute( @Nonnull Status origin, @Nonnull Status target ) throws Exception
-    {
-        this.lock.acquireWriteLock();
-        try
-        {
-            if( target == ServerStatus.STARTED )
-            {
-                this.services = new HashMap<>();
-                this.listeners = new LinkedList<>();
-            }
-            else if( target == ServerStatus.STOPPED )
-            {
-                this.listeners = null;
-                this.services = null;
-            }
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
-    }
-
-    @Override
-    public void revert( @Nonnull Status origin, @Nonnull Status target ) throws Exception
-    {
-        this.lock.acquireWriteLock();
-        try
-        {
-            if( target == ServerStatus.STARTED )
-            {
-                this.listeners = null;
-                this.services = null;
-            }
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
-    }
-
-    @Override
     public <ServiceType> ListenerRegistration<ServiceType> addListener( @Nullable Module module,
                                                                         @Nonnull ServiceListener<ServiceType> listener,
                                                                         @Nonnull Class<ServiceType> type,
                                                                         @Nonnull Module.ServiceProperty... properties )
     {
         return addListenerEntry( new ServiceListenerAdapter( this.logger, this.lock, this, module, listener, type, properties ) );
+    }
+
+    @Override
+    public <ServiceType> ListenerRegistration<ServiceType> addListener( @Nullable Module module,
+                                                                        @Nonnull ServiceRegisteredAction<ServiceType> onRegister,
+                                                                        @Nonnull ServiceUnregisteredAction<ServiceType> onUnregister,
+                                                                        @Nonnull Class<ServiceType> type,
+                                                                        @Nonnull Module.ServiceProperty... properties )
+    {
+        return addListener( module,
+                            new ServiceListener<ServiceType>()
+                            {
+                                @Override
+                                public void serviceRegistered( @Nonnull ServiceRegistration<ServiceType> registration )
+                                {
+                                    onRegister.serviceRegistered( registration );
+                                }
+
+                                @Override
+                                public void serviceUnregistered( @Nonnull ServiceRegistration<ServiceType> registration,
+                                                                 @Nonnull ServiceType service )
+                                {
+                                    onUnregister.serviceUnregistered( registration, service );
+                                }
+                            },
+                            type,
+                            properties );
     }
 
     @Override
@@ -123,11 +123,7 @@ public class ServiceManagerImpl extends TransitionAdapter implements ServiceMana
     public <ServiceType> ServiceRegistration<ServiceType> findService( @Nonnull Class<ServiceType> type,
                                                                        @Nonnull Module.ServiceProperty... properties )
     {
-        this.lock.acquireReadLock();
-        try
-        {
-            Filter filter = createFilter( properties );
-
+        return this.lock.read( () -> {
             Map<ServiceRegistrationImpl, Object> services = this.services;
             if( services == null )
             {
@@ -135,6 +131,7 @@ public class ServiceManagerImpl extends TransitionAdapter implements ServiceMana
             }
 
             // TODO: cache results by type+filter, clear cache on new services
+            Filter filter = createFilter( properties );
             for( ServiceRegistrationImpl registration : services.keySet() )
             {
                 if( registration.getType().equals( type ) )
@@ -146,11 +143,7 @@ public class ServiceManagerImpl extends TransitionAdapter implements ServiceMana
                 }
             }
             return null;
-        }
-        finally
-        {
-            this.lock.releaseReadLock();
-        }
+        } );
     }
 
     @Override
@@ -159,7 +152,7 @@ public class ServiceManagerImpl extends TransitionAdapter implements ServiceMana
                                                                            @Nonnull Class<ServiceType> type,
                                                                            @Nonnull Module.ServiceProperty... properties )
     {
-        return new ServiceTrackerImpl<>( this.lock, this.logger, module, type, properties );
+        return this.lock.read( () -> new ServiceTrackerImpl<>( this.lock, this.logger, module, type, properties ) );
     }
 
     @Override
@@ -179,9 +172,7 @@ public class ServiceManagerImpl extends TransitionAdapter implements ServiceMana
                                                                            @Nonnull ServiceType service,
                                                                            @Nullable Map<String, Object> properties )
     {
-        this.lock.acquireWriteLock();
-        try
-        {
+        return this.lock.write( () -> {
             Map<ServiceRegistrationImpl, Object> services = this.services;
             if( services == null )
             {
@@ -212,78 +203,54 @@ public class ServiceManagerImpl extends TransitionAdapter implements ServiceMana
             }
 
             return registration;
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        } );
     }
 
     @Override
     public void unregisterServicesFrom( @Nonnull Module module )
     {
-        this.lock.acquireWriteLock();
-        try
-        {
+        this.lock.write( () -> {
             Map<ServiceRegistrationImpl, Object> services = this.services;
             if( services != null )
             {
-                for( ServiceRegistrationImpl registration : new LinkedList<>( services.keySet() ) )
-                {
-                    if( registration.getProvider().equals( module ) )
-                    {
-                        registration.unregister();
-                    }
-                }
+                new LinkedList<>( services.keySet() )
+                        .stream()
+                        .filter( registration -> module.equals( registration.getProvider() ) )
+                        .forEach( ServiceRegistrationImpl::unregister );
             }
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        } );
     }
 
     @Override
     public void unregisterListenersFrom( @Nonnull Module module )
     {
-        this.lock.acquireWriteLock();
-        try
-        {
+        this.lock.write( () -> {
             List<BaseServiceListenerAdapter> listeners = this.listeners;
             if( listeners != null )
             {
-                for( BaseServiceListenerAdapter listener : new LinkedList<>( listeners ) )
-                {
-                    if( listener.getModule() == module )
-                    {
-                        listener.unregister();
-                    }
-                }
+                new LinkedList<>( listeners )
+                        .stream()
+                        .filter( listener -> module.equals( listener.getModule() ) )
+                        .forEach( BaseServiceListenerAdapter::unregister );
             }
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        } );
     }
 
     @Nullable
     Map<ServiceRegistrationImpl, Object> getServices()
     {
-        return this.services;
+        return this.lock.read( () -> this.services );
     }
 
     @Nullable
     List<BaseServiceListenerAdapter> getListeners()
     {
-        return this.listeners;
+        return this.lock.read( () -> this.listeners );
     }
 
     private <ServiceType> ListenerRegistration<ServiceType> addListenerEntry( @Nonnull BaseServiceListenerAdapter<ServiceType> listenerAdapter )
     {
-        this.lock.acquireWriteLock();
-        try
-        {
+        return this.lock.write( () -> {
             Map<ServiceRegistrationImpl, Object> services = this.services;
             if( services == null )
             {
@@ -305,11 +272,7 @@ public class ServiceManagerImpl extends TransitionAdapter implements ServiceMana
                 listenerAdapter.serviceRegistered( registration );
             }
             return listenerAdapter;
-        }
-        finally
-        {
-            this.lock.releaseWriteLock();
-        }
+        } );
     }
 
     @Nonnull

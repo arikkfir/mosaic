@@ -7,8 +7,6 @@ import org.mosaic.core.impl.methodinterception.ModulesSpi;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
-import org.mosaic.core.util.workflow.Status;
-import org.mosaic.core.util.workflow.TransitionAdapter;
 import org.mosaic.core.util.workflow.Workflow;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -23,7 +21,7 @@ import org.slf4j.Logger;
 /**
  * @author arik
  */
-public class BytecodeWeavingHook extends TransitionAdapter implements WeavingHook
+public class BytecodeWeavingHook implements WeavingHook
 {
     @Nonnull
     private final Logger logger;
@@ -44,7 +42,8 @@ public class BytecodeWeavingHook extends TransitionAdapter implements WeavingHoo
         this.logger = workflow.getLogger();
         this.moduleRevisionLookup = moduleRevisionLookup;
         this.compiler = new BytecodeCachingCompiler( workflow, weavingDirectory );
-        workflow.addListener( this );
+        workflow.addAction( ServerStatus.STARTED, c -> register(), c -> unregister() );
+        workflow.addAction( ServerStatus.STOPPED, c -> unregister() );
     }
 
     @Override
@@ -53,28 +52,6 @@ public class BytecodeWeavingHook extends TransitionAdapter implements WeavingHoo
         return ToStringHelper.create( this )
                              .add( "compiler", this.compiler )
                              .toString();
-    }
-
-    @Override
-    public void execute( @Nonnull Status origin, @Nonnull Status target ) throws Exception
-    {
-        if( target == ServerStatus.STARTED )
-        {
-            register();
-        }
-        else if( target == ServerStatus.STOPPED )
-        {
-            unregister();
-        }
-    }
-
-    @Override
-    public void revert( @Nonnull Status origin, @Nonnull Status target ) throws Exception
-    {
-        if( target == ServerStatus.STARTED )
-        {
-            unregister();
-        }
     }
 
     @Override

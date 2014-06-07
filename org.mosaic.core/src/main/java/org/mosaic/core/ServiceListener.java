@@ -1,13 +1,9 @@
 package org.mosaic.core;
 
-import org.mosaic.core.util.Nonnull;
-
 /**
  * @author arik
  */
-public interface ServiceListener<ServiceType>
+public interface ServiceListener<ServiceType> extends ServiceManager.ServiceRegisteredAction<ServiceType>,
+                                                      ServiceManager.ServiceUnregisteredAction<ServiceType>
 {
-    void serviceRegistered( @Nonnull ServiceRegistration<ServiceType> registration );
-
-    void serviceUnregistered( @Nonnull ServiceRegistration<ServiceType> registration, @Nonnull ServiceType service );
 }

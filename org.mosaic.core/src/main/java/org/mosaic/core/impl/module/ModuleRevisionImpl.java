@@ -16,6 +16,7 @@ import org.mosaic.core.impl.service.ServiceManagerEx;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
+import org.mosaic.core.util.concurrency.ReadWriteLock;
 import org.mosaic.core.util.version.Version;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.wiring.BundleRevision;
@@ -106,7 +107,7 @@ class ModuleRevisionImpl implements ModuleRevision
         }
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     @Nonnull
     private static Map<String, String> getHeaders( @Nonnull BundleRevision bundleRevision )
     {
@@ -126,6 +127,9 @@ class ModuleRevisionImpl implements ModuleRevision
         }
         throw new IllegalStateException( "could not extract headers from bundle revision" );
     }
+
+    @Nonnull
+    private final ReadWriteLock lock;
 
     @Nonnull
     private final ModuleImpl module;
@@ -166,6 +170,7 @@ class ModuleRevisionImpl implements ModuleRevision
 
     ModuleRevisionImpl( @Nonnull ModuleImpl module, @Nonnull BundleRevision bundleRevision )
     {
+        this.lock = module.getLock();
         this.module = module;
         this.bundleRevision = bundleRevision;
         this.id = getRevisionNumber( this.bundleRevision );
@@ -177,122 +182,64 @@ class ModuleRevisionImpl implements ModuleRevision
     @Override
     public String toString()
     {
-        return ToStringHelper.create( this )
-                             .add( "module", this.module )
-                             .add( "id", this.id )
-                             .toString();
+        return this.lock.read( () -> ToStringHelper.create( this )
+                                                   .add( "module", this.module )
+                                                   .add( "id", this.id )
+                                                   .toString() );
     }
 
     @Nonnull
     @Override
     public ModuleImpl getModule()
     {
-        this.module.getLock().acquireReadLock();
-        try
-        {
-            return this.module;
-        }
-        finally
-        {
-            this.module.getLock().releaseReadLock();
-        }
+        return this.lock.read( () -> this.module );
     }
 
     @Override
     public long getId()
     {
-        this.module.getLock().acquireReadLock();
-        try
-        {
-            return this.id;
-        }
-        finally
-        {
-            this.module.getLock().releaseReadLock();
-        }
+        return this.lock.read( () -> this.id );
     }
 
     @Nonnull
     @Override
     public String getName()
     {
-        this.module.getLock().acquireReadLock();
-        try
-        {
-            return this.name;
-        }
-        finally
-        {
-            this.module.getLock().releaseReadLock();
-        }
+        return this.lock.read( () -> this.name );
     }
 
     @Nonnull
     @Override
     public Version getVersion()
     {
-        this.module.getLock().acquireReadLock();
-        try
-        {
-            return this.version;
-        }
-        finally
-        {
-            this.module.getLock().releaseReadLock();
-        }
+        return this.lock.read( () -> this.version );
     }
 
     @Nonnull
     @Override
     public Map<String, String> getHeaders()
     {
-        this.module.getLock().acquireReadLock();
-        try
-        {
-            return this.headers;
-        }
-        finally
-        {
-            this.module.getLock().releaseReadLock();
-        }
+        return this.lock.read( () -> this.headers );
     }
 
     @Override
     public boolean isCurrent()
     {
-        this.module.getLock().acquireReadLock();
-        try
-        {
-            return this.module.getCurrentRevision() == this;
-        }
-        finally
-        {
-            this.module.getLock().releaseReadLock();
-        }
+        return this.lock.read( () -> this.module.getCurrentRevision() == this );
     }
 
     @Nullable
     @Override
     public ClassLoader getClassLoader()
     {
-        this.module.getLock().acquireReadLock();
-        try
-        {
-            return this.bundleRevision.getWiring().getClassLoader();
-        }
-        finally
-        {
-            this.module.getLock().releaseReadLock();
-        }
+        return this.lock.read( () -> this.bundleRevision.getWiring().getClassLoader() );
     }
 
     @Nullable
     @Override
     public Path findResource( @Nonnull String glob ) throws IOException
     {
-        this.module.getLock().acquireReadLock();
-        try
-        {
+        return this.lock.read( () -> {
             Path root = this.root;
             if( root == null )
             {
@@ -318,20 +265,14 @@ class ModuleRevisionImpl implements ModuleRevision
                 }
             } );
             return match.get();
-        }
-        finally
-        {
-            this.module.getLock().releaseReadLock();
-        }
+        } );
     }
 
     @Nonnull
     @Override
     public Collection<Path> findResources( @Nonnull String glob ) throws IOException
     {
-        this.module.getLock().acquireReadLock();
-        try
-        {
+        return this.lock.read( () -> {
             Path root = this.root;
             if( root == null )
             {
@@ -353,183 +294,154 @@ class ModuleRevisionImpl implements ModuleRevision
                 }
             } );
             return matches;
-        }
-        finally
-        {
-            this.module.getLock().releaseReadLock();
-        }
+        } );
     }
 
     @Nullable
     @Override
     public ModuleType getType( @Nonnull Class<?> type )
     {
-        this.module.getLock().acquireReadLock();
-        try
-        {
+        return this.lock.read( () -> {
             Map<Class<?>, ModuleTypeImpl> types = this.types;
             if( types != null )
             {
                 return types.get( type );
             }
             return null;
-        }
-        finally
-        {
-            this.module.getLock().releaseReadLock();
-        }
+        } );
     }
 
     void revisionResolved()
     {
-        this.module.getLock().acquireWriteLock();
         try
         {
-            this.module.getLogger().info( "RESOLVING {}", this );
+            this.lock.write( () -> {
+                this.module.getLogger().info( "RESOLVING {}", this );
 
-            Path path = this.module.getPath();
-            if( path == null )
-            {
-                this.root = null;
-            }
-            else
-            {
-                this.root = findRoot( path );
-            }
+                Path path = this.module.getPath();
+                if( path == null )
+                {
+                    this.root = null;
+                }
+                else
+                {
+                    this.root = findRoot( path );
+                }
 
-            this.module.getLogger().info( "RESOLVED {}", this );
+                this.module.getLogger().info( "RESOLVED {}", this );
+            } );
         }
         catch( Throwable e )
         {
             this.module.getLogger().error( "Error during resolve process of module revision {}: {}", this, e.getMessage(), e );
         }
-        finally
-        {
-            this.module.getLock().releaseWriteLock();
-        }
     }
 
     void revisionStarting()
     {
-        this.module.getLock().acquireWriteLock();
         try
         {
-            this.module.getLogger().info( "STARTING {}", this );
+            this.lock.write( () -> {
+                this.module.getLogger().info( "STARTING {}", this );
 
-            this.dependencies = new HashSet<>();
-            this.satisfiedDependencies = new HashSet<>();
-            this.unsatisfiedDependencies = new HashSet<>();
-            this.types = scanTypes();
-            this.components = scanComponents();
+                this.dependencies = new HashSet<>();
+                this.satisfiedDependencies = new HashSet<>();
+                this.unsatisfiedDependencies = new HashSet<>();
+                this.types = scanTypes();
+                this.components = scanComponents();
 
-            Set<ModuleRevisionImplDependency> dependencies = this.dependencies;
-            if( dependencies != null )
-            {
-                for( ModuleRevisionImplDependency dependency : dependencies )
+                Set<ModuleRevisionImplDependency> dependencies = this.dependencies;
+                if( dependencies != null )
                 {
-                    this.module.getLogger().debug( "Initializing dependency {}", dependency );
-                    dependency.initialize();
+                    for( ModuleRevisionImplDependency dependency : dependencies )
+                    {
+                        this.module.getLogger().debug( "Initializing dependency {}", dependency );
+                        dependency.initialize();
+                    }
                 }
-            }
+            } );
         }
         catch( Throwable e )
         {
             this.module.getLogger().error( "Error while starting module revision {}: {}", this, e.getMessage(), e );
-        }
-        finally
-        {
-            this.module.getLock().releaseWriteLock();
         }
     }
 
     void revisionStarted()
     {
-        this.module.getLock().acquireWriteLock();
         try
         {
-            this.module.getLogger().info( "STARTED {}", this );
+            this.lock.write( () -> this.module.getLogger().info( "STARTED {}", this ) );
         }
         catch( Throwable e )
         {
             this.module.getLogger().error( "Error while starting module revision {}: {}", this, e.getMessage(), e );
-        }
-        finally
-        {
-            this.module.getLock().releaseWriteLock();
         }
     }
 
     void revisionStopping()
     {
-        this.module.getLock().acquireWriteLock();
         try
         {
-            this.module.getLogger().info( "STOPPING {}", this );
+            this.lock.write( () -> {
+                this.module.getLogger().info( "STOPPING {}", this );
 
-            Set<ModuleRevisionImplDependency> dependencies = this.dependencies;
-            if( dependencies != null )
-            {
-                for( ModuleRevisionImplDependency dependency : dependencies )
+                Set<ModuleRevisionImplDependency> dependencies = this.dependencies;
+                if( dependencies != null )
                 {
-                    this.module.getLogger().debug( "Shutting down dependency {}", dependency );
-                    dependency.shutdown();
+                    for( ModuleRevisionImplDependency dependency : dependencies )
+                    {
+                        this.module.getLogger().debug( "Shutting down dependency {}", dependency );
+                        dependency.shutdown();
+                    }
                 }
-            }
 
-            ServiceManagerEx serviceManager = Activator.getServiceManager();
-            if( serviceManager != null )
-            {
-                serviceManager.unregisterListenersFrom( this.module );
-            }
+                ServiceManagerEx serviceManager = Activator.getServiceManager();
+                if( serviceManager != null )
+                {
+                    serviceManager.unregisterListenersFrom( this.module );
+                }
+            } );
         }
         catch( Throwable e )
         {
             this.module.getLogger().error( "Error while stopping module revision {}: {}", this, e.getMessage(), e );
         }
-        finally
-        {
-            this.module.getLock().releaseWriteLock();
-        }
     }
 
     void revisionStopped()
     {
-        this.module.getLock().acquireWriteLock();
         try
         {
-            this.components = null;
+            this.lock.write( () -> {
+                this.components = null;
 
-            Map<Class<?>, ModuleTypeImpl> types = this.types;
-            if( types != null )
-            {
-                for( ModuleTypeImpl moduleType : types.values() )
+                Map<Class<?>, ModuleTypeImpl> types = this.types;
+                if( types != null )
                 {
-                    moduleType.shutdown();
+                    for( ModuleTypeImpl moduleType : types.values() )
+                    {
+                        moduleType.shutdown();
+                    }
+                    this.types = null;
                 }
-                this.types = null;
-            }
 
-            this.dependencies = null;
-            this.satisfiedDependencies = null;
-            this.unsatisfiedDependencies = null;
+                this.dependencies = null;
+                this.satisfiedDependencies = null;
+                this.unsatisfiedDependencies = null;
 
-            this.module.getLogger().info( "STOPPED {}", this );
+                this.module.getLogger().info( "STOPPED {}", this );
+            } );
         }
         catch( Throwable e )
         {
             this.module.getLogger().error( "Error while starting module revision {}: {}", this, e.getMessage(), e );
         }
-        finally
-        {
-            this.module.getLock().releaseWriteLock();
-        }
     }
 
     void revisionUnresolved()
     {
-        this.module.getLock().acquireWriteLock();
-        try
-        {
+        this.lock.write( () -> {
             this.module.getLogger().info( "UNRESOLVING {}", this );
 
             Path root = this.root;
@@ -551,11 +463,7 @@ class ModuleRevisionImpl implements ModuleRevision
             }
 
             this.module.getLogger().info( "UNRESOLVED {}", this );
-        }
-        finally
-        {
-            this.module.getLock().releaseWriteLock();
-        }
+        } );
     }
 
     @Nonnull
@@ -566,13 +474,11 @@ class ModuleRevisionImpl implements ModuleRevision
         return getServiceDependency( new ServiceKey( serviceType, minCount, properties ) );
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     @Nonnull
     <ServiceType> ModuleRevisionImplServiceDependency<ServiceType> getServiceDependency( @Nonnull ServiceKey serviceKey )
     {
-        this.module.getLock().acquireReadLock();
-        try
-        {
+        return this.lock.read( () -> {
             Set<ModuleRevisionImplDependency> dependencies = this.dependencies;
             if( dependencies != null )
             {
@@ -611,19 +517,12 @@ class ModuleRevisionImpl implements ModuleRevision
                 this.module.getLock().releaseWriteLock();
                 this.module.getLock().acquireReadLock();
             }
-        }
-        finally
-        {
-            this.module.getLock().releaseReadLock();
-        }
-
+        } );
     }
 
     void notifySatisfaction( @Nonnull ModuleRevisionImplDependency dependency, boolean satisfied )
     {
-        this.module.getLock().acquireWriteLock();
-        try
-        {
+        this.lock.write( () -> {
             Set<ModuleRevisionImplDependency> unsatisfiedDependencies = this.unsatisfiedDependencies;
             Set<ModuleRevisionImplDependency> satisfiedDependencies = this.satisfiedDependencies;
             if( satisfied )
@@ -655,11 +554,7 @@ class ModuleRevisionImpl implements ModuleRevision
                     deactivate();
                 }
             }
-        }
-        finally
-        {
-            this.module.getLock().releaseWriteLock();
-        }
+        } );
     }
 
     @Nonnull
@@ -750,7 +645,7 @@ class ModuleRevisionImpl implements ModuleRevision
         }
     }
 
-    @SuppressWarnings( { "SimplifiableIfStatement", "RedundantIfStatement" } )
+    @SuppressWarnings({ "SimplifiableIfStatement", "RedundantIfStatement" })
     private boolean canActivate()
     {
         if( this.module.getBundle().getState() != Bundle.ACTIVE )
@@ -774,57 +669,61 @@ class ModuleRevisionImpl implements ModuleRevision
 
     boolean isActivated()
     {
-        return this.activated;
+        return this.lock.read( () -> this.activated );
     }
 
     void activate()
     {
-        if( this.activated || !canActivate() )
-        {
-            return;
-        }
-
-        this.module.getLogger().info( "ACTIVATING {}", this );
-
-        Set<ModuleComponentImpl> components = this.components;
-        if( components != null )
-        {
-            // we have components - activate them
-            for( ModuleComponentImpl component : components )
+        this.lock.write( () -> {
+            if( this.activated || !canActivate() )
             {
-                component.activate();
+                return;
             }
-        }
-        this.activated = true;
 
-        this.module.getLogger().info( "ACTIVATED {}", this );
-    }
-
-    void deactivate()
-    {
-        if( this.activated )
-        {
-            this.module.getLogger().info( "DEACTIVATING {}", this );
+            this.module.getLogger().info( "ACTIVATING {}", this );
 
             Set<ModuleComponentImpl> components = this.components;
             if( components != null )
             {
-                // we have components - deactivate them
+                // we have components - activate them
                 for( ModuleComponentImpl component : components )
                 {
-                    component.deactivate();
+                    component.activate();
                 }
             }
+            this.activated = true;
 
-            ServiceManagerEx serviceManager = Activator.getServiceManager();
-            if( serviceManager != null )
+            this.module.getLogger().info( "ACTIVATED {}", this );
+        } );
+    }
+
+    void deactivate()
+    {
+        this.lock.write( () -> {
+            if( this.activated )
             {
-                serviceManager.unregisterServicesFrom( this.module );
+                this.module.getLogger().info( "DEACTIVATING {}", this );
+
+                Set<ModuleComponentImpl> components = this.components;
+                if( components != null )
+                {
+                    // we have components - deactivate them
+                    for( ModuleComponentImpl component : components )
+                    {
+                        component.deactivate();
+                    }
+                }
+
+                ServiceManagerEx serviceManager = Activator.getServiceManager();
+                if( serviceManager != null )
+                {
+                    serviceManager.unregisterServicesFrom( this.module );
+                }
+
+                this.activated = false;
+
+                this.module.getLogger().info( "DEACTIVATED {}", this );
             }
-
-            this.activated = false;
-
-            this.module.getLogger().info( "DEACTIVATED {}", this );
-        }
+        } );
     }
 }

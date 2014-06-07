@@ -79,6 +79,11 @@ public interface Module
                                                                         @Nonnull Class<ServiceType> type,
                                                                         @Nonnull Module.ServiceProperty... properties );
 
+    <ServiceType> ListenerRegistration<ServiceType> addServiceListener( @Nonnull ServiceManager.ServiceRegisteredAction<ServiceType> onRegister,
+                                                                        @Nonnull ServiceManager.ServiceUnregisteredAction<ServiceType> onUnregister,
+                                                                        @Nonnull Class<ServiceType> type,
+                                                                        @Nonnull Module.ServiceProperty... properties );
+
     <ServiceType> ListenerRegistration<ServiceType> addWeakServiceListener( @Nonnull ServiceListener<ServiceType> listener,
                                                                             @Nonnull Class<ServiceType> type,
                                                                             @Nonnull Module.ServiceProperty... properties );

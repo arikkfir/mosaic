@@ -12,8 +12,7 @@ import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
 import org.mosaic.core.util.concurrency.ReadWriteLock;
 import org.mosaic.core.util.logging.Logging;
-import org.mosaic.core.util.workflow.Status;
-import org.mosaic.core.util.workflow.TransitionAdapter;
+import org.mosaic.core.util.workflow.Workflow;
 import org.slf4j.Logger;
 
 import static java.util.Arrays.copyOf;
@@ -23,7 +22,7 @@ import static org.mosaic.core.impl.Activator.getServiceManager;
 /**
  * @author arik
  */
-public class MethodInterceptorsManager extends TransitionAdapter
+public class MethodInterceptorsManager
 {
     private static final Logger LOG = Logging.getLogger();
 
@@ -61,38 +60,18 @@ public class MethodInterceptorsManager extends TransitionAdapter
     @Nullable
     private ListenerRegistration<MethodInterceptor> interceptorListenerRegistration;
 
-    public MethodInterceptorsManager( @Nonnull Logger logger, @Nonnull ReadWriteLock lock )
+    public MethodInterceptorsManager( @Nonnull Workflow workflow, @Nonnull Logger logger, @Nonnull ReadWriteLock lock )
     {
         this.logger = logger;
         this.lock = lock;
+        workflow.addAction( ServerStatus.STARTED, c -> initialize(), c -> shutdown() );
+        workflow.addAction( ServerStatus.STOPPED, c -> shutdown() );
     }
 
     @Override
     public String toString()
     {
         return ToStringHelper.create( this ).toString();
-    }
-
-    @Override
-    public void execute( @Nonnull Status origin, @Nonnull Status target ) throws Exception
-    {
-        if( target == ServerStatus.STARTED )
-        {
-            initialize();
-        }
-        else if( target == ServerStatus.STOPPED )
-        {
-            shutdown();
-        }
-    }
-
-    @Override
-    public void revert( @Nonnull Status origin, @Nonnull Status target ) throws Exception
-    {
-        if( target == ServerStatus.STARTED )
-        {
-            shutdown();
-        }
     }
 
     public boolean beforeInvocation( @Nonnull MethodEntry methodEntry,

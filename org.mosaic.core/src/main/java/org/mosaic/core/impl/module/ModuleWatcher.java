@@ -9,16 +9,17 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.mosaic.core.impl.ServerStatus;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
-import org.mosaic.core.util.workflow.Status;
-import org.mosaic.core.util.workflow.TransitionAdapter;
-import org.osgi.framework.*;
+import org.mosaic.core.util.workflow.Workflow;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleException;
+import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.wiring.FrameworkWiring;
 import org.slf4j.Logger;
 
@@ -29,7 +30,7 @@ import static java.nio.file.Files.*;
 /**
  * @author arik
  */
-public class ModuleWatcher extends TransitionAdapter
+public class ModuleWatcher
 {
     @Nonnull
     private final Logger logger;
@@ -40,10 +41,12 @@ public class ModuleWatcher extends TransitionAdapter
     @Nullable
     private ScheduledExecutorService executorService;
 
-    public ModuleWatcher( @Nonnull Logger logger, @Nonnull Path libPath )
+    public ModuleWatcher( @Nonnull Workflow workflow, @Nonnull Logger logger, @Nonnull Path libPath )
     {
         this.logger = logger;
         this.libPath = libPath;
+        workflow.addAction( ServerStatus.STARTED, context -> initialize(), context -> shutdown() );
+        workflow.addAction( ServerStatus.STOPPED, context -> shutdown() );
     }
 
     @Override
@@ -52,52 +55,17 @@ public class ModuleWatcher extends TransitionAdapter
         return ToStringHelper.create( this ).toString();
     }
 
-    @Override
-    public void execute( @Nonnull Status origin, @Nonnull Status target ) throws Exception
-    {
-        if( target == ServerStatus.STARTED )
-        {
-            initialize();
-        }
-        else if( target == ServerStatus.STOPPED )
-        {
-            shutdown();
-        }
-    }
-
-    @Override
-    public void revert( @Nonnull Status origin, @Nonnull Status target ) throws Exception
-    {
-        if( target == ServerStatus.STARTED )
-        {
-            shutdown();
-        }
-    }
-
     private void initialize()
     {
         this.logger.debug( "Initializing module watcher on {}", this.libPath );
 
-        ThreadFactory threadFactory = new ThreadFactory()
-        {
-            @Override
-            public Thread newThread( @Nonnull Runnable r )
-            {
-                Thread thread = new Thread( r, "PathScanner" );
-                thread.setDaemon( false );
-                return thread;
-            }
-        };
+        this.executorService = Executors.newSingleThreadScheduledExecutor( r -> {
+            Thread thread = new Thread( r, "PathScanner" );
+            thread.setDaemon( false );
+            return thread;
+        } );
 
-        this.executorService = Executors.newSingleThreadScheduledExecutor( threadFactory );
-        this.executorService.scheduleWithFixedDelay( new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                scan();
-            }
-        }, 0, 1, TimeUnit.SECONDS );
+        this.executorService.scheduleWithFixedDelay( this::scan, 0, 1, TimeUnit.SECONDS );
     }
 
     private void shutdown() throws InterruptedException
@@ -270,31 +238,23 @@ public class ModuleWatcher extends TransitionAdapter
         private void refreshDependantsOf( @Nonnull Collection<Bundle> bundles ) throws InterruptedException
         {
             FrameworkWiring frameworkWiring = this.bundleContext.getBundle( 0 ).adapt( FrameworkWiring.class );
-            for( Bundle bundle : frameworkWiring.getDependencyClosure( bundles ) )
-            {
-                if( bundle.getState() == Bundle.ACTIVE )
-                {
-                    try
-                    {
-                        bundle.stop();
-                    }
-                    catch( BundleException e )
-                    {
-                        handleFileError( "Could not stop module from '{}': {}", bundle.getLocation(), e.getMessage(), e );
-                    }
-                    this.modulesToStart = addToList( this.modulesToStart, bundle );
-                }
-            }
+            frameworkWiring.getDependencyClosure( bundles )
+                           .stream()
+                           .filter( bundle -> bundle.getState() == Bundle.ACTIVE )
+                           .forEach( bundle -> {
+                               try
+                               {
+                                   bundle.stop();
+                               }
+                               catch( BundleException e )
+                               {
+                                   handleFileError( "Could not stop module from '{}': {}", bundle.getLocation(), e.getMessage(), e );
+                               }
+                               this.modulesToStart = addToList( this.modulesToStart, bundle );
+                           } );
 
-            final AtomicBoolean done = new AtomicBoolean( false );
-            frameworkWiring.refreshBundles( bundles, new FrameworkListener()
-            {
-                @Override
-                public void frameworkEvent( FrameworkEvent event )
-                {
-                    done.set( true );
-                }
-            } );
+            AtomicBoolean done = new AtomicBoolean( false );
+            frameworkWiring.refreshBundles( bundles, event -> done.set( true ) );
             while( !done.get() )
             {
                 Thread.sleep( 100 );

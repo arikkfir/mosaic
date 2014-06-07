@@ -3,6 +3,7 @@ package org.mosaic.core.impl;
 import org.mosaic.core.Module;
 import org.mosaic.core.ModuleManager;
 import org.mosaic.core.impl.methodinterception.MethodInterceptorsManager;
+import org.mosaic.core.impl.module.ModuleManagerEx;
 import org.mosaic.core.impl.service.ServiceManagerEx;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
@@ -35,7 +36,7 @@ public class Activator implements BundleActivator
     }
 
     @Nullable
-    public static ModuleManager getModuleManager()
+    public static ModuleManagerEx getModuleManager()
     {
         ServerImpl server = getServer();
         if( server != null )

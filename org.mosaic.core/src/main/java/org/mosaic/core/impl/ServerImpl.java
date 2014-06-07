@@ -2,23 +2,22 @@ package org.mosaic.core.impl;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import org.mosaic.core.*;
+import org.mosaic.core.Module;
+import org.mosaic.core.ModuleManager;
+import org.mosaic.core.Server;
+import org.mosaic.core.ServiceManager;
 import org.mosaic.core.impl.bytecode.BytecodeWeavingHook;
-import org.mosaic.core.impl.bytecode.ModuleRevisionLookup;
 import org.mosaic.core.impl.methodinterception.MethodInterceptorsManager;
+import org.mosaic.core.impl.module.ModuleManagerEx;
 import org.mosaic.core.impl.module.ModuleManagerImpl;
 import org.mosaic.core.impl.module.ModuleWatcher;
 import org.mosaic.core.impl.service.ServiceManagerImpl;
 import org.mosaic.core.util.Nonnull;
-import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
 import org.mosaic.core.util.concurrency.ReadWriteLock;
 import org.mosaic.core.util.version.Version;
-import org.mosaic.core.util.workflow.Status;
-import org.mosaic.core.util.workflow.TransitionAdapter;
 import org.mosaic.core.util.workflow.Workflow;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.wiring.BundleRevision;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -99,43 +98,32 @@ class ServerImpl extends Workflow implements Server
         addTransition( ServerStatus.STARTED, ServerStatus.STOPPED, TransitionDirection.BACKWARDS );
 
         // create bytecode weaver
-        addListener( new BytecodeWeavingHook( this, this.work.resolve( "weaving" ), new ModuleRevisionLookup()
-        {
-            @Nullable
-            @Override
-            public ModuleRevision getModuleRevision( @Nonnull BundleRevision bundleRevision )
-            {
-                return moduleManager.getModuleRevision( bundleRevision );
-            }
-        } ) );
+        //noinspection Anonymous2MethodRef
+        new BytecodeWeavingHook( this, this.work.resolve( "weaving" ), bundleRevision -> {
+            ModuleManagerEx moduleManager = Activator.getModuleManager();
+            return moduleManager != null ? moduleManager.getModuleRevision( bundleRevision ) : null;
+        } );
 
         // create the service manager
-        this.serviceManager = addListener( new ServiceManagerImpl( this.logger, getLock() ) );
+        this.serviceManager = new ServiceManagerImpl( this, this.logger, getLock() );
 
         // create method interceptors manager
-        this.methodInterceptorsManager = addListener( new MethodInterceptorsManager( this.logger, this.getLock() ) );
+        this.methodInterceptorsManager = new MethodInterceptorsManager( this, this.logger, this.getLock() );
 
         // create the module manager
-        this.moduleManager = addListener( new ModuleManagerImpl( this.logger, getLock(), this.serviceManager ) );
+        this.moduleManager = new ModuleManagerImpl( this, this.logger, getLock(), this.serviceManager );
 
         // add a listener to register core services
-        addListener( new TransitionAdapter()
-        {
-            @Override
-            public void execute( @Nonnull Status origin, @Nonnull Status target ) throws Exception
-            {
-                if( target == ServerStatus.STARTED )
-                {
-                    Module coreModule = requireNonNull( Activator.getCoreModule() );
-                    serviceManager.registerService( coreModule, Server.class, ServerImpl.this );
-                    serviceManager.registerService( coreModule, ModuleManager.class, moduleManager );
-                    serviceManager.registerService( coreModule, ServiceManager.class, serviceManager );
-                }
-            }
+        addAction( ServerStatus.STARTED, c -> {
+            ServiceManager serviceManager = requireNonNull( Activator.getServiceManager() );
+            Module coreModule = requireNonNull( Activator.getCoreModule() );
+            serviceManager.registerService( coreModule, Server.class, ServerImpl.this );
+            serviceManager.registerService( coreModule, ModuleManager.class, moduleManager );
+            serviceManager.registerService( coreModule, ServiceManager.class, serviceManager );
         } );
 
         // create the module watcher
-        addListener( new ModuleWatcher( this.logger, this.lib ) );
+        new ModuleWatcher( this, this.logger, this.lib );
     }
 
     @Override
@@ -150,80 +138,80 @@ class ServerImpl extends Workflow implements Server
     @Override
     public Version getVersion()
     {
-        return this.version;
+        return this.getLock().read( () -> this.version );
     }
 
     @Nonnull
     @Override
     public Path getHome()
     {
-        return this.home;
+        return this.getLock().read( () -> this.home );
     }
 
     @Nonnull
     @Override
     public Path getApps()
     {
-        return this.apps;
+        return this.getLock().read( () -> this.apps );
     }
 
     @Nonnull
     @Override
     public Path getBin()
     {
-        return this.bin;
+        return this.getLock().read( () -> this.bin );
     }
 
     @Nonnull
     @Override
     public Path getEtc()
     {
-        return this.etc;
+        return this.getLock().read( () -> this.etc );
     }
 
     @Nonnull
     @Override
     public Path getLib()
     {
-        return this.lib;
+        return this.getLock().read( () -> this.lib );
     }
 
     @Nonnull
     @Override
     public Path getLogs()
     {
-        return this.logs;
+        return this.getLock().read( () -> this.logs );
     }
 
     @Nonnull
     @Override
     public Path getSchemas()
     {
-        return this.schemas;
+        return this.getLock().read( () -> this.schemas );
     }
 
     @Nonnull
     @Override
     public Path getWork()
     {
-        return this.work;
+        return this.getLock().read( () -> this.work );
     }
 
     @Nonnull
     ServiceManagerImpl getServiceManager()
     {
-        return this.serviceManager;
+        return this.getLock().read( () -> this.serviceManager );
     }
 
     @Nonnull
     MethodInterceptorsManager getMethodInterceptorsManager()
     {
-        return this.methodInterceptorsManager;
+        return this.getLock().read( () -> this.methodInterceptorsManager );
     }
 
     @Nonnull
     ModuleManagerImpl getModuleManager()
     {
-        return this.moduleManager;
+        return this.getLock().read( () -> this.moduleManager );
     }
 }
