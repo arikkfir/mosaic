@@ -10,10 +10,7 @@ import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
 import org.mosaic.core.util.concurrency.ReadWriteLock;
 import org.mosaic.core.util.workflow.Workflow;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.BundleEvent;
-import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.*;
 import org.osgi.framework.wiring.BundleRevision;
 import org.slf4j.Logger;
 
@@ -162,7 +159,7 @@ public class ModuleManagerImpl implements ModuleManagerEx
 
         // listen to bundle events so we can update our corresponding modules map
         BundleContext bundleContext = getBundleContext();
-        bundleContext.addBundleListener( this::handleBundleEvent );
+        bundleContext.addBundleListener( ( SynchronousBundleListener ) this::handleBundleEvent );
 
         // synchronize with pre-installed bundles
         for( Bundle bundle : bundleContext.getBundles() )
