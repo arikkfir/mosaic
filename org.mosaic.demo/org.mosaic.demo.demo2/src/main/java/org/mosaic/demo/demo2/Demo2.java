@@ -1,10 +1,10 @@
 package org.mosaic.demo.demo2;
 
 import java.util.List;
-import org.mosaic.core.Component;
-import org.mosaic.core.Inject;
-import org.mosaic.core.MethodEndpoint;
-import org.mosaic.core.ServiceProvider;
+import org.mosaic.core.components.Component;
+import org.mosaic.core.components.Inject;
+import org.mosaic.core.components.MethodEndpoint;
+import org.mosaic.core.services.ServiceProvider;
 import org.mosaic.core.util.logging.Logging;
 import org.mosaic.demo.demo1.DemoEndpoint;
 import org.mosaic.demo.demo1.DemoItem;

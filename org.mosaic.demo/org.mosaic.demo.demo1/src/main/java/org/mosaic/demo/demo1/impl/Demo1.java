@@ -1,8 +1,8 @@
 package org.mosaic.demo.demo1.impl;
 
-import org.mosaic.core.Component;
-import org.mosaic.core.Inject;
-import org.mosaic.core.ServiceManager;
+import org.mosaic.core.components.Component;
+import org.mosaic.core.components.Inject;
+import org.mosaic.core.services.ServiceManager;
 import org.mosaic.demo.demo1.DemoEndpoint;
 import org.mosaic.demo.demo1.DemoEndpointOther;
 import org.mosaic.demo.demo1.DemoItem;

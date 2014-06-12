@@ -2,16 +2,18 @@ package org.mosaic.core.impl;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import org.mosaic.core.Module;
-import org.mosaic.core.ModuleManager;
 import org.mosaic.core.Server;
-import org.mosaic.core.ServiceManager;
 import org.mosaic.core.impl.bytecode.BytecodeWeavingHook;
-import org.mosaic.core.impl.methodinterception.MethodInterceptorsManager;
-import org.mosaic.core.impl.module.ModuleManagerEx;
-import org.mosaic.core.impl.module.ModuleManagerImpl;
-import org.mosaic.core.impl.module.ModuleWatcher;
-import org.mosaic.core.impl.service.ServiceManagerImpl;
+import org.mosaic.core.intercept.impl.MethodInterceptorsManager;
+import org.mosaic.core.modules.Module;
+import org.mosaic.core.modules.ModuleManager;
+import org.mosaic.core.modules.impl.ModuleManagerEx;
+import org.mosaic.core.modules.impl.ModuleManagerImpl;
+import org.mosaic.core.modules.impl.ModuleWatcher;
+import org.mosaic.core.services.ServiceManager;
+import org.mosaic.core.services.impl.ServiceManagerImpl;
+import org.mosaic.core.types.TypeResolver;
+import org.mosaic.core.types.impl.TypeResolverImpl;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.base.ToStringHelper;
 import org.mosaic.core.util.concurrency.ReadWriteLock;
@@ -76,6 +78,9 @@ class ServerImpl extends Workflow implements Server
     private final MethodInterceptorsManager methodInterceptorsManager;
 
     @Nonnull
+    private final TypeResolver typeResolver;
+
+    @Nonnull
     private final ModuleManagerImpl moduleManager;
 
     ServerImpl( @Nonnull BundleContext bundleContext )
@@ -110,6 +115,9 @@ class ServerImpl extends Workflow implements Server
         // create method interceptors manager
         this.methodInterceptorsManager = new MethodInterceptorsManager( this, this.logger, this.getLock() );
 
+        // create the type resolver
+        this.typeResolver = new TypeResolverImpl( this.getLock() );
+
         // create the module manager
         this.moduleManager = new ModuleManagerImpl( this, this.logger, getLock(), this.serviceManager );
 
@@ -118,8 +126,9 @@ class ServerImpl extends Workflow implements Server
             ServiceManager serviceManager = requireNonNull( Activator.getServiceManager() );
             Module coreModule = requireNonNull( Activator.getCoreModule() );
             serviceManager.registerService( coreModule, Server.class, ServerImpl.this );
-            serviceManager.registerService( coreModule, ModuleManager.class, moduleManager );
-            serviceManager.registerService( coreModule, ServiceManager.class, serviceManager );
+            serviceManager.registerService( coreModule, ServiceManager.class, this.serviceManager );
+            serviceManager.registerService( coreModule, TypeResolver.class, this.typeResolver );
+            serviceManager.registerService( coreModule, ModuleManager.class, this.moduleManager );
         } );
 
         // create the module watcher
@@ -207,6 +216,12 @@ class ServerImpl extends Workflow implements Server
     MethodInterceptorsManager getMethodInterceptorsManager()
     {
         return this.getLock().read( () -> this.methodInterceptorsManager );
+    }
+
+    @Nonnull
+    TypeResolver getTypeResolver()
+    {
+        return this.getLock().read( () -> this.typeResolver );
     }
 
     @Nonnull

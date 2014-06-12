@@ -1,9 +1,9 @@
 package org.mosaic.core.impl.bytecode;
 
 import java.nio.file.Path;
-import org.mosaic.core.ModuleRevision;
 import org.mosaic.core.impl.ServerStatus;
-import org.mosaic.core.impl.methodinterception.ModulesSpi;
+import org.mosaic.core.intercept.impl.ModulesSpi;
+import org.mosaic.core.modules.ModuleRevision;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;

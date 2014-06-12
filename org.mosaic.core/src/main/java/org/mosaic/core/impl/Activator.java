@@ -1,10 +1,11 @@
 package org.mosaic.core.impl;
 
-import org.mosaic.core.Module;
-import org.mosaic.core.ModuleManager;
-import org.mosaic.core.impl.methodinterception.MethodInterceptorsManager;
-import org.mosaic.core.impl.module.ModuleManagerEx;
-import org.mosaic.core.impl.service.ServiceManagerEx;
+import org.mosaic.core.intercept.impl.MethodInterceptorsManager;
+import org.mosaic.core.modules.Module;
+import org.mosaic.core.modules.ModuleManager;
+import org.mosaic.core.modules.impl.ModuleManagerEx;
+import org.mosaic.core.services.impl.ServiceManagerEx;
+import org.mosaic.core.types.TypeResolver;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.osgi.framework.BundleActivator;
@@ -31,6 +32,17 @@ public class Activator implements BundleActivator
         if( server != null )
         {
             return server.getServiceManager();
+        }
+        return null;
+    }
+
+    @Nullable
+    public static TypeResolver getTypeResolver()
+    {
+        ServerImpl server = getServer();
+        if( server != null )
+        {
+            return server.getTypeResolver();
         }
         return null;
     }

@@ -29,8 +29,15 @@
                         <Bundle-Activator>org.mosaic.core.impl.Activator</Bundle-Activator>
                         <Embed-Transitive>true</Embed-Transitive>
                         <Embed-Dependency>javassist,classmate</Embed-Dependency>
+                        <Import-Package>
+                            !com.fasterxml.classmate*,
+                            *
+                        </Import-Package>
                         <Export-Package>
-                            org.mosaic.core*
+                            org.mosaic.core.impl,
+                            org.mosaic.core.intercept.impl,
+                            !*impl*,
+                            {local-packages}
                         </Export-Package>
                     </instructions>
                 </configuration>

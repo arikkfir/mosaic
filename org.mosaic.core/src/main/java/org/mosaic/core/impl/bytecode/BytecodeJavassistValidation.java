@@ -5,7 +5,7 @@ import javassist.CtBehavior;
 import javassist.CtClass;
 import javassist.CtMethod;
 import javassist.NotFoundException;
-import org.mosaic.core.ModuleRevision;
+import org.mosaic.core.modules.ModuleRevision;
 import org.mosaic.core.util.Nonnull;
 import org.osgi.framework.hooks.weaving.WeavingException;
 
