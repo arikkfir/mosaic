@@ -161,8 +161,8 @@ class ModuleImpl implements Module
     }
 
     @Override
-    public <ServiceType> ServiceListenerRegistration<ServiceType> addServiceListener( @Nonnull ServiceManager.ServiceRegisteredAction<ServiceType> onRegister,
-                                                                                      @Nonnull ServiceManager.ServiceUnregisteredAction<ServiceType> onUnregister,
+    public <ServiceType> ServiceListenerRegistration<ServiceType> addServiceListener( @Nonnull ServiceRegistrationListener<ServiceType> onRegister,
+                                                                                      @Nonnull ServiceUnregistrationListener<ServiceType> onUnregister,
                                                                                       @Nonnull Class<ServiceType> type,
                                                                                       @Nonnull ServiceProperty... properties )
     {

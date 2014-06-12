@@ -16,8 +16,8 @@ public interface ServiceManager
                                                                         @Nonnull Module.ServiceProperty... properties );
 
     <ServiceType> ServiceListenerRegistration<ServiceType> addListener( @Nullable Module module,
-                                                                        @Nonnull ServiceRegisteredAction<ServiceType> onRegister,
-                                                                        @Nonnull ServiceUnregisteredAction<ServiceType> onUnregister,
+                                                                        @Nonnull ServiceRegistrationListener<ServiceType> onRegister,
+                                                                        @Nonnull ServiceUnregistrationListener<ServiceType> onUnregister,
                                                                         @Nonnull Class<ServiceType> type,
                                                                         @Nonnull Module.ServiceProperty... properties );
 
@@ -46,15 +46,4 @@ public interface ServiceManager
                                                                     @Nonnull Class<ServiceType> type,
                                                                     @Nonnull ServiceType service,
                                                                     @Nullable Map<String, Object> properties );
-
-    interface ServiceRegisteredAction<ServiceType>
-    {
-        void serviceRegistered( @Nonnull ServiceRegistration<ServiceType> registration );
-    }
-
-    interface ServiceUnregisteredAction<ServiceType>
-    {
-        void serviceUnregistered( @Nonnull ServiceRegistration<ServiceType> registration,
-                                  @Nonnull ServiceType service );
-    }
 }

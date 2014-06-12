@@ -108,8 +108,8 @@ class ServiceTrackerImpl<ServiceType> implements ServiceProvider<ServiceType>,
     }
 
     @Override
-    public void addEventHandler( @Nonnull ServiceManager.ServiceRegisteredAction<ServiceType> onRegister,
-                                 @Nonnull ServiceManager.ServiceUnregisteredAction<ServiceType> onUnregister )
+    public void addEventHandler( @Nonnull ServiceRegistrationListener<ServiceType> onRegister,
+                                 @Nonnull ServiceUnregistrationListener<ServiceType> onUnregister )
     {
         addEventHandler( new ServiceListener<ServiceType>()
         {

@@ -80,8 +80,8 @@ public interface Module
                                                                                @Nonnull Class<ServiceType> type,
                                                                                @Nonnull Module.ServiceProperty... properties );
 
-    <ServiceType> ServiceListenerRegistration<ServiceType> addServiceListener( @Nonnull ServiceManager.ServiceRegisteredAction<ServiceType> onRegister,
-                                                                               @Nonnull ServiceManager.ServiceUnregisteredAction<ServiceType> onUnregister,
+    <ServiceType> ServiceListenerRegistration<ServiceType> addServiceListener( @Nonnull ServiceRegistrationListener<ServiceType> onRegister,
+                                                                               @Nonnull ServiceUnregistrationListener<ServiceType> onUnregister,
                                                                                @Nonnull Class<ServiceType> type,
                                                                                @Nonnull Module.ServiceProperty... properties );
 

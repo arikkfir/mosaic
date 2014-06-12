@@ -3,10 +3,7 @@ package org.mosaic.core.services.impl;
 import java.util.*;
 import org.mosaic.core.impl.ServerStatus;
 import org.mosaic.core.modules.Module;
-import org.mosaic.core.services.ServiceListener;
-import org.mosaic.core.services.ServiceListenerRegistration;
-import org.mosaic.core.services.ServiceRegistration;
-import org.mosaic.core.services.ServiceTracker;
+import org.mosaic.core.services.*;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
@@ -88,8 +85,8 @@ public class ServiceManagerImpl implements ServiceManagerEx
 
     @Override
     public <ServiceType> ServiceListenerRegistration<ServiceType> addListener( @Nullable Module module,
-                                                                               @Nonnull ServiceRegisteredAction<ServiceType> onRegister,
-                                                                               @Nonnull ServiceUnregisteredAction<ServiceType> onUnregister,
+                                                                               @Nonnull ServiceRegistrationListener<ServiceType> onRegister,
+                                                                               @Nonnull ServiceUnregistrationListener<ServiceType> onUnregister,
                                                                                @Nonnull Class<ServiceType> type,
                                                                                @Nonnull Module.ServiceProperty... properties )
     {

@@ -478,8 +478,8 @@ class ModuleTypeImpl implements ModuleType
         }
 
         @Override
-        public void addEventHandler( @Nonnull ServiceManager.ServiceRegisteredAction<ServiceType> onRegister,
-                                     @Nonnull ServiceManager.ServiceUnregisteredAction<ServiceType> onUnregister )
+        public void addEventHandler( @Nonnull ServiceRegistrationListener<ServiceType> onRegister,
+                                     @Nonnull ServiceUnregistrationListener<ServiceType> onUnregister )
         {
             this.serviceTracker.addEventHandler( onRegister, onUnregister );
         }
