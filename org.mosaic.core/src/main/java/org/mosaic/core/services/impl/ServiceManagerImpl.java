@@ -153,7 +153,8 @@ public class ServiceManagerImpl implements ServiceManagerEx
                                                                            @Nonnull Class<ServiceType> type,
                                                                            @Nonnull Module.ServiceProperty... properties )
     {
-        return this.lock.read( () -> new ServiceTrackerImpl<>( this.lock, this.logger, module, type, properties ) );
+        //noinspection Convert2Diamond
+        return this.lock.read( () -> new ServiceTrackerImpl<ServiceType>( this.lock, this.logger, module, type, properties ) );
     }
 
     @Override
