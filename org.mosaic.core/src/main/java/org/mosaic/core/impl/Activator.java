@@ -5,7 +5,6 @@ import org.mosaic.core.modules.Module;
 import org.mosaic.core.modules.ModuleManager;
 import org.mosaic.core.modules.impl.ModuleManagerEx;
 import org.mosaic.core.services.impl.ServiceManagerEx;
-import org.mosaic.core.types.TypeResolver;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.osgi.framework.BundleActivator;
@@ -32,17 +31,6 @@ public class Activator implements BundleActivator
         if( server != null )
         {
             return server.getServiceManager();
-        }
-        return null;
-    }
-
-    @Nullable
-    public static TypeResolver getTypeResolver()
-    {
-        ServerImpl server = getServer();
-        if( server != null )
-        {
-            return server.getTypeResolver();
         }
         return null;
     }
