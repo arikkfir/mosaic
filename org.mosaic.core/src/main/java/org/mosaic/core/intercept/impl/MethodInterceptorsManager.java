@@ -76,7 +76,7 @@ public class MethodInterceptorsManager
 
     public boolean beforeInvocation( @Nonnull MethodEntry methodEntry,
                                      @Nullable Object object,
-                                     @Nonnull Object[] arguments ) throws Throwable
+                                     @Nonnull Object... arguments ) throws Throwable
     {
         // create context for method invocation and push to stack
         InvocationContext context = new InvocationContext( methodEntry, object, arguments );
@@ -193,8 +193,11 @@ public class MethodInterceptorsManager
         this.logger.debug( "Initializing method interceptors manager" );
         this.methodInterceptorsForMethods = new HashMap<>();
         this.methodInterceptors = new LinkedList<>();
-        this.interceptorListenerRegistration = requireNonNull( getServiceManager() ).addListener(
-                null, this.methodInterceptorServiceListener, MethodInterceptor.class );
+        this.interceptorListenerRegistration =
+                requireNonNull( getServiceManager() )
+                        .addListener( null,
+                                      this.methodInterceptorServiceListener,
+                                      MethodInterceptor.class );
     }
 
     private void shutdown() throws InterruptedException
