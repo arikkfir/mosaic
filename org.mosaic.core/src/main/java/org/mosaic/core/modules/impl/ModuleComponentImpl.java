@@ -188,7 +188,8 @@ class ModuleComponentImpl
 
             logger.debug( "Deactivating component {}", this );
 
-            this.methodEndpoints.forEach( MethodEndpointImpl::unregister );
+            //noinspection Convert2MethodRef
+            this.methodEndpoints.forEach( ( t ) -> t.unregister() );
             this.providedTypes.forEach( ProvidedType::unregister );
 
             for( Method method : this.deactivationMethods )
