@@ -196,7 +196,15 @@ class ModuleTypeImpl implements ModuleType
     @Nonnull
     Class<?> getType()
     {
-        return this.lock.read( () -> this.type );
+        this.lock.acquireReadLock();
+        try
+        {
+            return this.type;
+        }
+        finally
+        {
+            this.lock.releaseReadLock();
+        }
     }
 
     private abstract class ValueProvider<Value>
@@ -314,7 +322,7 @@ class ModuleTypeImpl implements ModuleType
             }
         }
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         @Nonnull
         private ServiceType createProxy()
         {
