@@ -11,7 +11,10 @@ import java.util.Map;
 import org.mosaic.core.components.Inject;
 import org.mosaic.core.modules.Module;
 import org.mosaic.core.modules.ModuleType;
-import org.mosaic.core.services.*;
+import org.mosaic.core.services.ServiceProvider;
+import org.mosaic.core.services.ServiceRegistration;
+import org.mosaic.core.services.ServiceTracker;
+import org.mosaic.core.services.ServicesProvider;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
@@ -116,11 +119,12 @@ class ModuleTypeImpl implements ModuleType
                     }
                     else if( resolvedType.getErasedType().equals( ServiceTracker.class ) )
                     {
+                        ServiceKey key = new ServiceKey( resolvedType, 0, createFilter( annotation.properties() ) );
                         this.fieldValueProviders.put(
                                 field.getName(),
-                                new ServiceTrackerValueProvider<>(
-                                        resolvedType.getTypeParameters().get( 0 ).getErasedType(),
-                                        createFilter( annotation.properties() )
+                                new ServiceTrackerValueProvider(
+                                        key.getServiceType().getErasedType(),
+                                        key.getServicePropertiesArray()
                                 )
                         );
                     }
@@ -228,8 +232,7 @@ class ModuleTypeImpl implements ModuleType
         }
     }
 
-    private abstract class DependencyValueProvider<ServiceType, Type>
-            extends ValueProvider<Type>
+    private abstract class DependencyValueProvider<ServiceType, Type> extends ValueProvider<Type>
     {
         @Nonnull
         protected final ModuleRevisionImplServiceDependency<ServiceType> dependency;
@@ -322,18 +325,19 @@ class ModuleTypeImpl implements ModuleType
             }
         }
 
-        @SuppressWarnings( "unchecked" )
+        @SuppressWarnings("unchecked")
         @Nonnull
         private ServiceType createProxy()
         {
-            ClassLoader classLoader = moduleRevision.getClassLoader();
             ResolvedType serviceType = this.dependency.getServiceKey().getServiceType();
-            return ( ServiceType ) Proxy.newProxyInstance( classLoader, new Class<?>[] { serviceType.getErasedType() }, this );
+            Class<?> serviceErasedType = serviceType.getErasedType();
+            return ( ServiceType ) Proxy.newProxyInstance(
+                    serviceErasedType.getClassLoader(), new Class<?>[] { serviceErasedType }, this );
         }
     }
 
     private class ServiceRegistrationValueProvider<ServiceType>
-            extends DependencyValueProvider<ServiceType, ServiceRegistration>
+            extends DependencyValueProvider<ServiceType, ServiceRegistration<ServiceType>>
             implements ServiceRegistration<ServiceType>
     {
         private ServiceRegistrationValueProvider( @Nonnull ModuleRevisionImplServiceDependency<ServiceType> dependency )
@@ -423,7 +427,7 @@ class ModuleTypeImpl implements ModuleType
     }
 
     private class ServicesProviderValueProvider<ServiceType>
-            extends DependencyValueProvider<ServiceType, ServicesProvider>
+            extends DependencyValueProvider<ServiceType, ServicesProvider<ServiceType>>
             implements ServicesProvider<ServiceType>
     {
         private ServicesProviderValueProvider( @Nonnull ModuleRevisionImplServiceDependency<ServiceType> dependency )
@@ -447,74 +451,33 @@ class ModuleTypeImpl implements ModuleType
 
         @Nullable
         @Override
-        ServicesProvider getValue()
+        ServicesProvider<ServiceType> getValue()
         {
             return this;
         }
     }
 
-    private class ServiceTrackerValueProvider<ServiceType> extends ValueProvider<ServiceTracker<ServiceType>>
-            implements ServiceTracker<ServiceType>
+    private class ServiceTrackerValueProvider<ServiceType>
+            extends ValueProvider<ServiceTracker<ServiceType>>
     {
         @Nonnull
-        private final ServiceTracker<ServiceType> serviceTracker;
-
-        private ServiceTrackerValueProvider( @Nonnull Class<ServiceType> serviceType,
-                                             @Nonnull Module.ServiceProperty... properties )
-        {
-            this.serviceTracker = moduleRevision.getModule().createServiceTracker( serviceType, properties );
-        }
+        private final Class<ServiceType> serviceType;
 
         @Nonnull
-        @Override
-        public List<ServiceRegistration<ServiceType>> getRegistrations()
-        {
-            return this.serviceTracker.getRegistrations();
-        }
+        private final Module.ServiceProperty[] properties;
 
-        @Nonnull
-        @Override
-        public List<ServiceType> getServices()
+        public ServiceTrackerValueProvider( @Nonnull Class<ServiceType> serviceType,
+                                            @Nonnull Module.ServiceProperty... properties )
         {
-            return this.serviceTracker.getServices();
-        }
-
-        @Override
-        public void addEventHandler( @Nonnull ServiceListener<ServiceType> listener )
-        {
-            this.serviceTracker.addEventHandler( listener );
-        }
-
-        @Override
-        public void addEventHandler( @Nonnull ServiceRegistrationListener<ServiceType> onRegister,
-                                     @Nonnull ServiceUnregistrationListener<ServiceType> onUnregister )
-        {
-            this.serviceTracker.addEventHandler( onRegister, onUnregister );
-        }
-
-        @Override
-        public void removeEventHandler( @Nonnull ServiceListener<ServiceType> listener )
-        {
-            this.serviceTracker.removeEventHandler( listener );
-        }
-
-        @Override
-        public void startTracking()
-        {
-            throw new UnsupportedOperationException( "injected service trackers cannot be started programmatically" );
-        }
-
-        @Override
-        public void stopTracking()
-        {
-            throw new UnsupportedOperationException( "injected service trackers cannot be stopped programmatically" );
+            this.serviceType = serviceType;
+            this.properties = properties;
         }
 
         @Nullable
         @Override
         ServiceTracker<ServiceType> getValue()
         {
-            return this;
+            return moduleRevision.getModule().createServiceTracker( this.serviceType, this.properties );
         }
     }
 
