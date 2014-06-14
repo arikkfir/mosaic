@@ -13,7 +13,7 @@ import org.mosaic.core.util.Nullable;
  */
 public final class ModulesSpi
 {
-    @SuppressWarnings({ "UnusedDeclaration", "unchecked" })
+    @SuppressWarnings( { "UnusedDeclaration", "unchecked" } )
     @Nullable
     public static <T> T getInstanceFieldValue( long moduleId,
                                                long revisionId,
@@ -41,37 +41,37 @@ public final class ModulesSpi
         return ( T ) moduleType.getInstanceFieldValue( fieldName );
     }
 
-    @SuppressWarnings("UnusedDeclaration")
+    @SuppressWarnings( "UnusedDeclaration" )
     public static boolean beforeInvocation( @Nonnull MethodEntry methodEntry,
                                             @Nullable Object object,
-                                            @Nonnull Object[] arguments )
+                                            @Nonnull Object... arguments )
             throws Throwable
     {
         return findMethodInterceptorsManager().beforeInvocation( methodEntry, object, arguments );
     }
 
-    @SuppressWarnings("UnusedDeclaration")
+    @SuppressWarnings( "UnusedDeclaration" )
     @Nullable
     public static Object afterAbortedInvocation() throws Throwable
     {
         return findMethodInterceptorsManager().afterAbortedInvocation();
     }
 
-    @SuppressWarnings("UnusedDeclaration")
+    @SuppressWarnings( "UnusedDeclaration" )
     @Nullable
     public static Object afterSuccessfulInvocation( @Nullable Object returnValue ) throws Throwable
     {
         return findMethodInterceptorsManager().afterSuccessfulInvocation( returnValue );
     }
 
-    @SuppressWarnings("UnusedDeclaration")
+    @SuppressWarnings( "UnusedDeclaration" )
     @Nullable
     public static Object afterThrowable( @Nonnull Throwable throwable ) throws Throwable
     {
         return findMethodInterceptorsManager().afterThrowable( throwable );
     }
 
-    @SuppressWarnings("UnusedDeclaration")
+    @SuppressWarnings( "UnusedDeclaration" )
     public static void cleanup( @Nonnull MethodEntry methodEntry ) throws Throwable
     {
         findMethodInterceptorsManager().cleanup( methodEntry );
