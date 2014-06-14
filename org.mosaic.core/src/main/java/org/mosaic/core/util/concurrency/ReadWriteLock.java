@@ -1,5 +1,6 @@
 package org.mosaic.core.util.concurrency;
 
+import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -19,7 +20,7 @@ public class ReadWriteLock
     private final TimeUnit defaultTimeUnit;
 
     @Nonnull
-    private final java.util.concurrent.locks.ReadWriteLock lock = new ReentrantReadWriteLock();
+    private final MosaicReentrantReadWriteLock lock = new MosaicReentrantReadWriteLock( false );
 
     public ReadWriteLock( @Nonnull String name )
     {
@@ -44,12 +45,30 @@ public class ReadWriteLock
         {
             if( !this.lock.readLock().tryLock( timeout, timeUnit ) )
             {
-                throw new LockException( "could not acquire read lock '" + this.name + "' for " + timeout + " " + timeUnit );
+                StringBuilder msg = new StringBuilder( 1000 );
+
+                msg.append( "could not acquire read lock '" ).append( this.name ).append( "' for " ).append( timeout ).append( " " ).append( timeUnit ).append( "\n" );
+                msg.append( "\n" );
+
+                Thread owner = this.lock.getOwner();
+                if( owner == null )
+                {
+                    msg.append( "No thread holding the write lock is!\n" );
+                }
+                else
+                {
+                    msg.append( "Thread holding the write lock is: " ).append( owner.getName() ).append( " [" ).append( owner.getId() ).append( "]\n" );
+                    for( StackTraceElement traceElement : owner.getStackTrace() )
+                    {
+                        msg.append( "\tat " ).append( traceElement );
+                    }
+                }
+                throw new LockException( msg.toString() );
             }
         }
         catch( InterruptedException e )
         {
-            throw new LockException( "could not acquire read lock '" + this.name + "' for " + timeout + " " + timeUnit );
+            throw new LockException( "interrupted while trying to acquire read lock '" + this.name + "' for " + timeout + " " + timeUnit );
         }
     }
 
@@ -69,7 +88,25 @@ public class ReadWriteLock
         {
             if( !this.lock.writeLock().tryLock( timeout, timeUnit ) )
             {
-                throw new LockException( "could not acquire write lock '" + this.name + "' for " + timeout + " " + timeUnit );
+                StringBuilder msg = new StringBuilder( 1000 );
+
+                msg.append( "could not acquire write lock '" ).append( this.name ).append( "' for " ).append( timeout ).append( " " ).append( timeUnit ).append( "\n" );
+                msg.append( "\n" );
+
+                Thread owner = this.lock.getOwner();
+                if( owner == null )
+                {
+                    msg.append( "No thread holding the write lock is!\n" );
+                }
+                else
+                {
+                    msg.append( "Thread holding the write lock is: " ).append( owner.getName() ).append( " [" ).append( owner.getId() ).append( "]\n" );
+                    for( StackTraceElement traceElement : owner.getStackTrace() )
+                    {
+                        msg.append( "\tat " ).append( traceElement );
+                    }
+                }
+                throw new LockException( msg.toString() );
             }
         }
         catch( InterruptedException e )
@@ -184,6 +221,38 @@ public class ReadWriteLock
         finally
         {
             releaseWriteLock();
+        }
+    }
+
+    private class MosaicReentrantReadWriteLock extends ReentrantReadWriteLock
+    {
+        private MosaicReentrantReadWriteLock( boolean fair )
+        {
+            super( fair );
+        }
+
+        @Override
+        public Thread getOwner()
+        {
+            return super.getOwner();
+        }
+
+        @Override
+        public Collection<Thread> getQueuedReaderThreads()
+        {
+            return super.getQueuedReaderThreads();
+        }
+
+        @Override
+        public Collection<Thread> getQueuedThreads()
+        {
+            return super.getQueuedThreads();
+        }
+
+        @Override
+        public Collection<Thread> getQueuedWriterThreads()
+        {
+            return super.getQueuedWriterThreads();
         }
     }
 }
