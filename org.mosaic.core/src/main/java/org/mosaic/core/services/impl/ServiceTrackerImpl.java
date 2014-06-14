@@ -101,22 +101,28 @@ class ServiceTrackerImpl<ServiceType> implements ServiceProvider<ServiceType>,
     }
 
     @Override
-    public void addEventHandler( @Nonnull ServiceRegistrationListener<ServiceType> onRegister,
-                                 @Nonnull ServiceUnregistrationListener<ServiceType> onUnregister )
+    public void addEventHandler( @Nullable ServiceRegistrationListener<ServiceType> onRegister,
+                                 @Nullable ServiceUnregistrationListener<ServiceType> onUnregister )
     {
         addEventHandler( new ServiceListener<ServiceType>()
         {
             @Override
             public void serviceRegistered( @Nonnull ServiceRegistration<ServiceType> registration )
             {
-                onRegister.serviceRegistered( registration );
+                if( onRegister != null )
+                {
+                    onRegister.serviceRegistered( registration );
+                }
             }
 
             @Override
             public void serviceUnregistered( @Nonnull ServiceRegistration<ServiceType> registration,
                                              @Nonnull ServiceType service )
             {
-                onUnregister.serviceUnregistered( registration, service );
+                if( onUnregister != null )
+                {
+                    onUnregister.serviceUnregistered( registration, service );
+                }
             }
         } );
     }
