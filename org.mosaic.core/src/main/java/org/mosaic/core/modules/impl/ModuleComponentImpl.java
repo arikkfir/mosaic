@@ -62,7 +62,7 @@ class ModuleComponentImpl
     @Nonnull
     private final List<Method> deactivationMethods;
 
-    @SuppressWarnings({ "FieldCanBeLocal", "UnusedDeclaration" })
+    @SuppressWarnings( { "FieldCanBeLocal", "UnusedDeclaration" } )
     @Nonnull
     private final List<ServiceAdapterHandler> serviceAdapterMethods;
 
@@ -271,7 +271,7 @@ class ModuleComponentImpl
                                  .toString();
         }
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         private void register( @Nonnull Object instance )
         {
             ModuleImpl module = ModuleComponentImpl.this.moduleType.getModuleRevision().getModule();
@@ -357,6 +357,15 @@ class ModuleComponentImpl
             this.method = method;
             this.method.setAccessible( true );
             this.annotation = annotation;
+        }
+
+        @Override
+        public String toString()
+        {
+            return ToStringHelper.create( this )
+                                 .add( "method", this.method.getName() )
+                                 .add( "type", this.annotation.annotationType().getSimpleName() )
+                                 .toString();
         }
 
         @Nonnull
