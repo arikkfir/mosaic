@@ -5,9 +5,12 @@ import org.mosaic.core.components.Component;
 import org.mosaic.core.components.Inject;
 import org.mosaic.core.components.MethodEndpoint;
 import org.mosaic.core.services.ServiceProvider;
+import org.mosaic.core.services.ServiceTracker;
+import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.logging.Logging;
 import org.mosaic.demo.demo1.DemoEndpoint;
 import org.mosaic.demo.demo1.DemoItem;
+import org.slf4j.Logger;
 
 /**
  * @author arik
@@ -15,44 +18,94 @@ import org.mosaic.demo.demo1.DemoItem;
 @Component
 public class Demo2
 {
+    private static final Logger LOG = Logging.getLogger();
+
     @Inject
     private ServiceProvider<DemoItem> demo1Provider;
 
     @Inject
+    @Nonnull
     private DemoItem demo1;
 
     @Inject
     private List<MethodEndpoint<DemoEndpoint>> demoEndpoints;
 
+    @Nonnull
+    @Inject
+    private ServiceTracker<MethodEndpoint<DemoEndpoint>> demoEndpointsTracker;
+
     public Demo2()
     {
-        new Thread( new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    Thread.sleep( 2000 );
-                }
-                catch( InterruptedException e )
-                {
-                    e.printStackTrace();
-                }
-                demo1.printMe();
+        this.demoEndpointsTracker.addEventHandler( registration -> {
+                                                       MethodEndpoint<DemoEndpoint> endpoint = registration.getService();
+                                                       if( endpoint != null )
+                                                       {
+                                                           try
+                                                           {
+                                                               LOG.info( "Printout from a TRACKED 'DemoEndpoint': " );
+                                                               endpoint.invoke();
+                                                           }
+                                                           catch( Throwable throwable )
+                                                           {
+                                                               LOG.error( "Error invoking endpoint: {}", throwable.getMessage(), throwable );
+                                                           }
+                                                       }
+                                                   },
+                                                   null );
+        this.demoEndpointsTracker.startTracking();
 
-                for( MethodEndpoint<DemoEndpoint> demoEndpoint : demoEndpoints )
+        //noinspection ConstantConditions
+        if( this.demo1 == null )
+        {
+            LOG.warn( "NO DemoItem INJECTED!" );
+        }
+        else
+        {
+            LOG.info( "Printout from INJECTED 'this.demo1': " );
+            this.demo1.printMe();
+        }
+
+        new Thread( () -> {
+            try
+            {
+                Thread.sleep( 1000 );
+            }
+            catch( InterruptedException e )
+            {
+                throw new RuntimeException( e );
+            }
+
+            DemoItem demoItem = this.demo1Provider.getService();
+            if( demoItem == null )
+            {
+                LOG.warn( "NO DemoItem returned from DemoItem service provider!" );
+            }
+            else
+            {
+                LOG.info( "Printout from PROVIDED 'DemoItem': " );
+                demoItem.printMe();
+            }
+
+            if( this.demoEndpoints.isEmpty() )
+            {
+                LOG.warn( "EMPTY DemoEndpoint LIST INJECTED!" );
+            }
+            else
+            {
+                for( MethodEndpoint<DemoEndpoint> endpoint : this.demoEndpoints )
                 {
                     try
                     {
-                        demoEndpoint.invoke();
+                        LOG.info( "Printout from an INJECTED-to-list 'DemoEndpoint': " );
+                        endpoint.invoke();
                     }
                     catch( Throwable throwable )
                     {
-                        Logging.getLogger().info( "Error invoking endpoint: {}", throwable.getMessage(), throwable );
+                        LOG.error( "Error invoking endpoint: {}", throwable.getMessage(), throwable );
                     }
                 }
             }
+
         } ).start();
     }
 }
