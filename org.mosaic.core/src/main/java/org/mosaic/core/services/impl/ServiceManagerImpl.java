@@ -35,6 +35,22 @@ public class ServiceManagerImpl implements ServiceManagerEx
     }
 
     @Nonnull
+    private static Map<String, Object> createMap( @Nonnull Module.ServiceProperty... properties )
+    {
+        if( properties.length == 0 )
+        {
+            return Collections.emptyMap();
+        }
+
+        Map<String, Object> propertyMap = new HashMap<>();
+        for( Module.ServiceProperty property : properties )
+        {
+            propertyMap.put( property.getName(), property.getValue() );
+        }
+        return propertyMap;
+    }
+
+    @Nonnull
     private final ReadWriteLock lock;
 
     @Nonnull
@@ -190,7 +206,7 @@ public class ServiceManagerImpl implements ServiceManagerEx
             Map<String, Object> propertyMap = properties == null ? Collections.<String, Object>emptyMap() : properties;
             ServiceRegistrationImpl<ServiceType> registration = new ServiceRegistrationImpl<>( this.lock, this.logger, this, module, type, propertyMap );
             services.put( registration, service );
-            this.logger.trace( "Registered service {}", registration );
+            this.logger.trace( "Registered a service of {}: {}", registration.getType().getName(), service );
 
             for( ServiceListener listener : listeners )
             {
@@ -275,21 +291,5 @@ public class ServiceManagerImpl implements ServiceManagerEx
             }
             return listenerAdapter;
         } );
-    }
-
-    @Nonnull
-    private Map<String, Object> createMap( @Nonnull Module.ServiceProperty... properties )
-    {
-        if( properties.length == 0 )
-        {
-            return Collections.emptyMap();
-        }
-
-        Map<String, Object> propertyMap = new HashMap<>();
-        for( Module.ServiceProperty property : properties )
-        {
-            propertyMap.put( property.getName(), property.getValue() );
-        }
-        return propertyMap;
     }
 }
