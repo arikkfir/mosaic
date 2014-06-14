@@ -34,7 +34,6 @@
                             *
                         </Import-Package>
                         <Export-Package>
-                            org.mosaic.core.impl,
                             org.mosaic.core.intercept.impl,
                             !*impl*,
                             {local-packages}
