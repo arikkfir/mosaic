@@ -3,6 +3,8 @@ package org.mosaic.launcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.slf4j.helpers.MessageFormatter.arrayFormat;
+
 /**
  * @author arik
  */
@@ -14,29 +16,17 @@ final class EventsLogger
 
     public static void printEmphasizedInfoMessage( String message, Object... args )
     {
-        LOG.info( "" );
-        LOG.info( SEPARATOR );
-        LOG.info( message, args );
-        LOG.info( SEPARATOR );
-        LOG.info( "" );
+        LOG.info( "\n\n" + SEPARATOR + "\n" + arrayFormat( message, args ).getMessage() + "\n" + SEPARATOR + "\n" );
     }
 
     public static void printEmphasizedWarnMessage( String message, Object... args )
     {
-        LOG.warn( "" );
-        LOG.warn( SEPARATOR );
-        LOG.warn( message, args );
-        LOG.warn( SEPARATOR );
-        LOG.warn( "" );
+        LOG.warn( "\n\n" + SEPARATOR + "\n" + arrayFormat( message, args ).getMessage() + "\n" + SEPARATOR + "\n" );
     }
 
     public static void printEmphasizedErrorMessage( String message, Object... args )
     {
-        LOG.error( "" );
-        LOG.warn( SEPARATOR );
-        LOG.error( message, args );
-        LOG.warn( SEPARATOR );
-        LOG.error( "" );
+        LOG.error( "\n\n" + SEPARATOR + "\n" + arrayFormat( message, args ).getMessage() + "\n" + SEPARATOR + "\n" );
     }
 
     private EventsLogger()
