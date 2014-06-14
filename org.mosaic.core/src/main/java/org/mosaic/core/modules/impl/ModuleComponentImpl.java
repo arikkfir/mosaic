@@ -149,22 +149,18 @@ class ModuleComponentImpl
                              .toString();
     }
 
-    void activate()
+    void activate() throws Throwable
     {
-        ModuleImpl module = this.moduleType.getModuleRevision().getModule();
-        Logger logger = module.getLogger();
-
         if( this.instantiator != null )
         {
-            module.getLogger().debug( "Activating component {}", this );
+            this.moduleType.getModuleRevision().getModule().getLogger().debug( "Activating component {}", this );
             try
             {
                 this.instance = this.instantiator.call();
             }
-            catch( Exception e )
+            catch( InvocationTargetException e )
             {
-                logger.error( "Error activating component {} - instantiation error", this, e );
-                return;
+                throw e.getCause();
             }
 
             for( ProvidedType providedType : this.providedTypes )
@@ -314,18 +310,8 @@ class ModuleComponentImpl
         @Override
         public Object call() throws Exception
         {
-            ModuleImpl module = ModuleComponentImpl.this.moduleType.getModuleRevision().getModule();
-            Logger logger = module.getLogger();
-            try
-            {
-                this.constructor.setAccessible( true );
-                return this.constructor.newInstance();
-            }
-            catch( Throwable e )
-            {
-                logger.error( "Error activating component {} - instantiation error", this, e );
-                return null;
-            }
+            this.constructor.setAccessible( true );
+            return this.constructor.newInstance();
         }
     }
 
@@ -350,18 +336,8 @@ class ModuleComponentImpl
         @Override
         public Object call() throws Exception
         {
-            ModuleImpl module = ModuleComponentImpl.this.moduleType.getModuleRevision().getModule();
-            Logger logger = module.getLogger();
-            try
-            {
-                this.method.setAccessible( true );
-                return this.method.invoke( null );
-            }
-            catch( Throwable e )
-            {
-                logger.error( "Error activating component {} - instantiation error", this, e );
-                return null;
-            }
+            this.method.setAccessible( true );
+            return this.method.invoke( null );
         }
     }
 
@@ -466,7 +442,7 @@ class ModuleComponentImpl
             this.dependency.getServiceTracker().addEventHandler( this );
         }
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         @Override
         public void serviceRegistered( @Nonnull ServiceRegistration<OriginalType> registration )
         {

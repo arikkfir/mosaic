@@ -276,7 +276,9 @@ class ModuleRevisionImpl implements ModuleRevision
     @Override
     public Collection<Path> findResources( @Nonnull String glob ) throws IOException
     {
-        return this.lock.read( () -> {
+        this.lock.acquireReadLock();
+        try
+        {
             Path root = this.root;
             if( root == null )
             {
@@ -298,7 +300,11 @@ class ModuleRevisionImpl implements ModuleRevision
                 }
             } );
             return matches;
-        } );
+        }
+        finally
+        {
+            this.lock.releaseReadLock();
+        }
     }
 
     @Nullable
@@ -478,7 +484,7 @@ class ModuleRevisionImpl implements ModuleRevision
         return getServiceDependency( new ServiceKey( serviceType, minCount, properties ) );
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     @Nonnull
     <ServiceType> ModuleRevisionImplServiceDependency<ServiceType> getServiceDependency( @Nonnull ServiceKey serviceKey )
     {
@@ -692,7 +698,16 @@ class ModuleRevisionImpl implements ModuleRevision
                 // we have components - activate them
                 for( ModuleComponentImpl component : components )
                 {
-                    component.activate();
+                    try
+                    {
+                        component.activate();
+                    }
+                    catch( Throwable e )
+                    {
+                        this.module.getLogger().error( "Error activating component {}", this, e );
+                        deactivate( true );
+                        return;
+                    }
                 }
             }
             this.activated = true;
@@ -703,8 +718,13 @@ class ModuleRevisionImpl implements ModuleRevision
 
     void deactivate()
     {
+        deactivate( false );
+    }
+
+    void deactivate( boolean force )
+    {
         this.lock.write( () -> {
-            if( this.activated )
+            if( force || this.activated )
             {
                 this.module.getLogger().info( "DEACTIVATING {}", this );
 
