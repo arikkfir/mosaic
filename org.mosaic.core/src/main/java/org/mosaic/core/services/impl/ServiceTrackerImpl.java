@@ -44,13 +44,7 @@ class ServiceTrackerImpl<ServiceType> implements ServiceProvider<ServiceType>,
     private List<ServiceRegistration<ServiceType>> registrations;
 
     @Nullable
-    private List<ServiceRegistration<ServiceType>> unmodifiableRegistrations;
-
-    @Nullable
     private List<ServiceType> services;
-
-    @Nullable
-    private List<ServiceType> unmodifiableServices;
 
     @Nullable
     private ServiceListenerRegistration<ServiceType> listenerRegistration;
@@ -89,10 +83,9 @@ class ServiceTrackerImpl<ServiceType> implements ServiceProvider<ServiceType>,
             }
             eventHandlers.add( listener );
 
-            List<ServiceRegistration<ServiceType>> registrations = this.unmodifiableRegistrations;
-            if( registrations != null )
+            if( this.registrations != null )
             {
-                for( ServiceRegistration<ServiceType> registration : getRegistrations() )
+                for( ServiceRegistration<ServiceType> registration : this.registrations )
                 {
                     try
                     {
@@ -146,8 +139,6 @@ class ServiceTrackerImpl<ServiceType> implements ServiceProvider<ServiceType>,
         this.lock.write( () -> {
             this.registrations = new LinkedList<>();
             this.services = new LinkedList<>();
-            this.unmodifiableRegistrations = Collections.unmodifiableList( this.registrations );
-            this.unmodifiableServices = Collections.unmodifiableList( this.services );
             this.listenerRegistration = this.module.addWeakServiceListener( this, this.type, this.properties );
         } );
     }
@@ -163,8 +154,6 @@ class ServiceTrackerImpl<ServiceType> implements ServiceProvider<ServiceType>,
                 this.listenerRegistration = null;
             }
 
-            this.unmodifiableServices = null;
-            this.unmodifiableRegistrations = null;
             this.services = null;
             this.registrations = null;
         } );
@@ -175,12 +164,16 @@ class ServiceTrackerImpl<ServiceType> implements ServiceProvider<ServiceType>,
     public List<ServiceRegistration<ServiceType>> getRegistrations()
     {
         return this.lock.read( () -> {
-            List<ServiceRegistration<ServiceType>> registrations = this.unmodifiableRegistrations;
-            if( registrations == null )
+            if( this.registrations != null )
             {
-                throw new IllegalStateException( "service tracker not open" );
+                List<ServiceRegistration<ServiceType>> registrations = new LinkedList<>();
+                registrations.addAll( this.registrations );
+                return registrations;
             }
-            return registrations;
+            else
+            {
+                return Collections.<ServiceRegistration<ServiceType>>emptyList();
+            }
         } );
     }
 
@@ -189,12 +182,16 @@ class ServiceTrackerImpl<ServiceType> implements ServiceProvider<ServiceType>,
     public List<ServiceType> getServices()
     {
         return this.lock.read( () -> {
-            List<ServiceType> services = this.unmodifiableServices;
-            if( services == null )
+            if( this.services != null )
             {
-                throw new IllegalStateException( "service tracker not open" );
+                List<ServiceType> services = new LinkedList<>();
+                services.addAll( this.services );
+                return services;
             }
-            return services;
+            else
+            {
+                return Collections.<ServiceType>emptyList();
+            }
         } );
     }
 
@@ -202,42 +199,34 @@ class ServiceTrackerImpl<ServiceType> implements ServiceProvider<ServiceType>,
     @Override
     public ServiceRegistration<ServiceType> getRegistration()
     {
-        return this.lock.read( () -> {
-            List<ServiceRegistration<ServiceType>> registrations = getRegistrations();
-            return registrations.isEmpty() ? null : registrations.get( 0 );
-        } );
+        return this.lock.read( () -> this.registrations == null ? null : this.registrations.get( 0 ) );
     }
 
     @Nullable
     @Override
     public ServiceType getService()
     {
-        return this.lock.read( () -> {
-            List<ServiceType> services = getServices();
-            return services.isEmpty() ? null : services.get( 0 );
-        } );
+        return this.lock.read( () -> this.services == null || this.services.isEmpty() ? null : this.services.get( 0 ) );
     }
 
     @Override
     public void serviceRegistered( @Nonnull ServiceRegistration<ServiceType> registration )
     {
         this.lock.write( () -> {
-            List<ServiceRegistration<ServiceType>> registrations = this.registrations;
-            if( registrations != null )
+
+            if( this.registrations != null )
             {
-                registrations.add( registration );
+                this.registrations.add( registration );
             }
 
-            List<ServiceType> services = this.services;
-            if( services != null )
+            if( this.services != null )
             {
-                services.add( registration.getService() );
+                this.services.add( registration.getService() );
             }
 
-            List<ServiceListener<ServiceType>> eventHandlers = this.eventHandlers;
-            if( eventHandlers != null )
+            if( this.eventHandlers != null )
             {
-                for( ServiceListener<ServiceType> eventHandler : eventHandlers )
+                for( ServiceListener<ServiceType> eventHandler : this.eventHandlers )
                 {
                     try
                     {
@@ -252,16 +241,16 @@ class ServiceTrackerImpl<ServiceType> implements ServiceProvider<ServiceType>,
         } );
     }
 
-    @SuppressWarnings("SuspiciousMethodCalls")
+    @SuppressWarnings( "SuspiciousMethodCalls" )
     @Override
     public void serviceUnregistered( @Nonnull ServiceRegistration<ServiceType> registration,
                                      @Nonnull ServiceType service )
     {
         this.lock.write( () -> {
-            List<ServiceListener<ServiceType>> eventHandlers = this.eventHandlers;
-            if( eventHandlers != null )
+
+            if( this.eventHandlers != null )
             {
-                for( ServiceListener<ServiceType> eventHandler : eventHandlers )
+                for( ServiceListener<ServiceType> eventHandler : this.eventHandlers )
                 {
                     try
                     {
@@ -274,16 +263,14 @@ class ServiceTrackerImpl<ServiceType> implements ServiceProvider<ServiceType>,
                 }
             }
 
-            List<ServiceType> services = this.services;
-            if( services != null )
+            if( this.services != null )
             {
-                services.remove( service );
+                this.services.remove( service );
             }
 
-            List<ServiceRegistration<ServiceType>> registrations = this.registrations;
-            if( registrations != null )
+            if( this.registrations != null )
             {
-                registrations.remove( registration );
+                this.registrations.remove( registration );
             }
         } );
     }
