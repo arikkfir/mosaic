@@ -484,7 +484,7 @@ class ModuleRevisionImpl implements ModuleRevision
         return getServiceDependency( new ServiceKey( serviceType, minCount, properties ) );
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     @Nonnull
     <ServiceType> ModuleRevisionImplServiceDependency<ServiceType> getServiceDependency( @Nonnull ServiceKey serviceKey )
     {
@@ -704,7 +704,7 @@ class ModuleRevisionImpl implements ModuleRevision
                     }
                     catch( Throwable e )
                     {
-                        this.module.getLogger().error( "Error activating component {}", this, e );
+                        this.module.getLogger().error( "Error activating component {}", component, e );
                         deactivate( true );
                         return;
                     }
