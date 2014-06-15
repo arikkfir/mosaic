@@ -1,0 +1,102 @@
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.mosaic</groupId>
+        <artifactId>org.mosaic.parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../org.mosaic.parent/pom.xml</relativePath>
+    </parent>
+
+    <artifactId>org.mosaic.convert</artifactId>
+    <name>Mosaic :: Convert</name>
+    <description>Mosaic Convert</description>
+    <packaging>bundle</packaging>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <configuration>
+                    <instructions>
+                        <Embed-Dependency>classmate,jgrapht</Embed-Dependency>
+                        <Import-Package>
+                            !com.fasterxml.classmate*,
+                            !com.touchgraph.graphlayout*,
+                            !org.jgraph*,
+                            *
+                        </Import-Package>
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+
+        <!-- mosaic -->
+        <dependency>
+            <groupId>org.mosaic</groupId>
+            <artifactId>org.mosaic.core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- SLF4J is used as the logging API -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- graphing utility -->
+        <dependency>
+            <groupId>net.sf.jgrapht</groupId>
+            <artifactId>jgrapht</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- used for generics resolving -->
+        <dependency>
+            <groupId>com.fasterxml</groupId>
+            <artifactId>classmate</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- used for marking versions of packages (via @Version) -->
+        <dependency>
+            <groupId>biz.aQute.bnd</groupId>
+            <artifactId>bndlib</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+    </dependencies>
+
+    <!-- scm -->
+    <scm>
+        <connection>scm:git:git@github.com:arikkfir/mosaic.git/${project.artifactId}</connection>
+        <developerConnection>scm:git:git@github.com:arikkfir/mosaic.git/${project.artifactId}</developerConnection>
+        <url>https://github.com/arikkfir/mosaic</url>
+        <tag>HEAD</tag>
+    </scm>
+
+</project>
+
+
+
+
+
+
+
+
+
+
+
+
+

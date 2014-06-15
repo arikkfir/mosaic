@@ -41,9 +41,8 @@
 
     <modules>
         <!--<module>org.mosaic.config</module>-->
-        <!--<module>org.mosaic.console</module>-->
-        <!--<module>org.mosaic.console.remote</module>-->
         <module>org.mosaic.core</module>
+        <module>org.mosaic.convert</module>
         <module>org.mosaic.demo</module>
         <!--<module>org.mosaic.dao</module>-->
         <!--<module>org.mosaic.datasource</module>-->
@@ -54,6 +53,7 @@
         <module>org.mosaic.launcher</module>
         <!--<module>org.mosaic.modules</module>-->
         <module>org.mosaic.parent</module>
+        <!--<module>org.mosaic.shell</module>-->
         <!--<module>org.mosaic.pathwatchers</module>-->
         <!--<module>org.mosaic.security</module>-->
         <!--<module>org.mosaic.server</module>-->

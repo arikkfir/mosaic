@@ -146,6 +146,10 @@ public class ServiceManagerImpl implements ServiceManagerEx
             {
                 throw new IllegalStateException( "service manager no longer available (is server started?)" );
             }
+            else
+            {
+                services = new HashMap<ServiceRegistrationImpl, Object>( services );
+            }
 
             // TODO: cache results by type+filter, clear cache on new services
             Filter filter = createFilter( properties );
@@ -208,7 +212,7 @@ public class ServiceManagerImpl implements ServiceManagerEx
             services.put( registration, service );
             this.logger.trace( "Registered a service of {}: {}", registration.getType().getName(), service );
 
-            for( ServiceListener listener : listeners )
+            for( ServiceListener listener : new LinkedList<ServiceListener>( listeners ) )
             {
                 try
                 {
@@ -285,10 +289,7 @@ public class ServiceManagerImpl implements ServiceManagerEx
             this.logger.trace( "Registered service listener {}", listenerAdapter );
 
             // TODO: add caching to only call with services of the listener's requested type (instead of letting the adapter filter them each time)
-            for( ServiceRegistrationImpl registration : services.keySet() )
-            {
-                listenerAdapter.serviceRegistered( registration );
-            }
+            services.keySet().forEach( listenerAdapter::serviceRegistered );
             return listenerAdapter;
         } );
     }
