@@ -9,6 +9,7 @@ import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.felix.framework.Felix;
 import org.osgi.framework.*;
 import org.slf4j.bridge.SLF4JBridgeHandler;
@@ -134,6 +135,7 @@ public class Main
         }
 
         // add OSGi listeners that emit log statements on OSGi events
+        final AtomicBoolean started = new AtomicBoolean( false );
         felixBundleContext.addFrameworkListener( frameworkEvent -> {
             @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
             Throwable throwable = frameworkEvent.getThrowable();
@@ -145,7 +147,10 @@ public class Main
                     break;
 
                 case FrameworkEvent.PACKAGES_REFRESHED:
-                    EventsLogger.printEmphasizedInfoMessage( "OSGi packages have been refreshed" );
+                    if( started.get() )
+                    {
+                        EventsLogger.printEmphasizedInfoMessage( "OSGi packages have been refreshed" );
+                    }
                     break;
 
                 case FrameworkEvent.STARTED:
@@ -190,6 +195,7 @@ public class Main
         // now start Felix
         felix.start();
         Shutdown.setFelix( felix );
+        started.set( true );
     }
 
     private static void assertJvmSplitVerifierIsDisabled()
