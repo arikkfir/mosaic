@@ -2,6 +2,7 @@ package org.mosaic.launcher;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.helpers.FormattingTuple;
 
 import static org.slf4j.helpers.MessageFormatter.arrayFormat;
 
@@ -16,17 +17,20 @@ final class EventsLogger
 
     public static void printEmphasizedInfoMessage( String message, Object... args )
     {
-        LOG.info( "\n\n" + SEPARATOR + "\n" + arrayFormat( message, args ).getMessage() + "\n" + SEPARATOR + "\n" );
+        FormattingTuple tuple = arrayFormat( message, args );
+        LOG.info( "\n\n" + SEPARATOR + "\n" + tuple.getMessage() + "\n" + SEPARATOR + "\n", tuple.getThrowable() );
     }
 
     public static void printEmphasizedWarnMessage( String message, Object... args )
     {
-        LOG.warn( "\n\n" + SEPARATOR + "\n" + arrayFormat( message, args ).getMessage() + "\n" + SEPARATOR + "\n" );
+        FormattingTuple tuple = arrayFormat( message, args );
+        LOG.warn( "\n\n" + SEPARATOR + "\n" + tuple.getMessage() + "\n" + SEPARATOR + "\n", tuple.getThrowable() );
     }
 
     public static void printEmphasizedErrorMessage( String message, Object... args )
     {
-        LOG.error( "\n\n" + SEPARATOR + "\n" + arrayFormat( message, args ).getMessage() + "\n" + SEPARATOR + "\n" );
+        FormattingTuple tuple = arrayFormat( message, args );
+        LOG.error( "\n\n" + SEPARATOR + "\n" + tuple.getMessage() + "\n" + SEPARATOR + "\n", tuple.getThrowable() );
     }
 
     private EventsLogger()
