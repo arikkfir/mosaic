@@ -75,6 +75,11 @@ final class SystemPackages
 
     private static String getVersionForPackage( String packageName ) throws IOException
     {
+        if( "sun.misc".equals( packageName ) )
+        {
+            return "0.0.0";
+        }
+
         for( String token : ManagementFactory.getRuntimeMXBean().getClassPath().split( Pattern.quote( File.pathSeparator ) ) )
         {
             Path path = Paths.get( token );
