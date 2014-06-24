@@ -14,7 +14,7 @@ public interface MethodEndpoint<T extends Annotation>
     String getName();
 
     @Nonnull
-    T getType();
+    T getEndpointType();
 
     @Nonnull
     Method getMethod();

@@ -454,7 +454,7 @@ class ModuleComponentImpl
 
         @Nonnull
         @Override
-        public AnnType getType()
+        public AnnType getEndpointType()
         {
             return this.annotation;
         }
