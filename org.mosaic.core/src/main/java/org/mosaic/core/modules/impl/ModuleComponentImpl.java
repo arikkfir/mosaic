@@ -86,7 +86,7 @@ class ModuleComponentImpl
     @Nonnull
     private final List<ProvidedType> providedTypes;
 
-    @Nullable
+    @Nonnull
     private final Callable<Object> instantiator;
 
     @Nonnull
@@ -96,7 +96,7 @@ class ModuleComponentImpl
     private final List<ServiceAdapterHandler> serviceAdapterMethods;
 
     @Nonnull
-    private final List<MethodEndpointImpl<?>> methodEndpoints;
+    private final List<MethodEndpointImpl> methodEndpoints;
 
     @Nonnull
     private final List<ServiceRegistrationHandler<?>> serviceRegistrationHandlers;
@@ -119,7 +119,7 @@ class ModuleComponentImpl
         Logger logger = this.moduleType.getModuleRevision().getModule().getLogger();
 
         List<Method> deactivationMethods = new LinkedList<>();
-        List<MethodEndpointImpl<?>> methodEndpoints = new LinkedList<>();
+        List<MethodEndpointImpl> methodEndpoints = new LinkedList<>();
         List<ServiceRegistrationHandler<?>> serviceRegistrationHandlers = new LinkedList<>();
         List<ServiceUnregistrationHandler<?>> serviceUnregistrationHandlers = new LinkedList<>();
         List<ServiceAdapterHandler> serviceAdapterMethods = new LinkedList<>();
@@ -235,43 +235,21 @@ class ModuleComponentImpl
 
     void activate() throws Throwable
     {
-        if( this.instantiator != null )
+        this.moduleType.getModuleRevision().getModule().getLogger().debug( "Activating component {}", this );
+        try
         {
-            this.moduleType.getModuleRevision().getModule().getLogger().debug( "Activating component {}", this );
-            try
-            {
-                this.instance = this.instantiator.call();
-            }
-            catch( InvocationTargetException e )
-            {
-                throw e.getCause();
-            }
-
-            for( ServiceRegistrationHandler<?> serviceRegistrationHandler : this.serviceRegistrationHandlers )
-            {
-                serviceRegistrationHandler.register();
-            }
-
-            for( ServiceUnregistrationHandler<?> serviceUnregistrationHandler : this.serviceUnregistrationHandlers )
-            {
-                serviceUnregistrationHandler.register();
-            }
-
-            for( ProvidedType providedType : this.providedTypes )
-            {
-                providedType.register( this.instance );
-            }
-
-            for( MethodEndpointImpl<?> methodEndpoint : this.methodEndpoints )
-            {
-                methodEndpoint.register();
-            }
-
-            for( ServiceAdapterHandler adapterHandler : this.serviceAdapterMethods )
-            {
-                adapterHandler.register();
-            }
+            this.instance = this.instantiator.call();
         }
+        catch( InvocationTargetException e )
+        {
+            throw e.getCause();
+        }
+
+        this.serviceRegistrationHandlers.forEach( ServiceRegistrationHandler::register );
+        this.serviceUnregistrationHandlers.forEach( ServiceUnregistrationHandler::register );
+        this.providedTypes.forEach( type -> type.register( this.instance ) );
+        this.methodEndpoints.forEach( MethodEndpointImpl::register );
+        this.serviceAdapterMethods.forEach( ServiceAdapterHandler::register );
     }
 
     void deactivate()
@@ -283,26 +261,12 @@ class ModuleComponentImpl
 
             logger.debug( "Deactivating component {}", this );
 
-            for( ServiceAdapterHandler adapterHandler : this.serviceAdapterMethods )
-            {
-                adapterHandler.unregister();
-            }
-
-            for( ServiceRegistrationHandler serviceRegistrationHandler : this.serviceRegistrationHandlers )
-            {
-                serviceRegistrationHandler.unregister();
-            }
-            for( ServiceUnregistrationHandler serviceUnregistrationHandler : this.serviceUnregistrationHandlers )
-            {
-                serviceUnregistrationHandler.unregister();
-            }
-
-            //noinspection Convert2MethodRef
-            this.methodEndpoints.forEach( ( t ) -> t.unregister() );
+            this.serviceAdapterMethods.forEach( ServiceAdapterHandler::unregister );
+            this.methodEndpoints.forEach( MethodEndpointImpl::unregister );
             this.providedTypes.forEach( ProvidedType::unregister );
-
-            for( Method method : this.deactivationMethods )
-            {
+            this.serviceUnregistrationHandlers.forEach( ServiceUnregistrationHandler::unregister );
+            this.serviceRegistrationHandlers.forEach( ServiceRegistrationHandler::unregister );
+            this.deactivationMethods.forEach( method -> {
                 try
                 {
                     method.invoke( instance );
@@ -312,12 +276,12 @@ class ModuleComponentImpl
                     logger.warn( "@OnDeactivation method '{}' of component {} threw an exception",
                                  method.toGenericString(), this, e );
                 }
-            }
+            } );
             this.instance = null;
         }
     }
 
-    @Nullable
+    @Nonnull
     private Callable<Object> createInstantiator( @Nonnull Class<?> type )
     {
         try
@@ -351,7 +315,7 @@ class ModuleComponentImpl
             this.moduleType.getModuleRevision().getModule().getLogger().warn( "Error discovering constructor for {}", this, e );
         }
 
-        return null;
+        throw new IllegalStateException( "@Component class " + type.getName() + " has no default constructor nor a 'getInstance()' static method" );
     }
 
     private class ProvidedType
