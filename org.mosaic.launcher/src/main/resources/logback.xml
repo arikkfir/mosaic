@@ -29,21 +29,4 @@
         <appender-ref ref="console"/>
     </root>
 
-    <!-- =========================================================================================================== -->
-    <!--  Include default logger levels for other loggers                                                            -->
-    <!-- =========================================================================================================== -->
-    <!--<logger name="org.mosaic.modules.Module.installed" level="WARN"/>-->
-    <!--<logger name="org.mosaic.modules.Module.resolved" level="WARN"/>-->
-    <!--<logger name="org.mosaic.modules.Module.starting" level="WARN"/>-->
-    <!--<logger name="org.mosaic.modules.Module.started" level="WARN"/>-->
-    <!--<logger name="org.mosaic.modules.Module.activating" level="INFO"/>-->
-    <!--<logger name="org.mosaic.modules.Module.activated" level="WARN"/>-->
-    <!--<logger name="org.mosaic.modules.Module.deactivating" level="INFO"/>-->
-    <!--<logger name="org.mosaic.modules.Module.deactivated" level="WARN"/>-->
-    <!--<logger name="org.mosaic.modules.Module.stopping" level="WARN"/>-->
-    <!--<logger name="org.mosaic.modules.Module.stopped" level="WARN"/>-->
-    <!--<logger name="org.mosaic.modules.Module.updated" level="INFO"/>-->
-    <!--<logger name="org.mosaic.modules.Module.unresolved" level="WARN"/>-->
-    <!--<logger name="org.mosaic.modules.Module.uninstalled" level="INFO"/>-->
-
 </configuration>
