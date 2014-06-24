@@ -23,7 +23,7 @@ class ServiceListenerAdapter<ServiceType> extends BaseServiceListenerAdapter<Ser
                             @Nonnull Class<ServiceType> type,
                             @Nonnull Module.ServiceProperty... properties )
     {
-        super( logger, lock, serviceManager, module, type, properties );
+        super( lock, serviceManager, module, type, properties );
         this.listener = listener;
     }
 

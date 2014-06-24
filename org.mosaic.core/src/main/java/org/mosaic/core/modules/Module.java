@@ -89,10 +89,6 @@ public interface Module
                                                                                    @Nonnull Class<ServiceType> type,
                                                                                    @Nonnull Module.ServiceProperty... properties );
 
-    @Nonnull
-    <ServiceType> ServiceTracker<ServiceType> createServiceTracker( @Nonnull Class<ServiceType> type,
-                                                                    @Nonnull Module.ServiceProperty... properties );
-
     void start();
 
     void refresh();

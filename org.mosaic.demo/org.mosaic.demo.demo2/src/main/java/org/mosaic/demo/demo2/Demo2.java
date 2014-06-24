@@ -1,11 +1,9 @@
 package org.mosaic.demo.demo2;
 
 import java.util.List;
-import org.mosaic.core.components.Component;
-import org.mosaic.core.components.Inject;
-import org.mosaic.core.components.MethodEndpoint;
+import org.mosaic.core.components.*;
 import org.mosaic.core.services.ServiceProvider;
-import org.mosaic.core.services.ServiceTracker;
+import org.mosaic.core.services.ServiceRegistration;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.logging.Logging;
 import org.mosaic.demo.demo1.DemoEndpoint;
@@ -30,30 +28,8 @@ public class Demo2
     @Inject
     private List<MethodEndpoint<DemoEndpoint>> demoEndpoints;
 
-    @Nonnull
-    @Inject
-    private ServiceTracker<MethodEndpoint<DemoEndpoint>> demoEndpointsTracker;
-
     public Demo2()
     {
-        this.demoEndpointsTracker.addEventHandler( registration -> {
-                                                       MethodEndpoint<DemoEndpoint> endpoint = registration.getService();
-                                                       if( endpoint != null )
-                                                       {
-                                                           try
-                                                           {
-                                                               LOG.info( "Printout from a TRACKED 'DemoEndpoint': " );
-                                                               endpoint.invoke();
-                                                           }
-                                                           catch( Throwable throwable )
-                                                           {
-                                                               LOG.error( "Error invoking endpoint: {}", throwable.getMessage(), throwable );
-                                                           }
-                                                       }
-                                                   },
-                                                   null );
-        this.demoEndpointsTracker.startTracking();
-
         //noinspection ConstantConditions
         if( this.demo1 == null )
         {
@@ -68,7 +44,7 @@ public class Demo2
         new Thread( () -> {
             try
             {
-                Thread.sleep( 1000 );
+                Thread.sleep( 5000 );
             }
             catch( InterruptedException e )
             {
@@ -107,5 +83,30 @@ public class Demo2
             }
 
         } ).start();
+    }
+
+    @OnServiceRegistration
+    void onDemoEndpointRegistered( @Nonnull ServiceRegistration<MethodEndpoint<DemoEndpoint>> registration )
+    {
+        MethodEndpoint<DemoEndpoint> endpoint = registration.getService();
+        if( endpoint != null )
+        {
+            try
+            {
+                LOG.info( "Printout from a TRACKED 'DemoEndpoint': " );
+                endpoint.invoke();
+            }
+            catch( Throwable throwable )
+            {
+                LOG.error( "Error invoking endpoint: {}", throwable.getMessage(), throwable );
+            }
+        }
+    }
+
+    @OnServiceUnregistration
+    void onDemoEndpointUnregistered( @Nonnull ServiceRegistration<MethodEndpoint<DemoEndpoint>> registration,
+                                     @Nonnull MethodEndpoint<DemoEndpoint> service )
+    {
+        LOG.info( "a TRACKED 'DemoEndpoint' disappeared: {}", service );
     }
 }

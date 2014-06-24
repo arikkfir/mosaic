@@ -1,8 +1,6 @@
 package org.mosaic.core.services.impl;
 
-import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import org.mosaic.core.modules.Module;
 import org.mosaic.core.services.ServiceListener;
@@ -13,7 +11,6 @@ import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
 import org.mosaic.core.util.concurrency.ReadWriteLock;
 import org.osgi.framework.Filter;
-import org.slf4j.Logger;
 
 import static java.util.Collections.unmodifiableMap;
 
@@ -33,9 +30,6 @@ abstract class BaseServiceListenerAdapter<ServiceType> implements ServiceListene
     private final Module module;
 
     @Nonnull
-    private final Logger logger;
-
-    @Nonnull
     private final ReadWriteLock lock;
 
     @Nonnull
@@ -44,14 +38,12 @@ abstract class BaseServiceListenerAdapter<ServiceType> implements ServiceListene
     @Nonnull
     private final Map<String, Object> properties;
 
-    BaseServiceListenerAdapter( @Nonnull Logger logger,
-                                @Nonnull ReadWriteLock lock,
+    BaseServiceListenerAdapter( @Nonnull ReadWriteLock lock,
                                 @Nonnull ServiceManagerImpl serviceManager,
                                 @Nullable Module module,
                                 @Nonnull Class<ServiceType> type,
                                 @Nonnull Module.ServiceProperty... properties )
     {
-        this.logger = logger;
         this.lock = lock;
         this.serviceManager = serviceManager;
         this.module = module;
@@ -157,23 +149,7 @@ abstract class BaseServiceListenerAdapter<ServiceType> implements ServiceListene
     @Override
     public final void unregister()
     {
-        this.lock.write( () -> {
-            List<BaseServiceListenerAdapter> listeners = this.serviceManager.getListeners();
-            if( listeners == null )
-            {
-                throw new IllegalStateException( "service manager no longer available (is server started?)" );
-            }
-
-            Iterator<BaseServiceListenerAdapter> iterator = listeners.iterator();
-            while( iterator.hasNext() )
-            {
-                if( iterator.next() == this )
-                {
-                    iterator.remove();
-                    this.logger.trace( "Removed listener entry {}", this );
-                }
-            }
-        } );
+        this.serviceManager.unregisterListener( this );
     }
 
     @Nullable

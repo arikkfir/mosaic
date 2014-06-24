@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.felix.framework.Felix;
@@ -54,7 +55,10 @@ public class Main
         SLF4JBridgeHandler.install();
 
         // install an exception handler for all threads that don't have an exception handler, that simply logs the exception
-        setDefaultUncaughtExceptionHandler( ( t, e ) -> printEmphasizedErrorMessage( e.getMessage(), e ) );
+        setDefaultUncaughtExceptionHandler( ( t, e ) -> {
+            String message = Objects.toString( e.getMessage(), e.getClass().getName() + ": " + e.getMessage() );
+            printEmphasizedErrorMessage( message, e );
+        } );
 
         //////////////////////////////////////////////////////
         // configuration
@@ -184,9 +188,12 @@ public class Main
                 {
                     bundle.uninstall();
                 }
-                else if( getLastModifiedTime( path ).toMillis() > bundle.getLastModified() )
+                else
                 {
-                    bundle.update();
+                    if( getLastModifiedTime( path ).toMillis() > bundle.getLastModified() )
+                    {
+                        bundle.update();
+                    }
                     bundle.start();  // FIXME: we should only start it if it was active in the first place
                 }
             }
@@ -207,14 +214,19 @@ public class Main
                 return;
             }
         }
-        throw bootstrapError(
-                "The JVM split verifier argument has not been disabled.\n" +
-                "The JVM split verifier conflicts with Mosaic's bytecode \n" +
-                "weaving.\n" +
-                "Please provide the argument to the JVM command line:\n" +
-                "    java ... {} ...",
-                XX_USE_SPLIT_VERIFIER
-        );
+
+        String javaSpecVersion = System.getProperty( "java.specification.version" );
+        if( javaSpecVersion.startsWith( "1.5" ) || javaSpecVersion.startsWith( "1.6" ) || javaSpecVersion.startsWith( "1.7" ) )
+        {
+            throw bootstrapError(
+                    "The JVM split verifier argument has not been disabled.\n" +
+                    "The JVM split verifier conflicts with Mosaic's bytecode \n" +
+                    "weaving.\n" +
+                    "Please provide the argument to the JVM command line:\n" +
+                    "    java ... {} ...",
+                    XX_USE_SPLIT_VERIFIER
+            );
+        }
     }
 
     private static void createDirectories( Path... paths ) throws IOException

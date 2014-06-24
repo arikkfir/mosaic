@@ -7,7 +7,6 @@ import org.mosaic.core.components.MethodEndpoint;
 import org.mosaic.core.modules.Module;
 import org.mosaic.core.services.ServiceProvider;
 import org.mosaic.core.services.ServiceRegistration;
-import org.mosaic.core.services.ServiceTracker;
 import org.mosaic.core.services.ServicesProvider;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.base.ToStringHelper;
@@ -30,11 +29,11 @@ final class ServiceKey
     @Nonnull
     private final List<Module.ServiceProperty> serviceProperties;
 
-    ServiceKey( @Nonnull ResolvedType resolvedServiceType, int minCount, @Nonnull Module.ServiceProperty... properties )
+    ServiceKey( @Nonnull ResolvedType resolvedType, int minCount, @Nonnull Module.ServiceProperty... properties )
     {
         List<Module.ServiceProperty> propertiesList = new LinkedList<>();
         propertiesList.addAll( asList( properties ) );
-        this.resolvedServiceType = discoverServiceType( resolvedServiceType, propertiesList );
+        this.resolvedServiceType = discoverServiceType( resolvedType, propertiesList );
         this.minCount = minCount;
         this.serviceProperties = propertiesList;
     }
@@ -152,22 +151,19 @@ final class ServiceKey
                                               @Nonnull List<Module.ServiceProperty> properties )
     {
         Class<?> erasedType = resolvedType.getErasedType();
-        if( erasedType.equals( ServiceProvider.class ) || erasedType.equals( ServicesProvider.class ) ||
-            erasedType.equals( ServiceTracker.class ) || erasedType.equals( ServiceRegistration.class ) )
+        if( erasedType.equals( ServiceProvider.class ) || erasedType.equals( ServicesProvider.class ) || erasedType.equals( ServiceRegistration.class ) )
         {
             return discoverServiceType( validateNotOneOf( getTypeParameter( resolvedType, 0 ),
                                                           ServiceProvider.class,
                                                           ServicesProvider.class,
-                                                          ServiceRegistration.class,
-                                                          ServiceTracker.class ),
+                                                          ServiceRegistration.class ),
                                         properties );
         }
         else if( erasedType.equals( List.class ) )
         {
             return discoverServiceType( validateNotOneOf( getTypeParameter( resolvedType, 0 ),
                                                           ServiceProvider.class,
-                                                          ServicesProvider.class,
-                                                          ServiceTracker.class ),
+                                                          ServicesProvider.class ),
                                         properties );
         }
         else if( erasedType.equals( MethodEndpoint.class ) )
@@ -177,7 +173,7 @@ final class ServiceKey
         }
         else
         {
-            // TODO: detect ClassEndpoint here, when it will be implement
+            // FEATURE: detect ClassEndpoint here, when it will be implement
             return resolvedType;
         }
     }

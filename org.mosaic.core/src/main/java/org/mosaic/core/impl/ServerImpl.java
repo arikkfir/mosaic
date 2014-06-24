@@ -70,6 +70,9 @@ class ServerImpl extends Workflow implements Server
     private final Path work;
 
     @Nonnull
+    private final Dispatcher dispatcher;
+
+    @Nonnull
     private final ServiceManagerImpl serviceManager;
 
     @Nonnull
@@ -96,6 +99,9 @@ class ServerImpl extends Workflow implements Server
         // add transitions
         addTransition( ServerStatus.STOPPED, ServerStatus.STARTED, TransitionDirection.FORWARD );
         addTransition( ServerStatus.STARTED, ServerStatus.STOPPED, TransitionDirection.BACKWARDS );
+
+        // create dispatcher
+        this.dispatcher = new Dispatcher( this, getLock() );
 
         // create bytecode weaver
         //noinspection Anonymous2MethodRef
@@ -195,6 +201,12 @@ class ServerImpl extends Workflow implements Server
     public Path getWork()
     {
         return this.getLock().read( () -> this.work );
+    }
+
+    @Nonnull
+    Dispatcher getDispatcher()
+    {
+        return this.getLock().read( () -> this.dispatcher );
     }
 
     @Nonnull

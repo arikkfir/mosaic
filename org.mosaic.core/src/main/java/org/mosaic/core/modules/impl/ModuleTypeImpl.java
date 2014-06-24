@@ -5,15 +5,13 @@ import com.fasterxml.classmate.TypeResolver;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.UnaryOperator;
 import org.mosaic.core.components.Inject;
 import org.mosaic.core.modules.Module;
 import org.mosaic.core.modules.ModuleType;
 import org.mosaic.core.services.ServiceProvider;
 import org.mosaic.core.services.ServiceRegistration;
-import org.mosaic.core.services.ServiceTracker;
 import org.mosaic.core.services.ServicesProvider;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
@@ -58,7 +56,7 @@ class ModuleTypeImpl implements ModuleType
     @Nonnull
     private final Map<String, ValueProvider<?>> fieldValueProviders = new HashMap<>();
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings( "unchecked" )
     ModuleTypeImpl( @Nonnull ModuleRevisionImpl moduleRevision, @Nonnull Class<?> type )
     {
         this.lock = moduleRevision.getModule().getLock();
@@ -117,29 +115,27 @@ class ModuleTypeImpl implements ModuleType
                                 )
                         );
                     }
-                    else if( resolvedType.getErasedType().equals( ServiceTracker.class ) )
-                    {
-                        ServiceKey key = new ServiceKey( resolvedType, 0, createFilter( annotation.properties() ) );
-                        this.fieldValueProviders.put(
-                                field.getName(),
-                                new ServiceTrackerValueProvider(
-                                        key.getServiceType().getErasedType(),
-                                        key.getServicePropertiesArray()
-                                )
-                        );
-                    }
                     else if( resolvedType.getErasedType().equals( List.class ) )
                     {
-                        this.fieldValueProviders.put(
-                                field.getName(),
-                                new ServicesListValueProvider(
-                                        this.moduleRevision.getServiceDependency(
-                                                resolvedType,
-                                                0,
-                                                createFilter( annotation.properties() )
-                                        )
-                                )
-                        );
+                        ResolvedType itemType = resolvedType.getTypeParameters().get( 0 );
+                        if( itemType.getErasedType().equals( ServiceRegistration.class ) )
+                        {
+                            // FEATURE arik: add support for List<ServiceRegistration<ServiceType>>
+                            throw new UnsupportedOperationException( "Lists of service registrations are not yet supported" );
+                        }
+                        else
+                        {
+                            this.fieldValueProviders.put(
+                                    field.getName(),
+                                    new ServicesListValueProvider(
+                                            this.moduleRevision.getServiceDependency(
+                                                    resolvedType,
+                                                    0,
+                                                    createFilter( annotation.properties() )
+                                            )
+                                    )
+                            );
+                        }
                     }
                     else
                     {
@@ -256,8 +252,7 @@ class ModuleTypeImpl implements ModuleType
         @Override
         public ServiceRegistration<ServiceType> getRegistration()
         {
-            ServiceTracker<ServiceType> serviceTracker = this.dependency.getServiceTracker();
-            List<? extends ServiceRegistration<ServiceType>> registrations = serviceTracker.getRegistrations();
+            List<? extends ServiceRegistration<ServiceType>> registrations = this.dependency.getRegistrations();
             return registrations.isEmpty() ? null : registrations.get( 0 );
         }
 
@@ -291,7 +286,7 @@ class ModuleTypeImpl implements ModuleType
         @Override
         public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable
         {
-            List<ServiceType> services = this.dependency.getServiceTracker().getServices();
+            List<ServiceType> services = this.dependency.getServices();
             if( services.isEmpty() )
             {
                 throw new IllegalStateException( "dependency " + this.dependency + " is not available" );
@@ -325,7 +320,7 @@ class ModuleTypeImpl implements ModuleType
             }
         }
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings( "unchecked" )
         @Nonnull
         private ServiceType createProxy()
         {
@@ -421,7 +416,7 @@ class ModuleTypeImpl implements ModuleType
         @Nullable
         private ServiceRegistration<ServiceType> getRegistration()
         {
-            List<ServiceRegistration<ServiceType>> registrations = this.dependency.getServiceTracker().getRegistrations();
+            List<ServiceRegistration<ServiceType>> registrations = this.dependency.getRegistrations();
             return registrations.isEmpty() ? null : registrations.get( 0 );
         }
     }
@@ -439,14 +434,14 @@ class ModuleTypeImpl implements ModuleType
         @Override
         public List<ServiceRegistration<ServiceType>> getRegistrations()
         {
-            return this.dependency.getServiceTracker().getRegistrations();
+            return this.dependency.getRegistrations();
         }
 
         @Nonnull
         @Override
         public List<ServiceType> getServices()
         {
-            return this.dependency.getServiceTracker().getServices();
+            return this.dependency.getServices();
         }
 
         @Nullable
@@ -457,43 +452,309 @@ class ModuleTypeImpl implements ModuleType
         }
     }
 
-    private class ServiceTrackerValueProvider<ServiceType>
-            extends ValueProvider<ServiceTracker<ServiceType>>
-    {
-        @Nonnull
-        private final Class<ServiceType> serviceType;
-
-        @Nonnull
-        private final Module.ServiceProperty[] properties;
-
-        public ServiceTrackerValueProvider( @Nonnull Class<ServiceType> serviceType,
-                                            @Nonnull Module.ServiceProperty... properties )
-        {
-            this.serviceType = serviceType;
-            this.properties = properties;
-        }
-
-        @Nullable
-        @Override
-        ServiceTracker<ServiceType> getValue()
-        {
-            return moduleRevision.getModule().createServiceTracker( this.serviceType, this.properties );
-        }
-    }
-
     private class ServicesListValueProvider<ServiceType>
             extends DependencyValueProvider<ServiceType, List<ServiceType>>
+            implements List<ServiceType>
     {
         private ServicesListValueProvider( @Nonnull ModuleRevisionImplServiceDependency<ServiceType> dependency )
         {
             super( dependency );
         }
 
+        @Override
+        public int size()
+        {
+            return this.dependency.doWithServices( List::size );
+        }
+
+        @Override
+        public boolean isEmpty()
+        {
+            return this.dependency.doWithServices( List::isEmpty );
+        }
+
+        @Override
+        public boolean contains( Object o )
+        {
+            return this.dependency.doWithServices( list -> list.contains( o ) );
+        }
+
+        @Nonnull
+        @Override
+        public Iterator<ServiceType> iterator()
+        {
+            return new Iterator<ServiceType>()
+            {
+                @Nonnull
+                private final Iterator<ServiceType> iterator = dependency.getServices().iterator();
+
+                @Override
+                public boolean hasNext()
+                {
+                    return this.iterator.hasNext();
+                }
+
+                @Override
+                public ServiceType next()
+                {
+                    return this.iterator.next();
+                }
+            };
+        }
+
+        @Nonnull
+        @Override
+        public Object[] toArray()
+        {
+            return this.dependency.doWithServices( List::toArray );
+        }
+
+        @Nonnull
+        @Override
+        public <T> T[] toArray( @Nonnull T[] a )
+        {
+            //noinspection SuspiciousToArrayCall
+            return this.dependency.doWithServices( list -> list.toArray( a ) );
+        }
+
+        @Override
+        public boolean add( ServiceType serviceType )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean remove( Object o )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean containsAll( @Nonnull Collection<?> c )
+        {
+            return this.dependency.doWithServices( list -> list.containsAll( c ) );
+        }
+
+        @Override
+        public boolean addAll( @Nonnull Collection<? extends ServiceType> c )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean addAll( int index, @Nonnull Collection<? extends ServiceType> c )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean removeAll( @Nonnull Collection<?> c )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean retainAll( @Nonnull Collection<?> c )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void replaceAll( UnaryOperator<ServiceType> operator )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void sort( Comparator<? super ServiceType> c )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void clear()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ServiceType get( int index )
+        {
+            return this.dependency.doWithServices( list -> list.get( index ) );
+        }
+
+        @Override
+        public ServiceType set( int index, ServiceType element )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void add( int index, ServiceType element )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ServiceType remove( int index )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int indexOf( Object o )
+        {
+            return this.dependency.doWithServices( list -> list.indexOf( o ) );
+        }
+
+        @Override
+        public int lastIndexOf( Object o )
+        {
+            return this.dependency.doWithServices( list -> list.lastIndexOf( o ) );
+        }
+
+        @Nonnull
+        @Override
+        public ListIterator<ServiceType> listIterator()
+        {
+            return new ListIterator<ServiceType>()
+            {
+                @Nonnull
+                private final ListIterator<ServiceType> iterator = dependency.getServices().listIterator();
+
+                @Override
+                public boolean hasNext()
+                {
+                    return this.iterator.hasNext();
+                }
+
+                @Override
+                public ServiceType next()
+                {
+                    return this.iterator.next();
+                }
+
+                @Override
+                public boolean hasPrevious()
+                {
+                    return this.iterator.hasPrevious();
+                }
+
+                @Override
+                public ServiceType previous()
+                {
+                    return this.iterator.previous();
+                }
+
+                @Override
+                public int nextIndex()
+                {
+                    return this.iterator.nextIndex();
+                }
+
+                @Override
+                public int previousIndex()
+                {
+                    return this.iterator.previousIndex();
+                }
+
+                @Override
+                public void remove()
+                {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public void set( ServiceType serviceType )
+                {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public void add( ServiceType serviceType )
+                {
+                    throw new UnsupportedOperationException();
+                }
+            };
+        }
+
+        @Nonnull
+        @Override
+        public ListIterator<ServiceType> listIterator( int index )
+        {
+            return new ListIterator<ServiceType>()
+            {
+                @Nonnull
+                private final ListIterator<ServiceType> iterator = dependency.getServices().listIterator( index );
+
+                @Override
+                public boolean hasNext()
+                {
+                    return this.iterator.hasNext();
+                }
+
+                @Override
+                public ServiceType next()
+                {
+                    return this.iterator.next();
+                }
+
+                @Override
+                public boolean hasPrevious()
+                {
+                    return this.iterator.hasPrevious();
+                }
+
+                @Override
+                public ServiceType previous()
+                {
+                    return this.iterator.previous();
+                }
+
+                @Override
+                public int nextIndex()
+                {
+                    return this.iterator.nextIndex();
+                }
+
+                @Override
+                public int previousIndex()
+                {
+                    return this.iterator.previousIndex();
+                }
+
+                @Override
+                public void remove()
+                {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public void set( ServiceType serviceType )
+                {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public void add( ServiceType serviceType )
+                {
+                    throw new UnsupportedOperationException();
+                }
+            };
+        }
+
+        @Nonnull
+        @Override
+        public List<ServiceType> subList( int fromIndex, int toIndex )
+        {
+            return this.dependency.getServices().subList( fromIndex, toIndex );
+        }
+
         @Nullable
         @Override
         List<ServiceType> getValue()
         {
-            return this.dependency.getServiceTracker().getServices();
+            return this;
         }
     }
 }

@@ -7,7 +7,6 @@ import org.mosaic.core.modules.*;
 import org.mosaic.core.services.*;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
-import org.mosaic.core.util.base.ToStringHelper;
 import org.mosaic.core.util.concurrency.ReadWriteLock;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.wiring.BundleRevision;
@@ -48,10 +47,7 @@ class ModuleImpl implements Module
     @Override
     public String toString()
     {
-        return this.lock.read( () -> ToStringHelper.create( "Module" )
-                                                   .add( "id", this.bundle.getBundleId() )
-                                                   .add( "name", this.bundle.getSymbolicName() )
-                                                   .toString() );
+        return this.bundle.getSymbolicName() + "@" + this.bundle.getVersion() + "[" + this.bundle.getBundleId() + "]";
     }
 
     @Override
@@ -175,14 +171,6 @@ class ModuleImpl implements Module
                                                                                           @Nonnull ServiceProperty... properties )
     {
         return this.serviceManager.addWeakListener( this, listener, type, properties );
-    }
-
-    @Nonnull
-    @Override
-    public <ServiceType> ServiceTracker<ServiceType> createServiceTracker( @Nonnull Class<ServiceType> type,
-                                                                           @Nonnull ServiceProperty... properties )
-    {
-        return this.serviceManager.createServiceTracker( this, type, properties );
     }
 
     @Override

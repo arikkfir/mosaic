@@ -12,8 +12,12 @@ import org.mosaic.core.util.workflow.Workflow;
 import org.osgi.framework.Filter;
 import org.slf4j.Logger;
 
+import static java.util.Objects.requireNonNull;
+import static org.mosaic.core.impl.Activator.getDispatcher;
+
 /**
  * @author arik
+ * @todo refactor data structures for performance (cache services & listeners by type and filters, clear on new registrations)
  */
 @SuppressWarnings("unchecked")
 public class ServiceManagerImpl implements ServiceManagerEx
@@ -106,24 +110,8 @@ public class ServiceManagerImpl implements ServiceManagerEx
                                                                                @Nonnull Class<ServiceType> type,
                                                                                @Nonnull Module.ServiceProperty... properties )
     {
-        return addListener( module,
-                            new ServiceListener<ServiceType>()
-                            {
-                                @Override
-                                public void serviceRegistered( @Nonnull ServiceRegistration<ServiceType> registration )
-                                {
-                                    onRegister.serviceRegistered( registration );
-                                }
-
-                                @Override
-                                public void serviceUnregistered( @Nonnull ServiceRegistration<ServiceType> registration,
-                                                                 @Nonnull ServiceType service )
-                                {
-                                    onUnregister.serviceUnregistered( registration, service );
-                                }
-                            },
-                            type,
-                            properties );
+        //noinspection Convert2Diamond
+        return addListener( module, new CompositeListener<ServiceType>( onRegister, onUnregister ), type, properties );
     }
 
     @Override
@@ -141,19 +129,8 @@ public class ServiceManagerImpl implements ServiceManagerEx
                                                                        @Nonnull Module.ServiceProperty... properties )
     {
         return this.lock.read( () -> {
-            Map<ServiceRegistrationImpl, Object> services = this.services;
-            if( services == null )
-            {
-                throw new IllegalStateException( "service manager no longer available (is server started?)" );
-            }
-            else
-            {
-                services = new HashMap<ServiceRegistrationImpl, Object>( services );
-            }
-
-            // TODO: cache results by type+filter, clear cache on new services
             Filter filter = createFilter( properties );
-            for( ServiceRegistrationImpl registration : services.keySet() )
+            for( ServiceRegistrationImpl registration : requireNonNull( this.services ).keySet() )
             {
                 if( registration.getType().equals( type ) )
                 {
@@ -165,16 +142,6 @@ public class ServiceManagerImpl implements ServiceManagerEx
             }
             return null;
         } );
-    }
-
-    @Override
-    @Nonnull
-    public <ServiceType> ServiceTracker<ServiceType> createServiceTracker( @Nonnull Module module,
-                                                                           @Nonnull Class<ServiceType> type,
-                                                                           @Nonnull Module.ServiceProperty... properties )
-    {
-        //noinspection Convert2Diamond
-        return this.lock.read( () -> new ServiceTrackerImpl<ServiceType>( this.lock, this.logger, module, type, properties ) );
     }
 
     @Override
@@ -194,25 +161,20 @@ public class ServiceManagerImpl implements ServiceManagerEx
                                                                            @Nonnull ServiceType service,
                                                                            @Nullable Map<String, Object> properties )
     {
-        return this.lock.write( () -> {
-            Map<ServiceRegistrationImpl, Object> services = this.services;
-            if( services == null )
-            {
-                throw new IllegalStateException( "service manager no longer available (is server started?)" );
-            }
+        ServiceRegistrationImpl<ServiceType> registration =
+                new ServiceRegistrationImpl<>(
+                        this.lock,
+                        this,
+                        module,
+                        type,
+                        properties == null ? Collections.<String, Object>emptyMap() : properties );
 
-            List<BaseServiceListenerAdapter> listeners = this.listeners;
-            if( listeners == null )
-            {
-                throw new IllegalStateException( "service manager no longer available (is server started?)" );
-            }
+        requireNonNull( getDispatcher() ).dispatch( () -> {
 
-            Map<String, Object> propertyMap = properties == null ? Collections.<String, Object>emptyMap() : properties;
-            ServiceRegistrationImpl<ServiceType> registration = new ServiceRegistrationImpl<>( this.lock, this.logger, this, module, type, propertyMap );
-            services.put( registration, service );
+            requireNonNull( this.services ).put( registration, service );
             this.logger.trace( "Registered a service of {}: {}", registration.getType().getName(), service );
 
-            for( ServiceListener listener : new LinkedList<ServiceListener>( listeners ) )
+            for( ServiceListener listener : requireNonNull( this.listeners ) )
             {
                 try
                 {
@@ -223,74 +185,73 @@ public class ServiceManagerImpl implements ServiceManagerEx
                     this.logger.warn( "Service listener '{}' threw an exception reacting to service registration", listener, e );
                 }
             }
-
-            return registration;
         } );
+
+        return registration;
     }
 
     @Override
     public void unregisterServicesFrom( @Nonnull Module module )
     {
-        this.lock.write( () -> {
-            Map<ServiceRegistrationImpl, Object> services = this.services;
-            if( services != null )
-            {
-                new LinkedList<>( services.keySet() )
-                        .stream()
-                        .filter( registration -> module.equals( registration.getProvider() ) )
-                        .forEach( ServiceRegistrationImpl::unregister );
-            }
-        } );
+        requireNonNull( getDispatcher() ).dispatch( () -> requireNonNull( this.services ).keySet().stream()
+                                                                                         .filter( registration -> module.equals( registration.getProvider() ) )
+                                                                                         .forEach( this::unregisterService ) );
     }
 
     @Override
     public void unregisterListenersFrom( @Nonnull Module module )
     {
-        this.lock.write( () -> {
-            List<BaseServiceListenerAdapter> listeners = this.listeners;
-            if( listeners != null )
+        requireNonNull( getDispatcher() ).dispatch( () -> requireNonNull( this.listeners ).stream()
+                                                                                          .filter( listener -> module.equals( listener.getModule() ) )
+                                                                                          .forEach( this::unregisterListener ) );
+    }
+
+    void unregisterService( ServiceRegistrationImpl<?> registration )
+    {
+        requireNonNull( getDispatcher() ).dispatch( () -> {
+
+            Object service = requireNonNull( this.services ).remove( registration );
+            this.logger.trace( "Unregistered service {}", registration );
+
+            for( ServiceListener listener : requireNonNull( this.listeners ) )
             {
-                new LinkedList<>( listeners )
-                        .stream()
-                        .filter( listener -> module.equals( listener.getModule() ) )
-                        .forEach( BaseServiceListenerAdapter::unregister );
+                try
+                {
+                    listener.serviceUnregistered( registration, service );
+                }
+                catch( Exception e )
+                {
+                    this.logger.warn( "Service listener '{}' threw an exception reacting to service unregistration", listener, e );
+                }
             }
         } );
     }
 
-    @Nullable
-    Map<ServiceRegistrationImpl, Object> getServices()
+    void unregisterListener( BaseServiceListenerAdapter<?> registration )
     {
-        return this.lock.read( () -> this.services );
+        requireNonNull( getDispatcher() ).dispatch( () -> {
+
+            requireNonNull( this.listeners ).remove( registration );
+            this.logger.trace( "Removed listener entry {}", registration );
+
+        } );
     }
 
     @Nullable
-    List<BaseServiceListenerAdapter> getListeners()
+    Object getServiceInstanceFor( @Nonnull ServiceRegistrationImpl<?> registration )
     {
-        return this.lock.read( () -> this.listeners );
+        return this.lock.read( () -> requireNonNull( this.services ).get( registration ) );
     }
 
     private <ServiceType> ServiceListenerRegistration<ServiceType> addListenerEntry( @Nonnull BaseServiceListenerAdapter<ServiceType> listenerAdapter )
     {
-        return this.lock.write( () -> {
-            Map<ServiceRegistrationImpl, Object> services = this.services;
-            if( services == null )
-            {
-                throw new IllegalStateException( "service manager no longer available (is server started?)" );
-            }
+        requireNonNull( getDispatcher() ).dispatch( () -> {
 
-            List<BaseServiceListenerAdapter> listeners = this.listeners;
-            if( listeners == null )
-            {
-                throw new IllegalStateException( "service manager no longer available (is server started?)" );
-            }
-
-            listeners.add( listenerAdapter );
+            requireNonNull( this.listeners ).add( listenerAdapter );
             this.logger.trace( "Registered service listener {}", listenerAdapter );
 
-            // TODO: add caching to only call with services of the listener's requested type (instead of letting the adapter filter them each time)
-            services.keySet().forEach( listenerAdapter::serviceRegistered );
-            return listenerAdapter;
+            requireNonNull( this.services ).keySet().forEach( listenerAdapter::serviceRegistered );
         } );
+        return listenerAdapter;
     }
 }

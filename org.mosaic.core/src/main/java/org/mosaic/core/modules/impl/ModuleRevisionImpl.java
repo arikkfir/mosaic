@@ -19,7 +19,6 @@ import org.mosaic.core.modules.ModuleType;
 import org.mosaic.core.services.impl.ServiceManagerEx;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
-import org.mosaic.core.util.base.ToStringHelper;
 import org.mosaic.core.util.concurrency.ReadWriteLock;
 import org.mosaic.core.util.version.Version;
 import org.osgi.framework.Bundle;
@@ -186,10 +185,7 @@ class ModuleRevisionImpl implements ModuleRevision
     @Override
     public String toString()
     {
-        return this.lock.read( () -> ToStringHelper.create( this )
-                                                   .add( "module", this.module )
-                                                   .add( "id", this.id )
-                                                   .toString() );
+        return this.module.getBundle().getSymbolicName() + "@" + this.module.getBundle().getVersion() + "[" + this.module.getBundle().getBundleId() + "." + this.id + "]";
     }
 
     @Nonnull
@@ -254,8 +250,10 @@ class ModuleRevisionImpl implements ModuleRevision
             final AtomicReference<Path> match = new AtomicReference<>();
             Files.walkFileTree( root, new SimpleFileVisitor<Path>()
             {
+                @Nonnull
                 @Override
-                public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException
+                public FileVisitResult visitFile( @Nonnull Path file, @Nonnull BasicFileAttributes attrs )
+                        throws IOException
                 {
                     if( pathMatcher.matches( file ) )
                     {
@@ -289,8 +287,10 @@ class ModuleRevisionImpl implements ModuleRevision
             final Collection<Path> matches = new LinkedList<>();
             Files.walkFileTree( root, new SimpleFileVisitor<Path>()
             {
+                @Nonnull
                 @Override
-                public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException
+                public FileVisitResult visitFile( @Nonnull Path file, @Nonnull BasicFileAttributes attrs )
+                        throws IOException
                 {
                     if( pathMatcher.matches( file ) )
                     {
@@ -518,7 +518,21 @@ class ModuleRevisionImpl implements ModuleRevision
 
                 ModuleRevisionImplServiceDependency<ServiceType> dependency = new ModuleRevisionImplServiceDependency<>( this, serviceKey );
                 dependencies.add( dependency );
-                this.module.getLogger().debug( "Added dependency {} to module revision {}", dependency, this );
+                if( serviceKey.getMinCount() > 0 )
+                {
+                    this.module.getLogger().debug( "Module revision {} depends on {} instances of {} with properties {}",
+                                                   this,
+                                                   serviceKey.getMinCount(),
+                                                   serviceKey.getServiceType().getErasedType().getName(),
+                                                   serviceKey.getServiceProperties() );
+                }
+                else
+                {
+                    this.module.getLogger().debug( "Module revision {} wants instances of {} with properties {}",
+                                                   this,
+                                                   serviceKey.getServiceType().getErasedType().getName(),
+                                                   serviceKey.getServiceProperties() );
+                }
 
                 return dependency;
             }

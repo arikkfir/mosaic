@@ -31,11 +31,6 @@ public interface ServiceManager
                                                                 @Nonnull Module.ServiceProperty... properties );
 
     @Nonnull
-    <ServiceType> ServiceTracker<ServiceType> createServiceTracker( @Nonnull Module module,
-                                                                    @Nonnull Class<ServiceType> type,
-                                                                    @Nonnull Module.ServiceProperty... properties );
-
-    @Nonnull
     <ServiceType> ServiceRegistration<ServiceType> registerService( @Nonnull Module module,
                                                                     @Nonnull Class<ServiceType> type,
                                                                     @Nonnull ServiceType service,

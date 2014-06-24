@@ -24,7 +24,7 @@ class WeakServiceListenerAdapter<ServiceType> extends BaseServiceListenerAdapter
                                 @Nonnull Class<ServiceType> type,
                                 @Nonnull Module.ServiceProperty... properties )
     {
-        super( logger, lock, serviceManager, module, type, properties );
+        super( lock, serviceManager, module, type, properties );
         this.listener = new WeakReference<>( listener );
     }
 

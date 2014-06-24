@@ -25,6 +25,17 @@ public class Activator implements BundleActivator
     }
 
     @Nullable
+    public static Dispatcher getDispatcher()
+    {
+        ServerImpl server = getServer();
+        if( server != null )
+        {
+            return server.getDispatcher();
+        }
+        return null;
+    }
+
+    @Nullable
     public static ServiceManagerEx getServiceManager()
     {
         ServerImpl server = getServer();
