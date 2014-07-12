@@ -1,0 +1,32 @@
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.mosaic</groupId>
+        <artifactId>org.mosaic.parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../org.mosaic.parent/pom.xml</relativePath>
+    </parent>
+
+    <groupId>org.mosaic.it</groupId>
+    <artifactId>org.mosaic.it</artifactId>
+    <name>Mosaic :: IT</name>
+    <description>Mosaic integration testing. This module is the umbrella project for all Mosaic Server integration
+        testing modules, utilities and actual tests.
+    </description>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>org.mosaic.it.modules</module>
+        <module>org.mosaic.it.runner</module>
+        <module>org.mosaic.it.tests</module>
+    </modules>
+
+    <!-- scm -->
+    <scm>
+        <connection>scm:git:git@github.com:arikkfir/mosaic.git/${project.artifactId}</connection>
+        <developerConnection>scm:git:git@github.com:arikkfir/mosaic.git/${project.artifactId}</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
+</project>

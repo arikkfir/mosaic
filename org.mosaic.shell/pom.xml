@@ -1,0 +1,29 @@
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.mosaic</groupId>
+        <artifactId>org.mosaic.parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../org.mosaic.parent/pom.xml</relativePath>
+    </parent>
+
+    <groupId>org.mosaic.shell</groupId>
+    <artifactId>org.mosaic.shell</artifactId>
+    <name>Mosaic :: Shell</name>
+    <description>Mosaic Shell</description>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>org.mosaic.shell.core</module>
+        <module>org.mosaic.shell.ssh</module>
+    </modules>
+
+    <!-- scm -->
+    <scm>
+        <connection>scm:git:git@github.com:arikkfir/mosaic.git/${project.artifactId}</connection>
+        <developerConnection>scm:git:git@github.com:arikkfir/mosaic.git/${project.artifactId}</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
+</project>

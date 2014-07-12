@@ -2,6 +2,8 @@ package org.mosaic.core.services.impl;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
+import org.mosaic.core.modules.ServiceProperty;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.osgi.framework.Filter;
@@ -13,6 +15,22 @@ import org.osgi.framework.InvalidSyntaxException;
  */
 class FilterBuilder
 {
+    @Nullable
+    static Filter createFilter( @Nonnull ServiceProperty... properties )
+    {
+        if( properties.length == 0 )
+        {
+            return null;
+        }
+
+        FilterBuilder filterBuilder = new FilterBuilder();
+        for( ServiceProperty property : properties )
+        {
+            filterBuilder.addEquals( property.getName(), Objects.toString( property.getValue(), "" ) );
+        }
+        return filterBuilder.toFilter();
+    }
+
     @Nonnull
     private final List<String> filters = new LinkedList<>();
 

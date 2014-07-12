@@ -14,17 +14,19 @@
 
     <!-- easier if everyone uses up-to-date version -->
     <prerequisites>
-        <maven>3.1.0</maven>
+        <maven>3.2.1</maven>
     </prerequisites>
 
     <!-- always, always, use UTF-8! -->
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <jetty.version>9.2.1.v20140609</jetty.version>
     </properties>
 
     <!-- configure our plugins -->
     <build>
+
         <pluginManagement>
             <plugins>
                 <plugin>
@@ -38,7 +40,7 @@
                 <plugin>
                     <groupId>org.apache.felix</groupId>
                     <artifactId>maven-bundle-plugin</artifactId>
-                    <version>2.4.0</version>
+                    <version>2.5.0</version>
                     <extensions>true</extensions>
                     <configuration>
                         <instructions>
@@ -128,14 +130,11 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
-                    <version>2.4</version>
+                    <version>2.5</version>
                     <configuration>
                         <archive>
+                            <addMavenDescriptor>true</addMavenDescriptor>
                             <index>true</index>
-                            <manifest>
-                                <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-                                <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
-                            </manifest>
                         </archive>
                     </configuration>
                 </plugin>
@@ -151,29 +150,6 @@
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-plugin-plugin</artifactId>
-                    <version>3.3</version>
-                    <configuration>
-                        <!-- see http://jira.codehaus.org/browse/MNG-5346 -->
-                        <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <id>mojo-descriptor</id>
-                            <goals>
-                                <goal>descriptor</goal>
-                            </goals>
-                        </execution>
-                        <execution>
-                            <id>help-goal</id>
-                            <goals>
-                                <goal>helpmojo</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-project-info-reports-plugin</artifactId>
                     <version>2.7</version>
                 </plugin>
@@ -186,7 +162,6 @@
                         <updateDependencies>false</updateDependencies>
                         <updateVersionsToSnapshot>false</updateVersionsToSnapshot>
                         <updateWorkingCopyVersions>true</updateWorkingCopyVersions>
-                        <releaseProfiles>dist</releaseProfiles>
                     </configuration>
                     <dependencies>
                         <dependency>
@@ -216,9 +191,7 @@
                         <shadeSourcesContent>true</shadeSourcesContent>
                         <transformers>
                             <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer"/>
-                            <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
-                                <addHeader>true</addHeader>
-                            </transformer>
+                            <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer"/>
                             <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
                                 <resource>META-INF/spring.handlers</resource>
                             </transformer>
@@ -232,7 +205,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-site-plugin</artifactId>
-                    <version>3.3</version>
+                    <version>3.4</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -248,11 +221,14 @@
                     <version>2.17</version>
                     <configuration>
                         <forkCount>1</forkCount>
-                        <forkedProcessTimeoutInSeconds>60</forkedProcessTimeoutInSeconds>
+                        <forkedProcessTimeoutInSeconds>120</forkedProcessTimeoutInSeconds>
                         <includes>
-                            <include>**/*Test.java</include>
+                            <include>**/*</include>
                         </includes>
+                        <reuseForks>false</reuseForks>
                         <runOrder>alphabetical</runOrder>
+                        <trimStackTrace>false</trimStackTrace>
+                        <useManifestOnlyJar>false</useManifestOnlyJar>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -262,11 +238,14 @@
                 </plugin>
             </plugins>
         </pluginManagement>
+
         <plugins>
+
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
             </plugin>
+
             <!-- TODO: when upgrading to 2.9 we can restore dependency plugin (2.8 is not compatible with Java 8) -->
             <!--
             <plugin>
@@ -308,415 +287,14 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-site-plugin</artifactId>
-            </plugin>
         </plugins>
+
     </build>
 
     <!-- centralize versions of dependencies -->
     <dependencyManagement>
 
         <dependencies>
-
-            <!-- vert.x -->
-            <dependency>
-                <groupId>io.vertx</groupId>
-                <artifactId>vertx-core</artifactId>
-                <version>[2.1]</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>log4j</groupId>
-                        <artifactId>log4j</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>io.vertx</groupId>
-                <artifactId>vertx-platform</artifactId>
-                <version>[2.1]</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>log4j</groupId>
-                        <artifactId>log4j</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
-            <!-- hibernate validation -->
-            <dependency>
-                <groupId>org.hibernate</groupId>
-                <artifactId>hibernate-validator</artifactId>
-                <version>[5.1.0.Final,5.2.0.Final)</version>
-            </dependency>
-            <dependency>
-                <groupId>javax.el</groupId>
-                <artifactId>javax.el-api</artifactId>
-                <version>[3.0.0,3.1.0)</version>
-            </dependency>
-            <dependency>
-                <groupId>org.glassfish.web</groupId>
-                <artifactId>javax.el</artifactId>
-                <version>[2.2.6,2.3.0)</version>
-            </dependency>
-            <dependency>
-                <groupId>javax.validation</groupId>
-                <artifactId>validation-api</artifactId>
-                <version>[1.1.0.Final,1.2.0.Final)</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jboss.logmanager</groupId>
-                <artifactId>jboss-logmanager</artifactId>
-                <version>[1.5.2.Final,1.6.0.Final)</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jboss.logging</groupId>
-                <artifactId>jboss-logging</artifactId>
-                <version>[3.1.4.GA,3.2.0.GA)</version>
-            </dependency>
-
-            <!-- jetty -->
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-annotations</artifactId>
-                <version>[9.0.7.v20131107]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-client</artifactId>
-                <version>[9.0.7.v20131107]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-continuation</artifactId>
-                <version>[9.0.7.v20131107]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-deploy</artifactId>
-                <version>[9.0.7.v20131107]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-http</artifactId>
-                <version>[9.0.7.v20131107]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-http-spi</artifactId>
-                <version>[9.0.7.v20131107]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-io</artifactId>
-                <version>[9.0.7.v20131107]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-jmx</artifactId>
-                <version>[9.0.7.v20131107]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-jsp</artifactId>
-                <version>[9.0.7.v20131107]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-monitor</artifactId>
-                <version>[9.0.7.v20131107]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-overlay-deployer</artifactId>
-                <version>[9.0.7.v20131107]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-plus</artifactId>
-                <version>[9.0.7.v20131107]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-proxy</artifactId>
-                <version>[9.0.7.v20131107]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-rewrite</artifactId>
-                <version>[9.0.7.v20131107]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-runner</artifactId>
-                <version>[9.0.7.v20131107]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-security</artifactId>
-                <version>[9.0.7.v20131107]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-server</artifactId>
-                <version>[9.0.7.v20131107]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-servlet</artifactId>
-                <version>[9.0.7.v20131107]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-servlets</artifactId>
-                <version>[9.0.7.v20131107]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-start</artifactId>
-                <version>[9.0.7.v20131107]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-util</artifactId>
-                <version>[9.0.7.v20131107]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-util-ajax</artifactId>
-                <version>[9.0.7.v20131107]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-webapp</artifactId>
-                <version>[9.0.7.v20131107]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-xml</artifactId>
-                <version>[9.0.7.v20131107]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty.orbit</groupId>
-                <artifactId>com.sun.el</artifactId>
-                <version>[2.2.0.v201303151357]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty.orbit</groupId>
-                <artifactId>javax.activation</artifactId>
-                <version>[1.1.0.v201105071233]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty.orbit</groupId>
-                <artifactId>javax.annotation</artifactId>
-                <version>[1.1.0.v201108011116]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty.orbit</groupId>
-                <artifactId>javax.el</artifactId>
-                <version>[2.2.0.v201303151357]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty.orbit</groupId>
-                <artifactId>javax.mail.glassfish</artifactId>
-                <version>[1.4.1.v201005082020]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty.orbit</groupId>
-                <artifactId>javax.servlet</artifactId>
-                <version>[3.0.0.v201112011016]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty.orbit</groupId>
-                <artifactId>javax.servlet.jsp</artifactId>
-                <version>[2.2.0.v201112011158]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty.orbit</groupId>
-                <artifactId>javax.servlet.jsp.jstl</artifactId>
-                <version>[1.2.0.v201105211821]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty.orbit</groupId>
-                <artifactId>org.apache.jasper.glassfish</artifactId>
-                <version>[2.2.2.v201112011158]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty.orbit</groupId>
-                <artifactId>org.apache.taglibs.standard.glassfish</artifactId>
-                <version>[1.2.0.v201112081803]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty.orbit</groupId>
-                <artifactId>org.objectweb.asm</artifactId>
-                <version>[3.3.1.v201105211655]</version>
-            </dependency>
-
-            <!-- database -->
-            <dependency>
-                <groupId>net.snaq</groupId>
-                <artifactId>dbpool</artifactId>
-                <version>[6.0,6.1)</version>
-            </dependency>
-            <dependency>
-                <groupId>com.mchange</groupId>
-                <artifactId>c3p0</artifactId>
-                <version>[0.9.2.1]</version>
-            </dependency>
-            <dependency>
-                <groupId>com.mchange</groupId>
-                <artifactId>mchange-commons-java</artifactId>
-                <version>[0.2.3.4]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mariadb.jdbc</groupId>
-                <artifactId>mariadb-java-client</artifactId>
-                <version>[1.1.5,1.2.0)</version>
-            </dependency>
-
-            <!-- utilities -->
-            <dependency>
-                <groupId>commons-io</groupId>
-                <artifactId>commons-io</artifactId>
-                <version>[2.4,2.5)</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-lang3</artifactId>
-                <version>[3.3,3.4)</version>
-            </dependency>
-            <dependency>
-                <groupId>com.google.guava</groupId>
-                <artifactId>guava</artifactId>
-                <version>[16.0,16.1)</version>
-            </dependency>
-            <dependency>
-                <groupId>joda-time</groupId>
-                <artifactId>joda-time</artifactId>
-                <version>[2.3,2.4)</version>
-            </dependency>
-            <dependency>
-                <groupId>net.sf.jgrapht</groupId>
-                <artifactId>jgrapht</artifactId>
-                <version>[0.8.3,0.9)</version>
-            </dependency>
-            <dependency>
-                <groupId>org.javassist</groupId>
-                <artifactId>javassist</artifactId>
-                <version>[3.18.1-GA,3.19.0-GA)</version>
-            </dependency>
-            <dependency>
-                <groupId>org.ow2.asm</groupId>
-                <artifactId>asm</artifactId>
-                <version>[5.0.1]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.ow2.asm</groupId>
-                <artifactId>asm-tree</artifactId>
-                <version>[5.0.1]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.ow2.asm</groupId>
-                <artifactId>asm-util</artifactId>
-                <version>[5.0.1]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.ow2.asm</groupId>
-                <artifactId>asm-commons</artifactId>
-                <version>[5.0.1]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.ow2.asm</groupId>
-                <artifactId>asm-analysis</artifactId>
-                <version>[5.0.1]</version>
-            </dependency>
-            <dependency>
-                <groupId>commons-codec</groupId>
-                <artifactId>commons-codec</artifactId>
-                <version>[1.7,1.8)</version>
-            </dependency>
-            <dependency>
-                <groupId>com.thoughtworks.paranamer</groupId>
-                <artifactId>paranamer</artifactId>
-                <version>[2.6,2.7)</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.directory.shared</groupId>
-                <artifactId>shared-ldap</artifactId>
-                <version>[0.9.19]</version>
-            </dependency>
-            <dependency>
-                <groupId>de.odysseus.juel</groupId>
-                <artifactId>juel-api</artifactId>
-                <version>[2.2.7]</version>
-            </dependency>
-            <dependency>
-                <groupId>de.odysseus.juel</groupId>
-                <artifactId>juel-impl</artifactId>
-                <version>[2.2.7]</version>
-            </dependency>
-            <dependency>
-                <groupId>de.odysseus.juel</groupId>
-                <artifactId>juel-spi</artifactId>
-                <version>[2.2.7]</version>
-            </dependency>
-
-            <!-- freemarker -->
-            <dependency>
-                <groupId>org.freemarker</groupId>
-                <artifactId>freemarker</artifactId>
-                <version>[2.3.20,2.4.0)</version>
-            </dependency>
-
-            <!-- fasterxml -->
-            <dependency>
-                <groupId>com.fasterxml</groupId>
-                <artifactId>classmate</artifactId>
-                <version>[1.0.0]</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-core</artifactId>
-                <version>[2.3.0,2.4.0)</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-annotations</artifactId>
-                <version>[2.3.0,2.4.0)</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>[2.3.0,2.4.0)</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.dataformat</groupId>
-                <artifactId>jackson-dataformat-csv</artifactId>
-                <version>[2.3.0,2.4.0)</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.datatype</groupId>
-                <artifactId>jackson-datatype-guava</artifactId>
-                <version>[2.3.0,2.4.0)</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.datatype</groupId>
-                <artifactId>jackson-datatype-joda</artifactId>
-                <version>[2.3.0,2.4.0)</version>
-            </dependency>
-
-            <!-- spring framework -->
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>org.springframework.core</artifactId>
-                <version>[3.2.5.RELEASE,3.3.0.RELEASE)</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>org.springframework.expression</artifactId>
-                <version>[3.2.5.RELEASE,3.3.0.RELEASE)</version>
-            </dependency>
 
             <!-- osgi -->
             <dependency>
@@ -734,21 +312,6 @@
                 <groupId>org.apache.felix</groupId>
                 <artifactId>org.apache.felix.framework</artifactId>
                 <version>[4.4.0]</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>org.apache.felix.configadmin</artifactId>
-                <version>[1.6.0,1.7.0)</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>org.apache.felix.log</artifactId>
-                <version>[1.0.1,1.1)</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>org.apache.felix.eventadmin</artifactId>
-                <version>[1.3.2,1.4)</version>
             </dependency>
 
             <!-- logging -->
@@ -783,6 +346,213 @@
                 <version>[1.1,1.2)</version>
             </dependency>
 
+            <!-- used for object graphs -->
+            <dependency>
+                <groupId>net.sf.jgrapht</groupId>
+                <artifactId>jgrapht</artifactId>
+                <version>[0.8.3,0.9)</version>
+            </dependency>
+
+            <!-- bytecode manipulation & introspection -->
+            <dependency>
+                <groupId>org.javassist</groupId>
+                <artifactId>javassist</artifactId>
+                <version>[3.18.1-GA,3.19.0-GA)</version>
+            </dependency>
+            <dependency>
+                <groupId>com.thoughtworks.paranamer</groupId>
+                <artifactId>paranamer</artifactId>
+                <version>[2.6,2.7)</version>
+            </dependency>
+
+            <!-- templating -->
+            <dependency>
+                <groupId>org.freemarker</groupId>
+                <artifactId>freemarker</artifactId>
+                <version>[2.3.20,2.4.0)</version>
+            </dependency>
+
+            <!-- [de]serialization -->
+            <dependency>
+                <groupId>com.fasterxml</groupId>
+                <artifactId>classmate</artifactId>
+                <version>[1.0.0]</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>[2.4.1,2.5.0)</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-annotations</artifactId>
+                <version>[2.4.1,2.5.0)</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>[2.4.1.1,2.5.0)</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.dataformat</groupId>
+                <artifactId>jackson-dataformat-csv</artifactId>
+                <version>[2.4.1,2.5.0)</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.dataformat</groupId>
+                <artifactId>jackson-dataformat-xml</artifactId>
+                <version>[2.4.1,2.5.0)</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.dataformat</groupId>
+                <artifactId>jackson-dataformat-yaml</artifactId>
+                <version>[2.4.1,2.5.0)</version>
+            </dependency>
+
+            <!-- database -->
+            <dependency>
+                <groupId>net.snaq</groupId>
+                <artifactId>dbpool</artifactId>
+                <version>[6.0,6.1)</version>
+            </dependency>
+            <dependency>
+                <groupId>com.mchange</groupId>
+                <artifactId>c3p0</artifactId>
+                <version>[0.9.2.1]</version>
+            </dependency>
+            <dependency>
+                <groupId>com.mchange</groupId>
+                <artifactId>mchange-commons-java</artifactId>
+                <version>[0.2.3.4]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mariadb.jdbc</groupId>
+                <artifactId>mariadb-java-client</artifactId>
+                <version>[1.1.5,1.2.0)</version>
+            </dependency>
+
+            <!-- jetty -->
+            <dependency>
+                <groupId>javax.servlet</groupId>
+                <artifactId>javax.servlet-api</artifactId>
+                <version>[3.1.0]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-annotations</artifactId>
+                <version>[${jetty.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-client</artifactId>
+                <version>[${jetty.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-continuation</artifactId>
+                <version>[${jetty.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-deploy</artifactId>
+                <version>[${jetty.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-http</artifactId>
+                <version>[${jetty.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-http-spi</artifactId>
+                <version>[${jetty.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-io</artifactId>
+                <version>[${jetty.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-jmx</artifactId>
+                <version>[${jetty.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-monitor</artifactId>
+                <version>[${jetty.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-overlay-deployer</artifactId>
+                <version>[${jetty.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-plus</artifactId>
+                <version>[${jetty.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-proxy</artifactId>
+                <version>[${jetty.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-rewrite</artifactId>
+                <version>[${jetty.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-runner</artifactId>
+                <version>[${jetty.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-security</artifactId>
+                <version>[${jetty.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-server</artifactId>
+                <version>[${jetty.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-servlet</artifactId>
+                <version>[${jetty.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-servlets</artifactId>
+                <version>[${jetty.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-start</artifactId>
+                <version>[${jetty.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-util</artifactId>
+                <version>[${jetty.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-util-ajax</artifactId>
+                <version>[${jetty.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-webapp</artifactId>
+                <version>[${jetty.version}]</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-xml</artifactId>
+                <version>[${jetty.version}]</version>
+            </dependency>
+
             <!-- shell and ssh -->
             <dependency>
                 <groupId>jline</groupId>
@@ -806,23 +576,6 @@
                 <version>[0.8.0,0.9.0)</version>
             </dependency>
 
-            <!-- maven -->
-            <dependency>
-                <groupId>org.codehaus.plexus</groupId>
-                <artifactId>plexus-utils</artifactId>
-                <version>[3.0.17,4)</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.maven</groupId>
-                <artifactId>maven-plugin-api</artifactId>
-                <version>[3.1.0,4)</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.maven.plugin-tools</groupId>
-                <artifactId>maven-plugin-annotations</artifactId>
-                <version>[3.2,4)</version>
-            </dependency>
-
             <!-- testing -->
             <dependency>
                 <groupId>junit</groupId>
@@ -832,10 +585,11 @@
             <dependency>
                 <groupId>org.hamcrest</groupId>
                 <artifactId>hamcrest-core</artifactId>
-                <version>[1,2)</version>
+                <version>[1.3,2)</version>
             </dependency>
 
         </dependencies>
+
     </dependencyManagement>
 
     <!-- mosaic repository server -->
@@ -854,9 +608,8 @@
 
     <!-- scm -->
     <scm>
-        <connection>scm:git:ssh://git@github.com/mosaic.git</connection>
-        <developerConnection>scm:git:ssh://arikkfir@github.com/mosaic.git</developerConnection>
-        <url>https://github.com/arikkfir/mosaic</url>
+        <connection>scm:git:git@github.com:arikkfir/mosaic.git/${project.artifactId}</connection>
+        <developerConnection>scm:git:git@github.com:arikkfir/mosaic.git/${project.artifactId}</developerConnection>
         <tag>HEAD</tag>
     </scm>
 

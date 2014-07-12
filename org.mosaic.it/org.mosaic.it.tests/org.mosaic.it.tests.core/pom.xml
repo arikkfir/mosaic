@@ -1,0 +1,54 @@
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.mosaic</groupId>
+        <artifactId>org.mosaic.parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../../../org.mosaic.parent/pom.xml</relativePath>
+    </parent>
+
+    <groupId>org.mosaic.it.tests</groupId>
+    <artifactId>org.mosaic.it.tests.core</artifactId>
+    <name>Mosaic :: IT :: Tests :: Core</name>
+    <description>Mosaic core server tests.</description>
+    <packaging>jar</packaging>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>org.mosaic.it</groupId>
+            <artifactId>org.mosaic.it.runner</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mosaic.it.modules</groupId>
+            <artifactId>org.mosaic.it.modules.it01</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mosaic</groupId>
+            <artifactId>org.mosaic.convert</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+    <!-- scm -->
+    <scm>
+        <connection>scm:git:git@github.com:arikkfir/mosaic.git/org.mosaic.it/org.mosaic.it.tests/${project.artifactId}</connection>
+        <developerConnection>scm:git:git@github.com:arikkfir/mosaic.git/org.mosaic.it/org.mosaic.it.tests/${project.artifactId}</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
+</project>

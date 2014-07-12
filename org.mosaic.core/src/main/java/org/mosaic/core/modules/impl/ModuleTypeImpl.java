@@ -2,14 +2,20 @@ package org.mosaic.core.modules.impl;
 
 import com.fasterxml.classmate.ResolvedType;
 import com.fasterxml.classmate.TypeResolver;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.*;
 import java.util.function.UnaryOperator;
+import org.mosaic.core.components.ClassEndpoint;
+import org.mosaic.core.components.EndpointMarker;
 import org.mosaic.core.components.Inject;
+import org.mosaic.core.launcher.impl.ServerImpl;
 import org.mosaic.core.modules.Module;
+import org.mosaic.core.modules.ModuleRevision;
 import org.mosaic.core.modules.ModuleType;
+import org.mosaic.core.modules.ServiceProperty;
 import org.mosaic.core.services.ServiceProvider;
 import org.mosaic.core.services.ServiceRegistration;
 import org.mosaic.core.services.ServicesProvider;
@@ -19,6 +25,8 @@ import org.mosaic.core.util.base.ToStringHelper;
 import org.mosaic.core.util.concurrency.ReadWriteLock;
 
 import static java.util.Arrays.asList;
+import static org.mosaic.core.modules.ServiceProperty.p;
+import static org.mosaic.core.util.base.AnnotationUtils.findMetaAnnotationTarget;
 
 /**
  * @author arik
@@ -26,20 +34,20 @@ import static java.util.Arrays.asList;
 class ModuleTypeImpl implements ModuleType
 {
     @Nonnull
-    private static final Module.ServiceProperty[] EMPTY_SERVICE_PROPERTY_ARRAY = new Module.ServiceProperty[ 0 ];
+    private static final ServiceProperty[] EMPTY_SERVICE_PROPERTY_ARRAY = new ServiceProperty[ 0 ];
 
     @Nonnull
-    private static Module.ServiceProperty[] createFilter( @Nonnull Inject.Property... properties )
+    static ServiceProperty[] createFilter( @Nonnull Inject.Property... properties )
     {
         if( properties.length == 0 )
         {
             return EMPTY_SERVICE_PROPERTY_ARRAY;
         }
 
-        Module.ServiceProperty[] array = new Module.ServiceProperty[ properties.length ];
+        ServiceProperty[] array = new ServiceProperty[ properties.length ];
         for( int i = 0; i < properties.length; i++ )
         {
-            array[ i ] = Module.ServiceProperty.p( properties[ i ].name(), properties[ i ].value() );
+            array[ i ] = ServiceProperty.p( properties[ i ].name(), properties[ i ].value() );
         }
         return array;
     }
@@ -56,12 +64,26 @@ class ModuleTypeImpl implements ModuleType
     @Nonnull
     private final Map<String, ValueProvider<?>> fieldValueProviders = new HashMap<>();
 
+    @Nullable
+    private final ClassEndpointImpl classEndpoint;
+
     @SuppressWarnings( "unchecked" )
-    ModuleTypeImpl( @Nonnull ModuleRevisionImpl moduleRevision, @Nonnull Class<?> type )
+    ModuleTypeImpl( @Nonnull ServerImpl server, @Nonnull ModuleRevisionImpl moduleRevision, @Nonnull Class<?> type )
     {
-        this.lock = moduleRevision.getModule().getLock();
+        this.lock = server.getLock();
         this.moduleRevision = moduleRevision;
         this.type = type;
+
+        Annotation classEndpointType = findMetaAnnotationTarget( this.type, EndpointMarker.class );
+        if( classEndpointType != null )
+        {
+            this.classEndpoint = new ClassEndpointImpl( classEndpointType );
+            this.classEndpoint.register();
+        }
+        else
+        {
+            this.classEndpoint = null;
+        }
 
         TypeResolver typeResolver = new TypeResolver();
         asList( this.type.getDeclaredFields() )
@@ -156,10 +178,10 @@ class ModuleTypeImpl implements ModuleType
     @Override
     public String toString()
     {
-        return this.lock.read( () -> ToStringHelper.create( this )
-                                                   .add( "type", this.type )
-                                                   .add( "revision", this.moduleRevision )
-                                                   .toString() );
+        return ToStringHelper.create( this )
+                             .add( "type", getType() )
+                             .add( "revision", getModuleRevision() )
+                             .toString();
     }
 
     @Nullable
@@ -179,11 +201,27 @@ class ModuleTypeImpl implements ModuleType
         } );
     }
 
+    void activate()
+    {
+        // no-op
+    }
+
+    void deactivate()
+    {
+        // no-op
+    }
+
     void shutdown()
     {
         for( ValueProvider<?> valueProvider : this.fieldValueProviders.values() )
         {
             valueProvider.shutdown();
+        }
+
+        ClassEndpointImpl endpoint = this.classEndpoint;
+        if( endpoint != null )
+        {
+            endpoint.unregister();
         }
     }
 
@@ -196,6 +234,7 @@ class ModuleTypeImpl implements ModuleType
     @Nonnull
     Class<?> getType()
     {
+        // idea 14 has a problem with using "return this.lock.read( ()->this.type );" so we're using the lock/release pattern here
         this.lock.acquireReadLock();
         try
         {
@@ -204,6 +243,49 @@ class ModuleTypeImpl implements ModuleType
         finally
         {
             this.lock.releaseReadLock();
+        }
+    }
+
+    private class ClassEndpointImpl<Type extends Annotation> implements ClassEndpoint<Type>
+    {
+        @Nonnull
+        private final Type endpointType;
+
+        @Nullable
+        private ServiceRegistration<ClassEndpoint> registration;
+
+        private ClassEndpointImpl( @Nonnull Type endpointType )
+        {
+            this.endpointType = endpointType;
+        }
+
+        @Nonnull
+        @Override
+        public Type getEndpointType()
+        {
+            return this.endpointType;
+        }
+
+        @Nonnull
+        @Override
+        public Class<?> getType()
+        {
+            return ModuleTypeImpl.this.type;
+        }
+
+        void register()
+        {
+            this.registration = moduleRevision.registerService( ClassEndpoint.class, this, p( "type", this.endpointType.annotationType().getName() ) );
+        }
+
+        void unregister()
+        {
+            ServiceRegistration<ClassEndpoint> registration = this.registration;
+            if( registration != null )
+            {
+                registration.unregister();
+                this.registration = null;
+            }
         }
     }
 
@@ -241,34 +323,98 @@ class ModuleTypeImpl implements ModuleType
 
     private class ServiceProviderValueProvider<ServiceType>
             extends DependencyValueProvider<ServiceType, ServiceProvider<ServiceType>>
-            implements ServiceProvider<ServiceType>
     {
         private ServiceProviderValueProvider( @Nonnull ModuleRevisionImplServiceDependency<ServiceType> dependency )
         {
             super( dependency );
         }
 
+        @Nonnull
+        @Override
+        ServiceProvider<ServiceType> getValue()
+        {
+            return this.dependency;
+        }
+    }
+
+    private class ServicesProviderValueProvider<ServiceType>
+            extends DependencyValueProvider<ServiceType, ServicesProvider<ServiceType>>
+    {
+        private ServicesProviderValueProvider( @Nonnull ModuleRevisionImplServiceDependency<ServiceType> dependency )
+        {
+            super( dependency );
+        }
+
         @Nullable
         @Override
-        public ServiceRegistration<ServiceType> getRegistration()
+        ServicesProvider<ServiceType> getValue()
         {
-            List<? extends ServiceRegistration<ServiceType>> registrations = this.dependency.getRegistrations();
-            return registrations.isEmpty() ? null : registrations.get( 0 );
+            return this.dependency;
+        }
+    }
+
+    private class ServiceRegistrationValueProvider<ServiceType>
+            extends DependencyValueProvider<ServiceType, ServiceRegistration<ServiceType>>
+            implements ServiceRegistration<ServiceType>
+    {
+        private ServiceRegistrationValueProvider( @Nonnull ModuleRevisionImplServiceDependency<ServiceType> dependency )
+        {
+            super( dependency );
+        }
+
+        @Nullable
+        @Override
+        public ModuleRevision getProvider()
+        {
+            return getRegistration().getProvider();
+        }
+
+        @Nonnull
+        @Override
+        public Class<ServiceType> getType()
+        {
+            return getRegistration().getType();
+        }
+
+        @Nonnull
+        @Override
+        public Map<String, Object> getProperties()
+        {
+            return getRegistration().getProperties();
         }
 
         @Nullable
         @Override
         public ServiceType getService()
         {
-            ServiceRegistration<ServiceType> registration = getRegistration();
-            return registration == null ? null : registration.getService();
+            return getRegistration().getService();
+        }
+
+        @Override
+        public void unregister()
+        {
+            throw new UnsupportedOperationException( "dependants cannot unregister their dependencies" );
+        }
+
+        @Nullable
+        @Override
+        ServiceRegistration<ServiceType> getValue()
+        {
+            return this;
         }
 
         @Nonnull
-        @Override
-        ServiceProvider<ServiceType> getValue()
+        private ServiceRegistration<ServiceType> getRegistration()
         {
-            return this;
+            ServiceRegistration<ServiceType> registration = this.dependency.getRegistration();
+            if( registration == null )
+            {
+                throw new IllegalStateException( "dependency " + this.dependency + " not available for " + moduleRevision );
+            }
+            else
+            {
+                return registration;
+            }
         }
     }
 
@@ -286,14 +432,14 @@ class ModuleTypeImpl implements ModuleType
         @Override
         public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable
         {
-            List<ServiceType> services = this.dependency.getServices();
-            if( services.isEmpty() )
+            ServiceType service = this.dependency.getService();
+            if( service == null )
             {
                 throw new IllegalStateException( "dependency " + this.dependency + " is not available" );
             }
             else
             {
-                return method.invoke( services.get( 0 ), args );
+                return method.invoke( service, args );
             }
         }
 
@@ -313,14 +459,15 @@ class ModuleTypeImpl implements ModuleType
                     proxy = this.proxy;
                     if( proxy == null )
                     {
-                        this.proxy = createProxy();
+                        proxy = createProxy();
+                        this.proxy = proxy;
                     }
-                    return getValue();
+                    return proxy;
                 }
             }
         }
 
-        @SuppressWarnings( "unchecked" )
+        @SuppressWarnings("unchecked")
         @Nonnull
         private ServiceType createProxy()
         {
@@ -328,127 +475,6 @@ class ModuleTypeImpl implements ModuleType
             Class<?> serviceErasedType = serviceType.getErasedType();
             return ( ServiceType ) Proxy.newProxyInstance(
                     serviceErasedType.getClassLoader(), new Class<?>[] { serviceErasedType }, this );
-        }
-    }
-
-    private class ServiceRegistrationValueProvider<ServiceType>
-            extends DependencyValueProvider<ServiceType, ServiceRegistration<ServiceType>>
-            implements ServiceRegistration<ServiceType>
-    {
-        private ServiceRegistrationValueProvider( @Nonnull ModuleRevisionImplServiceDependency<ServiceType> dependency )
-        {
-            super( dependency );
-        }
-
-        @Nonnull
-        @Override
-        public Module getProvider()
-        {
-            ServiceRegistration<ServiceType> registration = getRegistration();
-            if( registration == null )
-            {
-                throw new IllegalStateException( "dependency " + this.dependency + " not available for " + moduleRevision );
-            }
-            else
-            {
-                return registration.getProvider();
-            }
-        }
-
-        @Nonnull
-        @Override
-        public Class<ServiceType> getType()
-        {
-            ServiceRegistration<ServiceType> registration = getRegistration();
-            if( registration == null )
-            {
-                throw new IllegalStateException( "dependency " + this.dependency + " not available for " + moduleRevision );
-            }
-            else
-            {
-                return registration.getType();
-            }
-        }
-
-        @Nonnull
-        @Override
-        public Map<String, Object> getProperties()
-        {
-            ServiceRegistration<ServiceType> registration = getRegistration();
-            if( registration == null )
-            {
-                throw new IllegalStateException( "dependency " + this.dependency + " not available for " + moduleRevision );
-            }
-            else
-            {
-                return registration.getProperties();
-            }
-        }
-
-        @Nullable
-        @Override
-        public ServiceType getService()
-        {
-            ServiceRegistration<ServiceType> registration = getRegistration();
-            if( registration == null )
-            {
-                throw new IllegalStateException( "dependency " + this.dependency + " not available for " + moduleRevision );
-            }
-            else
-            {
-                return registration.getService();
-            }
-        }
-
-        @Override
-        public void unregister()
-        {
-            throw new UnsupportedOperationException( "dependants cannot unregister their dependencies" );
-        }
-
-        @Nullable
-        @Override
-        ServiceRegistration<ServiceType> getValue()
-        {
-            return this;
-        }
-
-        @Nullable
-        private ServiceRegistration<ServiceType> getRegistration()
-        {
-            List<ServiceRegistration<ServiceType>> registrations = this.dependency.getRegistrations();
-            return registrations.isEmpty() ? null : registrations.get( 0 );
-        }
-    }
-
-    private class ServicesProviderValueProvider<ServiceType>
-            extends DependencyValueProvider<ServiceType, ServicesProvider<ServiceType>>
-            implements ServicesProvider<ServiceType>
-    {
-        private ServicesProviderValueProvider( @Nonnull ModuleRevisionImplServiceDependency<ServiceType> dependency )
-        {
-            super( dependency );
-        }
-
-        @Nonnull
-        @Override
-        public List<ServiceRegistration<ServiceType>> getRegistrations()
-        {
-            return this.dependency.getRegistrations();
-        }
-
-        @Nonnull
-        @Override
-        public List<ServiceType> getServices()
-        {
-            return this.dependency.getServices();
-        }
-
-        @Nullable
-        @Override
-        ServicesProvider<ServiceType> getValue()
-        {
-            return this;
         }
     }
 

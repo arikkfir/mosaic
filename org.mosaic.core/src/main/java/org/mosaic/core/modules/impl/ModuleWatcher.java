@@ -11,21 +11,21 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.mosaic.core.impl.ServerStatus;
+import org.mosaic.core.launcher.impl.ServerImpl;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
-import org.mosaic.core.util.workflow.Workflow;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
-import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.wiring.FrameworkWiring;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.lang.Integer.MAX_VALUE;
 import static java.nio.file.FileVisitOption.FOLLOW_LINKS;
 import static java.nio.file.Files.*;
+import static java.util.Objects.requireNonNull;
 
 /**
  * @author arik
@@ -33,58 +33,57 @@ import static java.nio.file.Files.*;
 public class ModuleWatcher
 {
     @Nonnull
-    private final Logger logger;
+    private static final Logger LOG = LoggerFactory.getLogger( ModuleWatcher.class );
 
     @Nonnull
-    private final Path libPath;
+    private final ServerImpl server;
 
     @Nullable
     private ScheduledExecutorService executorService;
 
-    public ModuleWatcher( @Nonnull Workflow workflow, @Nonnull Logger logger, @Nonnull Path libPath )
+    public ModuleWatcher( @Nonnull ServerImpl server )
     {
-        this.logger = logger;
-        this.libPath = libPath;
-        workflow.addAction( ServerStatus.STARTED, context -> initialize(), context -> shutdown() );
-        workflow.addAction( ServerStatus.STOPPED, context -> shutdown() );
+        this.server = server;
+
+        // perform the startup scan
+        server.addStartupHook( bundleContext -> scan() );
+
+        // start watcher thread
+        server.addStartupHook( bundleContext -> {
+            LOG.debug( "Initializing module watcher on {}", this.server.getLib() );
+
+            this.executorService = Executors.newSingleThreadScheduledExecutor( r -> {
+                Thread thread = new Thread( r, "PathScanner" );
+                thread.setDaemon( false );
+                return thread;
+            } );
+
+            this.executorService.scheduleWithFixedDelay( this::scan, 0, 1, TimeUnit.SECONDS );
+        } );
+
+        server.addShutdownHook( bundleContext -> {
+            LOG.debug( "Shutting down module watcher" );
+
+            ScheduledExecutorService executorService = this.executorService;
+            if( executorService != null )
+            {
+                executorService.shutdown();
+                try
+                {
+                    executorService.awaitTermination( 30, TimeUnit.SECONDS );
+                }
+                finally
+                {
+                    this.executorService = null;
+                }
+            }
+        } );
     }
 
     @Override
     public String toString()
     {
         return ToStringHelper.create( this ).toString();
-    }
-
-    private void initialize()
-    {
-        this.logger.debug( "Initializing module watcher on {}", this.libPath );
-
-        this.executorService = Executors.newSingleThreadScheduledExecutor( r -> {
-            Thread thread = new Thread( r, "PathScanner" );
-            thread.setDaemon( false );
-            return thread;
-        } );
-
-        this.executorService.scheduleWithFixedDelay( this::scan, 0, 1, TimeUnit.SECONDS );
-    }
-
-    private void shutdown() throws InterruptedException
-    {
-        this.logger.debug( "Shutting down module watcher" );
-
-        ScheduledExecutorService executorService = this.executorService;
-        if( executorService != null )
-        {
-            executorService.shutdown();
-            try
-            {
-                executorService.awaitTermination( 30, TimeUnit.SECONDS );
-            }
-            finally
-            {
-                this.executorService = null;
-            }
-        }
     }
 
     synchronized void scan()
@@ -97,11 +96,13 @@ public class ModuleWatcher
         // scan existing files
         try
         {
-            final PathMatcher jarMatcher = this.libPath.getFileSystem().getPathMatcher( "glob:**/*.jar" );
-            walkFileTree( this.libPath, EnumSet.of( FOLLOW_LINKS ), MAX_VALUE, new SimpleFileVisitor<Path>()
+            final PathMatcher jarMatcher = this.server.getLib().getFileSystem().getPathMatcher( "glob:**/*.jar" );
+            walkFileTree( this.server.getLib(), EnumSet.of( FOLLOW_LINKS ), MAX_VALUE, new SimpleFileVisitor<Path>()
             {
+                @Nonnull
                 @Override
-                public FileVisitResult preVisitDirectory( Path dir, BasicFileAttributes attrs ) throws IOException
+                public FileVisitResult preVisitDirectory( @Nonnull Path dir, @Nonnull BasicFileAttributes attrs )
+                        throws IOException
                 {
                     // only process *.jar files
                     if( jarMatcher.matches( dir ) )
@@ -134,7 +135,7 @@ public class ModuleWatcher
         }
         catch( Throwable e )
         {
-            this.logger.error( "Modules scanning error: {}", e.getMessage(), e );
+            LOG.error( "Modules scanning error: {}", e.getMessage(), e );
         }
 
         try
@@ -144,7 +145,7 @@ public class ModuleWatcher
         }
         catch( Throwable e )
         {
-            this.logger.error( "Scan error", e );
+            LOG.error( "Scan error", e );
         }
     }
 
@@ -164,19 +165,7 @@ public class ModuleWatcher
 
         public Context()
         {
-            Bundle coreBundle = FrameworkUtil.getBundle( getClass() );
-            if( coreBundle == null )
-            {
-                throw new IllegalStateException( "could not find core bundle context" );
-            }
-
-            BundleContext coreBundleContext = coreBundle.getBundleContext();
-            if( coreBundleContext == null )
-            {
-                throw new IllegalStateException( "could not find core bundle context" );
-            }
-
-            this.bundleContext = coreBundleContext;
+            this.bundleContext = requireNonNull( ModuleWatcher.this.server.getBundleContext(), "could not find Mosaic bundle context" );
         }
 
         private void start()
@@ -188,6 +177,11 @@ public class ModuleWatcher
         private void handleFile( @Nonnull Path path )
         {
             Bundle bundle = this.bundleContext.getBundle( "file:" + path.toString() );
+            if( bundle == null )
+            {
+                bundle = this.bundleContext.getBundle( "reference:file:" + path.toString() );
+            }
+
             if( bundle == null )
             {
                 this.newModules = addToList( this.newModules, path );
@@ -217,7 +211,7 @@ public class ModuleWatcher
 
         private void handleFileError( @Nonnull String message, @Nullable Object... args )
         {
-            ModuleWatcher.this.logger.error( message, args );
+            LOG.error( message, args );
         }
 
         private void finish() throws InterruptedException
@@ -304,10 +298,21 @@ public class ModuleWatcher
                 {
                     try
                     {
-                        this.modulesToStart = addToList(
-                                this.modulesToStart,
-                                this.bundleContext.installBundle( "file:" + path.toString() )
-                        );
+                        if( isDirectory( path ) )
+                        {
+                            //reference:file:/foo/bundle/
+                            this.modulesToStart = addToList(
+                                    this.modulesToStart,
+                                    this.bundleContext.installBundle( "reference:file:" + path.toString() )
+                            );
+                        }
+                        else
+                        {
+                            this.modulesToStart = addToList(
+                                    this.modulesToStart,
+                                    this.bundleContext.installBundle( "file:" + path.toString() )
+                            );
+                        }
                     }
                     catch( Exception e )
                     {

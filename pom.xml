@@ -8,65 +8,24 @@
         <relativePath>org.mosaic.parent/pom.xml</relativePath>
     </parent>
 
+    <groupId>org.mosaic</groupId>
     <artifactId>org.mosaic</artifactId>
     <name>Mosaic</name>
-    <description>Mosaic</description>
+    <description>Mosaic Server is a lightweight &amp; modular multi-purpose server.</description>
     <packaging>pom</packaging>
 
-    <profiles>
-        <profile>
-            <id>dist</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <configuration>
-                            <descriptor>src/main/assembly/dist.xml</descriptor>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>make-assembly</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
-
     <modules>
-        <!--<module>org.mosaic.config</module>-->
-        <module>org.mosaic.core</module>
+        <module>org.mosaic.api</module>
         <module>org.mosaic.convert</module>
-        <module>org.mosaic.demo</module>
-        <!--<module>org.mosaic.dao</module>-->
-        <!--<module>org.mosaic.datasource</module>-->
-        <!--<module>org.mosaic.demo</module>-->
-        <!--<module>org.mosaic.development</module>-->
-        <!--<module>org.mosaic.event</module>-->
-        <!--<module>org.mosaic.jsr305</module>-->
-        <module>org.mosaic.launcher</module>
-        <!--<module>org.mosaic.modules</module>-->
+        <module>org.mosaic.core</module>
+        <module>org.mosaic.dist</module>
+        <module>org.mosaic.it</module>
         <module>org.mosaic.parent</module>
-        <!--<module>org.mosaic.shell</module>-->
-        <!--<module>org.mosaic.pathwatchers</module>-->
-        <!--<module>org.mosaic.security</module>-->
-        <!--<module>org.mosaic.server</module>-->
-        <!--<module>org.mosaic.tasks</module>-->
-        <!--<module>org.mosaic.utils</module>-->
-        <!--<module>org.mosaic.validation</module>-->
-        <!--<module>org.mosaic.web</module>-->
     </modules>
 
     <scm>
         <connection>scm:git:git@github.com:arikkfir/mosaic.git</connection>
         <developerConnection>scm:git:git@github.com:arikkfir/mosaic.git</developerConnection>
-        <url>https://github.com/arikkfir/mosaic</url>
         <tag>HEAD</tag>
     </scm>
 

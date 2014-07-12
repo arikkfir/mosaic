@@ -3,23 +3,23 @@ package org.mosaic.core.modules.impl;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Function;
-import org.mosaic.core.services.ServiceListener;
-import org.mosaic.core.services.ServiceListenerRegistration;
-import org.mosaic.core.services.ServiceRegistration;
-import org.mosaic.core.services.ServicesProvider;
+import org.mosaic.core.launcher.impl.ServerImpl;
+import org.mosaic.core.services.*;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
-
-import static java.util.Objects.requireNonNull;
-import static org.mosaic.core.impl.Activator.getDispatcher;
 
 /**
  * @author arik
  */
 class ModuleRevisionImplServiceDependency<ServiceType> extends ModuleRevisionImplDependency
-        implements ServicesProvider<ServiceType>, ServiceListener<ServiceType>
+        implements ServicesProvider<ServiceType>,
+                   ServiceProvider<ServiceType>,
+                   ServiceListener<ServiceType>
 {
+    @Nonnull
+    private final ServerImpl server;
+
     @Nonnull
     private final ServiceKey serviceKey;
 
@@ -33,10 +33,12 @@ class ModuleRevisionImplServiceDependency<ServiceType> extends ModuleRevisionImp
     private ServiceListenerRegistration<ServiceType> listenerRegistration;
 
     @SuppressWarnings("unchecked")
-    ModuleRevisionImplServiceDependency( @Nonnull ModuleRevisionImpl moduleRevision,
+    ModuleRevisionImplServiceDependency( @Nonnull ServerImpl server,
+                                         @Nonnull ModuleRevisionImpl moduleRevision,
                                          @Nonnull ServiceKey serviceKey )
     {
         super( moduleRevision );
+        this.server = server;
         this.serviceKey = serviceKey;
     }
 
@@ -51,7 +53,7 @@ class ModuleRevisionImplServiceDependency<ServiceType> extends ModuleRevisionImp
     @Override
     public void serviceRegistered( @Nonnull ServiceRegistration<ServiceType> registration )
     {
-        requireNonNull( getDispatcher() ).dispatch( () -> {
+        this.server.getLock().write( () -> {
             ServiceType service = registration.getService();
             if( service != null )
             {
@@ -63,14 +65,13 @@ class ModuleRevisionImplServiceDependency<ServiceType> extends ModuleRevisionImp
                 }
             }
         } );
-
     }
 
     @Override
     public void serviceUnregistered( @Nonnull ServiceRegistration<ServiceType> registration,
                                      @Nonnull ServiceType service )
     {
-        requireNonNull( getDispatcher() ).dispatch( () -> {
+        this.server.getLock().write( () -> {
             this.registrations.remove( registration );
             this.services.remove( service );
             if( this.services.size() < this.serviceKey.getMinCount() )
@@ -84,14 +85,28 @@ class ModuleRevisionImplServiceDependency<ServiceType> extends ModuleRevisionImp
     @Override
     public List<ServiceRegistration<ServiceType>> getRegistrations()
     {
-        return this.moduleRevision.getModule().getLock().read( () -> new LinkedList<>( this.registrations ) );
+        return this.server.getLock().read( () -> new LinkedList<>( this.registrations ) );
     }
 
     @Nonnull
     @Override
     public List<ServiceType> getServices()
     {
-        return this.moduleRevision.getModule().getLock().read( () -> new LinkedList<>( this.services ) );
+        return this.server.getLock().read( () -> new LinkedList<>( this.services ) );
+    }
+
+    @Nullable
+    @Override
+    public ServiceRegistration<ServiceType> getRegistration()
+    {
+        return this.server.getLock().read( () -> this.registrations.isEmpty() ? null : this.registrations.get( 0 ) );
+    }
+
+    @Nullable
+    @Override
+    public ServiceType getService()
+    {
+        return this.server.getLock().read( () -> this.services.isEmpty() ? null : this.services.get( 0 ) );
     }
 
     @Nonnull
@@ -105,7 +120,7 @@ class ModuleRevisionImplServiceDependency<ServiceType> extends ModuleRevisionImp
     void initialize()
     {
         notifyUnsatisfaction();
-        this.listenerRegistration = this.moduleRevision.getModule().addServiceListener(
+        this.listenerRegistration = this.moduleRevision.addServiceListener(
                 this,
                 ( Class<ServiceType> ) this.serviceKey.getServiceType().getErasedType(),
                 this.serviceKey.getServicePropertiesArray()
@@ -124,11 +139,12 @@ class ModuleRevisionImplServiceDependency<ServiceType> extends ModuleRevisionImp
 
     <T> T doWithServices( @Nonnull Function<List<ServiceType>, T> function )
     {
-        return this.moduleRevision.getModule().getLock().read( () -> function.apply( this.services ) );
+        return this.server.getLock().read( () -> function.apply( this.services ) );
     }
 
     <T> T doWithRegistrations( @Nonnull Function<List<ServiceRegistration<ServiceType>>, T> function )
     {
-        return this.moduleRevision.getModule().getLock().read( () -> function.apply( this.registrations ) );
+        // TODO: this method will be used once ModuleTypeImpl will support List<ServiceRegistration?>> injected dependencies
+        return this.server.getLock().read( () -> function.apply( this.registrations ) );
     }
 }

@@ -9,19 +9,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import org.mosaic.core.components.*;
-import org.mosaic.core.modules.Module;
+import org.mosaic.core.launcher.impl.ServerImpl;
+import org.mosaic.core.modules.ServiceProperty;
 import org.mosaic.core.services.ServiceListener;
 import org.mosaic.core.services.ServiceListenerRegistration;
 import org.mosaic.core.services.ServiceRegistration;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
 import org.mosaic.core.util.base.ToStringHelper;
-import org.mosaic.core.util.logging.Logging;
+import org.mosaic.core.util.concurrency.ReadWriteLock;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.unmodifiableList;
 import static java.util.stream.Collectors.toCollection;
-import static org.mosaic.core.modules.Module.ServiceProperty.p;
+import static org.mosaic.core.modules.ServiceProperty.p;
 import static org.mosaic.core.util.base.AnnotationUtils.findMetaAnnotationTarget;
 
 /**
@@ -30,55 +32,61 @@ import static org.mosaic.core.util.base.AnnotationUtils.findMetaAnnotationTarget
 class ModuleComponentImpl
 {
     @Nonnull
-    private static final Module.ServiceProperty[] EMPTY_PROPERTIES_ARRAY = new Module.ServiceProperty[ 0 ];
+    private static final Logger LOG = LoggerFactory.getLogger( ModuleComponentImpl.class );
 
     @Nonnull
-    private static Module.ServiceProperty[] createFilter( @Nonnull ServiceAdapter.Property... properties )
+    private static final ServiceProperty[] EMPTY_PROPERTIES_ARRAY = new ServiceProperty[ 0 ];
+
+    @Nonnull
+    private static ServiceProperty[] createFilter( @Nonnull ServiceAdapter.Property... properties )
     {
         if( properties.length == 0 )
         {
             return EMPTY_PROPERTIES_ARRAY;
         }
 
-        Module.ServiceProperty[] array = new Module.ServiceProperty[ properties.length ];
+        ServiceProperty[] array = new ServiceProperty[ properties.length ];
         for( int i = 0; i < properties.length; i++ )
         {
-            array[ i ] = Module.ServiceProperty.p( properties[ i ].name(), properties[ i ].value() );
+            array[ i ] = ServiceProperty.p( properties[ i ].name(), properties[ i ].value() );
         }
         return array;
     }
 
     @Nonnull
-    private static Module.ServiceProperty[] createFilter( @Nonnull OnServiceRegistration.Property... properties )
+    private static ServiceProperty[] createFilter( @Nonnull OnServiceRegistration.Property... properties )
     {
         if( properties.length == 0 )
         {
             return EMPTY_PROPERTIES_ARRAY;
         }
 
-        Module.ServiceProperty[] array = new Module.ServiceProperty[ properties.length ];
+        ServiceProperty[] array = new ServiceProperty[ properties.length ];
         for( int i = 0; i < properties.length; i++ )
         {
-            array[ i ] = Module.ServiceProperty.p( properties[ i ].name(), properties[ i ].value() );
+            array[ i ] = ServiceProperty.p( properties[ i ].name(), properties[ i ].value() );
         }
         return array;
     }
 
     @Nonnull
-    private static Module.ServiceProperty[] createFilter( @Nonnull OnServiceUnregistration.Property... properties )
+    private static ServiceProperty[] createFilter( @Nonnull OnServiceUnregistration.Property... properties )
     {
         if( properties.length == 0 )
         {
             return EMPTY_PROPERTIES_ARRAY;
         }
 
-        Module.ServiceProperty[] array = new Module.ServiceProperty[ properties.length ];
+        ServiceProperty[] array = new ServiceProperty[ properties.length ];
         for( int i = 0; i < properties.length; i++ )
         {
-            array[ i ] = Module.ServiceProperty.p( properties[ i ].name(), properties[ i ].value() );
+            array[ i ] = ServiceProperty.p( properties[ i ].name(), properties[ i ].value() );
         }
         return array;
     }
+
+    @Nonnull
+    private final ReadWriteLock lock;
 
     @Nonnull
     private final ModuleTypeImpl moduleType;
@@ -107,16 +115,15 @@ class ModuleComponentImpl
     @Nullable
     private Object instance;
 
-    ModuleComponentImpl( @Nonnull ModuleTypeImpl moduleType, List<Component> annotations )
+    ModuleComponentImpl( @Nonnull ServerImpl server, @Nonnull ModuleTypeImpl moduleType, List<Component> annotations )
     {
+        this.lock = server.getLock();
         this.moduleType = moduleType;
         this.instantiator = createInstantiator( this.moduleType.getType() );
         this.providedTypes = unmodifiableList( annotations.stream()
                                                           .filter( annotation -> !void.class.equals( annotation.value() ) )
                                                           .map( ProvidedType::new )
                                                           .collect( toCollection( LinkedList::new ) ) );
-
-        Logger logger = this.moduleType.getModuleRevision().getModule().getLogger();
 
         List<Method> deactivationMethods = new LinkedList<>();
         List<MethodEndpointImpl> methodEndpoints = new LinkedList<>();
@@ -133,7 +140,7 @@ class ModuleComponentImpl
                 {
                     if( method.getParameterTypes().length > 0 )
                     {
-                        logger.warn( "@OnDeactivation methods must not have parameters (found in method '{}' of type '{}')", method.toGenericString(), this.moduleType );
+                        LOG.warn( "@OnDeactivation methods must not have parameters (found in method '{}' of type '{}')", method.toGenericString(), this.moduleType );
                     }
                     else
                     {
@@ -148,8 +155,8 @@ class ModuleComponentImpl
                     Type[] parameterTypes = method.getGenericParameterTypes();
                     if( parameterTypes.length != 1 )
                     {
-                        logger.warn( "@ServiceAdapter methods must have exactly one parameter of type ServiceRegistration<...> (found in method '{}' of type '{}')",
-                                     method.toGenericString(), this.moduleType );
+                        LOG.warn( "@ServiceAdapter methods must have exactly one parameter of type ServiceRegistration<...> (found in method '{}' of type '{}')",
+                                  method.toGenericString(), this.moduleType );
                     }
                     else if( method.getParameterTypes()[ 0 ].equals( ServiceRegistration.class ) )
                     {
@@ -159,8 +166,8 @@ class ModuleComponentImpl
                     }
                     else
                     {
-                        logger.warn( "@ServiceAdapter methods must have exactly one parameter of type ServiceRegistration<...> (found in method '{}' of type '{}')",
-                                     method.toGenericString(), this.moduleType );
+                        LOG.warn( "@ServiceAdapter methods must have exactly one parameter of type ServiceRegistration<...> (found in method '{}' of type '{}')",
+                                  method.toGenericString(), this.moduleType );
                     }
                 }
 
@@ -170,8 +177,8 @@ class ModuleComponentImpl
                     Type[] parameterTypes = method.getGenericParameterTypes();
                     if( parameterTypes.length != 1 )
                     {
-                        logger.warn( "@OnServiceRegistration methods must have exactly one parameter of type ServiceRegistration<...> (found in method '{}' of type '{}')",
-                                     method.toGenericString(), this.moduleType );
+                        LOG.warn( "@OnServiceRegistration methods must have exactly one parameter of type ServiceRegistration<...> (found in method '{}' of type '{}')",
+                                  method.toGenericString(), this.moduleType );
                     }
                     else if( method.getParameterTypes()[ 0 ].equals( ServiceRegistration.class ) )
                     {
@@ -181,8 +188,8 @@ class ModuleComponentImpl
                     }
                     else
                     {
-                        logger.warn( "@OnServiceRegistration methods must have exactly one parameter of type ServiceRegistration<...> (found in method '{}' of type '{}')",
-                                     method.toGenericString(), this.moduleType );
+                        LOG.warn( "@OnServiceRegistration methods must have exactly one parameter of type ServiceRegistration<...> (found in method '{}' of type '{}')",
+                                  method.toGenericString(), this.moduleType );
                     }
                 }
 
@@ -192,8 +199,8 @@ class ModuleComponentImpl
                     Type[] parameterTypes = method.getGenericParameterTypes();
                     if( parameterTypes.length != 2 )
                     {
-                        logger.warn( "@OnServiceUnregistration methods must have exactly 2 parameters of type ServiceRegistration<...> and the actual service (found in method '{}' of type '{}')",
-                                     method.toGenericString(), this.moduleType );
+                        LOG.warn( "@OnServiceUnregistration methods must have exactly 2 parameters of type ServiceRegistration<...> and the actual service (found in method '{}' of type '{}')",
+                                  method.toGenericString(), this.moduleType );
                     }
                     else if( method.getParameterTypes()[ 0 ].equals( ServiceRegistration.class ) )
                     {
@@ -203,8 +210,8 @@ class ModuleComponentImpl
                     }
                     else
                     {
-                        logger.warn( "@OnServiceUnregistration methods must have exactly 2 parameters of type ServiceRegistration<...> and the actual service (found in method '{}' of type '{}')",
-                                     method.toGenericString(), this.moduleType );
+                        LOG.warn( "@OnServiceUnregistration methods must have exactly 2 parameters of type ServiceRegistration<...> and the actual service (found in method '{}' of type '{}')",
+                                  method.toGenericString(), this.moduleType );
                     }
                 }
 
@@ -235,7 +242,7 @@ class ModuleComponentImpl
 
     void activate() throws Throwable
     {
-        this.moduleType.getModuleRevision().getModule().getLogger().debug( "Activating component {}", this );
+        LOG.debug( "Activating component {}", this );
         try
         {
             this.instance = this.instantiator.call();
@@ -247,7 +254,10 @@ class ModuleComponentImpl
 
         this.serviceRegistrationHandlers.forEach( ServiceRegistrationHandler::register );
         this.serviceUnregistrationHandlers.forEach( ServiceUnregistrationHandler::register );
-        this.providedTypes.forEach( type -> type.register( this.instance ) );
+        if( this.instance != null )
+        {
+            this.providedTypes.forEach( type -> type.register( this.instance ) );
+        }
         this.methodEndpoints.forEach( MethodEndpointImpl::register );
         this.serviceAdapterMethods.forEach( ServiceAdapterHandler::register );
     }
@@ -257,9 +267,7 @@ class ModuleComponentImpl
         Object instance = this.instance;
         if( instance != null )
         {
-            Logger logger = this.moduleType.getModuleRevision().getModule().getLogger();
-
-            logger.debug( "Deactivating component {}", this );
+            LOG.debug( "Deactivating component {}", this );
 
             this.serviceAdapterMethods.forEach( ServiceAdapterHandler::unregister );
             this.methodEndpoints.forEach( MethodEndpointImpl::unregister );
@@ -273,8 +281,7 @@ class ModuleComponentImpl
                 }
                 catch( Throwable e )
                 {
-                    logger.warn( "@OnDeactivation method '{}' of component {} threw an exception",
-                                 method.toGenericString(), this, e );
+                    LOG.warn( "@OnDeactivation method '{}' of component {} threw an exception", method.toGenericString(), this, e );
                 }
             } );
             this.instance = null;
@@ -298,7 +305,7 @@ class ModuleComponentImpl
         }
         catch( Throwable e )
         {
-            this.moduleType.getModuleRevision().getModule().getLogger().warn( "Error discovering factory method for {}", this, e );
+            LOG.warn( "Error discovering factory method for {}", this, e );
         }
 
         try
@@ -312,7 +319,7 @@ class ModuleComponentImpl
         }
         catch( Throwable e )
         {
-            this.moduleType.getModuleRevision().getModule().getLogger().warn( "Error discovering constructor for {}", this, e );
+            LOG.warn( "Error discovering constructor for {}", this, e );
         }
 
         throw new IllegalStateException( "@Component class " + type.getName() + " has no default constructor nor a 'getInstance()' static method" );
@@ -324,7 +331,7 @@ class ModuleComponentImpl
         private final Class type;
 
         @Nonnull
-        private final Module.ServiceProperty[] properties;
+        private final ServiceProperty[] properties;
 
         @Nullable
         private ServiceRegistration registration;
@@ -332,12 +339,12 @@ class ModuleComponentImpl
         private ProvidedType( @Nonnull Component annotation )
         {
             this.type = annotation.value();
-            List<Module.ServiceProperty> properties = new LinkedList<>();
+            List<ServiceProperty> properties = new LinkedList<>();
             for( Component.Property property : annotation.properties() )
             {
                 properties.add( p( property.name(), property.value() ) );
             }
-            this.properties = properties.toArray( new Module.ServiceProperty[ properties.size() ] );
+            this.properties = properties.toArray( new ServiceProperty[ properties.size() ] );
         }
 
         @Override
@@ -351,8 +358,7 @@ class ModuleComponentImpl
         @SuppressWarnings( "unchecked" )
         private void register( @Nonnull Object instance )
         {
-            ModuleImpl module = ModuleComponentImpl.this.moduleType.getModuleRevision().getModule();
-            this.registration = module.registerService( this.type, instance, this.properties );
+            this.registration = ModuleComponentImpl.this.moduleType.getModuleRevision().registerService( this.type, instance, this.properties );
         }
 
         private void unregister()
@@ -492,10 +498,10 @@ class ModuleComponentImpl
 
         void register()
         {
-            ModuleImpl module = ModuleComponentImpl.this.moduleType.getModuleRevision().getModule();
-            this.registration = module.registerService( MethodEndpoint.class, this,
-                                                        p( "name", getName() ),
-                                                        p( "type", this.annotation.annotationType().getName() ) );
+            ModuleRevisionImpl moduleRevision = ModuleComponentImpl.this.moduleType.getModuleRevision();
+            this.registration = moduleRevision.registerService( MethodEndpoint.class, this,
+                                                                p( "name", getName() ),
+                                                                p( "type", this.annotation.annotationType().getName() ) );
         }
 
         void unregister()
@@ -518,7 +524,7 @@ class ModuleComponentImpl
         private final Class<OriginalType> serviceType;
 
         @Nonnull
-        private final Module.ServiceProperty[] filter;
+        private final ServiceProperty[] filter;
 
         @Nonnull
         private final Map<ServiceRegistration<OriginalType>, ServiceRegistration<AdaptedType>> registrations = new HashMap<>();
@@ -538,8 +544,8 @@ class ModuleComponentImpl
         @Override
         public void serviceRegistered( @Nonnull ServiceRegistration<OriginalType> registration )
         {
-            ModuleImpl module = ModuleComponentImpl.this.moduleType.getModuleRevision().getModule();
-            module.getLock().write( () -> {
+            ModuleComponentImpl.this.lock.write( () -> {
+                ModuleRevisionImpl moduleRevision = ModuleComponentImpl.this.moduleType.getModuleRevision();
 
                 Object instance = ModuleComponentImpl.this.instance;
                 if( instance != null )
@@ -548,11 +554,11 @@ class ModuleComponentImpl
                     {
                         Object adapted = this.method.invoke( instance, registration );
                         Class serviceType = this.method.getReturnType();
-                        this.registrations.put( registration, module.registerService( serviceType, adapted ) );
+                        this.registrations.put( registration, moduleRevision.registerService( serviceType, adapted ) );
                     }
                     catch( Throwable e )
                     {
-                        Logging.getLogger().error( "Could not adapt {} into {}", registration, this.method.getGenericReturnType(), e );
+                        LoggerFactory.getLogger( getClass() ).error( "Could not adapt {} into {}", registration, this.method.getGenericReturnType(), e );
                     }
                 }
             } );
@@ -562,8 +568,7 @@ class ModuleComponentImpl
         public void serviceUnregistered( @Nonnull ServiceRegistration<OriginalType> registration,
                                          @Nonnull OriginalType service )
         {
-            ModuleImpl module = ModuleComponentImpl.this.moduleType.getModuleRevision().getModule();
-            module.getLock().write( () -> {
+            ModuleComponentImpl.this.lock.write( () -> {
 
                 try
                 {
@@ -575,7 +580,7 @@ class ModuleComponentImpl
                 }
                 catch( Throwable e )
                 {
-                    Logging.getLogger().error( "Could not adapt {} into {}", registration, this.method.getGenericReturnType(), e );
+                    LoggerFactory.getLogger( getClass() ).error( "Could not adapt {} into {}", registration, this.method.getGenericReturnType(), e );
                 }
 
             } );
@@ -583,7 +588,7 @@ class ModuleComponentImpl
 
         void register()
         {
-            this.listenerRegistration = moduleType.getModuleRevision().getModule().addServiceListener( this, this.serviceType, this.filter );
+            this.listenerRegistration = moduleType.getModuleRevision().addServiceListener( this, this.serviceType, this.filter );
         }
 
         void unregister()
@@ -611,7 +616,7 @@ class ModuleComponentImpl
         private final Class<ServiceType> serviceType;
 
         @Nonnull
-        private final Module.ServiceProperty[] filter;
+        private final ServiceProperty[] filter;
 
         @Nullable
         private ServiceListenerRegistration<ServiceType> listenerRegistration;
@@ -628,22 +633,18 @@ class ModuleComponentImpl
         @Override
         public void serviceRegistered( @Nonnull ServiceRegistration<ServiceType> registration )
         {
-            ModuleImpl module = ModuleComponentImpl.this.moduleType.getModuleRevision().getModule();
-            module.getLock().write( () -> {
-
-                Object instance = ModuleComponentImpl.this.instance;
-                if( instance != null )
+            Object instance = ModuleComponentImpl.this.instance;
+            if( instance != null )
+            {
+                try
                 {
-                    try
-                    {
-                        this.method.invoke( instance, registration );
-                    }
-                    catch( Throwable e )
-                    {
-                        Logging.getLogger().error( "Service registration listener method {} threw an exception", this.method.getGenericReturnType(), e );
-                    }
+                    this.method.invoke( instance, registration );
                 }
-            } );
+                catch( Throwable e )
+                {
+                    LoggerFactory.getLogger( getClass() ).error( "Service registration listener method {} threw an exception", this.method.getGenericReturnType(), e );
+                }
+            }
         }
 
         @Override
@@ -655,7 +656,7 @@ class ModuleComponentImpl
 
         void register()
         {
-            this.listenerRegistration = moduleType.getModuleRevision().getModule().addServiceListener( this, this.serviceType, this.filter );
+            this.listenerRegistration = moduleType.getModuleRevision().addServiceListener( this, this.serviceType, this.filter );
         }
 
         void unregister()
@@ -678,7 +679,7 @@ class ModuleComponentImpl
         private final Class<ServiceType> serviceType;
 
         @Nonnull
-        private final Module.ServiceProperty[] filter;
+        private final ServiceProperty[] filter;
 
         @Nullable
         private ServiceListenerRegistration<ServiceType> listenerRegistration;
@@ -702,27 +703,23 @@ class ModuleComponentImpl
         public void serviceUnregistered( @Nonnull ServiceRegistration<ServiceType> registration,
                                          @Nonnull ServiceType service )
         {
-            ModuleImpl module = ModuleComponentImpl.this.moduleType.getModuleRevision().getModule();
-            module.getLock().write( () -> {
-
-                Object instance = ModuleComponentImpl.this.instance;
-                if( instance != null )
+            Object instance = ModuleComponentImpl.this.instance;
+            if( instance != null )
+            {
+                try
                 {
-                    try
-                    {
-                        this.method.invoke( instance, registration, service );
-                    }
-                    catch( Throwable e )
-                    {
-                        Logging.getLogger().error( "Service unregistration listener method {} threw an exception", this.method.getGenericReturnType(), e );
-                    }
+                    this.method.invoke( instance, registration, service );
                 }
-            } );
+                catch( Throwable e )
+                {
+                    LoggerFactory.getLogger( getClass() ).error( "Service unregistration listener method {} threw an exception", this.method.getGenericReturnType(), e );
+                }
+            }
         }
 
         void register()
         {
-            this.listenerRegistration = moduleType.getModuleRevision().getModule().addServiceListener( this, this.serviceType, this.filter );
+            this.listenerRegistration = moduleType.getModuleRevision().addServiceListener( this, this.serviceType, this.filter );
         }
 
         void unregister()

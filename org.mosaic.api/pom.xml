@@ -1,0 +1,34 @@
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.mosaic</groupId>
+        <artifactId>org.mosaic.parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../org.mosaic.parent/pom.xml</relativePath>
+    </parent>
+
+    <groupId>org.mosaic</groupId>
+    <artifactId>org.mosaic.api</artifactId>
+    <name>Mosaic :: API</name>
+    <description>Mosaic APIs</description>
+    <packaging>bundle</packaging>
+
+    <dependencies>
+
+        <!-- OSGi -->
+        <dependency>
+            <groupId>biz.aQute.bnd</groupId>
+            <artifactId>bndlib</artifactId>
+        </dependency>
+
+    </dependencies>
+
+    <!-- scm -->
+    <scm>
+        <connection>scm:git:git@github.com:arikkfir/mosaic.git/${project.artifactId}</connection>
+        <developerConnection>scm:git:git@github.com:arikkfir/mosaic.git/${project.artifactId}</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
+</project>

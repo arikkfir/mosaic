@@ -4,7 +4,7 @@ import com.fasterxml.classmate.ResolvedType;
 import java.util.LinkedList;
 import java.util.List;
 import org.mosaic.core.components.MethodEndpoint;
-import org.mosaic.core.modules.Module;
+import org.mosaic.core.modules.ServiceProperty;
 import org.mosaic.core.services.ServiceProvider;
 import org.mosaic.core.services.ServiceRegistration;
 import org.mosaic.core.services.ServicesProvider;
@@ -19,7 +19,7 @@ import static java.util.Arrays.asList;
 final class ServiceKey
 {
     @Nonnull
-    private static final Module.ServiceProperty[] EMPTY_SERVICE_PROPERTIES_ARRAY = new Module.ServiceProperty[ 0 ];
+    private static final ServiceProperty[] EMPTY_SERVICE_PROPERTIES_ARRAY = new ServiceProperty[ 0 ];
 
     @Nonnull
     private final ResolvedType resolvedServiceType;
@@ -27,11 +27,11 @@ final class ServiceKey
     private final int minCount;
 
     @Nonnull
-    private final List<Module.ServiceProperty> serviceProperties;
+    private final List<ServiceProperty> serviceProperties;
 
-    ServiceKey( @Nonnull ResolvedType resolvedType, int minCount, @Nonnull Module.ServiceProperty... properties )
+    ServiceKey( @Nonnull ResolvedType resolvedType, int minCount, @Nonnull ServiceProperty... properties )
     {
-        List<Module.ServiceProperty> propertiesList = new LinkedList<>();
+        List<ServiceProperty> propertiesList = new LinkedList<>();
         propertiesList.addAll( asList( properties ) );
         this.resolvedServiceType = discoverServiceType( resolvedType, propertiesList );
         this.minCount = minCount;
@@ -45,13 +45,13 @@ final class ServiceKey
     }
 
     @Nonnull
-    public List<Module.ServiceProperty> getServiceProperties()
+    public List<ServiceProperty> getServiceProperties()
     {
         return this.serviceProperties;
     }
 
     @Nonnull
-    public Module.ServiceProperty[] getServicePropertiesArray()
+    public ServiceProperty[] getServicePropertiesArray()
     {
         if( this.serviceProperties.isEmpty() )
         {
@@ -59,7 +59,7 @@ final class ServiceKey
         }
         else
         {
-            return this.serviceProperties.toArray( new Module.ServiceProperty[ this.serviceProperties.size() ] );
+            return this.serviceProperties.toArray( new ServiceProperty[ this.serviceProperties.size() ] );
         }
     }
 
@@ -148,7 +148,7 @@ final class ServiceKey
 
     @Nonnull
     private ResolvedType discoverServiceType( @Nonnull ResolvedType resolvedType,
-                                              @Nonnull List<Module.ServiceProperty> properties )
+                                              @Nonnull List<ServiceProperty> properties )
     {
         Class<?> erasedType = resolvedType.getErasedType();
         if( erasedType.equals( ServiceProvider.class ) || erasedType.equals( ServicesProvider.class ) || erasedType.equals( ServiceRegistration.class ) )
@@ -168,7 +168,7 @@ final class ServiceKey
         }
         else if( erasedType.equals( MethodEndpoint.class ) )
         {
-            properties.add( Module.ServiceProperty.p( "type", getTypeParameter( resolvedType, 0 ).getErasedType().getName() ) );
+            properties.add( ServiceProperty.p( "type", getTypeParameter( resolvedType, 0 ).getErasedType().getName() ) );
             return resolvedType;
         }
         else

@@ -8,18 +8,16 @@
         <relativePath>../org.mosaic.parent/pom.xml</relativePath>
     </parent>
 
+    <groupId>org.mosaic</groupId>
     <artifactId>org.mosaic.convert</artifactId>
     <name>Mosaic :: Convert</name>
-    <description>Mosaic Convert</description>
+    <description>Mosaic multi-purpose conversion system. This module provides a generic conversion service that can
+        be used for converting from any type to any other type, provided that proper convertors can be wired together for a
+        complete conversion path.
+    </description>
     <packaging>bundle</packaging>
 
     <build>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-            </resource>
-        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.felix</groupId>
@@ -44,7 +42,7 @@
         <!-- mosaic -->
         <dependency>
             <groupId>org.mosaic</groupId>
-            <artifactId>org.mosaic.core</artifactId>
+            <artifactId>org.mosaic.api</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -52,28 +50,24 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <scope>provided</scope>
         </dependency>
 
         <!-- graphing utility -->
         <dependency>
             <groupId>net.sf.jgrapht</groupId>
             <artifactId>jgrapht</artifactId>
-            <scope>provided</scope>
         </dependency>
 
         <!-- used for generics resolving -->
         <dependency>
             <groupId>com.fasterxml</groupId>
             <artifactId>classmate</artifactId>
-            <scope>provided</scope>
         </dependency>
 
         <!-- used for marking versions of packages (via @Version) -->
         <dependency>
             <groupId>biz.aQute.bnd</groupId>
             <artifactId>bndlib</artifactId>
-            <scope>provided</scope>
         </dependency>
 
     </dependencies>
@@ -82,21 +76,7 @@
     <scm>
         <connection>scm:git:git@github.com:arikkfir/mosaic.git/${project.artifactId}</connection>
         <developerConnection>scm:git:git@github.com:arikkfir/mosaic.git/${project.artifactId}</developerConnection>
-        <url>https://github.com/arikkfir/mosaic</url>
         <tag>HEAD</tag>
     </scm>
 
 </project>
-
-
-
-
-
-
-
-
-
-
-
-
-

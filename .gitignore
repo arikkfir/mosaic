@@ -13,12 +13,6 @@ release.properties
 target
 */target
 
-# Run directory
-run/etc/ssh/history/*
-run/lib/*.jar
-run/logs
-run/work
-
 # Temp files
 **/felix-cache
 **/abrt_checker*

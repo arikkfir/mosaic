@@ -7,6 +7,10 @@ STUFF TO DO
 general
 ---
 
+* setup testing framework
+* finish configuration module
+* finish shell module
+* create assembly
 v use [Paranamer](https://github.com/paul-hammant/paranamer) instead of Spring's ParameterNameDiscoverer
 v fix project assembly
 * provisioning module

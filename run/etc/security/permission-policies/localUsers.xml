@@ -1,9 +1,0 @@
-<?xml version="1.0"?>
-
-<permission-policy xmlns="http://www.mosaicserver.com/permission-policy-1.0.0">
-    <roles>
-        <role name="admin">
-            <permission name="test"/>
-        </role>
-    </roles>
-</permission-policy>

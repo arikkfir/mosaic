@@ -30,7 +30,7 @@ class CompositeListener<ServiceType> implements ServiceListener<ServiceType>
     {
         if( this.onRegister != null )
         {
-            onRegister.serviceRegistered( registration );
+            this.onRegister.serviceRegistered( registration );
         }
     }
 
@@ -40,7 +40,7 @@ class CompositeListener<ServiceType> implements ServiceListener<ServiceType>
     {
         if( this.onUnregister != null )
         {
-            onUnregister.serviceUnregistered( registration, service );
+            this.onUnregister.serviceUnregistered( registration, service );
         }
     }
 }

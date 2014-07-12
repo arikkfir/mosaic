@@ -15,10 +15,9 @@ import org.mosaic.convert.ConversionException;
 import org.mosaic.convert.Converter;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
-import org.mosaic.core.util.base.ToStringHelper;
 import org.mosaic.core.util.concurrency.ReadWriteLock;
-import org.mosaic.core.util.logging.Logging;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.unmodifiableSet;
 import static org.jgrapht.alg.DijkstraShortestPath.findPathBetween;
@@ -28,7 +27,8 @@ import static org.jgrapht.alg.DijkstraShortestPath.findPathBetween;
  */
 final class ConvertersGraph
 {
-    private static final Logger LOG = Logging.getLogger();
+    @Nonnull
+    private static final Logger LOG = LoggerFactory.getLogger( ConvertersGraph.class );
 
     @Nonnull
     private static final Set<Class<?>> ignoredTypes = unmodifiableSet( new HashSet<>( Arrays.<Class<?>>asList(
@@ -138,16 +138,6 @@ final class ConvertersGraph
         {
             return this.converter.convert( source );
         }
-
-        @Override
-        public String toString()
-        {
-            return ToStringHelper.create( this )
-                                 .add( "source", this.sourceTypeToken )
-                                 .add( "target", this.targetTypeToken )
-                                 .add( "converter", this.converter )
-                                 .toString();
-        }
     }
 
     private static class CompositionConverter<Source, Dest> implements Converter<Source, Dest>
@@ -156,21 +146,16 @@ final class ConvertersGraph
         private final List<? extends Converter> converters;
 
         @Nonnull
-        private final Class<Source> sourceTypeToken;
-
-        @Nonnull
         private final Class<Dest> targetTypeToken;
 
         private CompositionConverter( @Nonnull List<? extends Converter> converterAdapters,
-                                      @Nonnull Class<Source> sourceTypeToken,
                                       @Nonnull Class<Dest> targetTypeToken )
         {
             this.converters = new LinkedList<>( converterAdapters );
-            this.sourceTypeToken = sourceTypeToken;
             this.targetTypeToken = targetTypeToken;
         }
 
-        @SuppressWarnings( "unchecked" )
+        @SuppressWarnings("unchecked")
         @Nonnull
         @Override
         public Dest convert( @Nonnull Source source )
@@ -181,16 +166,6 @@ final class ConvertersGraph
                 value = converter.convert( value );
             }
             return this.targetTypeToken.cast( value );
-        }
-
-        @Override
-        public String toString()
-        {
-            return ToStringHelper.create( this )
-                                 .add( "source", this.sourceTypeToken )
-                                 .add( "target", this.targetTypeToken )
-                                 .add( "converters", this.converters )
-                                 .toString();
         }
     }
 
@@ -231,16 +206,6 @@ final class ConvertersGraph
             {
                 throw new ConversionException( "unexpected conversion error", e, this.sourceTypeToken, this.targetTypeToken );
             }
-        }
-
-        @Override
-        public String toString()
-        {
-            return ToStringHelper.create( this )
-                                 .add( "source", this.sourceTypeToken )
-                                 .add( "target", this.targetTypeToken )
-                                 .add( "method", this.method )
-                                 .toString();
         }
     }
 
@@ -403,7 +368,7 @@ final class ConvertersGraph
                                   Class<?> erasedSourceType = sourceType.getErasedType();
                                   Class<?> erasedTargetType = currentTargetType.getErasedType();
 
-                                  @SuppressWarnings( "unchecked" )
+                                  @SuppressWarnings("unchecked")
                                   ConverterAdapter adapter = new ConverterAdapter( converter, erasedSourceType, erasedTargetType );
                                   graph.addEdge( erasedSourceType, erasedTargetType, adapter );
                                   adapters.add( adapter );
@@ -412,7 +377,7 @@ final class ConvertersGraph
         return adapters;
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings("unchecked")
     @Nonnull
     private Converter findConverter( @Nonnull Class<?> sourceType, @Nonnull Class<?> targetType )
     {
@@ -485,7 +450,7 @@ final class ConvertersGraph
                         if( path != null )
                         {
                             //noinspection unchecked
-                            return new CompositionConverter( path, sourceType, targetType );
+                            return new CompositionConverter( path, targetType );
                         }
                     }
                     catch( Exception e )

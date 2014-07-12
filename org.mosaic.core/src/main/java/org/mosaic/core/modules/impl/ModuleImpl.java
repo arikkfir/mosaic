@@ -2,16 +2,21 @@ package org.mosaic.core.modules.impl;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.WeakHashMap;
+import org.mosaic.core.launcher.impl.ServerImpl;
 import org.mosaic.core.modules.*;
-import org.mosaic.core.services.*;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
-import org.mosaic.core.util.concurrency.ReadWriteLock;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleRevisions;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static java.lang.String.format;
 
 /**
  * @author arik
@@ -19,13 +24,10 @@ import org.slf4j.Logger;
 class ModuleImpl implements Module
 {
     @Nonnull
-    private final Logger logger;
+    private static final Logger LOG = LoggerFactory.getLogger( ModuleImpl.class );
 
     @Nonnull
-    private final ReadWriteLock lock;
-
-    @Nonnull
-    private final ServiceManager serviceManager;
+    private final ServerImpl server;
 
     @Nonnull
     private final Bundle bundle;
@@ -33,34 +35,29 @@ class ModuleImpl implements Module
     @Nonnull
     private final Map<BundleRevision, ModuleRevisionImpl> revisions = new WeakHashMap<>();
 
-    ModuleImpl( @Nonnull Logger logger,
-                @Nonnull ReadWriteLock lock,
-                @Nonnull ServiceManager serviceManager,
-                @Nonnull Bundle bundle )
+    ModuleImpl( @Nonnull ServerImpl server, @Nonnull Bundle bundle )
     {
-        this.logger = logger;
-        this.lock = lock;
-        this.serviceManager = serviceManager;
+        this.server = server;
         this.bundle = bundle;
     }
 
     @Override
     public String toString()
     {
-        return this.bundle.getSymbolicName() + "@" + this.bundle.getVersion() + "[" + this.bundle.getBundleId() + "]";
+        return format( "%s@%s[%d]", this.bundle.getSymbolicName(), this.bundle.getVersion(), getId() );
     }
 
     @Override
     public long getId()
     {
-        return this.lock.read( this.bundle::getBundleId );
+        return this.server.getLock().read( this.bundle::getBundleId );
     }
 
     @Nullable
     @Override
     public Path getPath()
     {
-        return this.lock.read( () -> {
+        return this.server.getLock().read( () -> {
             String location = this.bundle.getLocation();
             return location.startsWith( "file:" ) ? Paths.get( location.substring( "file:".length() ) ) : null;
         } );
@@ -70,7 +67,7 @@ class ModuleImpl implements Module
     @Override
     public ModuleState getState()
     {
-        return this.lock.read( () -> {
+        return this.server.getLock().read( () -> {
             int state = this.bundle.getState();
             switch( state )
             {
@@ -103,181 +100,113 @@ class ModuleImpl implements Module
     @Override
     public ModuleRevisionImpl getCurrentRevision()
     {
-        return this.lock.read( () -> {
-            List<BundleRevision> revisions = this.bundle.adapt( BundleRevisions.class ).getRevisions();
-            if( revisions.isEmpty() )
-            {
-                return null;
-            }
-            else
-            {
-                return this.revisions.get( revisions.get( 0 ) );
-            }
-        } );
+        return this.server.getLock().read( () -> this.revisions.get( this.bundle.adapt( BundleRevision.class ) ) );
     }
 
     @Nonnull
     @Override
     public Collection<ModuleRevision> getRevisions()
     {
-        return this.lock.read( () -> Collections.<ModuleRevision>unmodifiableCollection( this.revisions.values() ) );
+        return this.server.getLock().read( () -> Collections.<ModuleRevision>unmodifiableCollection( this.revisions.values() ) );
     }
 
     @Nullable
     @Override
     public ModuleRevision getRevision( long revisionId )
     {
-        return this.lock.read( () -> {
-            for( ModuleRevisionImpl moduleRevision : this.revisions.values() )
-            {
-                if( moduleRevision.getId() == revisionId )
-                {
-                    return moduleRevision;
-                }
-            }
-            return null;
-        } );
-    }
-
-    @Nonnull
-    @Override
-    public <ServiceType> ServiceRegistration<ServiceType> registerService( @Nonnull Class<ServiceType> type,
-                                                                           @Nonnull ServiceType service,
-                                                                           @Nonnull ServiceProperty... properties )
-    {
-        return this.serviceManager.registerService( this, type, service, properties );
-    }
-
-    @Override
-    public <ServiceType> ServiceListenerRegistration<ServiceType> addServiceListener( @Nonnull ServiceListener<ServiceType> listener,
-                                                                                      @Nonnull Class<ServiceType> type,
-                                                                                      @Nonnull ServiceProperty... properties )
-    {
-        return this.serviceManager.addListener( this, listener, type, properties );
-    }
-
-    @Override
-    public <ServiceType> ServiceListenerRegistration<ServiceType> addServiceListener( @Nonnull ServiceRegistrationListener<ServiceType> onRegister,
-                                                                                      @Nonnull ServiceUnregistrationListener<ServiceType> onUnregister,
-                                                                                      @Nonnull Class<ServiceType> type,
-                                                                                      @Nonnull ServiceProperty... properties )
-    {
-        return this.serviceManager.addListener( this, onRegister, onUnregister, type, properties );
-    }
-
-    @Override
-    public <ServiceType> ServiceListenerRegistration<ServiceType> addWeakServiceListener( @Nonnull ServiceListener<ServiceType> listener,
-                                                                                          @Nonnull Class<ServiceType> type,
-                                                                                          @Nonnull ServiceProperty... properties )
-    {
-        return this.serviceManager.addWeakListener( this, listener, type, properties );
+        return this.server.getLock().read( () -> this.revisions.values()
+                                                               .stream()
+                                                               .filter( moduleRevision -> moduleRevision.getId() == revisionId )
+                                                               .findFirst().orElse( null ) );
     }
 
     @Override
     public void start()
     {
-        this.lock.write( () -> {
-            try
-            {
-                this.bundle.start();
-            }
-            catch( Throwable e )
-            {
-                throw new ModuleStartException( "could not start module " + this, e, this );
-            }
-        } );
+        try
+        {
+            this.bundle.start();
+        }
+        catch( Throwable e )
+        {
+            throw new ModuleStartException( "could not start module " + this, e, this );
+        }
     }
 
     @Override
     public void refresh()
     {
-        this.lock.write( () -> {
-            try
-            {
-                this.bundle.update();
-            }
-            catch( Throwable e )
-            {
-                throw new ModuleRefreshException( "could not refresh module " + this, e, this );
-            }
-        } );
+        try
+        {
+            this.bundle.update();
+        }
+        catch( Throwable e )
+        {
+            throw new ModuleRefreshException( "could not refresh module " + this, e, this );
+        }
     }
 
     @Override
     public void stop()
     {
-        this.lock.write( () -> {
-            try
-            {
-                this.bundle.stop();
-            }
-            catch( Throwable e )
-            {
-                throw new ModuleStartException( "could not stop module " + this, e, this );
-            }
-        } );
+        stop( true );
+    }
+
+    public void stop( boolean persistent )
+    {
+        try
+        {
+            this.bundle.stop( persistent ? 0 : Bundle.STOP_TRANSIENT );
+        }
+        catch( Throwable e )
+        {
+            throw new ModuleStartException( "could not stop module " + this, e, this );
+        }
     }
 
     @Override
     public void uninstall()
     {
-        this.lock.write( () -> {
-            try
-            {
-                this.bundle.uninstall();
-            }
-            catch( Throwable e )
-            {
-                throw new ModuleUninstallException( "could not uninstall module " + this, e, this );
-            }
-        } );
+        try
+        {
+            this.bundle.uninstall();
+        }
+        catch( Throwable e )
+        {
+            throw new ModuleUninstallException( "could not uninstall module " + this, e, this );
+        }
     }
 
     @Nonnull
-    Logger getLogger()
+    public Bundle getBundle()
     {
-        return this.lock.read( () -> this.logger );
-    }
-
-    @Nonnull
-    ReadWriteLock getLock()
-    {
-        return this.lock.read( () -> this.lock );
-    }
-
-    @Nonnull
-    Bundle getBundle()
-    {
-        return this.lock.read( () -> this.bundle );
-    }
-
-    @Nullable
-    ModuleRevisionImpl getRevision( @Nonnull BundleRevision bundleRevision )
-    {
-        return this.lock.read( () -> this.revisions.get( bundleRevision ) );
+        return this.server.getLock().read( () -> this.bundle );
     }
 
     void syncBundleRevisions()
     {
-        this.lock.write( () -> this.bundle.adapt( BundleRevisions.class ).getRevisions()
-                                          .stream()
-                                          .filter( rev -> !this.revisions.containsKey( rev ) )
-                                          .forEach( rev -> this.revisions.put( rev, new ModuleRevisionImpl( this, rev ) ) ) );
+        this.server.getLock().write( () -> this.bundle.adapt( BundleRevisions.class )
+                                                      .getRevisions()
+                                                      .stream()
+                                                      .filter( rev -> !this.revisions.containsKey( rev ) )
+                                                      .forEach( rev -> this.revisions.put( rev, new ModuleRevisionImpl( this.server, this, rev ) ) ) );
     }
 
     void bundleInstalled()
     {
-        this.lock.write( () -> {
-            this.logger.info( "INSTALLING {}", this );
+        this.server.getLock().write( () -> {
+            LOG.info( "INSTALLING {}", this );
             syncBundleRevisions();
-            this.logger.info( "INSTALLED {}", this );
+            LOG.info( "INSTALLED {}", this );
+
+            this.server.getModuleManager().notifyModuleListeners( listener -> listener.moduleInstalled( this ) );
         } );
     }
 
     void bundleResolved()
     {
-        this.lock.write( () -> {
-            this.logger.info( "RESOLVING {}", this );
+        this.server.getLock().write( () -> {
+            LOG.info( "RESOLVING {}", this );
 
             syncBundleRevisions();
 
@@ -287,14 +216,16 @@ class ModuleImpl implements Module
                 revision.revisionResolved();
             }
 
-            this.logger.info( "RESOLVED {}", this );
+            LOG.info( "RESOLVED {}", this );
+
+            this.server.getModuleManager().notifyModuleListeners( listener -> listener.moduleResolved( this ) );
         } );
     }
 
     void bundleStarting()
     {
-        this.lock.write( () -> {
-            this.logger.info( "STARTING {}", this );
+        this.server.getLock().write( () -> {
+            LOG.info( "STARTING {}", this );
 
             ModuleRevisionImpl revision = getCurrentRevision();
             if( revision != null )
@@ -306,32 +237,34 @@ class ModuleImpl implements Module
 
     void bundleStarted()
     {
-        this.lock.write( () -> {
+        this.server.getLock().write( () -> {
             ModuleRevisionImpl revision = getCurrentRevision();
             if( revision != null )
             {
                 revision.revisionStarted();
             }
 
-            this.logger.info( "STARTED {}", this );
+            LOG.info( "STARTED {}", this );
 
             if( revision != null )
             {
                 revision.activate();
             }
+
+            this.server.getModuleManager().notifyModuleListeners( listener -> listener.moduleStarted( this ) );
         } );
     }
 
     void bundleStopping()
     {
-        this.lock.write( () -> {
+        this.server.getLock().write( () -> {
             ModuleRevisionImpl revision = getCurrentRevision();
             if( revision != null )
             {
                 revision.deactivate();
             }
 
-            this.logger.info( "STOPPING {}", this );
+            LOG.info( "STOPPING {}", this );
 
             if( revision != null )
             {
@@ -342,45 +275,55 @@ class ModuleImpl implements Module
 
     void bundleStopped()
     {
-        this.lock.write( () -> {
+        this.server.getLock().write( () -> {
             ModuleRevisionImpl revision = getCurrentRevision();
             if( revision != null )
             {
                 revision.revisionStopped();
             }
 
-            this.logger.info( "STOPPED {}", this );
+            LOG.info( "STOPPED {}", this );
+
+            this.server.getModuleManager().notifyModuleListeners( listener -> listener.moduleStopped( this ) );
         } );
     }
 
     void bundleUpdated()
     {
-        this.lock.write( () -> {
+        this.server.getLock().write( () -> {
             syncBundleRevisions();
-            this.logger.info( "UPDATED {}", this );
+            LOG.info( "UPDATED {}", this );
+
+            this.server.getModuleManager().notifyModuleListeners( listener -> listener.moduleUpdated( this ) );
         } );
     }
 
     void bundleUnresolved()
     {
-        this.lock.write( () -> {
-            this.logger.info( "UNRESOLVING {}", this );
+        this.server.getLock().write( () -> {
+            LOG.info( "UNRESOLVING {}", this );
 
-            for( BundleRevision bundleRevision : this.bundle.adapt( BundleRevisions.class ).getRevisions() )
-            {
-                ModuleRevisionImpl moduleRevision = getRevision( bundleRevision );
-                if( moduleRevision != null && bundleRevision.getWiring() == null )
-                {
-                    moduleRevision.revisionUnresolved();
-                }
-            }
+            // for each bundle revision that no longer has a bundle wiring, but still has a corresponding module
+            // revision, call its 'revisionUnresolved' method
+            this.bundle.adapt( BundleRevisions.class )
+                       .getRevisions()
+                       .stream()
+                       .filter( bundleRevision -> bundleRevision.getWiring() == null )
+                       .map( this.revisions::get )
+                       .filter( moduleRevision -> moduleRevision != null )
+                       .forEach( ModuleRevisionImpl::revisionUnresolved );
 
-            this.logger.info( "UNRESOLVED {}", this );
+            LOG.info( "UNRESOLVED {}", this );
+
+            this.server.getModuleManager().notifyModuleListeners( listener -> listener.moduleUnresolved( this ) );
         } );
     }
 
     void bundleUninstalled()
     {
-        this.lock.write( () -> this.logger.info( "UNINSTALLED {}", this ) );
+        this.server.getLock().write( () -> {
+            LOG.info( "UNINSTALLED {}", this );
+            this.server.getModuleManager().notifyModuleListeners( listener -> listener.moduleUninstalled( this ) );
+        } );
     }
 }

@@ -1,0 +1,60 @@
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.mosaic</groupId>
+        <artifactId>org.mosaic.parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../../org.mosaic.parent/pom.xml</relativePath>
+    </parent>
+
+    <groupId>org.mosaic.shell</groupId>
+    <artifactId>org.mosaic.shell.ssh</artifactId>
+    <name>Mosaic :: Shell :: SSH</name>
+    <description>Mosaic Shell Ssh</description>
+    <packaging>bundle</packaging>
+
+    <dependencies>
+
+        <!-- mosaic -->
+        <dependency>
+            <groupId>org.mosaic</groupId>
+            <artifactId>org.mosaic.core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mosaic.shell</groupId>
+            <artifactId>org.mosaic.shell.core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- used for marking versions of packages (via @Version) -->
+        <dependency>
+            <groupId>biz.aQute.bnd</groupId>
+            <artifactId>bndlib</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+    </dependencies>
+
+    <!-- scm -->
+    <scm>
+        <connection>scm:git:git@github.com:arikkfir/mosaic.git/org.mosaic.shell/${project.artifactId}</connection>
+        <developerConnection>scm:git:git@github.com:arikkfir/mosaic.git/org.mosaic.shell/${project.artifactId}</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
+</project>
+
+
+
+
+
+
+
+
+
+
+
+
+

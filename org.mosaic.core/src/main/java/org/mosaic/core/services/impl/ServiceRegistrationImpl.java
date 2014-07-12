@@ -1,7 +1,9 @@
 package org.mosaic.core.services.impl;
 
 import java.util.Map;
-import org.mosaic.core.modules.Module;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import org.mosaic.core.modules.ModuleRevision;
 import org.mosaic.core.services.ServiceRegistration;
 import org.mosaic.core.util.Nonnull;
 import org.mosaic.core.util.Nullable;
@@ -11,48 +13,54 @@ import org.mosaic.core.util.concurrency.ReadWriteLock;
 /**
  * @author arik
  */
-class ServiceRegistrationImpl<ServiceType> implements ServiceRegistration<ServiceType>
+public class ServiceRegistrationImpl<ServiceType> implements ServiceRegistration<ServiceType>
 {
     @Nonnull
     private final ReadWriteLock lock;
 
-    @Nonnull
-    private final ServiceManagerImpl serviceManager;
+    @Nullable
+    private final ModuleRevision provider;
 
     @Nonnull
-    private final Module provider;
-
-    @Nonnull
-    private final Class<ServiceType> type;
+    private final Class<ServiceType> serviceType;
 
     @Nonnull
     private final Map<String, Object> properties;
 
+    @Nonnull
+    private final Consumer<ServiceRegistrationImpl<ServiceType>> unregisterAction;
+
+    @Nonnull
+    private final Function<ServiceRegistrationImpl<ServiceType>, ServiceType> getServiceAction;
+
     ServiceRegistrationImpl( @Nonnull ReadWriteLock lock,
-                             @Nonnull ServiceManagerImpl serviceManager,
-                             @Nonnull Module provider,
-                             @Nonnull Class<ServiceType> type,
-                             @Nonnull Map<String, Object> properties )
+                             @Nullable ModuleRevision provider,
+                             @Nonnull Class<ServiceType> serviceType,
+                             @Nonnull Map<String, Object> properties,
+                             @Nonnull Consumer<ServiceRegistrationImpl<ServiceType>> unregisterAction,
+                             @Nonnull Function<ServiceRegistrationImpl<ServiceType>, ServiceType> getServiceAction )
     {
         this.lock = lock;
-        this.serviceManager = serviceManager;
         this.provider = provider;
-        this.type = type;
+        this.serviceType = serviceType;
         this.properties = properties;
+        this.unregisterAction = unregisterAction;
+        this.getServiceAction = getServiceAction;
     }
 
     @Override
     public String toString()
     {
-        return this.lock.read( () -> ToStringHelper.create( this )
-                                                   .add( "provider", this.provider )
-                                                   .add( "type", this.type.getName() )
-                                                   .toString() );
+        return ToStringHelper.create( this )
+                             .add( "provider", getProvider() )
+                             .add( "type", getType().getName() )
+                             .add( "instance", getService() )
+                             .toString();
     }
 
     @Nonnull
     @Override
-    public Module getProvider()
+    public ModuleRevision getProvider()
     {
         return this.lock.read( () -> this.provider );
     }
@@ -61,7 +69,7 @@ class ServiceRegistrationImpl<ServiceType> implements ServiceRegistration<Servic
     @Override
     public Class<ServiceType> getType()
     {
-        return this.lock.read( () -> this.type );
+        return this.lock.read( () -> this.serviceType );
     }
 
     @Nonnull
@@ -75,14 +83,12 @@ class ServiceRegistrationImpl<ServiceType> implements ServiceRegistration<Servic
     @Override
     public ServiceType getService()
     {
-        Object instance = this.serviceManager.getServiceInstanceFor( this );
-        return instance == null ? null : this.type.cast( instance );
+        return this.getServiceAction.apply( this );
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public void unregister()
     {
-        this.serviceManager.unregisterService( this );
+        this.unregisterAction.accept( this );
     }
 }
