@@ -1,3 +1,8 @@
+THIS PROJECT HAS MOVED TO https://bitbucket.org/arikkfir/mosaic
+
+
+
+
 NOTES
 =====
 
